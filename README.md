@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Daily Plan
 
-## Getting Started
+Daily Plan is a modern productivity and personal routine dashboard built to help people organize daily tasks, track habits, reflect on progress, and stay consistent with long-term goals. The app combines planning, progress tracking, and motivation in one simple experience so users can focus on the right next step instead of managing scattered notes and checklists.
 
-First, run the development server:
+## What this project does
+
+Daily Plan gives users a complete planning system for their day:
+
+- Create and manage daily routines and recurring blocks
+- Track habits and monitor consistency over time
+- Set and review goals with measurable progress
+- View dashboard stats and progress summaries
+- Keep a personal quote wall with public or private entries
+- Review weekly and monthly progress to reinforce momentum
+- Stay focused with a clean, motivating interface
+
+This is designed for people who want a daily system that is practical, motivating, and easy to maintain over time.
+
+## Core features
+
+### Smart daily planning
+Users can define their routine for the day, organize blocks by type, and structure time around key activities like focus work, breaks, learning, and personal time.
+
+### Habit tracking
+The app supports habit creation and progress tracking so users can build consistency without feeling overwhelmed. Habit records help visualize streaks, completions, and long-term behavior patterns.
+
+### Goal management
+Goals are tracked in a way that makes progress visible. This helps users understand what matters most and how their daily actions connect to larger outcomes.
+
+### Dashboard insights
+At a glance, users can see summary metrics, streak health, progress, and activity trends. The dashboard turns daily effort into a clearer story of growth.
+
+### Quote system
+The app includes a rotating quote section that can display motivational content from the platform and from users themselves. Users can save personal quotes, choose whether to share them publicly, and manage their saved collection from the dashboard.
+
+### Weekly and monthly review
+The product promotes reflection and habit reinforcement by guiding users through recap flows and periodic reviews. This supports sustainable personal development rather than just short-term planning.
+
+## Tech stack
+
+- Next.js for the application framework
+- React and TypeScript for the UI and logic
+- Tailwind CSS for styling and design system
+- Prisma for database access and schema modeling
+- PostgreSQL for persistent storage
+- NextAuth for authentication
+- Vitest for test coverage
+
+## Why this app is useful
+
+Daily Plan is not just a task list. It is a small personal operating system for daily life:
+
+- it helps users plan their day,
+- reinforces routine through habit tracking,
+- keeps goals visible,
+- supports reflection and improvement,
+- and gives motivation at the exact moment it is needed.
+
+The experience is designed to feel lightweight, supportive, and encouraging rather than overwhelming.
+
+## Getting started
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the app locally:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run tests:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm test
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Build for production:
 
-## Learn More
+```bash
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Typical user experience
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+A user opens the dashboard, sees their daily focus areas, checks key habits, reviews their progress, adds a personal quote or reads a motivating message, and moves into the day with a clearer plan. Over time, the app becomes a system for habits, planning, accountability, and personal reflection.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project goal
 
-## Deploy on Vercel
+The goal of Daily Plan is to help people build better daily systems without complexity. It blends planning, habit-building, and reflection into a single app that feels practical, motivating, and sustainable.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is intended for personal or internal use unless otherwise specified by the project owner.
+"# ROUTINEOS" 
