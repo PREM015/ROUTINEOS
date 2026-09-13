@@ -1,0 +1,742 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================================================
+// ENUMS
+// ==========================================================================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum DayType {
+  WEEKDAY
+  WEEKEND
+  HOLIDAY
+  EXAM_DAY
+  LOW_ENERGY
+  CUSTOM
+}
+
+enum HabitTier {
+  NON_NEGOTIABLE
+  GROWTH
+  BONUS
+}
+
+enum HabitStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  COMPLETED
+}
+
+enum HabitLogStatus {
+  COMPLETED
+  MISSED
+  SKIPPED
+  NOT_APPLICABLE
+}
+
+enum HabitOverrideType {
+  SKIP_TODAY
+  SKIP_RANGE
+  PAUSE
+  NOT_APPLICABLE
+  RESCHEDULE
+}
+
+// Was a loose string before — an enum lets the DB reject invalid values
+// instead of every reader having to defensively re-validate a raw string.
+enum HabitFrequencyType {
+  DAILY
+  SPECIFIC_WEEKDAYS
+  WEEKLY_TARGET
+  MONTHLY_TARGET
+  ONE_TIME
+}
+
+enum GoalType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  MISSED
+  CARRIED_OVER
+}
+
+enum RoutineLogStatus {
+  COMPLETED
+  MISSED
+  PARTIAL
+}
+
+enum InsightPeriod {
+  WEEKLY
+  MONTHLY
+}
+
+enum AuditAction {
+  HABIT_ARCHIVED
+  HABIT_DELETED
+  HABIT_PAUSED
+  HABIT_RESUMED
+  GOAL_DELETED
+  ROUTINE_CHANGED
+  SCORING_SETTINGS_CHANGED
+  MINIMUM_DAY_ACTIVATED
+  REST_DAY_ACTIVATED
+  DATA_EXPORTED
+  DATA_IMPORTED
+  DATA_RESET
+  ACCOUNT_DELETED
+  // security events — previously nothing tracked these at all
+  LOGIN_FAILED
+  ACCOUNT_LOCKED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  LOGOUT_ALL_SESSIONS
+  EMAIL_VERIFIED
+}
+
+enum NotificationType {
+  HABIT_REMINDER
+  ROUTINE_REMINDER
+  GOAL_DEADLINE
+  WEEKLY_REVIEW
+  MONTHLY_RESET
+  STREAK_MILESTONE
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DISMISSED
+}
+
+// ==========================================================================
+// CORE / AUTH
+// ==========================================================================
+
+model User {
+  id           String  @id @default(cuid())
+  name         String?
+  email        String  @unique
+  passwordHash String?
+  role         Role    @default(USER)
+
+  // Auth/security — previously entirely absent
+  emailVerified       DateTime?
+  sessionVersion      Int       @default(0) // bump to invalidate all issued JWTs
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  // Without this flag, there was no way to know if a user had ever
+  // completed initial routine/habit setup — "day one" was undefined.
+  onboardingCompletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  settings                UserSettings?
+  quotes                  Quote[]
+  categories              Category[]
+  routineTemplates        RoutineTemplate[]
+  routineBlocks           RoutineBlock[]
+  routineExceptions       RoutineException[]
+  routineLogs             RoutineLog[]
+  habits                  Habit[]
+  habitLogs               HabitLog[]
+  habitOverrides          HabitOverride[]
+  minimumDayTemplates     MinimumDayTemplate[]
+  goals                   Goal[]
+  dailyScores             DailyScore[]
+  dailyReflections        DailyReflection[]
+  sleepLogs               SleepLog[]
+  aiInsights              AIInsight[]
+  streak                  Streak?
+  streakMilestones        StreakMilestone[]
+  weeklyReviews           WeeklyReview[]
+  monthlyResets           MonthlyReset[]
+  auditLogs               AuditLog[]
+  notificationLogs        NotificationLog[]
+  pushSubscriptions       PushSubscription[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+
+  @@index([email])
+}
+
+model Quote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  author    String?
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublic, createdAt])
+}
+
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  timezone     String @default("Asia/Kolkata")
+  weekStartsOn Int    @default(1) // 1 = Monday, 0 = Sunday
+
+  targetBedtime    String?
+  targetWakeTime   String?
+  minSleepDuration Int?
+
+  weightNonNeg Float @default(1.0)
+  weightGrowth Float @default(0.5)
+  weightBonus  Float @default(0.25)
+
+  notificationsEnabled Boolean @default(true)
+  quietHoursStart      String?
+  quietHoursEnd        String?
+  weeklyReviewReminder Boolean @default(true)
+  monthlyResetReminder Boolean @default(true)
+
+  // Editable-editing-window, referenced by "retroactive edit" logic
+  retroactiveEditDays Int @default(3)
+
+  updatedAt DateTime @updatedAt
+}
+
+// Hashed, single-use, expiring tokens. Raw tokens are never stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ==========================================================================
+// CATEGORIES (configurable, shared across Habit + RoutineBlock)
+// ==========================================================================
+
+model Category {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  nameNormalized String // lowercase+trimmed, used for the uniqueness check below
+  color          String?
+
+  habits        Habit[]
+  routineBlocks RoutineBlock[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, nameNormalized]) // prevents "Health" and "health" both existing
+}
+
+// ==========================================================================
+// ROUTINE
+// ==========================================================================
+//
+// FIX: previously RoutineBlock had its own `dayType` AND could optionally
+// belong to a RoutineTemplate (which also had its own `dayType`) — two
+// disagreeing sources of truth for "what is today's schedule." Now every
+// block belongs to exactly one template, and `dayType` lives only on the
+// template. "What's scheduled today" is always resolved by one function:
+// find today's RoutineException (if any) -> else find the default template
+// for today's natural day type -> read its blocks. Never query blocks
+// directly by a dayType field.
+
+model RoutineTemplate {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  dayType   DayType @default(CUSTOM)
+  isDefault Boolean @default(false) // one default template per (userId, dayType)
+
+  blocks     RoutineBlock[]
+  exceptions RoutineException[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, dayType, isDefault])
+}
+
+model RoutineBlock {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  templateId String
+  template   RoutineTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  startTime   String // HH:mm
+  endTime     String // HH:mm
+  isOvernight Boolean @default(false)
+  title       String
+  sortOrder   Int     @default(0)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  trackCompletion Boolean      @default(false)
+  logs            RoutineLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([templateId])
+}
+
+model RoutineException {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date       String // YYYY-MM-DD
+  dayType    DayType
+  templateId String?
+  template   RoutineTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  note       String?
+
+  @@unique([userId, date])
+}
+
+model RoutineLog {
+  id             String       @id @default(cuid())
+  routineBlockId String
+  routineBlock   RoutineBlock @relation(fields: [routineBlockId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date            String // YYYY-MM-DD
+  status          RoutineLogStatus
+  durationMinutes Int?
+  note            String?
+
+  @@unique([userId, routineBlockId, date])
+  @@index([userId, date])
+}
+
+// ==========================================================================
+// HABITS
+// ==========================================================================
+
+model Habit {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name   String
+  tier   HabitTier   @default(GROWTH)
+  status HabitStatus @default(ACTIVE)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  frequencyType  HabitFrequencyType
+  frequencyValue String? // "1,3,5" for weekdays, "4" for Nx/week, "20" for Nx/month
+
+  startDate    DateTime  @default(now())
+  endDate      DateTime?
+  reminderTime String?
+
+  points Float? // overrides the tier default weight if set
+
+  logs                HabitLog[]
+  overrides           HabitOverride[]
+  minimumDayTemplates MinimumDayTemplateHabit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+}
+
+model HabitLog {
+  id      String @id @default(cuid())
+  habitId String
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date        String // YYYY-MM-DD
+  status      HabitLogStatus
+  completedAt DateTime?
+  note        String?
+
+  @@unique([userId, habitId, date])
+  @@index([userId, date])
+}
+
+model HabitOverride {
+  id      String @id @default(cuid())
+  habitId String
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      HabitOverrideType
+  startDate String
+  endDate   String?
+  reason    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([habitId, startDate])
+}
+
+// ==========================================================================
+// MINIMUM DAY
+// ==========================================================================
+//
+// FIX: habitIds was a loose JSON string array with no referential integrity —
+// deleting a habit left a dangling id nobody would notice. Now a real join
+// table, so deleting a habit cleanly removes it from every template.
+
+model MinimumDayTemplate {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  isDefault Boolean @default(false)
+
+  habits MinimumDayTemplateHabit[]
+
+  createdAt DateTime @default(now())
+}
+
+model MinimumDayTemplateHabit {
+  id         String             @id @default(cuid())
+  templateId String
+  template   MinimumDayTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  habitId    String
+  habit      Habit              @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, habitId])
+}
+
+// ==========================================================================
+// GOALS
+// ==========================================================================
+
+model Goal {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type     GoalType
+  priority GoalPriority @default(MEDIUM)
+  status   GoalStatus   @default(ACTIVE)
+
+  title        String
+  description  String?
+  targetValue  Float
+  currentValue Float   @default(0)
+  unit         String?
+
+  startDate DateTime
+  endDate   DateTime
+
+  carriedOverFrom String?
+
+  progressLogs GoalProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status, endDate])
+}
+
+model GoalProgress {
+  id     String @id @default(cuid())
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  value Float
+  date  DateTime @default(now())
+  note  String?
+
+  @@index([goalId, date])
+}
+
+// ==========================================================================
+// SLEEP
+// ==========================================================================
+
+model SleepLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date String // YYYY-MM-DD (the day you woke up)
+
+  targetBedtime  String?
+  targetWakeTime String?
+  actualBedtime  String?
+  actualWakeTime String?
+
+  actualDurationMinutes  Int?
+  availableWindowMinutes Int?
+  deficitMinutes         Int?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+// ==========================================================================
+// SCORING (pure computed snapshot — no user-entered text lives here anymore)
+// ==========================================================================
+//
+// FIX: reflection fields used to live directly on DailyScore, meaning editing
+// a personal reflection note and recomputing a score touched the same row.
+// Split apart so reflections can be added/edited freely without ever risking
+// an accidental score rewrite, and vice versa.
+
+model DailyScore {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date String // YYYY-MM-DD
+
+  isMinimumDay         Boolean @default(false)
+  minimumDayTemplateId String?
+  minimumDayReason     String?
+  isRestDay            Boolean @default(false)
+  restDayReason        String?
+  contextTags          String? // JSON array, e.g. ["Exam","Low Energy"]
+
+  // null = "nothing scheduled," never coerced to 0 (see scoring engine notes)
+  coreScore   Float?
+  growthScore Float?
+  bonusScore  Float?
+  totalScore  Float?
+
+  calculationData String? // JSON snapshot: totals/completed/weights used, for reproducibility
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model DailyReflection {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date String // YYYY-MM-DD
+
+  energy            Int? // 1-5
+  mood              Int? // 1-5
+  reflectionText    String?
+  biggestWin        String?
+  biggestDifficulty String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+// ==========================================================================
+// STREAKS
+// ==========================================================================
+
+model Streak {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  currentStreak    Int @default(0)
+  longestStreak    Int @default(0)
+  coreStreak       Int @default(0)
+  minimumDayStreak Int @default(0)
+
+  streakStartDate   String?
+  lastCompletedDate String?
+
+  updatedAt DateTime @updatedAt
+}
+
+model StreakMilestone {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  milestoneDays Int
+  streakType    String // "current" | "core"
+  reachedDate   String
+
+  @@unique([userId, milestoneDays, streakType, reachedDate])
+}
+
+// ==========================================================================
+// REVIEWS / RESETS
+// ==========================================================================
+
+model WeeklyReview {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  weekStart String
+  weekEnd   String
+
+  statsSnapshot String?
+  answers       String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, weekStart])
+}
+
+model MonthlyReset {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  month String // YYYY-MM
+
+  summarySnapshot     String?
+  habitsToKeep        String?
+  habitsToRemove      String?
+  habitsToModify      String?
+  goalsReviewNotes    String?
+  nextMonthPriorities String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, month])
+}
+
+// ==========================================================================
+// AI INSIGHTS
+// ==========================================================================
+
+model AIInsight {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  period    InsightPeriod
+  startDate String
+  endDate   String
+
+  dataSnapshot  String
+  model         String?
+  promptVersion String?
+
+  summary         String
+  wins            String?
+  patterns        String?
+  concerns        String?
+  suggestions     String?
+  nextPeriodFocus String?
+
+  generatedAt DateTime @default(now())
+
+  @@unique([userId, period, startDate, endDate])
+  @@index([userId, period])
+}
+
+// ==========================================================================
+// NOTIFICATIONS — previously only a settings page existed with nothing behind it
+// ==========================================================================
+
+model NotificationLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type            NotificationType
+  relatedEntityId String? // habitId, goalId, etc., depending on type
+  title           String
+  body            String?
+
+  scheduledFor DateTime
+  sentAt       DateTime?
+  status       NotificationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, status, scheduledFor])
+}
+
+model PushSubscription {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  endpoint String @unique
+  p256dh   String
+  auth     String
+
+  createdAt DateTime @default(now())
+}
+
+// ==========================================================================
+// AUDIT
+// ==========================================================================
+
+model AuditLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action     AuditAction
+  entityType String?
+  entityId   String?
+  metadata   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
