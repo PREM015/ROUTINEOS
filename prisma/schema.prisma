@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")  // Fixed: Added database URL
+ // url      = env("DATABASE_URL")  // Fixed: Added database URL
 }
 
 // ==========================================================================
@@ -1112,7 +1112,7 @@ model Goal {
   progressLogs GoalProgress[]
   tags         GoalTag[]
   timeEntries  TimeEntry[]
-
+tasks        Task[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1610,7 +1610,7 @@ model ProductivityPattern {
   
   discoveredAt DateTime @default(now())
   lastSeenAt   DateTime @default(now())
-  
+  createdAt DateTime @default(now())
   @@unique([userId, patternType, timeOfDay])
   @@index([userId, createdAt])
 }
@@ -2143,7 +2143,7 @@ model DataExport {
   expiresAt   DateTime?
 
   errorMessage String?
-
+createdAt DateTime @default(now())
   @@index([userId, status])
   @@index([expiresAt])
   @@index([userId, createdAt])

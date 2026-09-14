@@ -5,19 +5,53 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // url      = env("DATABASE_URL")  // Fixed: Added database URL
 }
 
 // ==========================================================================
 // ENUMS
 // ==========================================================================
 
+// Core User & Auth Enums
 enum Role {
   USER
   ADMIN
+  MODERATOR
 }
 
+enum Theme {
+  LIGHT
+  DARK
+  AUTO
+  CUSTOM
+}
+
+enum DeviceType {
+  WEB
+  MOBILE_IOS
+  MOBILE_ANDROID
+  TABLET
+  DESKTOP
+}
+
+// Subscription Enums
+enum SubscriptionPlan {
+  FREE
+  PRO
+  PREMIUM
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  UNPAID
+}
+
+// Routine & Schedule Enums
 enum DayType {
-  WEEKDAY
+  WORKKDAY
   WEEKEND
   HOLIDAY
   EXAM_DAY
@@ -25,10 +59,25 @@ enum DayType {
   CUSTOM
 }
 
+enum RoutineLogStatus {
+  COMPLETED
+  MISSED
+  PARTIAL
+  IN_PROGRESS
+}
+
+// Habit Enums
 enum HabitTier {
-  NON_NEGOTIABLE
   GROWTH
   BONUS
+  OPTIONAL
+  EXPERIMENTAL
+  UNDEFINED
+  ALTERNATIVE
+  SPECIAL
+  FLEXIBLE
+  JUST_FOR_FUN
+  LIFESTYLE
 }
 
 enum HabitStatus {
@@ -44,6 +93,7 @@ enum HabitLogStatus {
   MISSED
   SKIPPED
   NOT_APPLICABLE
+  PARTIAL
 }
 
 enum HabitOverrideType {
@@ -54,27 +104,36 @@ enum HabitOverrideType {
   RESCHEDULE
 }
 
-// Was a loose string before — an enum lets the DB reject invalid values
-// instead of every reader having to defensively re-validate a raw string.
 enum HabitFrequencyType {
   DAILY
   SPECIFIC_WEEKDAYS
   WEEKLY_TARGET
   MONTHLY_TARGET
+  YEARLY_TARGET
+  RANDOM
   ONE_TIME
+  CUSTOM
 }
 
+// Goal & Project Enums
 enum GoalType {
   DAILY
   WEEKLY
   MONTHLY
+  QUARTERLY
   YEARLY
+  CUSTOM
 }
 
 enum GoalPriority {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
+  PERSONAL
+  ACADEMIC
+  NON_PROFIT
+  PROFESSIONAL
 }
 
 enum GoalStatus {
@@ -82,49 +141,131 @@ enum GoalStatus {
   COMPLETED
   MISSED
   CARRIED_OVER
+  ON_HOLD
+
+  CANCELLED
 }
 
-enum RoutineLogStatus {
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
   COMPLETED
-  MISSED
-  PARTIAL
+  ARCHIVED
+  CANCELLED
 }
 
+// Task Enums
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  WAITING
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+  PERSONAL
+  ACADEMIC
+  NON_PROFIT
+  PROFESSIONAL
+}
+
+// Weather & Environment Enums
+enum WeatherCondition {
+  SUNNY
+  PARTLY_CLOUDY
+  CLOUDY
+  RAINY
+  STORMY
+  SNOWY
+  FOGGY
+  WINDY
+}
+
+// Achievement Enums
+enum AchievementType {
+  HABIT_STREAK
+  GOAL_COMPLETED
+  PERFECT_DAY
+  PERFECT_WEEK
+  PERFECT_MONTH
+  PERFECT_QUARTER
+  PERFECT_YEAR
+  EARLY_RISER
+  NIGHT_OWL
+  PRODUCTIVITY_MASTER
+  WELLNESS_WARRIOR
+  FOCUS_CHAMPION
+  CONSISTENCY_KING
+  MILESTONE
+  CUSTOM
+}
+
+// Insight & Analysis Enums
 enum InsightPeriod {
+  DAILY
   WEEKLY
   MONTHLY
+  QUARTERLY
+  YEARLY
 }
 
-enum AuditAction {
-  HABIT_ARCHIVED
-  HABIT_DELETED
-  HABIT_PAUSED
-  HABIT_RESUMED
-  GOAL_DELETED
-  ROUTINE_CHANGED
-  SCORING_SETTINGS_CHANGED
-  MINIMUM_DAY_ACTIVATED
-  REST_DAY_ACTIVATED
-  DATA_EXPORTED
-  DATA_IMPORTED
-  DATA_RESET
-  ACCOUNT_DELETED
-  // security events — previously nothing tracked these at all
-  LOGIN_FAILED
-  ACCOUNT_LOCKED
-  PASSWORD_RESET_REQUESTED
-  PASSWORD_RESET_COMPLETED
-  LOGOUT_ALL_SESSIONS
-  EMAIL_VERIFIED
-}
-
+// Notification Enums
 enum NotificationType {
+  // Existing
   HABIT_REMINDER
   ROUTINE_REMINDER
   GOAL_DEADLINE
+  GOAL_MILESTONE
+  TASK_DUE
+
   WEEKLY_REVIEW
+  MONTHLY_REVIEW
+  QUARTERLY_REVIEW
+  YEARLY_REVIEW
+
+  WEEKLY_RESET
   MONTHLY_RESET
+
   STREAK_MILESTONE
+  DAILY_SUMMARY
+
+  FOCUS_SESSION_START
+  BREAK_REMINDER
+
+  ACHIEVEMENT_UNLOCKED
+
+  TASK_OVERDUE
+  HABIT_MISSED
+  HABIT_STREAK_AT_RISK
+
+  GOAL_AT_RISK
+  GOAL_COMPLETED
+
+  ROUTINE_COMPLETED
+  ROUTINE_MISSED
+
+  DAILY_RESET
+
+  WEEKLY_SUMMARY
+  MONTHLY_SUMMARY
+
+  STREAK_BROKEN
+
+  FOCUS_SESSION_END
+
+  REMINDER_SNOOZED
+
+  MOTIVATIONAL
+  PRODUCTIVITY_INSIGHT
+
+  SYSTEM_UPDATE
 }
 
 enum NotificationStatus {
@@ -132,10 +273,106 @@ enum NotificationStatus {
   SENT
   FAILED
   DISMISSED
+  READ
+}
+
+// Template & Sharing Enums
+enum TemplateType {
+  ROUTINE
+  HABIT_SET
+  GOAL_SET
+  MORNING_ROUTINE
+  EVENING_ROUTINE
+  WORKOUT
+
+  STUDY_SESSION
+  CUSTOM
+}
+
+// Integration Enums
+enum IntegrationProvider {
+  GOOGLE_CALENDAR
+  NOTION
+  TODOIST
+  TRELLO
+  APPLE_HEALTH
+  GOOGLE_FIT
+  STRAVA
+  SPOTIFY
+  CUSTOM
+}
+
+// Export & Data Enums
+enum ExportFormat {
+  JSON
+  CSV
+  PDF
+  MARKDOWN
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+// Support & Feedback Enums
+enum FeedbackType {
+  BUG
+  FEATURE_REQUEST
+  IMPROVEMENT
+  QUESTION
+  GENERAL
+  COMPLAINT
+}
+
+enum FeedbackStatus {
+  NEW
+  IN_REVIEW
+  PLANNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  DUPLICATE
+  WONT_FIX
+}
+
+// Audit Enums
+enum AuditAction {
+  HABIT_CREATED
+  HABIT_UPDATED
+  HABIT_ARCHIVED
+  HABIT_DELETED
+  HABIT_PAUSED
+  HABIT_RESUMED
+  GOAL_CREATED
+  GOAL_UPDATED
+  GOAL_DELETED
+  GOAL_COMPLETED
+  ROUTINE_CREATED
+  ROUTINE_CHANGED
+  ROUTINE_DELETED
+  SCORING_SETTINGS_CHANGED
+  MINIMUM_DAY_ACTIVATED
+  REST_DAY_ACTIVATED
+  DATA_EXPORTED
+  DATA_IMPORTED
+  DATA_RESET
+  ACCOUNT_DELETED
+  LOGIN_FAILED
+  LOGIN_SUCCESS
+  ACCOUNT_LOCKED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  LOGOUT_ALL_SESSIONS
+  EMAIL_VERIFIED
+  SETTINGS_UPDATED
 }
 
 // ==========================================================================
-// CORE / AUTH
+// CORE USER & AUTHENTICATION MODELS
 // ==========================================================================
 
 model User {
@@ -145,59 +382,169 @@ model User {
   passwordHash String?
   role         Role    @default(USER)
 
-  // Auth/security — previously entirely absent
+  // Profile Information
+  avatarUrl   String?
+  bio         String? @db.Text
+  displayName String?
+  timezone    String  @default("UTC")
+
+  // User Preferences
+  preferredLanguage String  @default("en")
+  preferences       String? @db.Text // JSON with advanced preferences
+  socialSettings    String? @db.Text // JSON with social/privacy settings
+
+  // Authentication & Security
   emailVerified       DateTime?
-  sessionVersion      Int       @default(0) // bump to invalidate all issued JWTs
+  sessionVersion      Int       @default(0)
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastActivityAt      DateTime?
 
-  // Without this flag, there was no way to know if a user had ever
-  // completed initial routine/habit setup — "day one" was undefined.
+  // Account Status
   onboardingCompletedAt DateTime?
+  isActive              Boolean   @default(true)
+  isDeleted             Boolean   @default(false)
+  deletedAt             DateTime?
+  deleteReason          String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  settings                UserSettings?
-  quotes                  Quote[]
-  categories              Category[]
-  routineTemplates        RoutineTemplate[]
-  routineBlocks           RoutineBlock[]
-  routineExceptions       RoutineException[]
-  routineLogs             RoutineLog[]
-  habits                  Habit[]
-  habitLogs               HabitLog[]
-  habitOverrides          HabitOverride[]
-  minimumDayTemplates     MinimumDayTemplate[]
-  goals                   Goal[]
-  dailyScores             DailyScore[]
-  dailyReflections        DailyReflection[]
-  sleepLogs               SleepLog[]
-  aiInsights              AIInsight[]
-  streak                  Streak?
-  streakMilestones        StreakMilestone[]
-  weeklyReviews           WeeklyReview[]
-  monthlyResets           MonthlyReset[]
+  // Core System Relations
+  settings     UserSettings?
+  subscription UserSubscription?
+
+  // Content & Organization
+  quotes     Quote[]
+  categories Category[]
+  tags       Tag[]
+
+  // Routine & Schedule
+  routineTemplates  RoutineTemplate[]
+  routineBlocks     RoutineBlock[]
+  routineExceptions RoutineException[]
+  routineLogs       RoutineLog[]
+
+  // Habits & Tracking
+  habits              Habit[]
+  habitLogs           HabitLog[]
+  habitOverrides      HabitOverride[]
+  minimumDayTemplates MinimumDayTemplate[]
+
+  // Goals & Projects
+  goals    Goal[]
+  projects Project[]
+  tasks    Task[]
+
+  // Wellness & Health
+  sleepLogs        SleepLog[]
+  moodLogs         MoodLog[]
+  energyLogs       EnergyLog[]
+  weatherLogs      WeatherLog[]
+  healthMetrics    HealthMetric[]
+  nutritionEntries NutritionEntry[]
+
+  // Journaling & Reflection
+  journalEntries   JournalEntry[]
+  dailyReflections DailyReflection[]
+
+  // Productivity & Focus
+  focusSessions        FocusSession[]
+  breaks               Break[]
+  timeEntries          TimeEntry[]
+  productivityPatterns ProductivityPattern[]
+
+  // Scoring & Analytics
+  dailyScores DailyScore[]
+  aiInsights  AIInsight[]
+
+  // Achievements & Streaks
+  streak           Streak?
+  streakMilestones StreakMilestone[]
+  achievements     Achievement[]
+
+  // Reviews & Planning
+  weeklyReviews WeeklyReview[]
+  monthlyResets MonthlyReset[]
+
+  // Social & Community
+  challenges              Challenge[]
+  challengeParticipations ChallengeParticipant[]
+  connections             UserConnection[]       @relation("UserFollows")
+  followers               UserConnection[]       @relation("UserFollowing")
+
+  // Automation & Rules
+  automationRules AutomationRule[]
+  locations       Location[]
+  calendarSyncs   CalendarSync[]
+
+  // System & Technical
   auditLogs               AuditLog[]
+  activityLogs            ActivityLog[]
   notificationLogs        NotificationLog[]
   pushSubscriptions       PushSubscription[]
   passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  templates               Template[]
+  attachments             Attachment[]
+  integrations            Integration[]
+  deviceSessions          DeviceSession[]
+  dataExports             DataExport[]
+  feedback                Feedback[]
+  apiKeys                 APIKey[]
 
   @@index([email])
+  @@index([isActive, isDeleted])
+  @@index([lastActivityAt])
+  @@index([role])
+  @@index([createdAt])
 }
 
-model Quote {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  text      String
-  author    String?
-  isPublic  Boolean  @default(false)
+model UserSubscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan   SubscriptionPlan
+  status SubscriptionStatus
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean  @default(false)
+
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+model Quote {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  text      String  @db.Text
+  author    String?
+  source    String?
+  sourceUrl String?
+
+  isPublic   Boolean @default(false)
+  isFavorite Boolean @default(false)
+
+  tags       String? // JSON array
+  usageCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isFavorite])
   @@index([isPublic, createdAt])
+  @@index([userId, createdAt])
 }
 
 model UserSettings {
@@ -205,56 +552,106 @@ model UserSettings {
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Localization
   timezone     String @default("Asia/Kolkata")
-  weekStartsOn Int    @default(1) // 1 = Monday, 0 = Sunday
+  language     String @default("en")
+  dateFormat   String @default("YYYY-MM-DD")
+  timeFormat   String @default("24h") // 12h or 24h
+  weekStartsOn Int    @default(1) // 0-6, 0=Sunday, 1=Monday
 
-  targetBedtime    String?
-  targetWakeTime   String?
-  minSleepDuration Int?
+  // UI/UX preferences
+  theme              Theme   @default(LIGHT)
+  customThemeColors  String? // JSON
+  soundEnabled       Boolean @default(true)
+  animationsEnabled  Boolean @default(true)
+  compactMode        Boolean @default(false)
+  defaultView        String  @default("dashboard")
+  showCompletedTasks Boolean @default(false)
 
+  // Sleep
+  targetBedtime     String?
+  targetWakeTime    String?
+  minSleepDuration  Int?
+  sleepReminder     Boolean @default(false)
+  sleepReminderTime String?
+
+  // Scoring weights
   weightNonNeg Float @default(1.0)
   weightGrowth Float @default(0.5)
   weightBonus  Float @default(0.25)
 
+  // Notifications
   notificationsEnabled Boolean @default(true)
+  emailNotifications   Boolean @default(true)
+  pushNotifications    Boolean @default(true)
+  smsNotifications     Boolean @default(false)
   quietHoursStart      String?
   quietHoursEnd        String?
+
+  // Reminders
+  dailyReminder        Boolean @default(true)
+  dailyReminderTime    String?
+  habitReminders       Boolean @default(true)
+  goalReminders        Boolean @default(true)
   weeklyReviewReminder Boolean @default(true)
   monthlyResetReminder Boolean @default(true)
+  focusReminders       Boolean @default(true)
+  breakReminders       Boolean @default(true)
 
-  // Editable-editing-window, referenced by "retroactive edit" logic
-  retroactiveEditDays Int @default(3)
+  // Data
+  retroactiveEditDays      Int @default(3)
+  autoArchiveCompletedDays Int @default(90)
+  dataRetentionDays        Int @default(365)
 
+  // Privacy
+  profilePublic Boolean @default(false)
+  shareStats    Boolean @default(false)
+
+  // Advanced
+  aiInsightsEnabled    Boolean @default(true)
+  experimentalFeatures Boolean @default(false)
+
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Hashed, single-use, expiring tokens. Raw tokens are never stored.
 model PasswordResetToken {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime  @default(now())
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
+  @@index([tokenHash])
 }
 
 model EmailVerificationToken {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime  @default(now())
+
+  createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
+  @@index([tokenHash])
 }
 
 // ==========================================================================
-// CATEGORIES (configurable, shared across Habit + RoutineBlock)
+// CATEGORIES & TAGS
 // ==========================================================================
 
 model Category {
@@ -263,38 +660,112 @@ model Category {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   name           String
-  nameNormalized String // lowercase+trimmed, used for the uniqueness check below
+  nameNormalized String
+  description    String?
   color          String?
+  icon           String?
+
+  sortOrder  Int     @default(0)
+  isArchived Boolean @default(false)
 
   habits        Habit[]
   routineBlocks RoutineBlock[]
+  focusSessions FocusSession[]
+  projects      Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, nameNormalized])
+  @@index([userId, isArchived])
+  @@index([userId, createdAt])
+  @@index([sortOrder])
+}
+
+model Tag {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name  String
+  color String?
+  icon  String?
+
+  habits         HabitTag[]
+  goals          GoalTag[]
+  journalEntries JournalEntryTag[]
+  tasks          TaskTag[]
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, nameNormalized]) // prevents "Health" and "health" both existing
+  @@unique([userId, name])
+  @@index([userId, createdAt])
+}
+
+model HabitTag {
+  id      String @id @default(cuid())
+  habitId String
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  tagId   String
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, tagId])
+  @@index([tagId])
+}
+
+model GoalTag {
+  id     String @id @default(cuid())
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, tagId])
+  @@index([tagId])
+}
+
+model TaskTag {
+  id     String @id @default(cuid())
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, tagId])
+  @@index([tagId])
+}
+
+model JournalEntryTag {
+  id      String       @id @default(cuid())
+  entryId String
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  tagId   String
+  tag     Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, tagId])
+  @@index([tagId])
 }
 
 // ==========================================================================
-// ROUTINE
+// ROUTINE MANAGEMENT
 // ==========================================================================
-//
-// FIX: previously RoutineBlock had its own `dayType` AND could optionally
-// belong to a RoutineTemplate (which also had its own `dayType`) — two
-// disagreeing sources of truth for "what is today's schedule." Now every
-// block belongs to exactly one template, and `dayType` lives only on the
-// template. "What's scheduled today" is always resolved by one function:
-// find today's RoutineException (if any) -> else find the default template
-// for today's natural day type -> read its blocks. Never query blocks
-// directly by a dayType field.
 
 model RoutineTemplate {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name      String
-  dayType   DayType @default(CUSTOM)
-  isDefault Boolean @default(false) // one default template per (userId, dayType)
+  name        String
+  description String?
+  dayType     DayType @default(CUSTOM)
+  isDefault   Boolean @default(false)
+
+  color      String?
+  icon       String?
+  isActive   Boolean   @default(true)
+  archivedAt DateTime?
+
+  estimatedDuration Int? // total minutes
 
   blocks     RoutineBlock[]
   exceptions RoutineException[]
@@ -303,6 +774,8 @@ model RoutineTemplate {
   updatedAt DateTime @updatedAt
 
   @@index([userId, dayType, isDefault])
+  @@index([userId, isActive])
+  @@index([userId, createdAt])
 }
 
 model RoutineBlock {
@@ -316,19 +789,34 @@ model RoutineBlock {
   startTime   String // HH:mm
   endTime     String // HH:mm
   isOvernight Boolean @default(false)
+
   title       String
-  sortOrder   Int     @default(0)
+  description String? @db.Text
+  notes       String? @db.Text
+
+  sortOrder Int @default(0)
+
+  color String?
+  icon  String?
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  trackCompletion Boolean      @default(false)
-  logs            RoutineLog[]
+  // Energy tracking
+  energyLevel String? // HIGH, MEDIUM, LOW
+
+  // Completion tracking
+  trackCompletion Boolean @default(false)
+  isRecurring     Boolean @default(true)
+
+  logs RoutineLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([templateId])
+  @@index([templateId, sortOrder])
+  @@index([userId, trackCompletion])
+  @@index([userId, createdAt])
 }
 
 model RoutineException {
@@ -336,13 +824,19 @@ model RoutineException {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date       String // YYYY-MM-DD
-  dayType    DayType
+  date    String // YYYY-MM-DD
+  dayType DayType
+
   templateId String?
   template   RoutineTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  note       String?
+
+  note   String? @db.Text
+  reason String?
+
+  createdAt DateTime @default(now())
 
   @@unique([userId, date])
+  @@index([date, userId])
 }
 
 model RoutineLog {
@@ -352,17 +846,32 @@ model RoutineLog {
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date            String // YYYY-MM-DD
-  status          RoutineLogStatus
+  date   String // YYYY-MM-DD
+  status RoutineLogStatus
+
+  // Actual times
+  actualStartTime String? // HH:mm
+  actualEndTime   String? // HH:mm
   durationMinutes Int?
-  note            String?
+
+  // Ratings
+  focusRating        Int? // 1-5
+  productivityRating Int? // 1-5
+  energyLevel        Int? // 1-5
+
+  note String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, routineBlockId, date])
   @@index([userId, date])
+  @@index([date, userId])
+  @@index([status])
 }
 
 // ==========================================================================
-// HABITS
+// HABIT MANAGEMENT
 // ==========================================================================
 
 model Habit {
@@ -370,30 +879,63 @@ model Habit {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name   String
+  name        String
+  description String? @db.Text
+
   tier   HabitTier   @default(GROWTH)
   status HabitStatus @default(ACTIVE)
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  // Visual
+  color String?
+  icon  String?
+
+  // Frequency
   frequencyType  HabitFrequencyType
   frequencyValue String? // "1,3,5" for weekdays, "4" for Nx/week, "20" for Nx/month
+  targetCount    Int? // for countable habits (e.g., "drink 8 glasses of water")
 
-  startDate    DateTime  @default(now())
-  endDate      DateTime?
-  reminderTime String?
+  // Dates
+  startDate  DateTime  @default(now())
+  endDate    DateTime?
+  archivedAt DateTime?
 
-  points Float? // overrides the tier default weight if set
+  // Reminders
+  reminderTime    String?
+  reminderEnabled Boolean @default(false)
+
+  // Scoring
+  points Float? // overrides tier default
+
+  // Tracking
+  estimatedDuration Int? // minutes
+  difficulty        Int? // 1-5
+
+  // Visibility
+  isPublic Boolean @default(false)
+
+  // Derived/cached fields for performance
+  streakCount       Int     @default(0)
+  longestStreak     Int     @default(0)
+  lastCompletedDate String?
+  completionRate    Float? // cached percentage
 
   logs                HabitLog[]
   overrides           HabitOverride[]
   minimumDayTemplates MinimumDayTemplateHabit[]
+  tags                HabitTag[]
+  timeEntries         TimeEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, status])
+  @@index([userId, isPublic])
+  @@index([categoryId])
+  @@index([userId, createdAt])
+  @@index([status, tier])
 }
 
 model HabitLog {
@@ -403,13 +945,29 @@ model HabitLog {
   userId  String
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date        String // YYYY-MM-DD
-  status      HabitLogStatus
-  completedAt DateTime?
-  note        String?
+  date   String // YYYY-MM-DD
+  status HabitLogStatus
+
+  // Completion details
+  completedAt     DateTime?
+  durationMinutes Int?
+  quantity        Int? // for countable habits
+
+  // Subjective tracking
+  difficulty  Int? // 1-5, how hard was it?
+  energyLevel Int? // 1-5
+  moodBefore  Int? // 1-5
+  moodAfter   Int? // 1-5
+
+  note String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, habitId, date])
   @@index([userId, date])
+  @@index([date, userId])
+  @@index([habitId, status])
 }
 
 model HabitOverride {
@@ -422,32 +980,36 @@ model HabitOverride {
   type      HabitOverrideType
   startDate String
   endDate   String?
-  reason    String?
+  reason    String?           @db.Text
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([habitId, startDate])
+  @@index([userId, type])
+  @@index([userId, createdAt])
 }
 
 // ==========================================================================
-// MINIMUM DAY
+// MINIMUM DAY TEMPLATES
 // ==========================================================================
-//
-// FIX: habitIds was a loose JSON string array with no referential integrity —
-// deleting a habit left a dangling id nobody would notice. Now a real join
-// table, so deleting a habit cleanly removes it from every template.
 
 model MinimumDayTemplate {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name      String
-  isDefault Boolean @default(false)
+  name        String
+  description String?
+  isDefault   Boolean @default(false)
 
   habits MinimumDayTemplateHabit[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isDefault])
+  @@index([userId, createdAt])
 }
 
 model MinimumDayTemplateHabit {
@@ -457,24 +1019,67 @@ model MinimumDayTemplateHabit {
   habitId    String
   habit      Habit              @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
+  sortOrder Int @default(0)
+
   @@unique([templateId, habitId])
+  @@index([templateId, sortOrder])
 }
 
 // ==========================================================================
-// GOALS
+// PROJECTS & GOALS
 // ==========================================================================
+
+model Project {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String? @db.Text
+
+  status   ProjectStatus @default(ACTIVE)
+  priority GoalPriority  @default(MEDIUM)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  color String?
+  icon  String?
+
+  startDate   DateTime?
+  endDate     DateTime?
+  completedAt DateTime?
+  archivedAt  DateTime?
+
+  progress Float @default(0) // 0-100
+
+  goals       Goal[]
+  tasks       Task[]
+  timeEntries TimeEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, priority])
+  @@index([userId, createdAt])
+}
 
 model Goal {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
   type     GoalType
   priority GoalPriority @default(MEDIUM)
   status   GoalStatus   @default(ACTIVE)
 
-  title        String
-  description  String?
+  title       String
+  description String? @db.Text
+
   targetValue  Float
   currentValue Float   @default(0)
   unit         String?
@@ -482,14 +1087,53 @@ model Goal {
   startDate DateTime
   endDate   DateTime
 
+  completedAt DateTime?
+  archivedAt  DateTime?
+
+  // For sub-goals
+  parentGoalId String?
+  parentGoal   Goal?   @relation("GoalHierarchy", fields: [parentGoalId], references: [id], onDelete: SetNull)
+  subGoals     Goal[]  @relation("GoalHierarchy")
+
   carriedOverFrom String?
 
+  // Visibility
+  isPublic Boolean @default(false)
+
+  milestones   Milestone[]
   progressLogs GoalProgress[]
+  tags         GoalTag[]
+  timeEntries  TimeEntry[]
+  tasks        Task[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([userId, status, endDate])
+  @@index([projectId])
+  @@index([status, priority])
+  @@index([userId, createdAt])
+}
+
+model Milestone {
+  id     String @id @default(cuid())
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String? @db.Text
+  targetValue Float?
+
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  sortOrder Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([userId, status, endDate])
+  @@index([goalId, sortOrder])
+  @@index([dueDate])
+  @@index([goalId, createdAt])
 }
 
 model GoalProgress {
@@ -499,13 +1143,77 @@ model GoalProgress {
 
   value Float
   date  DateTime @default(now())
-  note  String?
+  note  String?  @db.Text
+
+  createdAt DateTime @default(now())
 
   @@index([goalId, date])
 }
 
 // ==========================================================================
-// SLEEP
+// TASK MANAGEMENT
+// ==========================================================================
+
+model Task {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String? @db.Text
+
+  status   TaskStatus   @default(TODO)
+  priority TaskPriority @default(MEDIUM)
+
+  // Relations
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  goalId    String?
+  goal      Goal?    @relation(fields: [goalId], references: [id])
+
+  parentTaskId String?
+  parentTask   Task?   @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
+  subtasks     Task[]  @relation("TaskSubtasks")
+
+  // Scheduling
+  dueDate          DateTime?
+  scheduledFor     DateTime?
+  estimatedMinutes Int?
+  actualMinutes    Int?
+
+  // Eisenhower Matrix
+  isUrgent    Boolean @default(false)
+  isImportant Boolean @default(false)
+
+  // Dependencies
+  dependsOn TaskDependency[] @relation("TaskDependencies")
+  blocks    TaskDependency[] @relation("TaskBlocks")
+
+  completedAt DateTime?
+  tags        TaskTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, priority])
+  @@index([dueDate])
+  @@index([scheduledFor])
+  @@index([userId, createdAt])
+}
+
+model TaskDependency {
+  id          String @id @default(cuid())
+  taskId      String
+  task        Task   @relation("TaskDependencies", fields: [taskId], references: [id])
+  dependsOnId String
+  dependsOn   Task   @relation("TaskBlocks", fields: [dependsOnId], references: [id])
+
+  @@unique([taskId, dependsOnId])
+}
+
+// ==========================================================================
+// SLEEP & WELLNESS
 // ==========================================================================
 
 model SleepLog {
@@ -515,28 +1223,163 @@ model SleepLog {
 
   date String // YYYY-MM-DD (the day you woke up)
 
+  // Planned
   targetBedtime  String?
   targetWakeTime String?
+
+  // Actual
   actualBedtime  String?
   actualWakeTime String?
 
+  // Duration
   actualDurationMinutes  Int?
   availableWindowMinutes Int?
   deficitMinutes         Int?
 
+  // Quality
+  quality     Int? // 1-5
+  wakeUpCount Int? // number of interruptions
+  feltRested  Boolean?
+
+  // Mood
+  moodOnWaking   Int? // 1-5
+  energyOnWaking Int? // 1-5
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@index([date, userId])
+}
+
+model MoodLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  timestamp DateTime @default(now())
+
+  // Core metrics
+  mood    Int // 1-5
+  energy  Int? // 1-5
+  stress  Int? // 1-5
+  anxiety Int? // 1-5
+  focus   Int? // 1-5
+
+  // Context
+  triggers   String? // JSON array
+  activities String? // JSON array
+  location   String?
+  weather    String?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([mood])
+  @@index([userId, createdAt])
+}
+
+model EnergyLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  timestamp DateTime @default(now())
+
+  energyLevel Int // 1-5
+
+  // Context
+  activity String?
+  location String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([userId, createdAt])
+}
+
+model WeatherLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date String // YYYY-MM-DD
+
+  condition   WeatherCondition
+  temperature Float? // Celsius
+  humidity    Int? // 0-100
+
+  notes String?
+
   createdAt DateTime @default(now())
 
   @@unique([userId, date])
+  @@index([date, userId])
+}
+
+model HealthMetric {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date       String // YYYY-MM-DD
+  metricType String // "WEIGHT", "BODY_FAT", "STEPS", "HEART_RATE", "BLOOD_PRESSURE"
+
+  value Float
+  unit  String
+
+  // Context
+  timeOfDay String? // "morning", "evening"
+  notes     String?
+
+  // Data source
+  source   String? // "MANUAL", "APPLE_HEALTH", "GOOGLE_FIT", "FITBIT"
+  sourceId String? // external ID
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date, metricType, timeOfDay])
+  @@index([userId, metricType, date])
+  @@index([date, userId])
+}
+
+model NutritionEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date     String // YYYY-MM-DD
+  mealType String // "BREAKFAST", "LUNCH", "DINNER", "SNACK"
+
+  foodName String
+  quantity Float
+  unit     String // "grams", "cups", "pieces"
+
+  // Nutrition facts
+  calories Float?
+  protein  Float?
+  carbs    Float?
+  fat      Float?
+  fiber    Float?
+  sugar    Float?
+  sodium   Float?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+  @@index([date, userId])
 }
 
 // ==========================================================================
-// SCORING (pure computed snapshot — no user-entered text lives here anymore)
+// SCORING & REFLECTION
 // ==========================================================================
-//
-// FIX: reflection fields used to live directly on DailyScore, meaning editing
-// a personal reflection note and recomputing a score touched the same row.
-// Split apart so reflections can be added/edited freely without ever risking
-// an accidental score rewrite, and vice versa.
 
 model DailyScore {
   id     String @id @default(cuid())
@@ -545,26 +1388,36 @@ model DailyScore {
 
   date String // YYYY-MM-DD
 
+  // Context
   isMinimumDay         Boolean @default(false)
   minimumDayTemplateId String?
-  minimumDayReason     String?
+  minimumDayReason     String? @db.Text
   isRestDay            Boolean @default(false)
-  restDayReason        String?
-  contextTags          String? // JSON array, e.g. ["Exam","Low Energy"]
+  restDayReason        String? @db.Text
+  contextTags          String? // JSON array
 
-  // null = "nothing scheduled," never coerced to 0 (see scoring engine notes)
+  // Scores
   coreScore   Float?
   growthScore Float?
   bonusScore  Float?
   totalScore  Float?
 
-  calculationData String? // JSON snapshot: totals/completed/weights used, for reproducibility
+  // Derived metrics
+  habitCompletionRate   Float? // 0-100
+  routineCompletionRate Float? // 0-100
+  sleepScore            Float? // 0-100
+  overallGrade          String? // A, B, C, D, F
+
+  calculationData String? @db.Text // JSON snapshot
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])
+  @@index([date, userId])
+  @@index([isMinimumDay])
+  @@index([overallGrade])
 }
 
 model DailyReflection {
@@ -574,20 +1427,325 @@ model DailyReflection {
 
   date String // YYYY-MM-DD
 
-  energy            Int? // 1-5
-  mood              Int? // 1-5
-  reflectionText    String?
-  biggestWin        String?
-  biggestDifficulty String?
+  // Ratings
+  energy Int? // 1-5
+  mood   Int? // 1-5
+  stress Int? // 1-5
+  focus  Int? // 1-5
+
+  // Reflection
+  reflectionText    String? @db.Text
+  biggestWin        String? @db.Text
+  biggestDifficulty String? @db.Text
+  lessonsLearned    String? @db.Text
+  gratitude         String? // JSON array
+  improvements      String? @db.Text
+
+  // Tomorrow planning
+  tomorrowFocus      String? @db.Text
+  tomorrowPriorities String? // JSON array
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, date])
+  @@index([date, userId])
+}
+
+model JournalEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date    String // YYYY-MM-DD
+  title   String?
+  content String  @db.Text
+
+  // Metadata
+  mood      Int? // 1-5
+  energy    Int? // 1-5
+  gratitude String? // JSON array
+
+  isFavorite Boolean @default(false)
+  isArchived Boolean @default(false)
+
+  tags JournalEntryTag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, isFavorite])
+  @@index([isArchived])
+  @@index([date, userId])
 }
 
 // ==========================================================================
-// STREAKS
+// FOCUS & PRODUCTIVITY
+// ==========================================================================
+
+model FocusSession {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String? @db.Text
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  // Duration
+  plannedDuration Int // minutes
+  actualDuration  Int? // minutes
+
+  // Times
+  startedAt   DateTime
+  completedAt DateTime?
+  pausedAt    DateTime?
+
+  // Ratings
+  focusRating        Int? // 1-5
+  productivityRating Int? // 1-5
+  difficultyRating   Int? // 1-5
+  energyBefore       Int? // 1-5
+  energyAfter        Int? // 1-5
+
+  // Context
+  distractions String? // JSON array
+  techniques   String? // JSON array (e.g., Pomodoro, Deep Work)
+
+  notes String? @db.Text
+
+  breaks Break[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, startedAt])
+  @@index([categoryId])
+  @@index([userId, createdAt])
+}
+
+model Break {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  focusSessionId String?
+  focusSession   FocusSession? @relation(fields: [focusSessionId], references: [id], onDelete: SetNull)
+
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationMinutes Int?
+
+  breakType String? // SHORT, LONG, MEAL, WALK, etc.
+  quality   Int? // 1-5
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, startedAt])
+  @@index([focusSessionId])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// TIME TRACKING & PRODUCTIVITY PATTERNS
+// ==========================================================================
+
+model TimeEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  description String
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int? // auto-calculated minutes
+
+  // Relations
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  habitId   String?
+  habit     Habit?   @relation(fields: [habitId], references: [id])
+  goalId    String?
+  goal      Goal?    @relation(fields: [goalId], references: [id])
+
+  // Categorization
+  billable Boolean @default(false)
+  rate     Float?
+
+  // Metadata
+  tags        String? // JSON array
+  isAutomatic Boolean @default(false) // AI-detected vs manual
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, startTime])
+  @@index([projectId, startTime])
+  @@index([userId, createdAt])
+}
+
+model ProductivityPattern {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  patternType String // "PEAK_HOURS", "LOW_ENERGY", "CONTEXT_SWITCH"
+  timeOfDay   String // "09:00-11:00"
+  dayOfWeek   String // JSON array [1,2,3,4,5] for weekdays
+  confidence  Float // 0-1, how confident the AI is
+
+  metrics String @db.Text // JSON with detailed metrics
+
+  discoveredAt DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, patternType, timeOfDay])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// SOCIAL & COMMUNITY FEATURES
+// ==========================================================================
+
+model UserConnection {
+  id          String @id @default(cuid())
+  followerId  String
+  follower    User   @relation("UserFollows", fields: [followerId], references: [id])
+  followingId String
+  following   User   @relation("UserFollowing", fields: [followingId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Challenge {
+  id        String @id @default(cuid())
+  creatorId String
+  creator   User   @relation(fields: [creatorId], references: [id])
+
+  title       String
+  description String @db.Text
+
+  startDate DateTime
+  endDate   DateTime
+
+  isPublic   Boolean @default(true)
+  maxMembers Int?
+
+  rules   String  @db.Text // JSON with challenge rules
+  rewards String? // JSON with reward structure
+
+  members ChallengeParticipant[]
+
+  createdAt DateTime @default(now())
+
+  @@index([startDate, endDate])
+  @@index([isPublic])
+  @@index([creatorId, createdAt])
+}
+
+model ChallengeParticipant {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  joinedAt DateTime @default(now())
+  progress Float    @default(0) // 0-100
+  rank     Int?
+
+  @@unique([challengeId, userId])
+  @@index([challengeId, rank])
+}
+
+// ==========================================================================
+// AUTOMATION & SMART RULES
+// ==========================================================================
+
+model AutomationRule {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  isActive Boolean @default(true)
+
+  // Trigger conditions (JSON)
+  triggerType   String // "HABIT_COMPLETED", "TIME_REACHED", "LOCATION_ENTERED"
+  triggerConfig String @db.Text // JSON with trigger parameters
+
+  // Actions (JSON)
+  actionType   String // "CREATE_TASK", "SEND_NOTIFICATION", "UPDATE_GOAL"
+  actionConfig String @db.Text // JSON with action parameters
+
+  // Execution tracking
+  timesTriggered Int       @default(0)
+  lastTriggered  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// LOCATION & CALENDAR INTEGRATION
+// ==========================================================================
+
+model Location {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name    String // "Home", "Office", "Gym"
+  address String?
+  lat     Float?
+  lng     Float?
+  radius  Int? // meters
+
+  // Associated automations
+  automations String? // JSON array of automation IDs
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model CalendarSync {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider     String // "GOOGLE", "OUTLOOK", "APPLE"
+  calendarId   String
+  calendarName String
+
+  syncEnabled   Boolean @default(true)
+  syncDirection String  @default("BOTH") // "READ", "WRITE", "BOTH"
+
+  lastSyncedAt DateTime?
+  syncError    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider, calendarId])
+  @@index([provider, syncEnabled])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// STREAKS & ACHIEVEMENTS
 // ==========================================================================
 
 model Streak {
@@ -598,10 +1756,16 @@ model Streak {
   currentStreak    Int @default(0)
   longestStreak    Int @default(0)
   coreStreak       Int @default(0)
+  growthStreak     Int @default(0)
   minimumDayStreak Int @default(0)
 
   streakStartDate   String?
   lastCompletedDate String?
+
+  // Metadata
+  totalCompletedDays Int @default(0)
+  totalMinimumDays   Int @default(0)
+  totalRestDays      Int @default(0)
 
   updatedAt DateTime @updatedAt
 }
@@ -612,14 +1776,47 @@ model StreakMilestone {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   milestoneDays Int
-  streakType    String // "current" | "core"
+  streakType    String // "current" | "core" | "growth"
   reachedDate   String
 
+  celebrated Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
   @@unique([userId, milestoneDays, streakType, reachedDate])
+  @@index([userId, celebrated])
+  @@index([userId, createdAt])
+}
+
+model Achievement {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        AchievementType
+  title       String
+  description String?         @db.Text
+
+  icon  String?
+  color String?
+
+  level Int @default(1) // for tiered achievements
+
+  unlockedAt DateTime @default(now())
+  celebrated Boolean  @default(false)
+  isPublic   Boolean  @default(false)
+
+  metadata String? // JSON with achievement details
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, unlockedAt])
+  @@index([type, level])
+  @@index([userId, createdAt])
 }
 
 // ==========================================================================
-// REVIEWS / RESETS
+// REVIEWS & RESETS
 // ==========================================================================
 
 model WeeklyReview {
@@ -630,12 +1827,27 @@ model WeeklyReview {
   weekStart String
   weekEnd   String
 
-  statsSnapshot String?
-  answers       String
+  // Stats
+  statsSnapshot String? @db.Text // JSON
+
+  // Reflection
+  answers        String  @db.Text // JSON with review questions/answers
+  biggestWins    String? @db.Text
+  challenges     String? @db.Text
+  lessonsLearned String? @db.Text
+  nextWeekFocus  String? @db.Text
+  nextWeekGoals  String? // JSON array
+
+  // Ratings
+  overallSatisfaction Int? // 1-5
+  energyLevel         Int? // 1-5
+  stressLevel         Int? // 1-5
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, weekStart])
+  @@index([userId, createdAt])
 }
 
 model MonthlyReset {
@@ -645,16 +1857,37 @@ model MonthlyReset {
 
   month String // YYYY-MM
 
-  summarySnapshot     String?
-  habitsToKeep        String?
-  habitsToRemove      String?
-  habitsToModify      String?
-  goalsReviewNotes    String?
-  nextMonthPriorities String?
+  // Summary
+  summarySnapshot String? @db.Text // JSON
+  monthHighlights String? @db.Text
+  monthChallenges String? @db.Text
+
+  // Habit review
+  habitsToKeep   String? @db.Text // JSON
+  habitsToRemove String? @db.Text // JSON
+  habitsToModify String? @db.Text // JSON
+  newHabitsToAdd String? @db.Text // JSON
+
+  // Goal review
+  goalsCompleted   String? @db.Text // JSON
+  goalsInProgress  String? @db.Text // JSON
+  goalsReviewNotes String? @db.Text
+
+  // Next month
+  nextMonthPriorities String? @db.Text // JSON
+  nextMonthGoals      String? @db.Text // JSON
+  nextMonthFocus      String? @db.Text
+
+  // Ratings
+  overallSatisfaction Int? // 1-5
+  personalGrowth      Int? // 1-5
+  goalProgress        Int? // 1-5
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, month])
+  @@index([userId, createdAt])
 }
 
 // ==========================================================================
@@ -670,25 +1903,95 @@ model AIInsight {
   startDate String
   endDate   String
 
-  dataSnapshot  String
+  dataSnapshot  String  @db.Text // JSON
   model         String?
   promptVersion String?
+  tokensUsed    Int?
 
-  summary         String
-  wins            String?
-  patterns        String?
-  concerns        String?
-  suggestions     String?
-  nextPeriodFocus String?
+  // Insights
+  summary         String  @db.Text
+  wins            String? @db.Text
+  patterns        String? @db.Text
+  concerns        String? @db.Text
+  suggestions     String? @db.Text
+  nextPeriodFocus String? @db.Text
+  predictions     String? @db.Text // JSON
+
+  // Feedback
+  wasHelpful   Boolean?
+  userRating   Int? // 1-5
+  userFeedback String?
 
   generatedAt DateTime @default(now())
 
   @@unique([userId, period, startDate, endDate])
   @@index([userId, period])
+  @@index([wasHelpful])
+  @@index([userId, generatedAt])
 }
 
 // ==========================================================================
-// NOTIFICATIONS — previously only a settings page existed with nothing behind it
+// TEMPLATES & SHARING
+// ==========================================================================
+
+model Template {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        TemplateType
+  name        String
+  description String?      @db.Text
+  category    String?
+
+  isPublic   Boolean @default(false)
+  isOfficial Boolean @default(false)
+  isFeatured Boolean @default(false)
+
+  content String @db.Text // JSON with template data
+
+  usageCount  Int    @default(0)
+  rating      Float? // average user rating
+  ratingCount Int    @default(0)
+
+  tags String? // JSON array
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type, isPublic])
+  @@index([isOfficial, isFeatured])
+  @@index([usageCount])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// ATTACHMENTS
+// ==========================================================================
+
+model Attachment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  entityType String // GOAL, JOURNAL, REFLECTION, PROJECT, etc.
+  entityId   String
+
+  fileName   String
+  fileUrl    String
+  fileSize   Int
+  mimeType   String
+  storageKey String? // for cloud storage reference
+
+  uploadedAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([userId, uploadedAt])
+}
+
+// ==========================================================================
+// NOTIFICATIONS
 // ==========================================================================
 
 model NotificationLog {
@@ -697,17 +2000,36 @@ model NotificationLog {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   type            NotificationType
-  relatedEntityId String? // habitId, goalId, etc., depending on type
-  title           String
-  body            String?
+  relatedEntityId String?
+
+  title String
+  body  String? @db.Text
+
+  // Actions
+  actionUrl  String?
+  actionData String? // JSON
 
   scheduledFor DateTime
   sentAt       DateTime?
-  status       NotificationStatus @default(PENDING)
+  readAt       DateTime?
+  dismissedAt  DateTime?
+
+  status NotificationStatus @default(PENDING)
+
+  // Delivery channels
+  sentViaEmail Boolean @default(false)
+  sentViaPush  Boolean @default(false)
+  sentViaSMS   Boolean @default(false)
+
+  // Error tracking
+  errorMessage String?
+  retryCount   Int     @default(0)
 
   createdAt DateTime @default(now())
 
   @@index([userId, status, scheduledFor])
+  @@index([type, status])
+  @@index([userId, createdAt])
 }
 
 model PushSubscription {
@@ -719,11 +2041,110 @@ model PushSubscription {
   p256dh   String
   auth     String
 
-  createdAt DateTime @default(now())
+  deviceName String?
+  deviceType DeviceType?
+
+  isActive Boolean @default(true)
+
+  lastUsedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId, isActive])
+  @@index([userId, createdAt])
 }
 
 // ==========================================================================
-// AUDIT
+// INTEGRATIONS
+// ==========================================================================
+
+model Integration {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider IntegrationProvider
+
+  accessToken  String    @db.Text
+  refreshToken String?   @db.Text
+  expiresAt    DateTime?
+
+  isActive Boolean @default(true)
+  settings String? @db.Text // JSON
+
+  lastSyncedAt DateTime?
+  syncError    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, provider])
+  @@index([provider, isActive])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// DEVICE & SESSION MANAGEMENT
+// ==========================================================================
+
+model DeviceSession {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deviceName String?
+  deviceType DeviceType?
+  deviceId   String?
+
+  userAgent String? @db.Text
+  ipAddress String?
+  location  String? // city, country
+
+  lastActiveAt DateTime @default(now())
+  expiresAt    DateTime
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, lastActiveAt])
+  @@index([isActive, expiresAt])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// DATA EXPORT
+// ==========================================================================
+
+model DataExport {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  format ExportFormat
+  status ExportStatus @default(PENDING)
+
+  includeAttachments Boolean @default(false)
+  dateFrom           String? // YYYY-MM-DD
+  dateTo             String? // YYYY-MM-DD
+
+  fileUrl  String?
+  fileSize Int?
+
+  requestedAt DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([expiresAt])
+  @@index([userId, createdAt])
+}
+
+// ==========================================================================
+// AUDIT & ACTIVITY LOGS
 // ==========================================================================
 
 model AuditLog {
@@ -734,9 +2155,123 @@ model AuditLog {
   action     AuditAction
   entityType String?
   entityId   String?
-  metadata   String?
+
+  metadata String? @db.Text // JSON
+
+  // Context
+  ipAddress String?
+  userAgent String?
+  location  String?
 
   createdAt DateTime @default(now())
 
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([entityType, entityId])
+}
+
+model ActivityLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  action      String
+  entityType  String?
+  entityId    String?
+  description String?
+
+  metadata String? @db.Text // JSON
+
+  timestamp DateTime @default(now())
+
+  @@index([userId, timestamp])
+  @@index([action])
+}
+
+// ==========================================================================
+// FEEDBACK & SUPPORT
+// ==========================================================================
+
+model Feedback {
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    FeedbackType
+  subject String
+  message String       @db.Text
+
+  email String? // for non-logged-in users
+
+  status   FeedbackStatus @default(NEW)
+  priority String         @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+
+  // Internal tracking
+  assignedTo    String?
+  internalNotes String? @db.Text
+
+  attachments String? // JSON array of URLs
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([type, status])
+  @@index([priority])
+}
+
+// ==========================================================================
+// FEATURE FLAGS
+// ==========================================================================
+
+model FeatureFlag {
+  id String @id @default(cuid())
+
+  key         String  @unique
+  name        String
+  description String? @db.Text
+
+  isEnabled      Boolean @default(false)
+  rolloutPercent Int     @default(0) // 0-100
+
+  enabledForUsers String? @db.Text // JSON array of user IDs
+  enabledForRoles String? // JSON array of roles
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isEnabled])
+  @@index([key])
+}
+
+// ==========================================================================
+// API KEYS
+// ==========================================================================
+
+model APIKey {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+
+  keyHash String @unique
+
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+
+  isActive Boolean @default(true)
+
+  scopes     String? // JSON array of allowed scopes
+  rateLimit  Int? // requests per hour
+  usageCount Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isActive, expiresAt])
   @@index([userId, createdAt])
 }

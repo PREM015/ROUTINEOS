@@ -126,11 +126,38 @@ exports.Prisma.UserScalarFieldEnum = {
   email: 'email',
   passwordHash: 'passwordHash',
   role: 'role',
+  avatarUrl: 'avatarUrl',
+  bio: 'bio',
+  displayName: 'displayName',
+  timezone: 'timezone',
+  preferredLanguage: 'preferredLanguage',
+  preferences: 'preferences',
+  socialSettings: 'socialSettings',
   emailVerified: 'emailVerified',
   sessionVersion: 'sessionVersion',
   failedLoginAttempts: 'failedLoginAttempts',
   lockedUntil: 'lockedUntil',
+  lastLoginAt: 'lastLoginAt',
+  lastActivityAt: 'lastActivityAt',
   onboardingCompletedAt: 'onboardingCompletedAt',
+  isActive: 'isActive',
+  isDeleted: 'isDeleted',
+  deletedAt: 'deletedAt',
+  deleteReason: 'deleteReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UserSubscriptionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  plan: 'plan',
+  status: 'status',
+  currentPeriodStart: 'currentPeriodStart',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
+  stripeCustomerId: 'stripeCustomerId',
+  stripeSubscriptionId: 'stripeSubscriptionId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -140,7 +167,12 @@ exports.Prisma.QuoteScalarFieldEnum = {
   userId: 'userId',
   text: 'text',
   author: 'author',
+  source: 'source',
+  sourceUrl: 'sourceUrl',
   isPublic: 'isPublic',
+  isFavorite: 'isFavorite',
+  tags: 'tags',
+  usageCount: 'usageCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -149,19 +181,47 @@ exports.Prisma.UserSettingsScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   timezone: 'timezone',
+  language: 'language',
+  dateFormat: 'dateFormat',
+  timeFormat: 'timeFormat',
   weekStartsOn: 'weekStartsOn',
+  theme: 'theme',
+  customThemeColors: 'customThemeColors',
+  soundEnabled: 'soundEnabled',
+  animationsEnabled: 'animationsEnabled',
+  compactMode: 'compactMode',
+  defaultView: 'defaultView',
+  showCompletedTasks: 'showCompletedTasks',
   targetBedtime: 'targetBedtime',
   targetWakeTime: 'targetWakeTime',
   minSleepDuration: 'minSleepDuration',
+  sleepReminder: 'sleepReminder',
+  sleepReminderTime: 'sleepReminderTime',
   weightNonNeg: 'weightNonNeg',
   weightGrowth: 'weightGrowth',
   weightBonus: 'weightBonus',
   notificationsEnabled: 'notificationsEnabled',
+  emailNotifications: 'emailNotifications',
+  pushNotifications: 'pushNotifications',
+  smsNotifications: 'smsNotifications',
   quietHoursStart: 'quietHoursStart',
   quietHoursEnd: 'quietHoursEnd',
+  dailyReminder: 'dailyReminder',
+  dailyReminderTime: 'dailyReminderTime',
+  habitReminders: 'habitReminders',
+  goalReminders: 'goalReminders',
   weeklyReviewReminder: 'weeklyReviewReminder',
   monthlyResetReminder: 'monthlyResetReminder',
+  focusReminders: 'focusReminders',
+  breakReminders: 'breakReminders',
   retroactiveEditDays: 'retroactiveEditDays',
+  autoArchiveCompletedDays: 'autoArchiveCompletedDays',
+  dataRetentionDays: 'dataRetentionDays',
+  profilePublic: 'profilePublic',
+  shareStats: 'shareStats',
+  aiInsightsEnabled: 'aiInsightsEnabled',
+  experimentalFeatures: 'experimentalFeatures',
+  createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
@@ -171,6 +231,8 @@ exports.Prisma.PasswordResetTokenScalarFieldEnum = {
   tokenHash: 'tokenHash',
   expiresAt: 'expiresAt',
   usedAt: 'usedAt',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
   createdAt: 'createdAt'
 };
 
@@ -188,16 +250,60 @@ exports.Prisma.CategoryScalarFieldEnum = {
   userId: 'userId',
   name: 'name',
   nameNormalized: 'nameNormalized',
+  description: 'description',
   color: 'color',
+  icon: 'icon',
+  sortOrder: 'sortOrder',
+  isArchived: 'isArchived',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TagScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  color: 'color',
+  icon: 'icon',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.HabitTagScalarFieldEnum = {
+  id: 'id',
+  habitId: 'habitId',
+  tagId: 'tagId'
+};
+
+exports.Prisma.GoalTagScalarFieldEnum = {
+  id: 'id',
+  goalId: 'goalId',
+  tagId: 'tagId'
+};
+
+exports.Prisma.TaskTagScalarFieldEnum = {
+  id: 'id',
+  taskId: 'taskId',
+  tagId: 'tagId'
+};
+
+exports.Prisma.JournalEntryTagScalarFieldEnum = {
+  id: 'id',
+  entryId: 'entryId',
+  tagId: 'tagId'
 };
 
 exports.Prisma.RoutineTemplateScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   name: 'name',
+  description: 'description',
   dayType: 'dayType',
   isDefault: 'isDefault',
+  color: 'color',
+  icon: 'icon',
+  isActive: 'isActive',
+  archivedAt: 'archivedAt',
+  estimatedDuration: 'estimatedDuration',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -210,9 +316,15 @@ exports.Prisma.RoutineBlockScalarFieldEnum = {
   endTime: 'endTime',
   isOvernight: 'isOvernight',
   title: 'title',
+  description: 'description',
+  notes: 'notes',
   sortOrder: 'sortOrder',
+  color: 'color',
+  icon: 'icon',
   categoryId: 'categoryId',
+  energyLevel: 'energyLevel',
   trackCompletion: 'trackCompletion',
+  isRecurring: 'isRecurring',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -223,7 +335,9 @@ exports.Prisma.RoutineExceptionScalarFieldEnum = {
   date: 'date',
   dayType: 'dayType',
   templateId: 'templateId',
-  note: 'note'
+  note: 'note',
+  reason: 'reason',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.RoutineLogScalarFieldEnum = {
@@ -232,23 +346,43 @@ exports.Prisma.RoutineLogScalarFieldEnum = {
   userId: 'userId',
   date: 'date',
   status: 'status',
+  actualStartTime: 'actualStartTime',
+  actualEndTime: 'actualEndTime',
   durationMinutes: 'durationMinutes',
-  note: 'note'
+  focusRating: 'focusRating',
+  productivityRating: 'productivityRating',
+  energyLevel: 'energyLevel',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.HabitScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   name: 'name',
+  description: 'description',
   tier: 'tier',
   status: 'status',
   categoryId: 'categoryId',
+  color: 'color',
+  icon: 'icon',
   frequencyType: 'frequencyType',
   frequencyValue: 'frequencyValue',
+  targetCount: 'targetCount',
   startDate: 'startDate',
   endDate: 'endDate',
+  archivedAt: 'archivedAt',
   reminderTime: 'reminderTime',
+  reminderEnabled: 'reminderEnabled',
   points: 'points',
+  estimatedDuration: 'estimatedDuration',
+  difficulty: 'difficulty',
+  isPublic: 'isPublic',
+  streakCount: 'streakCount',
+  longestStreak: 'longestStreak',
+  lastCompletedDate: 'lastCompletedDate',
+  completionRate: 'completionRate',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -260,7 +394,15 @@ exports.Prisma.HabitLogScalarFieldEnum = {
   date: 'date',
   status: 'status',
   completedAt: 'completedAt',
-  note: 'note'
+  durationMinutes: 'durationMinutes',
+  quantity: 'quantity',
+  difficulty: 'difficulty',
+  energyLevel: 'energyLevel',
+  moodBefore: 'moodBefore',
+  moodAfter: 'moodAfter',
+  note: 'note',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.HabitOverrideScalarFieldEnum = {
@@ -271,26 +413,50 @@ exports.Prisma.HabitOverrideScalarFieldEnum = {
   startDate: 'startDate',
   endDate: 'endDate',
   reason: 'reason',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.MinimumDayTemplateScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   name: 'name',
+  description: 'description',
   isDefault: 'isDefault',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.MinimumDayTemplateHabitScalarFieldEnum = {
   id: 'id',
   templateId: 'templateId',
-  habitId: 'habitId'
+  habitId: 'habitId',
+  sortOrder: 'sortOrder'
+};
+
+exports.Prisma.ProjectScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  description: 'description',
+  status: 'status',
+  priority: 'priority',
+  categoryId: 'categoryId',
+  color: 'color',
+  icon: 'icon',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  completedAt: 'completedAt',
+  archivedAt: 'archivedAt',
+  progress: 'progress',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.GoalScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  projectId: 'projectId',
   type: 'type',
   priority: 'priority',
   status: 'status',
@@ -301,7 +467,24 @@ exports.Prisma.GoalScalarFieldEnum = {
   unit: 'unit',
   startDate: 'startDate',
   endDate: 'endDate',
+  completedAt: 'completedAt',
+  archivedAt: 'archivedAt',
+  parentGoalId: 'parentGoalId',
   carriedOverFrom: 'carriedOverFrom',
+  isPublic: 'isPublic',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MilestoneScalarFieldEnum = {
+  id: 'id',
+  goalId: 'goalId',
+  title: 'title',
+  description: 'description',
+  targetValue: 'targetValue',
+  dueDate: 'dueDate',
+  completedAt: 'completedAt',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -311,7 +494,35 @@ exports.Prisma.GoalProgressScalarFieldEnum = {
   goalId: 'goalId',
   value: 'value',
   date: 'date',
-  note: 'note'
+  note: 'note',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.TaskScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  priority: 'priority',
+  projectId: 'projectId',
+  goalId: 'goalId',
+  parentTaskId: 'parentTaskId',
+  dueDate: 'dueDate',
+  scheduledFor: 'scheduledFor',
+  estimatedMinutes: 'estimatedMinutes',
+  actualMinutes: 'actualMinutes',
+  isUrgent: 'isUrgent',
+  isImportant: 'isImportant',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TaskDependencyScalarFieldEnum = {
+  id: 'id',
+  taskId: 'taskId',
+  dependsOnId: 'dependsOnId'
 };
 
 exports.Prisma.SleepLogScalarFieldEnum = {
@@ -325,6 +536,84 @@ exports.Prisma.SleepLogScalarFieldEnum = {
   actualDurationMinutes: 'actualDurationMinutes',
   availableWindowMinutes: 'availableWindowMinutes',
   deficitMinutes: 'deficitMinutes',
+  quality: 'quality',
+  wakeUpCount: 'wakeUpCount',
+  feltRested: 'feltRested',
+  moodOnWaking: 'moodOnWaking',
+  energyOnWaking: 'energyOnWaking',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MoodLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  timestamp: 'timestamp',
+  mood: 'mood',
+  energy: 'energy',
+  stress: 'stress',
+  anxiety: 'anxiety',
+  focus: 'focus',
+  triggers: 'triggers',
+  activities: 'activities',
+  location: 'location',
+  weather: 'weather',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.EnergyLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  timestamp: 'timestamp',
+  energyLevel: 'energyLevel',
+  activity: 'activity',
+  location: 'location',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.WeatherLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  condition: 'condition',
+  temperature: 'temperature',
+  humidity: 'humidity',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.HealthMetricScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  metricType: 'metricType',
+  value: 'value',
+  unit: 'unit',
+  timeOfDay: 'timeOfDay',
+  notes: 'notes',
+  source: 'source',
+  sourceId: 'sourceId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.NutritionEntryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  mealType: 'mealType',
+  foodName: 'foodName',
+  quantity: 'quantity',
+  unit: 'unit',
+  calories: 'calories',
+  protein: 'protein',
+  carbs: 'carbs',
+  fat: 'fat',
+  fiber: 'fiber',
+  sugar: 'sugar',
+  sodium: 'sodium',
   createdAt: 'createdAt'
 };
 
@@ -342,6 +631,10 @@ exports.Prisma.DailyScoreScalarFieldEnum = {
   growthScore: 'growthScore',
   bonusScore: 'bonusScore',
   totalScore: 'totalScore',
+  habitCompletionRate: 'habitCompletionRate',
+  routineCompletionRate: 'routineCompletionRate',
+  sleepScore: 'sleepScore',
+  overallGrade: 'overallGrade',
   calculationData: 'calculationData',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -353,9 +646,168 @@ exports.Prisma.DailyReflectionScalarFieldEnum = {
   date: 'date',
   energy: 'energy',
   mood: 'mood',
+  stress: 'stress',
+  focus: 'focus',
   reflectionText: 'reflectionText',
   biggestWin: 'biggestWin',
   biggestDifficulty: 'biggestDifficulty',
+  lessonsLearned: 'lessonsLearned',
+  gratitude: 'gratitude',
+  improvements: 'improvements',
+  tomorrowFocus: 'tomorrowFocus',
+  tomorrowPriorities: 'tomorrowPriorities',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.JournalEntryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  title: 'title',
+  content: 'content',
+  mood: 'mood',
+  energy: 'energy',
+  gratitude: 'gratitude',
+  isFavorite: 'isFavorite',
+  isArchived: 'isArchived',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FocusSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  description: 'description',
+  categoryId: 'categoryId',
+  plannedDuration: 'plannedDuration',
+  actualDuration: 'actualDuration',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  pausedAt: 'pausedAt',
+  focusRating: 'focusRating',
+  productivityRating: 'productivityRating',
+  difficultyRating: 'difficultyRating',
+  energyBefore: 'energyBefore',
+  energyAfter: 'energyAfter',
+  distractions: 'distractions',
+  techniques: 'techniques',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.BreakScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  focusSessionId: 'focusSessionId',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  durationMinutes: 'durationMinutes',
+  breakType: 'breakType',
+  quality: 'quality',
+  notes: 'notes',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.TimeEntryScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  description: 'description',
+  startTime: 'startTime',
+  endTime: 'endTime',
+  duration: 'duration',
+  projectId: 'projectId',
+  habitId: 'habitId',
+  goalId: 'goalId',
+  billable: 'billable',
+  rate: 'rate',
+  tags: 'tags',
+  isAutomatic: 'isAutomatic',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ProductivityPatternScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  patternType: 'patternType',
+  timeOfDay: 'timeOfDay',
+  dayOfWeek: 'dayOfWeek',
+  confidence: 'confidence',
+  metrics: 'metrics',
+  discoveredAt: 'discoveredAt',
+  lastSeenAt: 'lastSeenAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.UserConnectionScalarFieldEnum = {
+  id: 'id',
+  followerId: 'followerId',
+  followingId: 'followingId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ChallengeScalarFieldEnum = {
+  id: 'id',
+  creatorId: 'creatorId',
+  title: 'title',
+  description: 'description',
+  startDate: 'startDate',
+  endDate: 'endDate',
+  isPublic: 'isPublic',
+  maxMembers: 'maxMembers',
+  rules: 'rules',
+  rewards: 'rewards',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ChallengeParticipantScalarFieldEnum = {
+  id: 'id',
+  challengeId: 'challengeId',
+  userId: 'userId',
+  joinedAt: 'joinedAt',
+  progress: 'progress',
+  rank: 'rank'
+};
+
+exports.Prisma.AutomationRuleScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  isActive: 'isActive',
+  triggerType: 'triggerType',
+  triggerConfig: 'triggerConfig',
+  actionType: 'actionType',
+  actionConfig: 'actionConfig',
+  timesTriggered: 'timesTriggered',
+  lastTriggered: 'lastTriggered',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LocationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  address: 'address',
+  lat: 'lat',
+  lng: 'lng',
+  radius: 'radius',
+  automations: 'automations',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CalendarSyncScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  provider: 'provider',
+  calendarId: 'calendarId',
+  calendarName: 'calendarName',
+  syncEnabled: 'syncEnabled',
+  syncDirection: 'syncDirection',
+  lastSyncedAt: 'lastSyncedAt',
+  syncError: 'syncError',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -366,9 +818,13 @@ exports.Prisma.StreakScalarFieldEnum = {
   currentStreak: 'currentStreak',
   longestStreak: 'longestStreak',
   coreStreak: 'coreStreak',
+  growthStreak: 'growthStreak',
   minimumDayStreak: 'minimumDayStreak',
   streakStartDate: 'streakStartDate',
   lastCompletedDate: 'lastCompletedDate',
+  totalCompletedDays: 'totalCompletedDays',
+  totalMinimumDays: 'totalMinimumDays',
+  totalRestDays: 'totalRestDays',
   updatedAt: 'updatedAt'
 };
 
@@ -377,7 +833,25 @@ exports.Prisma.StreakMilestoneScalarFieldEnum = {
   userId: 'userId',
   milestoneDays: 'milestoneDays',
   streakType: 'streakType',
-  reachedDate: 'reachedDate'
+  reachedDate: 'reachedDate',
+  celebrated: 'celebrated',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.AchievementScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  title: 'title',
+  description: 'description',
+  icon: 'icon',
+  color: 'color',
+  level: 'level',
+  unlockedAt: 'unlockedAt',
+  celebrated: 'celebrated',
+  isPublic: 'isPublic',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.WeeklyReviewScalarFieldEnum = {
@@ -387,7 +861,16 @@ exports.Prisma.WeeklyReviewScalarFieldEnum = {
   weekEnd: 'weekEnd',
   statsSnapshot: 'statsSnapshot',
   answers: 'answers',
-  createdAt: 'createdAt'
+  biggestWins: 'biggestWins',
+  challenges: 'challenges',
+  lessonsLearned: 'lessonsLearned',
+  nextWeekFocus: 'nextWeekFocus',
+  nextWeekGoals: 'nextWeekGoals',
+  overallSatisfaction: 'overallSatisfaction',
+  energyLevel: 'energyLevel',
+  stressLevel: 'stressLevel',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.MonthlyResetScalarFieldEnum = {
@@ -395,12 +878,23 @@ exports.Prisma.MonthlyResetScalarFieldEnum = {
   userId: 'userId',
   month: 'month',
   summarySnapshot: 'summarySnapshot',
+  monthHighlights: 'monthHighlights',
+  monthChallenges: 'monthChallenges',
   habitsToKeep: 'habitsToKeep',
   habitsToRemove: 'habitsToRemove',
   habitsToModify: 'habitsToModify',
+  newHabitsToAdd: 'newHabitsToAdd',
+  goalsCompleted: 'goalsCompleted',
+  goalsInProgress: 'goalsInProgress',
   goalsReviewNotes: 'goalsReviewNotes',
   nextMonthPriorities: 'nextMonthPriorities',
-  createdAt: 'createdAt'
+  nextMonthGoals: 'nextMonthGoals',
+  nextMonthFocus: 'nextMonthFocus',
+  overallSatisfaction: 'overallSatisfaction',
+  personalGrowth: 'personalGrowth',
+  goalProgress: 'goalProgress',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.AIInsightScalarFieldEnum = {
@@ -412,13 +906,50 @@ exports.Prisma.AIInsightScalarFieldEnum = {
   dataSnapshot: 'dataSnapshot',
   model: 'model',
   promptVersion: 'promptVersion',
+  tokensUsed: 'tokensUsed',
   summary: 'summary',
   wins: 'wins',
   patterns: 'patterns',
   concerns: 'concerns',
   suggestions: 'suggestions',
   nextPeriodFocus: 'nextPeriodFocus',
+  predictions: 'predictions',
+  wasHelpful: 'wasHelpful',
+  userRating: 'userRating',
+  userFeedback: 'userFeedback',
   generatedAt: 'generatedAt'
+};
+
+exports.Prisma.TemplateScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  name: 'name',
+  description: 'description',
+  category: 'category',
+  isPublic: 'isPublic',
+  isOfficial: 'isOfficial',
+  isFeatured: 'isFeatured',
+  content: 'content',
+  usageCount: 'usageCount',
+  rating: 'rating',
+  ratingCount: 'ratingCount',
+  tags: 'tags',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.AttachmentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  fileName: 'fileName',
+  fileUrl: 'fileUrl',
+  fileSize: 'fileSize',
+  mimeType: 'mimeType',
+  storageKey: 'storageKey',
+  uploadedAt: 'uploadedAt'
 };
 
 exports.Prisma.NotificationLogScalarFieldEnum = {
@@ -428,9 +959,18 @@ exports.Prisma.NotificationLogScalarFieldEnum = {
   relatedEntityId: 'relatedEntityId',
   title: 'title',
   body: 'body',
+  actionUrl: 'actionUrl',
+  actionData: 'actionData',
   scheduledFor: 'scheduledFor',
   sentAt: 'sentAt',
+  readAt: 'readAt',
+  dismissedAt: 'dismissedAt',
   status: 'status',
+  sentViaEmail: 'sentViaEmail',
+  sentViaPush: 'sentViaPush',
+  sentViaSMS: 'sentViaSMS',
+  errorMessage: 'errorMessage',
+  retryCount: 'retryCount',
   createdAt: 'createdAt'
 };
 
@@ -440,6 +980,58 @@ exports.Prisma.PushSubscriptionScalarFieldEnum = {
   endpoint: 'endpoint',
   p256dh: 'p256dh',
   auth: 'auth',
+  deviceName: 'deviceName',
+  deviceType: 'deviceType',
+  isActive: 'isActive',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.IntegrationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  provider: 'provider',
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+  expiresAt: 'expiresAt',
+  isActive: 'isActive',
+  settings: 'settings',
+  lastSyncedAt: 'lastSyncedAt',
+  syncError: 'syncError',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.DeviceSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  deviceName: 'deviceName',
+  deviceType: 'deviceType',
+  deviceId: 'deviceId',
+  userAgent: 'userAgent',
+  ipAddress: 'ipAddress',
+  location: 'location',
+  lastActiveAt: 'lastActiveAt',
+  expiresAt: 'expiresAt',
+  isActive: 'isActive',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.DataExportScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  format: 'format',
+  status: 'status',
+  includeAttachments: 'includeAttachments',
+  dateFrom: 'dateFrom',
+  dateTo: 'dateTo',
+  fileUrl: 'fileUrl',
+  fileSize: 'fileSize',
+  requestedAt: 'requestedAt',
+  startedAt: 'startedAt',
+  completedAt: 'completedAt',
+  expiresAt: 'expiresAt',
+  errorMessage: 'errorMessage',
   createdAt: 'createdAt'
 };
 
@@ -450,7 +1042,67 @@ exports.Prisma.AuditLogScalarFieldEnum = {
   entityType: 'entityType',
   entityId: 'entityId',
   metadata: 'metadata',
+  ipAddress: 'ipAddress',
+  userAgent: 'userAgent',
+  location: 'location',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.ActivityLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  action: 'action',
+  entityType: 'entityType',
+  entityId: 'entityId',
+  description: 'description',
+  metadata: 'metadata',
+  timestamp: 'timestamp'
+};
+
+exports.Prisma.FeedbackScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  subject: 'subject',
+  message: 'message',
+  email: 'email',
+  status: 'status',
+  priority: 'priority',
+  assignedTo: 'assignedTo',
+  internalNotes: 'internalNotes',
+  attachments: 'attachments',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  resolvedAt: 'resolvedAt'
+};
+
+exports.Prisma.FeatureFlagScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  name: 'name',
+  description: 'description',
+  isEnabled: 'isEnabled',
+  rolloutPercent: 'rolloutPercent',
+  enabledForUsers: 'enabledForUsers',
+  enabledForRoles: 'enabledForRoles',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.APIKeyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  description: 'description',
+  keyHash: 'keyHash',
+  lastUsedAt: 'lastUsedAt',
+  expiresAt: 'expiresAt',
+  isActive: 'isActive',
+  scopes: 'scopes',
+  rateLimit: 'rateLimit',
+  usageCount: 'usageCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -469,11 +1121,33 @@ exports.Prisma.NullsOrder = {
 };
 exports.Role = exports.$Enums.Role = {
   USER: 'USER',
-  ADMIN: 'ADMIN'
+  ADMIN: 'ADMIN',
+  MODERATOR: 'MODERATOR'
+};
+
+exports.SubscriptionPlan = exports.$Enums.SubscriptionPlan = {
+  FREE: 'FREE',
+  PRO: 'PRO',
+  PREMIUM: 'PREMIUM',
+  ENTERPRISE: 'ENTERPRISE'
+};
+
+exports.SubscriptionStatus = exports.$Enums.SubscriptionStatus = {
+  ACTIVE: 'ACTIVE',
+  PAST_DUE: 'PAST_DUE',
+  CANCELLED: 'CANCELLED',
+  UNPAID: 'UNPAID'
+};
+
+exports.Theme = exports.$Enums.Theme = {
+  LIGHT: 'LIGHT',
+  DARK: 'DARK',
+  AUTO: 'AUTO',
+  CUSTOM: 'CUSTOM'
 };
 
 exports.DayType = exports.$Enums.DayType = {
-  WEEKDAY: 'WEEKDAY',
+  WORKKDAY: 'WORKKDAY',
   WEEKEND: 'WEEKEND',
   HOLIDAY: 'HOLIDAY',
   EXAM_DAY: 'EXAM_DAY',
@@ -484,13 +1158,21 @@ exports.DayType = exports.$Enums.DayType = {
 exports.RoutineLogStatus = exports.$Enums.RoutineLogStatus = {
   COMPLETED: 'COMPLETED',
   MISSED: 'MISSED',
-  PARTIAL: 'PARTIAL'
+  PARTIAL: 'PARTIAL',
+  IN_PROGRESS: 'IN_PROGRESS'
 };
 
 exports.HabitTier = exports.$Enums.HabitTier = {
-  NON_NEGOTIABLE: 'NON_NEGOTIABLE',
   GROWTH: 'GROWTH',
-  BONUS: 'BONUS'
+  BONUS: 'BONUS',
+  OPTIONAL: 'OPTIONAL',
+  EXPERIMENTAL: 'EXPERIMENTAL',
+  UNDEFINED: 'UNDEFINED',
+  ALTERNATIVE: 'ALTERNATIVE',
+  SPECIAL: 'SPECIAL',
+  FLEXIBLE: 'FLEXIBLE',
+  JUST_FOR_FUN: 'JUST_FOR_FUN',
+  LIFESTYLE: 'LIFESTYLE'
 };
 
 exports.HabitStatus = exports.$Enums.HabitStatus = {
@@ -506,14 +1188,18 @@ exports.HabitFrequencyType = exports.$Enums.HabitFrequencyType = {
   SPECIFIC_WEEKDAYS: 'SPECIFIC_WEEKDAYS',
   WEEKLY_TARGET: 'WEEKLY_TARGET',
   MONTHLY_TARGET: 'MONTHLY_TARGET',
-  ONE_TIME: 'ONE_TIME'
+  YEARLY_TARGET: 'YEARLY_TARGET',
+  RANDOM: 'RANDOM',
+  ONE_TIME: 'ONE_TIME',
+  CUSTOM: 'CUSTOM'
 };
 
 exports.HabitLogStatus = exports.$Enums.HabitLogStatus = {
   COMPLETED: 'COMPLETED',
   MISSED: 'MISSED',
   SKIPPED: 'SKIPPED',
-  NOT_APPLICABLE: 'NOT_APPLICABLE'
+  NOT_APPLICABLE: 'NOT_APPLICABLE',
+  PARTIAL: 'PARTIAL'
 };
 
 exports.HabitOverrideType = exports.$Enums.HabitOverrideType = {
@@ -524,54 +1210,204 @@ exports.HabitOverrideType = exports.$Enums.HabitOverrideType = {
   RESCHEDULE: 'RESCHEDULE'
 };
 
-exports.GoalType = exports.$Enums.GoalType = {
-  DAILY: 'DAILY',
-  WEEKLY: 'WEEKLY',
-  MONTHLY: 'MONTHLY',
-  YEARLY: 'YEARLY'
+exports.ProjectStatus = exports.$Enums.ProjectStatus = {
+  PLANNING: 'PLANNING',
+  ACTIVE: 'ACTIVE',
+  ON_HOLD: 'ON_HOLD',
+  COMPLETED: 'COMPLETED',
+  ARCHIVED: 'ARCHIVED',
+  CANCELLED: 'CANCELLED'
 };
 
 exports.GoalPriority = exports.$Enums.GoalPriority = {
   LOW: 'LOW',
   MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH'
+  HIGH: 'HIGH',
+  CRITICAL: 'CRITICAL',
+  PERSONAL: 'PERSONAL',
+  ACADEMIC: 'ACADEMIC',
+  NON_PROFIT: 'NON_PROFIT',
+  PROFESSIONAL: 'PROFESSIONAL'
+};
+
+exports.GoalType = exports.$Enums.GoalType = {
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY',
+  QUARTERLY: 'QUARTERLY',
+  YEARLY: 'YEARLY',
+  CUSTOM: 'CUSTOM'
 };
 
 exports.GoalStatus = exports.$Enums.GoalStatus = {
   ACTIVE: 'ACTIVE',
   COMPLETED: 'COMPLETED',
   MISSED: 'MISSED',
-  CARRIED_OVER: 'CARRIED_OVER'
+  CARRIED_OVER: 'CARRIED_OVER',
+  ON_HOLD: 'ON_HOLD',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.TaskStatus = exports.$Enums.TaskStatus = {
+  TODO: 'TODO',
+  IN_PROGRESS: 'IN_PROGRESS',
+  WAITING: 'WAITING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.TaskPriority = exports.$Enums.TaskPriority = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT',
+  CRITICAL: 'CRITICAL',
+  PERSONAL: 'PERSONAL',
+  ACADEMIC: 'ACADEMIC',
+  NON_PROFIT: 'NON_PROFIT',
+  PROFESSIONAL: 'PROFESSIONAL'
+};
+
+exports.WeatherCondition = exports.$Enums.WeatherCondition = {
+  SUNNY: 'SUNNY',
+  PARTLY_CLOUDY: 'PARTLY_CLOUDY',
+  CLOUDY: 'CLOUDY',
+  RAINY: 'RAINY',
+  STORMY: 'STORMY',
+  SNOWY: 'SNOWY',
+  FOGGY: 'FOGGY',
+  WINDY: 'WINDY'
+};
+
+exports.AchievementType = exports.$Enums.AchievementType = {
+  HABIT_STREAK: 'HABIT_STREAK',
+  GOAL_COMPLETED: 'GOAL_COMPLETED',
+  PERFECT_DAY: 'PERFECT_DAY',
+  PERFECT_WEEK: 'PERFECT_WEEK',
+  PERFECT_MONTH: 'PERFECT_MONTH',
+  PERFECT_QUARTER: 'PERFECT_QUARTER',
+  PERFECT_YEAR: 'PERFECT_YEAR',
+  EARLY_RISER: 'EARLY_RISER',
+  NIGHT_OWL: 'NIGHT_OWL',
+  PRODUCTIVITY_MASTER: 'PRODUCTIVITY_MASTER',
+  WELLNESS_WARRIOR: 'WELLNESS_WARRIOR',
+  FOCUS_CHAMPION: 'FOCUS_CHAMPION',
+  CONSISTENCY_KING: 'CONSISTENCY_KING',
+  MILESTONE: 'MILESTONE',
+  CUSTOM: 'CUSTOM'
 };
 
 exports.InsightPeriod = exports.$Enums.InsightPeriod = {
+  DAILY: 'DAILY',
   WEEKLY: 'WEEKLY',
-  MONTHLY: 'MONTHLY'
+  MONTHLY: 'MONTHLY',
+  QUARTERLY: 'QUARTERLY',
+  YEARLY: 'YEARLY'
+};
+
+exports.TemplateType = exports.$Enums.TemplateType = {
+  ROUTINE: 'ROUTINE',
+  HABIT_SET: 'HABIT_SET',
+  GOAL_SET: 'GOAL_SET',
+  MORNING_ROUTINE: 'MORNING_ROUTINE',
+  EVENING_ROUTINE: 'EVENING_ROUTINE',
+  WORKOUT: 'WORKOUT',
+  STUDY_SESSION: 'STUDY_SESSION',
+  CUSTOM: 'CUSTOM'
 };
 
 exports.NotificationType = exports.$Enums.NotificationType = {
   HABIT_REMINDER: 'HABIT_REMINDER',
   ROUTINE_REMINDER: 'ROUTINE_REMINDER',
   GOAL_DEADLINE: 'GOAL_DEADLINE',
+  GOAL_MILESTONE: 'GOAL_MILESTONE',
+  TASK_DUE: 'TASK_DUE',
   WEEKLY_REVIEW: 'WEEKLY_REVIEW',
+  MONTHLY_REVIEW: 'MONTHLY_REVIEW',
+  QUARTERLY_REVIEW: 'QUARTERLY_REVIEW',
+  YEARLY_REVIEW: 'YEARLY_REVIEW',
+  WEEKLY_RESET: 'WEEKLY_RESET',
   MONTHLY_RESET: 'MONTHLY_RESET',
-  STREAK_MILESTONE: 'STREAK_MILESTONE'
+  STREAK_MILESTONE: 'STREAK_MILESTONE',
+  DAILY_SUMMARY: 'DAILY_SUMMARY',
+  FOCUS_SESSION_START: 'FOCUS_SESSION_START',
+  BREAK_REMINDER: 'BREAK_REMINDER',
+  ACHIEVEMENT_UNLOCKED: 'ACHIEVEMENT_UNLOCKED',
+  TASK_OVERDUE: 'TASK_OVERDUE',
+  HABIT_MISSED: 'HABIT_MISSED',
+  HABIT_STREAK_AT_RISK: 'HABIT_STREAK_AT_RISK',
+  GOAL_AT_RISK: 'GOAL_AT_RISK',
+  GOAL_COMPLETED: 'GOAL_COMPLETED',
+  ROUTINE_COMPLETED: 'ROUTINE_COMPLETED',
+  ROUTINE_MISSED: 'ROUTINE_MISSED',
+  DAILY_RESET: 'DAILY_RESET',
+  WEEKLY_SUMMARY: 'WEEKLY_SUMMARY',
+  MONTHLY_SUMMARY: 'MONTHLY_SUMMARY',
+  STREAK_BROKEN: 'STREAK_BROKEN',
+  FOCUS_SESSION_END: 'FOCUS_SESSION_END',
+  REMINDER_SNOOZED: 'REMINDER_SNOOZED',
+  MOTIVATIONAL: 'MOTIVATIONAL',
+  PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
+  SYSTEM_UPDATE: 'SYSTEM_UPDATE'
 };
 
 exports.NotificationStatus = exports.$Enums.NotificationStatus = {
   PENDING: 'PENDING',
   SENT: 'SENT',
   FAILED: 'FAILED',
-  DISMISSED: 'DISMISSED'
+  DISMISSED: 'DISMISSED',
+  READ: 'READ'
+};
+
+exports.DeviceType = exports.$Enums.DeviceType = {
+  WEB: 'WEB',
+  MOBILE_IOS: 'MOBILE_IOS',
+  MOBILE_ANDROID: 'MOBILE_ANDROID',
+  TABLET: 'TABLET',
+  DESKTOP: 'DESKTOP'
+};
+
+exports.IntegrationProvider = exports.$Enums.IntegrationProvider = {
+  GOOGLE_CALENDAR: 'GOOGLE_CALENDAR',
+  NOTION: 'NOTION',
+  TODOIST: 'TODOIST',
+  TRELLO: 'TRELLO',
+  APPLE_HEALTH: 'APPLE_HEALTH',
+  GOOGLE_FIT: 'GOOGLE_FIT',
+  STRAVA: 'STRAVA',
+  SPOTIFY: 'SPOTIFY',
+  CUSTOM: 'CUSTOM'
+};
+
+exports.ExportFormat = exports.$Enums.ExportFormat = {
+  JSON: 'JSON',
+  CSV: 'CSV',
+  PDF: 'PDF',
+  MARKDOWN: 'MARKDOWN'
+};
+
+exports.ExportStatus = exports.$Enums.ExportStatus = {
+  PENDING: 'PENDING',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  EXPIRED: 'EXPIRED'
 };
 
 exports.AuditAction = exports.$Enums.AuditAction = {
+  HABIT_CREATED: 'HABIT_CREATED',
+  HABIT_UPDATED: 'HABIT_UPDATED',
   HABIT_ARCHIVED: 'HABIT_ARCHIVED',
   HABIT_DELETED: 'HABIT_DELETED',
   HABIT_PAUSED: 'HABIT_PAUSED',
   HABIT_RESUMED: 'HABIT_RESUMED',
+  GOAL_CREATED: 'GOAL_CREATED',
+  GOAL_UPDATED: 'GOAL_UPDATED',
   GOAL_DELETED: 'GOAL_DELETED',
+  GOAL_COMPLETED: 'GOAL_COMPLETED',
+  ROUTINE_CREATED: 'ROUTINE_CREATED',
   ROUTINE_CHANGED: 'ROUTINE_CHANGED',
+  ROUTINE_DELETED: 'ROUTINE_DELETED',
   SCORING_SETTINGS_CHANGED: 'SCORING_SETTINGS_CHANGED',
   MINIMUM_DAY_ACTIVATED: 'MINIMUM_DAY_ACTIVATED',
   REST_DAY_ACTIVATED: 'REST_DAY_ACTIVATED',
@@ -580,20 +1416,48 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   DATA_RESET: 'DATA_RESET',
   ACCOUNT_DELETED: 'ACCOUNT_DELETED',
   LOGIN_FAILED: 'LOGIN_FAILED',
+  LOGIN_SUCCESS: 'LOGIN_SUCCESS',
   ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
   PASSWORD_RESET_REQUESTED: 'PASSWORD_RESET_REQUESTED',
   PASSWORD_RESET_COMPLETED: 'PASSWORD_RESET_COMPLETED',
   LOGOUT_ALL_SESSIONS: 'LOGOUT_ALL_SESSIONS',
-  EMAIL_VERIFIED: 'EMAIL_VERIFIED'
+  EMAIL_VERIFIED: 'EMAIL_VERIFIED',
+  SETTINGS_UPDATED: 'SETTINGS_UPDATED'
+};
+
+exports.FeedbackType = exports.$Enums.FeedbackType = {
+  BUG: 'BUG',
+  FEATURE_REQUEST: 'FEATURE_REQUEST',
+  IMPROVEMENT: 'IMPROVEMENT',
+  QUESTION: 'QUESTION',
+  GENERAL: 'GENERAL',
+  COMPLAINT: 'COMPLAINT'
+};
+
+exports.FeedbackStatus = exports.$Enums.FeedbackStatus = {
+  NEW: 'NEW',
+  IN_REVIEW: 'IN_REVIEW',
+  PLANNED: 'PLANNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED',
+  DUPLICATE: 'DUPLICATE',
+  WONT_FIX: 'WONT_FIX'
 };
 
 exports.Prisma.ModelName = {
   User: 'User',
+  UserSubscription: 'UserSubscription',
   Quote: 'Quote',
   UserSettings: 'UserSettings',
   PasswordResetToken: 'PasswordResetToken',
   EmailVerificationToken: 'EmailVerificationToken',
   Category: 'Category',
+  Tag: 'Tag',
+  HabitTag: 'HabitTag',
+  GoalTag: 'GoalTag',
+  TaskTag: 'TaskTag',
+  JournalEntryTag: 'JournalEntryTag',
   RoutineTemplate: 'RoutineTemplate',
   RoutineBlock: 'RoutineBlock',
   RoutineException: 'RoutineException',
@@ -603,19 +1467,49 @@ exports.Prisma.ModelName = {
   HabitOverride: 'HabitOverride',
   MinimumDayTemplate: 'MinimumDayTemplate',
   MinimumDayTemplateHabit: 'MinimumDayTemplateHabit',
+  Project: 'Project',
   Goal: 'Goal',
+  Milestone: 'Milestone',
   GoalProgress: 'GoalProgress',
+  Task: 'Task',
+  TaskDependency: 'TaskDependency',
   SleepLog: 'SleepLog',
+  MoodLog: 'MoodLog',
+  EnergyLog: 'EnergyLog',
+  WeatherLog: 'WeatherLog',
+  HealthMetric: 'HealthMetric',
+  NutritionEntry: 'NutritionEntry',
   DailyScore: 'DailyScore',
   DailyReflection: 'DailyReflection',
+  JournalEntry: 'JournalEntry',
+  FocusSession: 'FocusSession',
+  Break: 'Break',
+  TimeEntry: 'TimeEntry',
+  ProductivityPattern: 'ProductivityPattern',
+  UserConnection: 'UserConnection',
+  Challenge: 'Challenge',
+  ChallengeParticipant: 'ChallengeParticipant',
+  AutomationRule: 'AutomationRule',
+  Location: 'Location',
+  CalendarSync: 'CalendarSync',
   Streak: 'Streak',
   StreakMilestone: 'StreakMilestone',
+  Achievement: 'Achievement',
   WeeklyReview: 'WeeklyReview',
   MonthlyReset: 'MonthlyReset',
   AIInsight: 'AIInsight',
+  Template: 'Template',
+  Attachment: 'Attachment',
   NotificationLog: 'NotificationLog',
   PushSubscription: 'PushSubscription',
-  AuditLog: 'AuditLog'
+  Integration: 'Integration',
+  DeviceSession: 'DeviceSession',
+  DataExport: 'DataExport',
+  AuditLog: 'AuditLog',
+  ActivityLog: 'ActivityLog',
+  Feedback: 'Feedback',
+  FeatureFlag: 'FeatureFlag',
+  APIKey: 'APIKey'
 };
 
 /**

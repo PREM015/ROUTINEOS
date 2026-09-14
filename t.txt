@@ -71,18 +71,9 @@ D:.
 ¦           README.md
 ¦           
 +---prisma
-¦   ¦   schema.prisma
-¦   ¦   seed.ts
-¦   ¦   
-¦   +---migrations
-¦       ¦   migration_lock.toml
-¦       ¦   
-¦       +---20260913074839_init
-¦       ¦       migration.sql
-¦       ¦       
-¦       +---20260913090000_complete_feature_models
-¦               migration.sql
-¦               
+¦       schema.prisma
+¦       seed.ts
+¦       
 +---public
 ¦   ¦   file.svg
 ¦   ¦   globe.svg
