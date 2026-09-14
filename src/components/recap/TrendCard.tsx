@@ -1,0 +1,1 @@
+// TODO: Implement TrendCard.tsx
