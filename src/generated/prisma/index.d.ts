@@ -389,7 +389,7 @@ export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof Subscr
 
 
 export const DayType: {
-  WORKKDAY: 'WORKKDAY',
+  WORKDAY: 'WORKDAY',
   WEEKEND: 'WEEKEND',
   HOLIDAY: 'HOLIDAY',
   EXAM_DAY: 'EXAM_DAY',

@@ -1,127 +1,91 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 
-export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createAuthHandler } from '@/lib/middleware/api-handler';
+import { db } from '@/lib/db';
+import { z } from 'zod';
 
-  const { searchParams } = new URL(request.url);
+const createGoalSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  type: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM']),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'PERSONAL', 'ACADEMIC', 'NON_PROFIT', 'PROFESSIONAL']),
+  targetValue: z.number().positive(),
+  currentValue: z.number().default(0),
+  unit: z.string().optional(),
+  startDate: z.string().or(z.date()),
+  endDate: z.string().or(z.date()),
+  projectId: z.string().optional(),
+  parentGoalId: z.string().optional(),
+});
+
+export const GET = createAuthHandler(async (req, { session }) => {
+  const { searchParams } = new URL(req.url);
+  const status = searchParams.get('status');
   const type = searchParams.get('type');
+  const priority = searchParams.get('priority');
+  const projectId = searchParams.get('projectId');
 
-  try {
-    const goals = await prisma.goal.findMany({
-      where: {
-        userId: session.user.id,
-        ...(type ? { type: type as any } : {}),
+  const where: any = { userId: session.user.id };
+  if (status) where.status = status;
+  if (type) where.type = type;
+  if (priority) where.priority = priority;
+  if (projectId) where.projectId = projectId;
+
+  const goals = await db.goal.findMany({
+    where,
+    include: {
+      project: true,
+      parentGoal: true,
+      subGoals: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          currentValue: true,
+          targetValue: true,
+        },
       },
-      include: { progressLogs: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    return NextResponse.json({ success: true, data: goals });
-  } catch (error) {
-    console.error('GET /api/goals error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch goals' }, { status: 500 });
-  }
-}
+      milestones: {
+        orderBy: { sortOrder: 'asc' },
+      },
+      tags: {
+        include: {
+          tag: true,
+        },
+      },
+      _count: {
+        select: { 
+          progressLogs: true,
+          subGoals: true,
+        },
+      },
+    },
+    orderBy: [
+      { status: 'asc' },
+      { endDate: 'asc' },
+    ],
+  });
 
-export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  return goals;
+});
 
-  try {
-    const body = await request.json();
-    const { type, title, description, targetValue, unit, priority, startDate, endDate } = body;
-
-    const goal = await prisma.goal.create({
+export const POST = createAuthHandler(
+  async (req, { session, body }) => {
+    const goal = await db.goal.create({
       data: {
+        ...body,
         userId: session.user.id,
-        type: type || 'WEEKLY',
-        title,
-        description,
-        targetValue: Number(targetValue ?? 0),
-        currentValue: 0,
-        unit,
-        priority: priority || 'MEDIUM',
         status: 'ACTIVE',
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
+        currentValue: body.currentValue || 0,
       },
-      include: { progressLogs: true },
-    });
-
-    return NextResponse.json({ success: true, data: goal });
-  } catch (error) {
-    console.error('POST /api/goals error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to create goal' }, { status: 500 });
-  }
-}
-
-export async function PUT(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json();
-    const { id, ...updates } = body ?? {};
-
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Goal id is required' }, { status: 400 });
-    }
-
-    const goal = await prisma.goal.update({
-      where: { id, userId: session.user.id },
-      data: {
-        ...(updates.type ? { type: updates.type } : {}),
-        ...(updates.title ? { title: updates.title } : {}),
-        ...(updates.description !== undefined ? { description: updates.description || null } : {}),
-        ...(updates.targetValue !== undefined ? { targetValue: Number(updates.targetValue) } : {}),
-        ...(updates.currentValue !== undefined ? { currentValue: Number(updates.currentValue) } : {}),
-        ...(updates.unit !== undefined ? { unit: updates.unit || null } : {}),
-        ...(updates.priority ? { priority: updates.priority } : {}),
-        ...(updates.status ? { status: updates.status } : {}),
-        ...(updates.startDate ? { startDate: new Date(updates.startDate) } : {}),
-        ...(updates.endDate ? { endDate: new Date(updates.endDate) } : {}),
+      include: { 
+        project: true,
+        parentGoal: true,
+        milestones: true,
       },
-      include: { progressLogs: true },
     });
 
-    return NextResponse.json({ success: true, data: goal });
-  } catch (error) {
-    console.error('PUT /api/goals error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to update goal' }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  try {
-    const body = await request.json().catch(() => ({}));
-    const id = body?.id;
-
-    if (!id) {
-      return NextResponse.json({ success: false, error: 'Goal id is required' }, { status: 400 });
-    }
-
-    const goal = await prisma.goal.delete({
-      where: { id, userId: session.user.id },
-      include: { progressLogs: true },
-    });
-
-    return NextResponse.json({ success: true, data: goal });
-  } catch (error) {
-    console.error('DELETE /api/goals error:', error);
-    return NextResponse.json({ success: false, error: 'Failed to delete goal' }, { status: 500 });
-  }
-}
+    return goal;
+  },
+  createGoalSchema
+);

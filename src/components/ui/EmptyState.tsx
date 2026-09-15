@@ -1,26 +1,25 @@
-import type { ReactNode } from 'react';
+import React from 'react';
+import { Button } from './Button';
 
-export function EmptyState({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon?: ReactNode;
+interface EmptyStateProps {
+  icon?: React.ReactNode;
   title: string;
   description?: string;
-  action?: ReactNode;
-}) {
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
+export function EmptyState({ icon, title, description, actionLabel, onAction }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-      {icon ? (
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-neutral-800 bg-neutral-900 text-neutral-500">
-          {icon}
+    <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+      {icon && <div className="mb-4 text-gray-400">{icon}</div>}
+      <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+      {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
+      {actionLabel && onAction && (
+        <div className="mt-6">
+          <Button onClick={onAction}>{actionLabel}</Button>
         </div>
-      ) : null}
-      <h3 className="text-base font-semibold text-neutral-200">{title}</h3>
-      {description ? <p className="mt-1 max-w-sm text-sm text-neutral-400">{description}</p> : null}
-      {action ? <div className="mt-4">{action}</div> : null}
+      )}
     </div>
   );
 }

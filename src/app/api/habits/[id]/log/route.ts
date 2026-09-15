@@ -1,50 +1,47 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { z } from "zod";
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
+const logSchema = z.object({
+  date: z.string(), // YYYY-MM-DD
+  status: z.enum(['COMPLETED', 'MISSED', 'PARTIAL']),
+  value: z.number().optional(),
+  notes: z.string().optional()
+});
+
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const habitId = id;
-    const body = await request.json();
-    const { date, status, note } = body; // date: YYYY-MM-DD, status: COMPLETED / MISSED / SKIPPED
+    const body = await req.json();
+    const data = logSchema.parse(body);
 
-    // Upsert the log for idempotency
-    const log = await prisma.habitLog.upsert({
+    // Verify habit ownership
+    const habit = await db.habit.findUnique({
+      where: { id: params.id, userId: session.user.id }
+    });
+    if (!habit) return NextResponse.json({ error: "Not Found" }, { status: 404 });
+
+    const log = await db.habitLog.upsert({
       where: {
-        userId_habitId_date: {
-          userId: session.user.id,
-          habitId,
-          date
+        habitId_date: {
+          habitId: params.id,
+          date: data.date
         }
       },
-      update: {
-        status,
-        note,
-        completedAt: status === 'COMPLETED' ? new Date() : null
-      },
+      update: data,
       create: {
-        userId: session.user.id,
-        habitId,
-        date,
-        status,
-        note,
-        completedAt: status === 'COMPLETED' ? new Date() : null
+        ...data,
+        habitId: params.id,
+        userId: session.user.id
       }
     });
 
-    return NextResponse.json({ success: true, data: log });
+    return NextResponse.json(log);
   } catch (error) {
-    console.error("POST /api/habits/log error:", error);
-    return NextResponse.json({ success: false, error: 'Failed to log habit' }, { status: 500 });
+    return NextResponse.json({ error: "Invalid data or internal error" }, { status: 400 });
   }
 }

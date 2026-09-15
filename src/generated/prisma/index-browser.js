@@ -1147,7 +1147,7 @@ exports.Theme = exports.$Enums.Theme = {
 };
 
 exports.DayType = exports.$Enums.DayType = {
-  WORKKDAY: 'WORKKDAY',
+  WORKDAY: 'WORKDAY',
   WEEKEND: 'WEEKEND',
   HOLIDAY: 'HOLIDAY',
   EXAM_DAY: 'EXAM_DAY',

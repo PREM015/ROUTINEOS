@@ -51,7 +51,7 @@ enum SubscriptionStatus {
 
 // Routine & Schedule Enums
 enum DayType {
-  WORKKDAY
+  WORKDAY
   WEEKEND
   HOLIDAY
   EXAM_DAY
