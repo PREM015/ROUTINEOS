@@ -2,11 +2,45 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ email: '', password: '' });
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn('credentials', {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        const message = result.error === 'CredentialsSignin'
+          ? 'Invalid email or password.'
+          : result.error;
+        setError(message);
+        return;
+      }
+
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -22,16 +56,34 @@ export default function LoginPage() {
       <h1 className="text-2xl font-bold text-center text-white mb-2">Welcome Back</h1>
       <p className="text-center text-white/60 mb-8">Sign in to continue to RoutineOS</p>
 
-      <form className="space-y-4" onSubmit={e => { e.preventDefault(); setLoading(true); }}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
           <label className="block text-sm font-medium text-white/80 mb-1">Email</label>
-          <input type="email" required className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="you@example.com" />
+          <input
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            placeholder="you@example.com"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-white/80 mb-1">Password</label>
-          <input type="password" required className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="••••••••" />
+          <input
+            type="password"
+            required
+            value={form.password}
+            onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
+            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+            placeholder="••••••••"
+          />
         </div>
-        
+
+        {error ? (
+          <p className="text-sm text-red-400">{error}</p>
+        ) : null}
+
         <button
           type="submit"
           disabled={loading}

@@ -1,4 +1,4 @@
-import type { DayType, Prisma } from '@prisma/client';
+import type { DayType, Prisma, RoutineLog } from '@prisma/client';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
 import type {
   DayRoutine,
@@ -250,10 +250,21 @@ export class RoutineService {
     }
 
     // Get logs for period
-    // TODO: Implement log query by date range
+    const logs = await this.findLogsForRange(userId, startDate, endDate);
+    const blockLogMap = new Map<string, RoutineLog[]>();
+    for (const log of logs) {
+      const blockLogs = blockLogMap.get(log.routineBlockId) ?? [];
+      blockLogs.push(log);
+      blockLogMap.set(log.routineBlockId, blockLogs);
+    }
+
     const blocks = template.blocks;
     const totalBlocks = blocks.length;
     const trackedBlocks = blocks.filter(b => b.trackCompletion).length;
+
+    const completedCount = logs.filter(l => l.status === 'COMPLETED').length;
+    const partialCount = logs.filter(l => l.status === 'PARTIAL').length;
+    const missedCount = logs.filter(l => l.status === 'MISSED').length;
 
     return {
       templateId,
@@ -261,12 +272,56 @@ export class RoutineService {
       period: { startDate, endDate },
       totalBlocks,
       trackedBlocks,
-      blocks: blocks.map(block => ({
-        id: block.id,
-        title: block.title,
-        tracked: block.trackCompletion,
-        duration: calculateBlockDuration(block.startTime, block.endTime),
-      })),
+      completion: {
+        totalLogs: logs.length,
+        completedLogs: completedCount,
+        partialLogs: partialCount,
+        missedLogs: missedCount,
+        completionRate:
+          logs.length > 0 ? Math.round((completedCount / logs.length) * 100) : null,
+      },
+      blocks: blocks.map(block => {
+        const blockLogs = blockLogMap.get(block.id) ?? [];
+        const blockCompleted = blockLogs.filter(l => l.status === 'COMPLETED').length;
+
+        return {
+          id: block.id,
+          title: block.title,
+          tracked: block.trackCompletion,
+          duration: calculateBlockDuration(block.startTime, block.endTime),
+          logCount: blockLogs.length,
+          completionRate:
+            blockLogs.length > 0
+              ? Math.round((blockCompleted / blockLogs.length) * 100)
+              : null,
+        };
+      }),
     };
+  }
+
+  /**
+   * Fetch routine logs for a date range (inclusive), one day at a time
+   */
+  private async findLogsForRange(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<RoutineLog[]> {
+    const logs: RoutineLog[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (start.getTime() > end.getTime()) {
+      return logs;
+    }
+
+    const current = new Date(start);
+    while (current.getTime() <= end.getTime()) {
+      const dateStr = current.toISOString().split('T')[0];
+      logs.push(...(await this.routineRepository.findLogsByDate(userId, dateStr)));
+      current.setDate(current.getDate() + 1);
+    }
+
+    return logs;
   }
 }

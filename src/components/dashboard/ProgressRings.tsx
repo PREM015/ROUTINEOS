@@ -134,3 +134,5 @@ function ProgressRing({
     </div>
   );
 }
+
+export default ProgressRings;

@@ -570,7 +570,7 @@ async function main() {
       },
       {
         userId: demoUser.id,
-        text: 'You don't have to be great to start, but you have to start to be great.',
+        text: "You don't have to be great to start, but you have to start to be great.",
         author: 'Zig Ziglar',
         isPublic: false,
       },

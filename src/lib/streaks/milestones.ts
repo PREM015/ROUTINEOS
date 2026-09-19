@@ -10,7 +10,7 @@ export function checkNewMilestone(oldStreak: number, newStreak: number): number 
 }
 
 export function getMilestoneMessage(days: number): string {
-  return \`You've reached a \${days}-day streak!\`;
+  return `You've reached a ${days}-day streak!`;
 }
 
 export function getMilestoneEmoji(days: number): string {

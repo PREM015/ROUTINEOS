@@ -13,7 +13,7 @@ import type { User } from '@prisma/client';
  * NextAuth setup with custom credentials provider
  */
 
-const authConfig = {
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   
   providers: [
@@ -184,4 +184,4 @@ const authConfig = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

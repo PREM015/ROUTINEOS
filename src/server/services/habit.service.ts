@@ -5,7 +5,9 @@ import { ScoreRepository } from '@/server/repositories/score.repository';
 import type { HabitWithRelations, CreateHabitInput, UpdateHabitInput, LogHabitInput } from '@/types/habit';
 import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
 import { calculateHabitEligibility, isHabitScheduled } from '@/lib/habits/eligibility';
-import { calculateStreak } from '@/lib/streaks/calculate-streak';
+import { calculateStreak, recordStreakMilestone } from '@/lib/streaks/calculate-streak';
+import { AuditRepository } from '@/server/repositories/audit.repository';
+import { ScoringService } from './scoring.service';
 
 /**
  * Habit Service
@@ -16,11 +18,13 @@ export class HabitService {
   private habitRepository: HabitRepository;
   private streakRepository: StreakRepository;
   private scoreRepository: ScoreRepository;
+  private auditRepository: AuditRepository;
 
   constructor() {
     this.habitRepository = new HabitRepository();
     this.streakRepository = new StreakRepository();
     this.scoreRepository = new ScoreRepository();
+    this.auditRepository = new AuditRepository();
   }
 
   /**
@@ -212,13 +216,19 @@ export class HabitService {
           newStreak = updated.currentStreak;
 
           // Check for milestone
-          // TODO: Implement milestone checking
+          if (updated.newMilestone !== undefined) {
+            await recordStreakMilestone(
+              userId,
+              updated.newMilestone,
+              habit.tier.toLowerCase()
+            );
+          }
         }
       }
     }
 
     // Trigger score recalculation for the date
-    // TODO: Implement score recalculation
+    await new ScoringService().calculateDailyScore(userId, date);
 
     return {
       log,
@@ -244,7 +254,13 @@ export class HabitService {
     await this.habitRepository.archive(habitId, userId);
 
     // Log audit trail
-    // TODO: Implement audit logging
+    await this.auditRepository.create({
+      userId,
+      action: 'HABIT_ARCHIVED',
+      entityType: 'HABIT',
+      entityId: habitId,
+      metadata: reason ? { reason } : undefined,
+    });
   }
 
   /**
@@ -297,7 +313,9 @@ export class HabitService {
     await this.habitRepository.updateStatus(habitId, userId, 'ACTIVE');
 
     // Clear pause overrides
-    // TODO: Implement override cleanup
+    await this.habitRepository.prisma.habitOverride.deleteMany({
+      where: { habitId, type: 'PAUSE' },
+    });
   }
 
   /**
@@ -364,7 +382,12 @@ export class HabitService {
     });
 
     // Log audit trail
-    // TODO: Implement audit logging
+    await this.auditRepository.create({
+      userId,
+      action: 'HABIT_DELETED',
+      entityType: 'HABIT',
+      entityId: habitId,
+    });
   }
 
   /**

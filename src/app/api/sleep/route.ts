@@ -1,27 +1,39 @@
-// TODO: Implement route.ts
 import { auth } from '@/lib/auth';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { calculateSleepDuration, calculateSleepDeficit } from '@/lib/sleep/calculate-duration';
+import { LogSleepSchema } from '@/schemas/sleep.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
-const sleepLogSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  targetBedtime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  targetWakeTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  actualBedtime: z.string().regex(/^\d{2}:\d{2}$/),
-  actualWakeTime: z.string().regex(/^\d{2}:\d{2}$/),
-  quality: z.number().int().min(1).max(5).optional(),
-  wakeUpCount: z.number().int().min(0).optional(),
-  feltRested: z.boolean().optional(),
-  moodOnWaking: z.number().int().min(1).max(5).optional(),
-  energyOnWaking: z.number().int().min(1).max(5).optional(),
-  notes: z.string().optional(),
+/**
+ * Sleep Route
+ * GET  /api/sleep  – list sleep logs for a date range (optionally paginated)
+ * POST /api/sleep  – log sleep for a date (upsert per user+date)
+ */
+
+const sleepQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  offset: z.number().int().min(0).optional(),
 });
+
+function toDateString(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function defaultRange(): { startDate: string; endDate: string } {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 29);
+  return { startDate: toDateString(start), endDate: toDateString(end) };
+}
 
 /**
  * GET /api/sleep
- * Get sleep log for date
+ * Fetch sleep logs for the authenticated user. Pass `date` to fetch a single
+ * day, otherwise `startDate`/`endDate` (defaults to the last 30 days).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -31,34 +43,63 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date');
+    const queryData = {
+      date: searchParams.get('date') ?? undefined,
+      startDate: searchParams.get('startDate') ?? undefined,
+      endDate: searchParams.get('endDate') ?? undefined,
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined,
+      offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : undefined,
+    };
 
-    if (!date) {
+    const validated = sleepQuerySchema.safeParse(queryData);
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Date parameter required' },
+        { error: 'Invalid query parameters', details: validated.error.flatten() },
         { status: 400 }
       );
     }
 
     const sleepRepository = new SleepRepository();
-    const sleepLog = await sleepRepository.findByDate(session.user.id, date);
+
+    if (validated.data.date) {
+      const sleepLog = await sleepRepository.findByDate(session.user.id, validated.data.date);
+      return NextResponse.json({
+        success: true,
+        data: sleepLog ? [sleepLog] : [],
+        meta: { total: sleepLog ? 1 : 0 },
+      });
+    }
+
+    const range = defaultRange();
+    const startDate = validated.data.startDate ?? range.startDate;
+    const endDate = validated.data.endDate ?? range.endDate;
+    const logs = await sleepRepository.findByRange(session.user.id, startDate, endDate);
+
+    const total = logs.length;
+    const offset = validated.data.offset ?? 0;
+    const limit = validated.data.limit ?? 100;
+    const paginated = logs.slice(offset, offset + limit);
 
     return NextResponse.json({
       success: true,
-      data: sleepLog,
+      data: paginated,
+      meta: {
+        total,
+        limit,
+        offset,
+        startDate,
+        endDate,
+      },
     });
   } catch (error) {
-    console.error('Error fetching sleep log:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sleep log' },
-      { status: 500 }
-    );
+    console.error('Error fetching sleep logs:', error);
+    return NextResponse.json({ error: 'Failed to fetch sleep logs' }, { status: 500 });
   }
 }
 
 /**
  * POST /api/sleep
- * Create or update sleep log
+ * Log sleep for a date. Creating or updating the log for the given user+date.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -68,8 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validated = sleepLogSchema.safeParse(body);
-
+    const validated = LogSleepSchema.safeParse(body);
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validated.error.flatten() },
@@ -77,47 +117,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, ...logData } = validated.data;
+    const { date, bedtime, wakeTime, quality, notes } = validated.data;
 
-    // Calculate duration
-    const actualDurationMinutes = calculateSleepDuration(
-      logData.actualBedtime,
-      logData.actualWakeTime
-    );
-
-    // Calculate deficit if target is available
-    let deficitMinutes: number | undefined;
-    if (logData.targetBedtime && logData.targetWakeTime) {
-      const targetDuration = calculateSleepDuration(
-        logData.targetBedtime,
-        logData.targetWakeTime
-      );
-      deficitMinutes = calculateSleepDeficit(actualDurationMinutes, targetDuration);
-    }
+    const actualDurationMinutes = calculateSleepDuration(bedtime, wakeTime);
+    const deficitMinutes = calculateSleepDeficit(actualDurationMinutes, 480);
 
     const sleepRepository = new SleepRepository();
     const sleepLog = await sleepRepository.upsertLog(session.user.id, date, {
-      user: { connect: { id: session.user.id } },
-      date,
-      ...logData,
+      actualBedtime: bedtime,
+      actualWakeTime: wakeTime,
       actualDurationMinutes,
       deficitMinutes,
+      quality,
+      notes,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: sleepLog,
-    });
+    return NextResponse.json({ success: true, data: sleepLog });
   } catch (error) {
     console.error('Error saving sleep log:', error);
-
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-
-    return NextResponse.json(
-      { error: 'Failed to save sleep log' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to save sleep log' }, { status: 500 });
   }
 }

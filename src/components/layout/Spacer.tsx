@@ -1,10 +1,18 @@
-// TODO: Implement Spacer component
+"use client";
+/**
+ * Spacer — an empty, flexible spacer element.
+ *
+ * Renders `flex-1` on a `<div>` so it pushes siblings apart in a flex row/column.
+ * Hidden from assistive technology since it has no semantic content.
+ */
 
-export default function Spacer() {
-  return (
-    <div>
-      <h1>Spacer</h1>
-      <p>Component implementation pending</p>
-    </div>
-  );
+import React from 'react';
+import { cn } from '@/lib/utils';
+
+export type SpacerProps = React.HTMLAttributes<HTMLDivElement>;
+
+export function Spacer({ className, ...props }: SpacerProps) {
+  return <div aria-hidden="true" className={cn('flex-1', className)} {...props} />;
 }
+
+export default Spacer;
