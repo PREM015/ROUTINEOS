@@ -1,1 +1,7 @@
-// TODO: Implement prettier.config.js
+module.exports = {
+  singleQuote: true,
+  semi: false,
+  trailingComma: 'all',
+  printWidth: 100,
+  plugins: ['prettier-plugin-tailwindcss'],
+};

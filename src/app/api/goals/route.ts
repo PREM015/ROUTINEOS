@@ -1,91 +1,79 @@
+import { auth } from '@/lib/auth';
+import { GoalService } from '@/server/services/goal.service';
+import { GoalRepository } from '@/server/repositories/goal.repository';
+import { createGoalSchema } from '@/schemas/goal.schema';
+import { NextRequest, NextResponse } from 'next/server';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createAuthHandler } from '@/lib/middleware/api-handler';
-import { db } from '@/lib/db';
-import { z } from 'zod';
+/**
+ * GET /api/goals
+ * Fetch all goals for user
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-const createGoalSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  type: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM']),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'PERSONAL', 'ACADEMIC', 'NON_PROFIT', 'PROFESSIONAL']),
-  targetValue: z.number().positive(),
-  currentValue: z.number().default(0),
-  unit: z.string().optional(),
-  startDate: z.string().or(z.date()),
-  endDate: z.string().or(z.date()),
-  projectId: z.string().optional(),
-  parentGoalId: z.string().optional(),
-});
+    const { searchParams } = new URL(request.url);
 
-export const GET = createAuthHandler(async (req, { session }) => {
-  const { searchParams } = new URL(req.url);
-  const status = searchParams.get('status');
-  const type = searchParams.get('type');
-  const priority = searchParams.get('priority');
-  const projectId = searchParams.get('projectId');
-
-  const where: any = { userId: session.user.id };
-  if (status) where.status = status;
-  if (type) where.type = type;
-  if (priority) where.priority = priority;
-  if (projectId) where.projectId = projectId;
-
-  const goals = await db.goal.findMany({
-    where,
-    include: {
-      project: true,
-      parentGoal: true,
-      subGoals: {
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          currentValue: true,
-          targetValue: true,
-        },
-      },
-      milestones: {
-        orderBy: { sortOrder: 'asc' },
-      },
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-      _count: {
-        select: { 
-          progressLogs: true,
-          subGoals: true,
-        },
-      },
-    },
-    orderBy: [
-      { status: 'asc' },
-      { endDate: 'asc' },
-    ],
-  });
-
-  return goals;
-});
-
-export const POST = createAuthHandler(
-  async (req, { session, body }) => {
-    const goal = await db.goal.create({
-      data: {
-        ...body,
-        userId: session.user.id,
-        status: 'ACTIVE',
-        currentValue: body.currentValue || 0,
-      },
-      include: { 
-        project: true,
-        parentGoal: true,
-        milestones: true,
-      },
+    const goalRepository = new GoalRepository();
+    const goals = await goalRepository.findAll(session.user.id, {
+      status: searchParams.get('status')?.split(',') as any,
+      type: searchParams.get('type')?.split(',') as any,
+      priority: searchParams.get('priority')?.split(',') as any,
+      projectId: searchParams.get('projectId') || undefined,
+      overdue: searchParams.get('overdue') === 'true',
+      dueSoon: searchParams.get('dueSoon') === 'true',
+      sortBy: (searchParams.get('sortBy') as any) || 'endDate',
+      sortOrder: (searchParams.get('sortOrder') as any) || 'asc',
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50,
+      offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
     });
 
-    return goal;
-  },
-  createGoalSchema
-);
+    return NextResponse.json({
+      success: true,
+      data: goals,
+      meta: { total: goals.length },
+    });
+  } catch (error) {
+    console.error('Error fetching goals:', error);
+    return NextResponse.json({ error: 'Failed to fetch goals' }, { status: 500 });
+  }
+}
+
+/**
+ * POST /api/goals
+ * Create new goal
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const validated = createGoalSchema.safeParse(body);
+
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const goalService = new GoalService();
+    const goal = await goalService.createGoal(session.user.id, validated.data);
+
+    return NextResponse.json({ success: true, data: goal }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating goal:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ error: 'Failed to create goal' }, { status: 500 });
+  }
+}

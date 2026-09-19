@@ -1,39 +1,87 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Clock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
+import { Progress } from '@/components/ui/Progress';
+import { getCurrentBlock, calculateBlockProgress } from '@/lib/routine/duration';
 
-interface CurrentRoutineBlockProps {
-  block: { name: string; duration: number; timeRemaining: number } | null;
+interface Block {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  description: string | null;
+  icon: string | null;
 }
 
-export function CurrentRoutineBlock({ block }: CurrentRoutineBlockProps) {
-  if (!block) {
-    return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center text-zinc-400">
-        No active routine block
-      </div>
-    );
+export function CurrentRoutineBlock() {
+  const [currentBlock, setCurrentBlock] = useState<Block | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState('');
+
+  useEffect(() => {
+    fetchRoutine();
+    const interval = setInterval(fetchRoutine, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  async function fetchRoutine() {
+    try {
+      const res = await fetch('/api/routine/today');
+      const data = await res.json();
+      
+      if (data.success && data.data.blocks) {
+        const current = getCurrentBlock(data.data.blocks);
+        setCurrentBlock(current);
+
+        if (current) {
+          const prog = calculateBlockProgress(current.startTime, current.endTime);
+          setProgress(prog.percentage);
+          setTimeRemaining(formatMinutes(prog.minutesRemaining));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching routine:', error);
+    }
   }
 
-  const progress = ((block.duration - block.timeRemaining) / block.duration) * 100;
+  if (!currentBlock) {
+    return null;
+  }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">{block.name}</h3>
-        <div className="flex items-center gap-2 text-zinc-400">
-          <Clock className="w-4 h-4" />
-          <span>{Math.floor(block.timeRemaining / 60)}m left</span>
+    <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          {currentBlock.icon && (
+            <span className="text-3xl">{currentBlock.icon}</span>
+          )}
+          <div>
+            <h3 className="text-lg font-semibold">{currentBlock.title}</h3>
+            <p className="text-sm text-gray-600">
+              {currentBlock.startTime} - {currentBlock.endTime}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-600">Time Remaining</p>
+          <p className="text-xl font-bold text-blue-600">{timeRemaining}</p>
         </div>
       </div>
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: \`\${progress}%\` }}
-          className="h-full bg-blue-500 rounded-full"
-        />
-      </div>
-    </div>
+
+      {currentBlock.description && (
+        <p className="text-sm text-gray-700 mb-4">{currentBlock.description}</p>
+      )}
+
+      <Progress value={progress} className="h-2" />
+    </Card>
   );
+}
+
+function formatMinutes(minutes: number): string {
+  if (minutes < 1) return 'Less than a minute';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }

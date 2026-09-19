@@ -1,41 +1,122 @@
-export function calculateSleepScore(params: { actualMinutes: number; targetMinutes: number; bedtime: string; targetBedtime: string; wakeTime: string; targetWakeTime: string }): number {
-  let score = 100;
-  
-  if (params.actualMinutes < params.targetMinutes) {
-    const diff = params.targetMinutes - params.actualMinutes;
-    const penalty = Math.min(40, (diff / 60) * 15);
-    score -= penalty;
-  }
-  
-  function timeToMins(t: string) {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
-  }
-  
-  function diffMinutes(t1: string, t2: string) {
-    let m1 = timeToMins(t1);
-    let m2 = timeToMins(t2);
-    let diff = Math.abs(m1 - m2);
-    if (diff > 12 * 60) {
-      diff = 24 * 60 - diff;
+import { auth } from '@/lib/auth';
+import { SleepRepository } from '@/server/repositories/sleep.repository';
+import { calculateSleepDuration, calculateSleepDeficit } from '@/lib/sleep/calculate-duration';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const sleepLogSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  targetBedtime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  targetWakeTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  actualBedtime: z.string().regex(/^\d{2}:\d{2}$/),
+  actualWakeTime: z.string().regex(/^\d{2}:\d{2}$/),
+  quality: z.number().int().min(1).max(5).optional(),
+  wakeUpCount: z.number().int().min(0).optional(),
+  feltRested: z.boolean().optional(),
+  moodOnWaking: z.number().int().min(1).max(5).optional(),
+  energyOnWaking: z.number().int().min(1).max(5).optional(),
+  notes: z.string().optional(),
+});
+
+/**
+ * GET /api/sleep
+ * Get sleep log for date
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return diff;
+
+    const { searchParams } = new URL(request.url);
+    const date = searchParams.get('date');
+
+    if (!date) {
+      return NextResponse.json(
+        { error: 'Date parameter required' },
+        { status: 400 }
+      );
+    }
+
+    const sleepRepository = new SleepRepository();
+    const sleepLog = await sleepRepository.findByDate(session.user.id, date);
+
+    return NextResponse.json({
+      success: true,
+      data: sleepLog,
+    });
+  } catch (error) {
+    console.error('Error fetching sleep log:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch sleep log' },
+      { status: 500 }
+    );
   }
-  
-  const bedDiff = diffMinutes(params.bedtime, params.targetBedtime);
-  const bedPenalty = Math.min(30, (bedDiff / 60) * 10);
-  score -= bedPenalty;
-  
-  const wakeDiff = diffMinutes(params.wakeTime, params.targetWakeTime);
-  const wakePenalty = Math.min(30, (wakeDiff / 60) * 10);
-  score -= wakePenalty;
-  
-  return Math.max(0, Math.round(score));
 }
 
-export function getSleepScoreBand(score: number): { label: string; color: string } {
-  if (score >= 90) return { label: 'Excellent', color: 'text-green-600 bg-green-100' };
-  if (score >= 80) return { label: 'Good', color: 'text-blue-600 bg-blue-100' };
-  if (score >= 60) return { label: 'Fair', color: 'text-yellow-600 bg-yellow-100' };
-  return { label: 'Poor', color: 'text-red-600 bg-red-100' };
+/**
+ * POST /api/sleep
+ * Create or update sleep log
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const validated = sleepLogSchema.safeParse(body);
+
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { date, ...logData } = validated.data;
+
+    // Calculate duration
+    const actualDurationMinutes = calculateSleepDuration(
+      logData.actualBedtime,
+      logData.actualWakeTime
+    );
+
+    // Calculate deficit if target is available
+    let deficitMinutes: number | undefined;
+    if (logData.targetBedtime && logData.targetWakeTime) {
+      const targetDuration = calculateSleepDuration(
+        logData.targetBedtime,
+        logData.targetWakeTime
+      );
+      deficitMinutes = calculateSleepDeficit(actualDurationMinutes, targetDuration);
+    }
+
+    const sleepRepository = new SleepRepository();
+    const sleepLog = await sleepRepository.upsertLog(session.user.id, date, {
+      user: { connect: { id: session.user.id } },
+      date,
+      ...logData,
+      actualDurationMinutes,
+      deficitMinutes,
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: sleepLog,
+    });
+  } catch (error) {
+    console.error('Error saving sleep log:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to save sleep log' },
+      { status: 500 }
+    );
+  }
 }

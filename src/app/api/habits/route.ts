@@ -1,85 +1,106 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest } from "next/server";
-import { createAuthHandler } from "@/lib/middleware/api-handler";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { HabitRepository } from '@/server/repositories/habit.repository';
+import { HabitService } from '@/server/services/habit.service';
+import { habitQuerySchema, createHabitSchema } from '@/schemas/habit.schema';
+import { NextRequest, NextResponse } from 'next/server';
 
-const createHabitSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  categoryId: z.string().optional(),
-  tier: z.enum(['GROWTH', 'BONUS', 'OPTIONAL', 'EXPERIMENTAL', 'UNDEFINED', 'ALTERNATIVE', 'SPECIAL', 'FLEXIBLE', 'JUST_FOR_FUN', 'LIFESTYLE']),
-  frequencyType: z.enum(['DAILY', 'SPECIFIC_WEEKDAYS', 'WEEKLY_TARGET', 'MONTHLY_TARGET', 'YEARLY_TARGET', 'RANDOM', 'ONE_TIME', 'CUSTOM']),
-  frequencyValue: z.string().optional(),
-  targetCount: z.number().optional(),
-  color: z.string().optional(),
-  icon: z.string().optional(),
-  reminderTime: z.string().optional(),
-  reminderEnabled: z.boolean().default(false),
-  estimatedDuration: z.number().optional(),
-  difficulty: z.number().min(1).max(5).optional(),
-});
+/**
+ * GET /api/habits
+ * Fetch all habits for authenticated user
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-export const GET = createAuthHandler(async (req, { session }) => {
-  const { searchParams } = new URL(req.url);
-  const date = searchParams.get("date");
-  const status = searchParams.get("status");
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const queryData = {
+      status: searchParams.get('status')?.split(','),
+      tier: searchParams.get('tier')?.split(','),
+      categoryId: searchParams.get('categoryId'),
+      search: searchParams.get('search'),
+      sortBy: searchParams.get('sortBy') || 'createdAt',
+      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 20,
+      offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
+      includeArchived: searchParams.get('includeArchived') === 'true',
+    };
 
-  const where: any = { userId: session.user.id };
-  if (status) where.status = status;
+    // Validate query
+    const validated = habitQuerySchema.safeParse(queryData);
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-  const habits = await db.habit.findMany({
-    where,
-    include: {
-      logs: date ? { where: { date } } : false,
-      overrides: date 
-        ? { 
-            where: { 
-              startDate: { lte: date }, 
-              OR: [
-                { endDate: null }, 
-                { endDate: { gte: date } }
-              ] 
-            } 
-          } 
-        : false,
-      category: true,
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
-    },
-    orderBy: [
-      { status: 'asc' },
-      { createdAt: 'desc' },
-    ],
-  });
+    const habitRepository = new HabitRepository();
+    const habits = await habitRepository.findAll(session.user.id, validated.data);
 
-  return habits;
-});
-
-export const POST = createAuthHandler(
-  async (req, { session, body }) => {
-    const habit = await db.habit.create({
-      data: {
-        ...body,
-        userId: session.user.id,
-        status: 'ACTIVE',
-        startDate: new Date(),
-      },
-      include: { 
-        category: true,
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
+    return NextResponse.json({
+      success: true,
+      data: habits,
+      meta: {
+        total: habits.length,
+        limit: validated.data.limit,
+        offset: validated.data.offset,
       },
     });
+  } catch (error) {
+    console.error('Error fetching habits:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch habits' },
+      { status: 500 }
+    );
+  }
+}
 
-    return habit;
-  },
-  createHabitSchema
-);
+/**
+ * POST /api/habits
+ * Create new habit
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    // Validate input
+    const validated = createHabitSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const habitService = new HabitService();
+    const habit = await habitService.createHabit(session.user.id, validated.data);
+
+    return NextResponse.json(
+      { success: true, data: habit },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error creating habit:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to create habit' },
+      { status: 500 }
+    );
+  }
+}

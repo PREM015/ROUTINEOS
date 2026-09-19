@@ -1,44 +1,181 @@
-import { AuditAction } from '@/generated/prisma/client';
+import { auditService } from './audit.service';
+import type { AuditAction } from '@prisma/client';
 
-// Map of common audit events with descriptions
-export const AUDIT_EVENTS: Record<AuditAction, string> = {
-  // Habits
-  HABIT_CREATED: 'Habit created',
-  HABIT_UPDATED: 'Habit updated',
-  HABIT_ARCHIVED: 'Habit archived',
-  HABIT_DELETED: 'Habit deleted',
-  HABIT_PAUSED: 'Habit paused',
-  HABIT_RESUMED: 'Habit resumed',
-  
-  // Goals
-  GOAL_CREATED: 'Goal created',
-  GOAL_UPDATED: 'Goal updated',
-  GOAL_DELETED: 'Goal deleted',
-  GOAL_COMPLETED: 'Goal completed',
-  
-  // Routine
-  ROUTINE_CREATED: 'Routine created',
-  ROUTINE_CHANGED: 'Routine changed',
-  ROUTINE_DELETED: 'Routine deleted',
-  
-  // Settings & System
-  SCORING_SETTINGS_CHANGED: 'Scoring settings changed',
-  MINIMUM_DAY_ACTIVATED: 'Minimum day activated',
-  REST_DAY_ACTIVATED: 'Rest day activated',
-  SETTINGS_UPDATED: 'Settings updated',
-  
-  // Data
-  DATA_EXPORTED: 'Data exported',
-  DATA_IMPORTED: 'Data imported',
-  DATA_RESET: 'Data reset',
-  
-  // Auth & Security
-  LOGIN_FAILED: 'Login failed',
-  LOGIN_SUCCESS: 'Login successful',
-  ACCOUNT_LOCKED: 'Account locked',
-  PASSWORD_RESET_REQUESTED: 'Password reset requested',
-  PASSWORD_RESET_COMPLETED: 'Password reset completed',
-  LOGOUT_ALL_SESSIONS: 'All sessions logged out',
-  EMAIL_VERIFIED: 'Email verified',
-  ACCOUNT_DELETED: 'Account deleted',
-};
+/**
+ * Audit Event Helpers
+ * Convenience functions for common audit events
+ */
+
+export async function auditHabitCreated(
+  userId: string,
+  habitId: string,
+  habitName: string
+) {
+  await auditService.log({
+    userId,
+    action: 'HABIT_CREATED',
+    entityType: 'HABIT',
+    entityId: habitId,
+    metadata: { name: habitName },
+  });
+}
+
+export async function auditHabitArchived(
+  userId: string,
+  habitId: string,
+  habitName: string,
+  reason?: string
+) {
+  await auditService.log({
+    userId,
+    action: 'HABIT_ARCHIVED',
+    entityType: 'HABIT',
+    entityId: habitId,
+    metadata: { name: habitName, reason },
+  });
+}
+
+export async function auditHabitDeleted(
+  userId: string,
+  habitId: string,
+  habitName: string
+) {
+  await auditService.log({
+    userId,
+    action: 'HABIT_DELETED',
+    entityType: 'HABIT',
+    entityId: habitId,
+    metadata: { name: habitName },
+  });
+}
+
+export async function auditGoalCreated(
+  userId: string,
+  goalId: string,
+  goalTitle: string
+) {
+  await auditService.log({
+    userId,
+    action: 'GOAL_CREATED',
+    entityType: 'GOAL',
+    entityId: goalId,
+    metadata: { title: goalTitle },
+  });
+}
+
+export async function auditGoalCompleted(
+  userId: string,
+  goalId: string,
+  goalTitle: string
+) {
+  await auditService.log({
+    userId,
+    action: 'GOAL_COMPLETED',
+    entityType: 'GOAL',
+    entityId: goalId,
+    metadata: { title: goalTitle },
+  });
+}
+
+export async function auditGoalDeleted(
+  userId: string,
+  goalId: string,
+  goalTitle: string
+) {
+  await auditService.log({
+    userId,
+    action: 'GOAL_DELETED',
+    entityType: 'GOAL',
+    entityId: goalId,
+    metadata: { title: goalTitle },
+  });
+}
+
+export async function auditRoutineChanged(
+  userId: string,
+  templateId: string,
+  templateName: string
+) {
+  await auditService.log({
+    userId,
+    action: 'ROUTINE_CHANGED',
+    entityType: 'ROUTINE_TEMPLATE',
+    entityId: templateId,
+    metadata: { name: templateName },
+  });
+}
+
+export async function auditScoringSettingsChanged(
+  userId: string,
+  oldSettings: any,
+  newSettings: any
+) {
+  await auditService.log({
+    userId,
+    action: 'SCORING_SETTINGS_CHANGED',
+    entityType: 'USER_SETTINGS',
+    metadata: { oldSettings, newSettings },
+  });
+}
+
+export async function auditMinimumDayActivated(
+  userId: string,
+  date: string,
+  reason?: string
+) {
+  await auditService.log({
+    userId,
+    action: 'MINIMUM_DAY_ACTIVATED',
+    entityType: 'DAILY_SCORE',
+    entityId: date,
+    metadata: { date, reason },
+  });
+}
+
+export async function auditRestDayActivated(
+  userId: string,
+  date: string,
+  reason?: string
+) {
+  await auditService.log({
+    userId,
+    action: 'REST_DAY_ACTIVATED',
+    entityType: 'DAILY_SCORE',
+    entityId: date,
+    metadata: { date, reason },
+  });
+}
+
+export async function auditDataExported(
+  userId: string,
+  format: string,
+  fileSize: number
+) {
+  await auditService.log({
+    userId,
+    action: 'DATA_EXPORTED',
+    metadata: { format, fileSize },
+  });
+}
+
+export async function auditDataImported(
+  userId: string,
+  recordsImported: number
+) {
+  await auditService.log({
+    userId,
+    action: 'DATA_IMPORTED',
+    metadata: { recordsImported },
+  });
+}
+
+export async function auditAccountDeleted(
+  userId: string,
+  reason?: string
+) {
+  await auditService.log({
+    userId,
+    action: 'ACCOUNT_DELETED',
+    metadata: { reason },
+  });
+}

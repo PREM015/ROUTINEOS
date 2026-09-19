@@ -1,129 +1,141 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
 
-interface HeatmapDay {
+interface DayData {
   date: string;
-  score: number;
-  dayType: 'NORMAL' | 'MINIMUM' | 'REST' | 'MISSED' | 'FUTURE';
+  score: number | null;
+  level: 0 | 1 | 2 | 3 | 4;
 }
 
-interface ContributionHeatmapProps {
-  days: HeatmapDay[];
-  title?: string;
-  showMonthLabels?: boolean;
-}
+export function ContributionHeatmap() {
+  const [data, setData] = useState<DayData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const getCellColor = (day: HeatmapDay) => {
-  if (day.dayType === 'FUTURE') return 'bg-zinc-900 border border-zinc-800';
-  if (day.dayType === 'REST') return 'bg-blue-900/40';
-  
-  if (day.score === 0) return 'bg-zinc-900';
-  if (day.score < 40) return 'bg-emerald-950';
-  if (day.score < 60) return 'bg-emerald-900';
-  if (day.score < 75) return 'bg-emerald-700';
-  if (day.score < 90) return 'bg-emerald-500';
-  return 'bg-emerald-400';
-};
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-export default function ContributionHeatmap({
-  days,
-  title = "Activity",
-  showMonthLabels = true
-}: ContributionHeatmapProps) {
-  if (!days || days.length === 0) {
-    // Skeleton state
+  async function fetchData() {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 365);
+
+      const res = await fetch(
+        `/api/scores/daily?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`
+      );
+      const result = await res.json();
+
+      if (result.success) {
+        const heatmapData = result.data.map((score: any) => ({
+          date: score.date,
+          score: score.totalScore,
+          level: getLevel(score.totalScore),
+        }));
+        setData(heatmapData);
+      }
+    } catch (error) {
+      console.error('Error fetching heatmap data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getLevel(score: number | null): 0 | 1 | 2 | 3 | 4 {
+    if (score === null) return 0;
+    if (score >= 90) return 4;
+    if (score >= 75) return 3;
+    if (score >= 50) return 2;
+    if (score >= 25) return 1;
+    return 0;
+  }
+
+  if (loading) {
     return (
-      <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 w-fit">
-        {title && <h3 className="text-zinc-100 font-semibold mb-4">{title}</h3>}
-        <div className="flex gap-[2px]">
-          {Array.from({ length: 12 }).map((_, colIndex) => (
-            <div key={colIndex} className="flex flex-col gap-[2px]">
-              {Array.from({ length: 7 }).map((_, rowIndex) => (
-                <div key={rowIndex} className="w-3 h-3 rounded-sm bg-zinc-800/50" />
-              ))}
-            </div>
-          ))}
+      <Card className="p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  const weeks: HeatmapDay[][] = [];
-  let currentWeek: HeatmapDay[] = [];
-  
-  days.forEach((day, i) => {
-    currentWeek.push(day);
-    if (currentWeek.length === 7 || i === days.length - 1) {
+  // Group by weeks
+  const weeks: DayData[][] = [];
+  let currentWeek: DayData[] = [];
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 365);
+
+  for (let i = 0; i < 365; i++) {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + i);
+    const dateStr = date.toISOString().split('T')[0];
+
+    const dayData = data.find(d => d.date === dateStr) || {
+      date: dateStr,
+      score: null,
+      level: 0 as const,
+    };
+
+    currentWeek.push(dayData);
+
+    if (currentWeek.length === 7) {
       weeks.push(currentWeek);
       currentWeek = [];
     }
-  });
+  }
 
-  const monthLabels: { month: string; colIndex: number }[] = [];
-  let currentMonth = '';
-  
-  weeks.forEach((week, index) => {
-    if (week.length > 0) {
-      const date = new Date(week[0].date);
-      const month = date.toLocaleString('default', { month: 'short' });
-      if (month !== currentMonth) {
-        monthLabels.push({ month, colIndex: index });
-        currentMonth = month;
-      }
-    }
-  });
+  if (currentWeek.length > 0) {
+    weeks.push(currentWeek);
+  }
 
   return (
-    <div className="bg-zinc-900 p-6 rounded-xl border border-zinc-800 w-fit">
-      {title && <h3 className="text-zinc-100 font-semibold mb-4">{title}</h3>}
-      
-      <div className="relative">
-        {showMonthLabels && (
-          <div className="flex text-xs text-zinc-500 mb-2 h-4 relative">
-            {monthLabels.map((label, i) => (
-              <span 
-                key={i} 
-                className="absolute"
-                style={{ left: `${label.colIndex * (12 + 2)}px` }} // 12px width + 2px gap
-              >
-                {label.month}
-              </span>
-            ))}
-          </div>
-        )}
-        
-        <div className="flex gap-[2px]">
+    <Card className="p-6">
+      <h3 className="text-lg font-semibold mb-4">Activity Overview</h3>
+
+      <div className="overflow-x-auto">
+        <div className="inline-flex gap-1">
           {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-[2px]">
-              {week.map((day) => (
+            <div key={weekIndex} className="flex flex-col gap-1">
+              {week.map((day, dayIndex) => (
                 <div
-                  key={day.date}
-                  className={`group relative w-3 h-3 rounded-sm ${getCellColor(day)} transition-colors duration-200`}
-                >
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10 w-max bg-zinc-800 text-xs text-zinc-200 px-2 py-1 rounded shadow-lg border border-zinc-700 pointer-events-none">
-                    <span className="font-semibold text-white">{day.score}%</span> on {day.date}
-                    <div className="text-[10px] text-zinc-400 mt-0.5">{day.dayType}</div>
-                  </div>
-                </div>
+                  key={dayIndex}
+                  className={`w-3 h-3 rounded-sm ${getLevelColor(day.level)}`}
+                  title={`${day.date}: ${day.score !== null ? Math.round(day.score) : 'No data'}`}
+                />
               ))}
             </div>
           ))}
         </div>
       </div>
-      
-      <div className="flex items-center gap-2 mt-4 text-xs text-zinc-500">
+
+      <div className="flex items-center gap-2 mt-4 text-sm text-gray-600">
         <span>Less</span>
-        <div className="flex gap-[2px]">
-          <div className="w-3 h-3 rounded-sm bg-zinc-900 border border-zinc-800" />
-          <div className="w-3 h-3 rounded-sm bg-emerald-950" />
-          <div className="w-3 h-3 rounded-sm bg-emerald-900" />
-          <div className="w-3 h-3 rounded-sm bg-emerald-700" />
-          <div className="w-3 h-3 rounded-sm bg-emerald-500" />
-          <div className="w-3 h-3 rounded-sm bg-emerald-400" />
+        <div className="flex gap-1">
+          {[0, 1, 2, 3, 4].map(level => (
+            <div
+              key={level}
+              className={`w-3 h-3 rounded-sm ${getLevelColor(level as 0 | 1 | 2 | 3 | 4)}`}
+            />
+          ))}
         </div>
         <span>More</span>
       </div>
-    </div>
+    </Card>
   );
+}
+
+function getLevelColor(level: 0 | 1 | 2 | 3 | 4): string {
+  const colors = {
+    0: 'bg-gray-100',
+    1: 'bg-green-200',
+    2: 'bg-green-400',
+    3: 'bg-green-600',
+    4: 'bg-green-800',
+  };
+  return colors[level];
 }

@@ -1,395 +1,596 @@
-/**
- * Prisma Seed Script
- * Seeds the database with initial data for RoutineOS
- */
-import { PrismaClient } from "../src/generated/prisma";
-import crypto from "crypto";
+import { PrismaClient, Role, Theme, HabitTier, HabitStatus, HabitFrequencyType, DayType, GoalType, GoalPriority, GoalStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const hashPassword = (password: string) =>
-  crypto.createHash("sha256").update(password).digest("hex");
+/**
+ * Database Seeding Script
+ * Creates demo user with sample data for development and testing
+ */
 
 async function main() {
-  console.log("🌱 Starting seed...");
+  console.log('🌱 Starting database seed...');
 
-  // ── Admin user ──────────────────────────────────────────────
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@routineos.app" },
-    update: {},
-    create: {
-      email: "admin@routineos.app",
-      name: "Admin",
-      displayName: "RoutineOS Admin",
-      passwordHash: hashPassword("admin123!"),
-      role: "ADMIN",
-      timezone: "Asia/Kolkata",
+  // Clean up existing data (development only)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🧹 Cleaning up existing data...');
+    
+    await prisma.habitLog.deleteMany();
+    await prisma.habitOverride.deleteMany();
+    await prisma.habit.deleteMany();
+    
+    await prisma.goalProgress.deleteMany();
+    await prisma.milestone.deleteMany();
+    await prisma.goal.deleteMany();
+    
+    await prisma.routineLog.deleteMany();
+    await prisma.routineException.deleteMany();
+    await prisma.routineBlock.deleteMany();
+    await prisma.routineTemplate.deleteMany();
+    
+    await prisma.dailyScore.deleteMany();
+    await prisma.dailyReflection.deleteMany();
+    await prisma.sleepLog.deleteMany();
+    
+    await prisma.streak.deleteMany();
+    await prisma.category.deleteMany();
+    await prisma.tag.deleteMany();
+    await prisma.quote.deleteMany();
+    
+    await prisma.userSettings.deleteMany();
+    await prisma.userSubscription.deleteMany();
+    await prisma.user.deleteMany();
+  }
+
+  // ============================================================================
+  // Create Demo Users
+  // ============================================================================
+
+  console.log('👤 Creating demo users...');
+
+  const demoUserPassword = await bcrypt.hash('Password123!', 12);
+
+  const demoUser = await prisma.user.create({
+    data: {
+      email: 'demo@routineos.com',
+      name: 'Demo User',
+      displayName: 'Demo',
+      passwordHash: demoUserPassword,
+      role: Role.USER,
+      timezone: 'America/New_York',
       emailVerified: new Date(),
       onboardingCompletedAt: new Date(),
-      settings: {
-        create: {
-          timezone: "Asia/Kolkata",
-          language: "en",
-          dateFormat: "YYYY-MM-DD",
-          timeFormat: "24h",
-          weekStartsOn: 1,
-          theme: "DARK",
-          weightNonNeg: 1.0,
-          weightGrowth: 0.5,
-          weightBonus: 0.25,
-          aiInsightsEnabled: true,
-          notificationsEnabled: true,
-          emailNotifications: true,
-          pushNotifications: false,
-          dailyReminder: true,
-          dailyReminderTime: "08:00",
-          habitReminders: true,
-          goalReminders: true,
-          weeklyReviewReminder: true,
-          monthlyResetReminder: true,
-          retroactiveEditDays: 3,
-        },
-      },
-    },
-  });
-  console.log(`✅ Admin user: ${admin.email}`);
-
-  // ── Demo user ────────────────────────────────────────────────
-  const demo = await prisma.user.upsert({
-    where: { email: "demo@routineos.app" },
-    update: {},
-    create: {
-      email: "demo@routineos.app",
-      name: "Demo User",
-      displayName: "Demo",
-      passwordHash: hashPassword("demo1234!"),
-      role: "USER",
-      timezone: "Asia/Kolkata",
-      emailVerified: new Date(),
-      onboardingCompletedAt: new Date(),
-      settings: {
-        create: {
-          timezone: "Asia/Kolkata",
-          language: "en",
-          dateFormat: "YYYY-MM-DD",
-          timeFormat: "24h",
-          weekStartsOn: 1,
-          theme: "DARK",
-          weightNonNeg: 1.0,
-          weightGrowth: 0.5,
-          weightBonus: 0.25,
-          targetBedtime: "22:30",
-          targetWakeTime: "06:00",
-          aiInsightsEnabled: true,
-          notificationsEnabled: true,
-          emailNotifications: false,
-          pushNotifications: false,
-          dailyReminder: true,
-          dailyReminderTime: "07:00",
-          habitReminders: true,
-          goalReminders: true,
-          weeklyReviewReminder: true,
-          monthlyResetReminder: true,
-          retroactiveEditDays: 3,
-        },
-      },
-    },
-  });
-  console.log(`✅ Demo user: ${demo.email}`);
-
-  // ── Categories for demo user ─────────────────────────────────
-  const categories = [
-    { name: "Health & Fitness", icon: "💪", color: "#ef4444" },
-    { name: "Learning",         icon: "📚", color: "#3b82f6" },
-    { name: "Mindfulness",      icon: "🧘", color: "#8b5cf6" },
-    { name: "Nutrition",        icon: "🥗", color: "#22c55e" },
-    { name: "Productivity",     icon: "⚡", color: "#64748b" },
-  ];
-
-  const createdCategories: Record<string, string> = {};
-  for (const cat of categories) {
-    const c = await prisma.category.upsert({
-      where: { userId_nameNormalized: { userId: demo.id, nameNormalized: cat.name.toLowerCase().replace(/\s+/g, "-") } },
-      update: {},
-      create: {
-        userId: demo.id,
-        name: cat.name,
-        nameNormalized: cat.name.toLowerCase().replace(/\s+/g, "-"),
-        icon: cat.icon,
-        color: cat.color,
-      },
-    });
-    createdCategories[cat.name] = c.id;
-  }
-  console.log(`✅ ${categories.length} categories created`);
-
-  // ── Habits for demo user ─────────────────────────────────────
-  const today = new Date().toISOString().split("T")[0];
-
-  const habits = [
-    // Non-Negotiable
-    {
-      name: "Morning Workout",
-      tier: "NON_NEGOTIABLE" as const,
-      icon: "💪",
-      color: "#ef4444",
-      categoryId: createdCategories["Health & Fitness"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      estimatedDuration: 45,
-      scheduledTime: "06:30",
-      weight: 1.0,
-    },
-    {
-      name: "Read 30 Minutes",
-      tier: "NON_NEGOTIABLE" as const,
-      icon: "📖",
-      color: "#3b82f6",
-      categoryId: createdCategories["Learning"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      estimatedDuration: 30,
-      weight: 1.0,
-    },
-    {
-      name: "Meditation",
-      tier: "NON_NEGOTIABLE" as const,
-      icon: "🧘",
-      color: "#8b5cf6",
-      categoryId: createdCategories["Mindfulness"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      estimatedDuration: 10,
-      scheduledTime: "07:00",
-      weight: 1.0,
-    },
-    // Growth
-    {
-      name: "Drink 2L Water",
-      tier: "GROWTH" as const,
-      icon: "💧",
-      color: "#06b6d4",
-      categoryId: createdCategories["Nutrition"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      weight: 0.5,
-    },
-    {
-      name: "Study / Deep Work",
-      tier: "GROWTH" as const,
-      icon: "🧠",
-      color: "#6366f1",
-      categoryId: createdCategories["Productivity"],
-      frequencyType: "SPECIFIC_WEEKDAYS" as const,
-      frequencyConfig: { type: "SPECIFIC_WEEKDAYS", days: [1, 2, 3, 4, 5] },
-      estimatedDuration: 120,
-      weight: 0.5,
-    },
-    {
-      name: "No Junk Food",
-      tier: "GROWTH" as const,
-      icon: "🥗",
-      color: "#22c55e",
-      categoryId: createdCategories["Nutrition"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      weight: 0.5,
-    },
-    // Bonus
-    {
-      name: "Evening Walk",
-      tier: "BONUS" as const,
-      icon: "🚶",
-      color: "#10b981",
-      categoryId: createdCategories["Health & Fitness"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      estimatedDuration: 20,
-      weight: 0.25,
-    },
-    {
-      name: "Journaling",
-      tier: "BONUS" as const,
-      icon: "✍️",
-      color: "#f59e0b",
-      categoryId: createdCategories["Mindfulness"],
-      frequencyType: "DAILY" as const,
-      frequencyConfig: { type: "DAILY" },
-      estimatedDuration: 15,
-      weight: 0.25,
-    },
-  ];
-
-  for (const habit of habits) {
-    await prisma.habit.upsert({
-      where: {
-        // Using a composite we can attempt to match by name+user
-        // If no unique constraint, just create
-        id: `seed-${demo.id}-${habit.name.replace(/\s+/g, "-").toLowerCase()}`,
-      },
-      update: {},
-      create: {
-        id: `seed-${demo.id}-${habit.name.replace(/\s+/g, "-").toLowerCase()}`,
-        userId: demo.id,
-        name: habit.name,
-        icon: habit.icon,
-        color: habit.color,
-        tier: habit.tier,
-        status: "ACTIVE",
-        categoryId: habit.categoryId ?? null,
-        frequencyType: habit.frequencyType,
-        frequencyConfig: JSON.stringify(habit.frequencyConfig),
-        estimatedDuration: (habit as { estimatedDuration?: number }).estimatedDuration ?? null,
-        scheduledTime: (habit as { scheduledTime?: string }).scheduledTime ?? null,
-        weight: habit.weight,
-        startDate: today,
-        isActive: true,
-        sortOrder: habits.indexOf(habit),
-        completionCount: 0,
-      },
-    });
-  }
-  console.log(`✅ ${habits.length} habits created`);
-
-  // ── Routine Templates for demo user ─────────────────────────
-  const workdayTemplate = await prisma.routineTemplate.upsert({
-    where: { id: `seed-routine-workday-${demo.id}` },
-    update: {},
-    create: {
-      id: `seed-routine-workday-${demo.id}`,
-      userId: demo.id,
-      name: "Workday Routine",
-      dayType: "WORKKDAY",
-      isDefault: true,
-      color: "#3b82f6",
-      icon: "💼",
       isActive: true,
     },
   });
 
-  const blocks = [
-    { name: "Wake Up & Freshen",  startTime: "06:00", endTime: "06:30", icon: "🌅", color: "#f59e0b", sortOrder: 0 },
-    { name: "Workout",            startTime: "06:30", endTime: "07:15", icon: "💪", color: "#ef4444", sortOrder: 1 },
-    { name: "Meditation",         startTime: "07:15", endTime: "07:30", icon: "🧘", color: "#8b5cf6", sortOrder: 2 },
-    { name: "Breakfast",          startTime: "07:30", endTime: "08:00", icon: "🍳", color: "#f97316", sortOrder: 3 },
-    { name: "Deep Work Block 1",  startTime: "09:00", endTime: "12:00", icon: "🧠", color: "#3b82f6", sortOrder: 4 },
-    { name: "Lunch",              startTime: "12:00", endTime: "13:00", icon: "🥗", color: "#22c55e", sortOrder: 5 },
-    { name: "Deep Work Block 2",  startTime: "13:00", endTime: "17:00", icon: "💼", color: "#6366f1", sortOrder: 6 },
-    { name: "Evening Walk",       startTime: "17:30", endTime: "18:00", icon: "🚶", color: "#10b981", sortOrder: 7 },
-    { name: "Dinner",             startTime: "19:00", endTime: "19:30", icon: "🍽️", color: "#ec4899", sortOrder: 8 },
-    { name: "Reading",            startTime: "20:00", endTime: "21:00", icon: "📚", color: "#0ea5e9", sortOrder: 9 },
-    { name: "Wind Down",          startTime: "21:30", endTime: "22:30", icon: "🌙", color: "#64748b", sortOrder: 10 },
-  ];
-
-  for (const block of blocks) {
-    await prisma.routineBlock.upsert({
-      where: { id: `seed-block-${demo.id}-${block.sortOrder}` },
-      update: {},
-      create: {
-        id: `seed-block-${demo.id}-${block.sortOrder}`,
-        userId: demo.id,
-        templateId: workdayTemplate.id,
-        name: block.name,
-        startTime: block.startTime,
-        endTime: block.endTime,
-        icon: block.icon,
-        color: block.color,
-        sortOrder: block.sortOrder,
-        isFlexible: false,
-        isOptional: false,
-      },
-    });
-  }
-  console.log(`✅ Workday routine with ${blocks.length} blocks`);
-
-  // ── Streak for demo user ─────────────────────────────────────
-  await prisma.streak.upsert({
-    where: { userId: demo.id },
-    update: {},
-    create: {
-      userId: demo.id,
-      currentStreak: 0,
-      longestStreak: 0,
-      coreStreak: 0,
-      lastActiveDate: null,
-      totalDaysTracked: 0,
-      totalPerfectDays: 0,
+  const adminUser = await prisma.user.create({
+    data: {
+      email: 'admin@routineos.com',
+      name: 'Admin User',
+      displayName: 'Admin',
+      passwordHash: demoUserPassword,
+      role: Role.ADMIN,
+      timezone: 'America/New_York',
+      emailVerified: new Date(),
+      onboardingCompletedAt: new Date(),
+      isActive: true,
     },
   });
-  console.log("✅ Streak record initialized");
 
-  // ── Demo Goals ───────────────────────────────────────────────
-  const monthEnd = new Date();
-  monthEnd.setMonth(monthEnd.getMonth() + 1);
-  const monthEndStr = monthEnd.toISOString().split("T")[0];
+  console.log(`✅ Created users: ${demoUser.email}, ${adminUser.email}`);
 
-  const goals = [
-    {
-      title: "Complete 30 Workout Sessions",
-      type: "MONTHLY" as const,
-      priority: "HIGH" as const,
-      isQuantifiable: true,
-      targetValue: 30,
-      currentValue: 0,
-      unit: "sessions",
-      dueDate: monthEndStr,
-    },
-    {
-      title: "Read 2 Books",
-      type: "MONTHLY" as const,
-      priority: "MEDIUM" as const,
-      isQuantifiable: true,
-      targetValue: 2,
-      currentValue: 0,
-      unit: "books",
-      dueDate: monthEndStr,
-    },
-    {
-      title: "Maintain 25-day Streak",
-      type: "MONTHLY" as const,
-      priority: "HIGH" as const,
-      isQuantifiable: false,
-      targetValue: null,
-      currentValue: null,
-      unit: null,
-      dueDate: monthEndStr,
-    },
-  ];
+  // ============================================================================
+  // Create User Settings
+  // ============================================================================
 
-  for (const goal of goals) {
-    await prisma.goal.upsert({
-      where: { id: `seed-goal-${demo.id}-${goal.title.replace(/\s+/g, "-").toLowerCase().slice(0, 30)}` },
-      update: {},
-      create: {
-        id: `seed-goal-${demo.id}-${goal.title.replace(/\s+/g, "-").toLowerCase().slice(0, 30)}`,
-        userId: demo.id,
-        title: goal.title,
-        type: goal.type,
-        priority: goal.priority,
-        status: "ACTIVE",
-        isQuantifiable: goal.isQuantifiable,
-        targetValue: goal.targetValue,
-        currentValue: goal.currentValue,
-        unit: goal.unit,
-        startDate: today,
-        dueDate: goal.dueDate,
-        isCarriedOver: false,
-        carryOverCount: 0,
-        sortOrder: goals.indexOf(goal),
-        isArchived: false,
+  console.log('⚙️ Creating user settings...');
+
+  await prisma.userSettings.create({
+    data: {
+      userId: demoUser.id,
+      timezone: 'America/New_York',
+      language: 'en',
+      theme: Theme.LIGHT,
+      weekStartsOn: 1, // Monday
+      targetBedtime: '22:00',
+      targetWakeTime: '06:00',
+      minSleepDuration: 480, // 8 hours
+      weightNonNeg: 1.0,
+      weightGrowth: 0.5,
+      weightBonus: 0.25,
+      notificationsEnabled: true,
+      dailyReminder: true,
+      dailyReminderTime: '20:00',
+      habitReminders: true,
+      weeklyReviewReminder: true,
+      aiInsightsEnabled: true,
+    },
+  });
+
+  await prisma.userSettings.create({
+    data: {
+      userId: adminUser.id,
+      timezone: 'America/New_York',
+    },
+  });
+
+  // ============================================================================
+  // Create Categories
+  // ============================================================================
+
+  console.log('📁 Creating categories...');
+
+  const healthCategory = await prisma.category.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Health & Fitness',
+      nameNormalized: 'health-fitness',
+      description: 'Physical health, exercise, and nutrition',
+      color: '#10b981',
+      icon: '💪',
+      sortOrder: 1,
+    },
+  });
+
+  const productivityCategory = await prisma.category.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Productivity',
+      nameNormalized: 'productivity',
+      description: 'Work, study, and task completion',
+      color: '#3b82f6',
+      icon: '🎯',
+      sortOrder: 2,
+    },
+  });
+
+  const mindfulnessCategory = await prisma.category.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Mindfulness',
+      nameNormalized: 'mindfulness',
+      description: 'Meditation, reflection, and mental health',
+      color: '#8b5cf6',
+      icon: '🧘',
+      sortOrder: 3,
+    },
+  });
+
+  const learningCategory = await prisma.category.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Learning',
+      nameNormalized: 'learning',
+      description: 'Education and skill development',
+      color: '#f59e0b',
+      icon: '📚',
+      sortOrder: 4,
+    },
+  });
+
+  // ============================================================================
+  // Create Tags
+  // ============================================================================
+
+  console.log('🏷️ Creating tags...');
+
+  const morningTag = await prisma.tag.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Morning',
+      color: '#f59e0b',
+      icon: '🌅',
+    },
+  });
+
+  const eveningTag = await prisma.tag.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Evening',
+      color: '#8b5cf6',
+      icon: '🌙',
+    },
+  });
+
+  const importantTag = await prisma.tag.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Important',
+      color: '#ef4444',
+      icon: '⭐',
+    },
+  });
+
+  // ============================================================================
+  // Create Habits
+  // ============================================================================
+
+  console.log('✅ Creating habits...');
+
+  const exerciseHabit = await prisma.habit.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Exercise',
+      description: '30 minutes of physical activity',
+      tier: HabitTier.GROWTH,
+      status: HabitStatus.ACTIVE,
+      categoryId: healthCategory.id,
+      color: '#10b981',
+      icon: '🏃',
+      frequencyType: HabitFrequencyType.DAILY,
+      targetCount: null,
+      startDate: new Date(),
+      reminderEnabled: true,
+      reminderTime: '07:00',
+      estimatedDuration: 30,
+      difficulty: 3,
+      points: 10,
+    },
+  });
+
+  const meditationHabit = await prisma.habit.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Meditation',
+      description: '10 minutes of mindfulness meditation',
+      tier: HabitTier.GROWTH,
+      status: HabitStatus.ACTIVE,
+      categoryId: mindfulnessCategory.id,
+      color: '#8b5cf6',
+      icon: '🧘',
+      frequencyType: HabitFrequencyType.DAILY,
+      startDate: new Date(),
+      estimatedDuration: 10,
+      difficulty: 2,
+      points: 10,
+    },
+  });
+
+  const readingHabit = await prisma.habit.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Read',
+      description: 'Read for 20 minutes',
+      tier: HabitTier.GROWTH,
+      status: HabitStatus.ACTIVE,
+      categoryId: learningCategory.id,
+      color: '#f59e0b',
+      icon: '📚',
+      frequencyType: HabitFrequencyType.DAILY,
+      startDate: new Date(),
+      estimatedDuration: 20,
+      difficulty: 1,
+      points: 10,
+    },
+  });
+
+  const journalHabit = await prisma.habit.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Journal',
+      description: 'Write daily reflections',
+      tier: HabitTier.BONUS,
+      status: HabitStatus.ACTIVE,
+      categoryId: mindfulnessCategory.id,
+      color: '#ec4899',
+      icon: '📝',
+      frequencyType: HabitFrequencyType.DAILY,
+      startDate: new Date(),
+      estimatedDuration: 15,
+      difficulty: 2,
+      points: 5,
+    },
+  });
+
+  const waterHabit = await prisma.habit.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Drink Water',
+      description: 'Drink 8 glasses of water',
+      tier: HabitTier.BONUS,
+      status: HabitStatus.ACTIVE,
+      categoryId: healthCategory.id,
+      color: '#06b6d4',
+      icon: '💧',
+      frequencyType: HabitFrequencyType.DAILY,
+      targetCount: 8,
+      startDate: new Date(),
+      difficulty: 1,
+      points: 5,
+    },
+  });
+
+  const learningHabit = await prisma.habit.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Learn Something New',
+      description: 'Study or practice a new skill',
+      tier: HabitTier.BONUS,
+      status: HabitStatus.ACTIVE,
+      categoryId: learningCategory.id,
+      color: '#3b82f6',
+      icon: '🎓',
+      frequencyType: HabitFrequencyType.SPECIFIC_WEEKDAYS,
+      frequencyValue: '1,2,3,4,5', // Weekdays
+      startDate: new Date(),
+      estimatedDuration: 30,
+      difficulty: 3,
+      points: 5,
+    },
+  });
+
+  console.log(`✅ Created ${6} habits`);
+
+  // ============================================================================
+  // Create Routine Templates
+  // ============================================================================
+
+  console.log('📅 Creating routine templates...');
+
+  const workdayTemplate = await prisma.routineTemplate.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Workday Routine',
+      description: 'Standard weekday schedule',
+      dayType: DayType.WORKDAY,
+      isDefault: true,
+      isActive: true,
+      color: '#3b82f6',
+      icon: '💼',
+    },
+  });
+
+  const weekendTemplate = await prisma.routineTemplate.create({
+    data: {
+      userId: demoUser.id,
+      name: 'Weekend Routine',
+      description: 'Relaxed weekend schedule',
+      dayType: DayType.WEEKEND,
+      isDefault: true,
+      isActive: true,
+      color: '#10b981',
+      icon: '🌴',
+    },
+  });
+
+  // ============================================================================
+  // Create Routine Blocks
+  // ============================================================================
+
+  console.log('⏰ Creating routine blocks...');
+
+  await prisma.routineBlock.createMany({
+    data: [
+      // Workday blocks
+      {
+        userId: demoUser.id,
+        templateId: workdayTemplate.id,
+        startTime: '06:00',
+        endTime: '07:00',
+        title: 'Morning Routine',
+        description: 'Wake up, shower, breakfast',
+        energyLevel: 'MEDIUM',
+        trackCompletion: true,
+        sortOrder: 1,
+        icon: '🌅',
       },
-    });
-  }
-  console.log(`✅ ${goals.length} goals created`);
+      {
+        userId: demoUser.id,
+        templateId: workdayTemplate.id,
+        startTime: '07:00',
+        endTime: '08:00',
+        title: 'Morning Habits',
+        description: 'Exercise, meditation',
+        categoryId: healthCategory.id,
+        energyLevel: 'HIGH',
+        trackCompletion: true,
+        sortOrder: 2,
+        icon: '🏃',
+      },
+      {
+        userId: demoUser.id,
+        templateId: workdayTemplate.id,
+        startTime: '09:00',
+        endTime: '12:00',
+        title: 'Deep Work Morning',
+        description: 'Focus on important tasks',
+        categoryId: productivityCategory.id,
+        energyLevel: 'HIGH',
+        trackCompletion: true,
+        sortOrder: 3,
+        icon: '💻',
+      },
+      {
+        userId: demoUser.id,
+        templateId: workdayTemplate.id,
+        startTime: '12:00',
+        endTime: '13:00',
+        title: 'Lunch Break',
+        energyLevel: 'LOW',
+        sortOrder: 4,
+        icon: '🍽️',
+      },
+      {
+        userId: demoUser.id,
+        templateId: workdayTemplate.id,
+        startTime: '21:00',
+        endTime: '22:00',
+        title: 'Evening Routine',
+        description: 'Wind down, journal, prepare for bed',
+        categoryId: mindfulnessCategory.id,
+        energyLevel: 'LOW',
+        trackCompletion: true,
+        sortOrder: 5,
+        icon: '🌙',
+      },
+      
+      // Weekend blocks
+      {
+        userId: demoUser.id,
+        templateId: weekendTemplate.id,
+        startTime: '08:00',
+        endTime: '09:00',
+        title: 'Leisurely Morning',
+        energyLevel: 'MEDIUM',
+        sortOrder: 1,
+        icon: '☕',
+      },
+      {
+        userId: demoUser.id,
+        templateId: weekendTemplate.id,
+        startTime: '09:00',
+        endTime: '10:00',
+        title: 'Morning Habits',
+        categoryId: healthCategory.id,
+        energyLevel: 'HIGH',
+        trackCompletion: true,
+        sortOrder: 2,
+        icon: '🏃',
+      },
+      {
+        userId: demoUser.id,
+        templateId: weekendTemplate.id,
+        startTime: '10:00',
+        endTime: '12:00',
+        title: 'Personal Projects',
+        description: 'Hobbies, learning, creative work',
+        energyLevel: 'HIGH',
+        sortOrder: 3,
+        icon: '🎨',
+      },
+    ],
+  });
 
-  console.log("\n🎉 Seed complete!");
-  console.log("   Admin: admin@routineos.app / admin123!");
-  console.log("   Demo:  demo@routineos.app  / demo1234!");
+  // ============================================================================
+  // Create Goals
+  // ============================================================================
+
+  console.log('🎯 Creating goals...');
+
+  const fitnessGoal = await prisma.goal.create({
+    data: {
+      userId: demoUser.id,
+      type: GoalType.MONTHLY,
+      priority: GoalPriority.HIGH,
+      status: GoalStatus.ACTIVE,
+      title: 'Exercise 20 days this month',
+      description: 'Maintain consistent exercise routine',
+      targetValue: 20,
+      currentValue: 5,
+      unit: 'days',
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+    },
+  });
+
+  const readingGoal = await prisma.goal.create({
+    data: {
+      userId: demoUser.id,
+      type: GoalType.MONTHLY,
+      priority: GoalPriority.MEDIUM,
+      status: GoalStatus.ACTIVE,
+      title: 'Read 3 books',
+      description: 'Complete 3 books this month',
+      targetValue: 3,
+      currentValue: 1,
+      unit: 'books',
+      startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+      endDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+    },
+  });
+
+  await prisma.milestone.createMany({
+    data: [
+      {
+        goalId: readingGoal.id,
+        title: 'First book completed',
+        targetValue: 1,
+        completedAt: new Date(),
+        sortOrder: 1,
+      },
+      {
+        goalId: readingGoal.id,
+        title: 'Second book completed',
+        targetValue: 2,
+        sortOrder: 2,
+      },
+      {
+        goalId: readingGoal.id,
+        title: 'Third book completed',
+        targetValue: 3,
+        sortOrder: 3,
+      },
+    ],
+  });
+
+  // ============================================================================
+  // Create Streak
+  // ============================================================================
+
+  console.log('🔥 Creating streak...');
+
+  await prisma.streak.create({
+    data: {
+      userId: demoUser.id,
+      currentStreak: 7,
+      longestStreak: 14,
+      coreStreak: 7,
+      growthStreak: 7,
+      minimumDayStreak: 0,
+      totalCompletedDays: 45,
+      totalMinimumDays: 2,
+      totalRestDays: 1,
+      streakStartDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      lastCompletedDate: new Date().toISOString().split('T')[0],
+    },
+  });
+
+  // ============================================================================
+  // Create Quotes
+  // ============================================================================
+
+  console.log('💬 Creating quotes...');
+
+  await prisma.quote.createMany({
+    data: [
+      {
+        userId: demoUser.id,
+        text: 'The secret of getting ahead is getting started.',
+        author: 'Mark Twain',
+        isPublic: false,
+        isFavorite: true,
+      },
+      {
+        userId: demoUser.id,
+        text: 'Success is the sum of small efforts repeated day in and day out.',
+        author: 'Robert Collier',
+        isPublic: false,
+        isFavorite: true,
+      },
+      {
+        userId: demoUser.id,
+        text: 'You don't have to be great to start, but you have to start to be great.',
+        author: 'Zig Ziglar',
+        isPublic: false,
+      },
+    ],
+  });
+
+  console.log('✨ Database seed completed successfully!');
+  console.log('\n📊 Summary:');
+  console.log(`  - Users: 2 (demo@routineos.com, admin@routineos.com)`);
+  console.log(`  - Password: Password123!`);
+  console.log(`  - Categories: 4`);
+  console.log(`  - Habits: 6`);
+  console.log(`  - Routine Templates: 2`);
+  console.log(`  - Goals: 2`);
+  console.log(`  - Quotes: 3`);
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", e);
+    console.error('❌ Error seeding database:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,49 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { HabitService } from '@/server/services/habit.service';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
-const skipSchema = z.object({
-  date: z.string(),
-  reason: z.string().optional()
+const skipHabitSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  reason: z.string().optional(),
 });
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * POST /api/habits/[id]/skip
+ * Skip habit for a specific date
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body = await req.json();
-    const data = skipSchema.parse(body);
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const habit = await db.habit.findUnique({
-      where: { id: params.id, userId: session.user.id }
-    });
-    if (!habit) return NextResponse.json({ error: "Not Found" }, { status: 404 });
+    const body = await request.json();
 
-    const override = await db.habitOverride.upsert({
-      where: {
-        habitId_date: {
-          habitId: params.id,
-          date: data.date
-        }
-      },
-      update: {
-        overrideType: 'SKIP',
-        reason: data.reason
-      },
-      create: {
-        habitId: params.id,
-        userId: session.user.id,
-        date: data.date,
-        overrideType: 'SKIP',
-        reason: data.reason
-      }
-    });
+    // Validate input
+    const validated = skipHabitSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json(override);
+    const habitService = new HabitService();
+    await habitService.skipHabit(
+      session.user.id,
+      params.id,
+      validated.data.date,
+      validated.data.reason
+    );
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Invalid data or error" }, { status: 400 });
+    console.error('Error skipping habit:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to skip habit' },
+      { status: 500 }
+    );
   }
 }

@@ -1,34 +1,96 @@
+import { PrismaClient } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
-export abstract class BaseRepository<T, CreateInput, UpdateInput> {
-  protected constructor(protected readonly model: any) {}
+/**
+ * Base Repository
+ * Common database operations and utilities
+ */
 
-  async findById(id: string): Promise<T | null> {
-    return this.model.findUnique({
-      where: { id },
-    });
+export abstract class BaseRepository {
+  protected prisma: PrismaClient;
+
+  constructor() {
+    this.prisma = prisma;
   }
 
-  async findMany(args: any): Promise<T[]> {
-    return this.model.findMany(args);
+  /**
+   * Execute operation in transaction
+   */
+  protected async transaction<T>(
+    callback: (tx: PrismaClient) => Promise<T>
+  ): Promise<T> {
+    return this.prisma.$transaction(callback);
   }
 
-  async create(data: CreateInput): Promise<T> {
-    return this.model.create({
-      data,
-    });
+  /**
+   * Check if record exists
+   */
+  protected async exists(
+    model: keyof PrismaClient,
+    where: Record<string, unknown>
+  ): Promise<boolean> {
+    const count = await (this.prisma[model] as any).count({ where });
+    return count > 0;
   }
 
-  async update(id: string, data: UpdateInput): Promise<T> {
-    return this.model.update({
-      where: { id },
-      data,
+  /**
+   * Verify ownership of a record
+   */
+  protected async verifyOwnership(
+    model: keyof PrismaClient,
+    recordId: string,
+    userId: string
+  ): Promise<boolean> {
+    const record = await (this.prisma[model] as any).findUnique({
+      where: { id: recordId },
+      select: { userId: true },
     });
+
+    return record?.userId === userId;
   }
 
-  async delete(id: string): Promise<T> {
-    return this.model.delete({
-      where: { id },
-    });
+  /**
+   * Build pagination query
+   */
+  protected buildPaginationQuery(
+    limit?: number,
+    offset?: number
+  ): { take?: number; skip?: number } {
+    const query: { take?: number; skip?: number } = {};
+
+    if (limit !== undefined && limit > 0) {
+      query.take = Math.min(limit, 100); // Max 100 items
+    }
+
+    if (offset !== undefined && offset > 0) {
+      query.skip = offset;
+    }
+
+    return query;
+  }
+
+  /**
+   * Build ordering query
+   */
+  protected buildOrderQuery(
+    sortBy?: string,
+    sortOrder: 'asc' | 'desc' = 'desc'
+  ): Record<string, 'asc' | 'desc'> | undefined {
+    if (!sortBy) return undefined;
+
+    return { [sortBy]: sortOrder };
+  }
+
+  /**
+   * Handle Prisma errors
+   */
+  protected handleError(error: unknown, operation: string): never {
+    console.error(`Repository error in ${operation}:`, error);
+
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error(`Unknown error in ${operation}`);
   }
 }

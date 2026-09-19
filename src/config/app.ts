@@ -1,185 +1,205 @@
 /**
- * App Configuration
- *
- * Central place for all application-level configuration constants.
- * Environment-specific values are read from process.env at runtime.
+ * Application Configuration
+ * Centralized app-wide settings and constants
  */
 
-// ============================================================
-// APP METADATA
-// ============================================================
-
 export const APP_CONFIG = {
-  name: "RoutineOS",
-  tagline: "Your personal productivity operating system",
-  description:
-    "Build habits, track goals, and optimize your daily routine with data-driven insights.",
-  version: process.env.NEXT_PUBLIC_APP_VERSION ?? "0.1.0",
-  url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-
-  // Support
-  supportEmail: "support@routineos.app",
-  docsUrl: "https://docs.routineos.app",
-
-  // Social
-  twitterHandle: "@RoutineOS",
+  name: 'RoutineOS',
+  description: 'A comprehensive productivity platform for managing daily routines, habits, goals, and life optimization',
+  version: '1.0.0',
+  
+  url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@routineos.com',
+  
+  features: {
+    aiInsights: process.env.ENABLE_AI_INSIGHTS === 'true',
+    socialFeatures: process.env.ENABLE_SOCIAL_FEATURES === 'true',
+    integrations: process.env.ENABLE_INTEGRATIONS === 'true',
+  },
+  
+  limits: {
+    free: {
+      habits: 20,
+      goals: 10,
+      projects: 3,
+      routineTemplates: 3,
+      categories: 10,
+      tags: 20,
+      dataRetentionDays: 90,
+      apiRequestsPerHour: 100,
+    },
+    pro: {
+      habits: 100,
+      goals: 50,
+      projects: 20,
+      routineTemplates: 10,
+      categories: 50,
+      tags: 100,
+      dataRetentionDays: 365,
+      apiRequestsPerHour: 1000,
+    },
+    premium: {
+      habits: -1, // unlimited
+      goals: -1,
+      projects: -1,
+      routineTemplates: -1,
+      categories: -1,
+      tags: -1,
+      dataRetentionDays: -1,
+      apiRequestsPerHour: 10000,
+    },
+  },
+  
+  defaults: {
+    timezone: 'UTC',
+    language: 'en',
+    dateFormat: 'YYYY-MM-DD',
+    timeFormat: '24h',
+    weekStartsOn: 1, // Monday
+    theme: 'LIGHT' as const,
+    
+    scoring: {
+      weightNonNeg: 1.0,
+      weightGrowth: 0.5,
+      weightBonus: 0.25,
+    },
+    
+    sleep: {
+      targetDuration: 480, // 8 hours in minutes
+      targetBedtime: '22:00',
+      targetWakeTime: '06:00',
+    },
+    
+    notifications: {
+      enabled: true,
+      quietHoursStart: '22:00',
+      quietHoursEnd: '07:00',
+    },
+  },
+  
+  validation: {
+    password: {
+      minLength: 8,
+      maxLength: 128,
+      requireUppercase: true,
+      requireLowercase: true,
+      requireNumber: true,
+      requireSpecialChar: false,
+    },
+    
+    habit: {
+      nameMinLength: 1,
+      nameMaxLength: 100,
+      descriptionMaxLength: 500,
+      targetCountMin: 1,
+      targetCountMax: 1000,
+      estimatedDurationMin: 1,
+      estimatedDurationMax: 1440, // 24 hours
+    },
+    
+    goal: {
+      titleMinLength: 1,
+      titleMaxLength: 200,
+      descriptionMaxLength: 2000,
+      targetValueMin: 0.01,
+      targetValueMax: 1000000,
+    },
+    
+    routine: {
+      nameMinLength: 1,
+      nameMaxLength: 100,
+      blockTitleMinLength: 1,
+      blockTitleMaxLength: 100,
+      maxBlocksPerTemplate: 50,
+    },
+  },
+  
+  upload: {
+    maxFileSize: parseInt(process.env.UPLOAD_MAX_SIZE || '10485760'), // 10MB
+    allowedTypes: (process.env.ALLOWED_FILE_TYPES || 'image/jpeg,image/png,image/webp,application/pdf').split(','),
+    maxFilesPerUpload: 5,
+  },
+  
+  rateLimit: {
+    enabled: process.env.RATE_LIMIT_ENABLED === 'true',
+    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'), // 1 minute
+  },
+  
+  session: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    updateAge: 24 * 60 * 60, // Update session every 24 hours
+  },
+  
+  pagination: {
+    defaultLimit: 20,
+    maxLimit: 100,
+  },
+  
+  analytics: {
+    defaultPeriodDays: 30,
+    maxPeriodDays: 365,
+  },
+  
+  ai: {
+    enabled: process.env.OPENAI_API_KEY !== undefined,
+    model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+    maxTokens: 2000,
+    temperature: 0.7,
+    costLimitPerUser: 10.0, // USD per month
+  },
+  
+  backup: {
+    autoExportEnabled: true,
+    exportRetentionDays: 7,
+    maxExportsPerUser: 5,
+  },
 } as const;
 
-// ============================================================
-// FEATURE FLAGS
-// ============================================================
+export type AppConfig = typeof APP_CONFIG;
 
-export const FEATURES = {
-  /** Enable AI-powered insights generation */
-  aiInsights: process.env.NEXT_PUBLIC_AI_ENABLED === "true",
-  /** Enable push notifications */
-  pushNotifications: process.env.NEXT_PUBLIC_PUSH_ENABLED === "true",
-  /** Enable social/challenge features */
-  social: process.env.NEXT_PUBLIC_SOCIAL_ENABLED === "true",
-  /** Enable Stripe billing */
-  billing: process.env.NEXT_PUBLIC_BILLING_ENABLED === "true",
-  /** Enable offline/PWA mode */
-  offline: process.env.NEXT_PUBLIC_OFFLINE_ENABLED === "true",
-  /** Enable experimental features for opted-in users */
-  experimental: process.env.NEXT_PUBLIC_EXPERIMENTAL === "true",
-} as const;
+// Helper function to get plan limits
+export function getPlanLimits(plan: 'FREE' | 'PRO' | 'PREMIUM') {
+  const planKey = plan.toLowerCase() as keyof typeof APP_CONFIG.limits;
+  return APP_CONFIG.limits[planKey];
+}
 
-// ============================================================
-// PAGINATION DEFAULTS
-// ============================================================
+// Helper function to check if feature is enabled
+export function isFeatureEnabled(feature: keyof typeof APP_CONFIG.features): boolean {
+  return APP_CONFIG.features[feature];
+}
 
-export const PAGINATION = {
-  defaultPageSize: 20,
-  maxPageSize: 100,
-  habitsPerPage: 30,
-  goalsPerPage: 20,
-  logsPerPage: 50,
-  analyticsMaxDays: 365,
-} as const;
-
-// ============================================================
-// DATE & TIME
-// ============================================================
-
-export const DATE_CONFIG = {
-  /** Default timezone when user hasn't set one */
-  defaultTimezone: "UTC",
-  /** ISO date format */
-  dateFormat: "yyyy-MM-dd",
-  /** Time format (24h) */
-  timeFormat: "HH:mm",
-  /** Display date format */
-  displayDateFormat: "MMM d, yyyy",
-  /** Display time format */
-  displayTimeFormat: "h:mm a",
-  /** Days in a week */
-  daysInWeek: 7,
-} as const;
-
-// ============================================================
-// HABIT LIMITS
-// ============================================================
-
-export const HABIT_LIMITS = {
-  /** Max habits per user (free tier) */
-  maxHabitsFreeTier: 10,
-  /** Max habits per user (pro tier) */
-  maxHabitsPro: 50,
-  /** Max habits per user (premium tier) */
-  maxHabitsPremium: 200,
-  /** Max name length */
-  maxNameLength: 100,
-  /** Max description length */
-  maxDescriptionLength: 500,
-  /** Max notes length */
-  maxNotesLength: 1000,
-  /** Max days to allow retroactive edits */
-  defaultRetroactiveDays: 3,
-} as const;
-
-// ============================================================
-// GOAL LIMITS
-// ============================================================
-
-export const GOAL_LIMITS = {
-  /** Max active goals per period per user (free tier) */
-  maxActiveGoalsFreeTier: 5,
-  /** Max active goals (pro) */
-  maxActiveGoalsPro: 25,
-  /** Max carry-over count before auto-cancellation warning */
-  maxCarryOverCount: 3,
-  /** Max title length */
-  maxTitleLength: 150,
-  /** Max description length */
-  maxDescriptionLength: 1000,
-} as const;
-
-// ============================================================
-// ROUTINE LIMITS
-// ============================================================
-
-export const ROUTINE_LIMITS = {
-  /** Max routine templates per user (free tier) */
-  maxTemplatesFreeTier: 3,
-  /** Max routine templates (pro) */
-  maxTemplatesPro: 15,
-  /** Max blocks per template */
-  maxBlocksPerTemplate: 30,
-  /** Minimum block duration in minutes */
-  minBlockDurationMinutes: 5,
-  /** Maximum block duration in minutes */
-  maxBlockDurationMinutes: 480, // 8 hours
-} as const;
-
-// ============================================================
-// RATE LIMITS (requests per window)
-// ============================================================
-
-export const RATE_LIMITS = {
-  /** Default API rate limit window in seconds */
-  windowSeconds: 60,
-  /** Default max requests per window */
-  maxRequests: 60,
-  /** Auth endpoints */
-  authMaxRequests: 10,
-  /** AI generation endpoint (expensive) */
-  aiMaxRequests: 5,
-  /** Webhook endpoint */
-  webhookMaxRequests: 100,
-} as const;
-
-// ============================================================
-// SECURITY
-// ============================================================
-
-export const SECURITY_CONFIG = {
-  /** Max failed login attempts before account lockout */
-  maxFailedLogins: 5,
-  /** Account lockout duration in minutes */
-  lockoutDurationMinutes: 30,
-  /** Password reset token expiry in hours */
-  passwordResetExpiryHours: 1,
-  /** Email verification token expiry in hours */
-  emailVerificationExpiryHours: 24,
-  /** Session max age in seconds (30 days) */
-  sessionMaxAge: 30 * 24 * 60 * 60,
-  /** Bcrypt salt rounds */
-  bcryptSaltRounds: 12,
-} as const;
-
-// ============================================================
-// UI DEFAULTS
-// ============================================================
-
-export const UI_CONFIG = {
-  /** Default theme */
-  defaultTheme: "LIGHT" as const,
-  /** Default animation duration in ms */
-  animationDuration: 200,
-  /** Toast notification duration in ms */
-  toastDuration: 4000,
-  /** Debounce delay for search inputs in ms */
-  searchDebounce: 300,
-  /** Auto-save interval in ms */
-  autoSaveInterval: 2000,
-} as const;
+// Helper function to validate against config
+export function validatePassword(password: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const config = APP_CONFIG.validation.password;
+  
+  if (password.length < config.minLength) {
+    errors.push(`Password must be at least ${config.minLength} characters`);
+  }
+  
+  if (password.length > config.maxLength) {
+    errors.push(`Password must be no more than ${config.maxLength} characters`);
+  }
+  
+  if (config.requireUppercase && !/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+  
+  if (config.requireLowercase && !/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+  
+  if (config.requireNumber && !/\d/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+  
+  if (config.requireSpecialChar && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push('Password must contain at least one special character');
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}

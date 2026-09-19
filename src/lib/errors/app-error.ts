@@ -1,12 +1,77 @@
+/**
+ * Application Error Classes
+ * Structured error handling with proper types
+ */
+
 export class AppError extends Error {
-  constructor(public message: string, public statusCode: number, public code: string, public details?: unknown) {
+  constructor(
+    message: string,
+    public code: string,
+    public statusCode: number = 500,
+    public details?: any
+  ) {
     super(message);
     this.name = this.constructor.name;
     Error.captureStackTrace(this, this.constructor);
   }
+
+  toJSON() {
+    return {
+      error: this.message,
+      code: this.code,
+      details: this.details,
+    };
+  }
 }
-export class AuthError extends AppError { constructor(message = 'Unauthorized') { super(message, 401, 'UNAUTHORIZED'); } }
-export class NotFoundError extends AppError { constructor(message = 'Not Found') { super(message, 404, 'NOT_FOUND'); } }
-export class ForbiddenError extends AppError { constructor(message = 'Forbidden') { super(message, 403, 'FORBIDDEN'); } }
-export class ValidationError extends AppError { constructor(message = 'Validation Error', details?: unknown) { super(message, 400, 'VALIDATION_ERROR', details); } }
-export class ConflictError extends AppError { constructor(message = 'Conflict') { super(message, 409, 'CONFLICT'); } }
+
+export class ValidationError extends AppError {
+  constructor(message: string, details?: any) {
+    super(message, 'VALIDATION_ERROR', 400, details);
+  }
+}
+
+export class AuthenticationError extends AppError {
+  constructor(message: string = 'Authentication required') {
+    super(message, 'AUTHENTICATION_ERROR', 401);
+  }
+}
+
+export class AuthorizationError extends AppError {
+  constructor(message: string = 'Insufficient permissions') {
+    super(message, 'AUTHORIZATION_ERROR', 403);
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(resource: string = 'Resource') {
+    super(`${resource} not found`, 'NOT_FOUND', 404);
+  }
+}
+
+export class ConflictError extends AppError {
+  constructor(message: string, details?: any) {
+    super(message, 'CONFLICT', 409, details);
+  }
+}
+
+export class RateLimitError extends AppError {
+  constructor(message: string = 'Too many requests') {
+    super(message, 'RATE_LIMIT_EXCEEDED', 429);
+  }
+}
+
+export class DatabaseError extends AppError {
+  constructor(message: string, details?: any) {
+    super(message, 'DATABASE_ERROR', 500, details);
+  }
+}
+
+export class ExternalServiceError extends AppError {
+  constructor(service: string, message?: string) {
+    super(
+      message || `External service error: ${service}`,
+      'EXTERNAL_SERVICE_ERROR',
+      503
+    );
+  }
+}

@@ -1,21 +1,61 @@
-import { AggregatedUserData } from './aggregator';
+/**
+ * AI Prompt Builder
+ * Structured prompts for insight generation
+ */
 
-export function buildInsightPrompt(data: AggregatedUserData): string {
-  return `
-Analyze the following user data for the past 30 days and provide personalized insights.
-Data:
-- Habits Active: ${data.habits.totalActive}
-- Average Score: ${data.scores.average}
-- Current Streak: ${data.streaks.current} (Longest: ${data.streaks.longest})
-- Sleep: ${data.sleep.averageHours} avg hours
-- Best day of week: ${data.patterns.bestDayOfWeek}, Worst: ${data.patterns.worstDayOfWeek}
-- Active Goals: ${data.goals.active}
+export function buildInsightPrompt(
+  data: any,
+  period: 'DAILY' | 'WEEKLY' | 'MONTHLY'
+): string {
+  const periodConfig = {
+    DAILY: {
+      timeframe: 'today',
+      focus: 'immediate patterns and quick wins',
+    },
+    WEEKLY: {
+      timeframe: 'this week',
+      focus: 'weekly trends and habit consistency',
+    },
+    MONTHLY: {
+      timeframe: 'this month',
+      focus: 'long-term patterns and strategic improvements',
+    },
+  };
 
-Identify patterns, provide specific actionable recommendations, highlight achievements, and give any warnings if they are falling behind.
-Return structured JSON only matching the requested schema.
-`;
-}
+  const config = periodConfig[period];
 
-export function buildSystemPrompt(): string {
-  return `You are an expert productivity and wellness AI coach. Your goal is to analyze user data from their daily planner and habit tracker to provide highly personalized, actionable, and structured insights. Always return valid JSON matching the schema provided.`;
+  return `You are a productivity coach analyzing ${config.timeframe}'s performance data.
+
+**User Data Summary:**
+${JSON.stringify(data, null, 2)}
+
+**Your Task:**
+Provide a concise, actionable analysis focusing on ${config.focus}.
+
+**Required Sections:**
+1. **Summary** (2-3 sentences): Overall performance
+2. **Wins** (2-3 bullet points): What went well
+3. **Patterns** (2-3 observations): Trends you notice
+4. **Concerns** (1-2 items): Areas needing attention
+5. **Suggestions** (3-5 actionable items): Specific improvements
+6. **Next Period Focus** (1-2 sentences): Priority for next ${config.timeframe}
+
+**Guidelines:**
+- Be specific and data-driven
+- Focus on actionable insights
+- Keep language motivational but honest
+- Reference actual numbers from the data
+- Don't make assumptions beyond the data
+- Keep total response under 500 words
+
+**Output Format:**
+Return ONLY valid JSON with this structure:
+{
+  "summary": "string",
+  "wins": ["string"],
+  "patterns": ["string"],
+  "concerns": ["string"],
+  "suggestions": ["string"],
+  "nextPeriodFocus": "string"
+}`;
 }

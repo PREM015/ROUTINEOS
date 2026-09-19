@@ -1,42 +1,95 @@
-import { PrismaClient } from '@prisma/client';
+import { HabitRepository } from '@/server/repositories/habit.repository';
+import { ScoreRepository } from '@/server/repositories/score.repository';
+import { GoalRepository } from '@/server/repositories/goal.repository';
+import { StreakRepository } from '@/server/repositories/streak.repository';
 
-export interface WeeklyRecapData {
-  weekStart: string;
-  weekEnd: string;
-  averageScore: number;
-  bestDay: { date: string; score: number } | null;
-  totalHabitsCompleted: number;
-  goalsAchieved: number;
-  streakChange: number;
-  topHabit?: string;
-}
+/**
+ * Weekly Recap Generation
+ * Generate comprehensive weekly summary
+ */
 
-export async function getWeeklyRecap(userId: string, weekStart: string, db: PrismaClient): Promise<WeeklyRecapData> {
-  const start = new Date(weekStart);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
+export async function generateWeeklyRecap(userId: string, weekStart: string, weekEnd: string) {
+  const habitRepository = new HabitRepository();
+  const scoreRepository = new ScoreRepository();
+  const goalRepository = new GoalRepository();
+  const streakRepository = new StreakRepository();
 
-  const dailyLogs = await (db as any).dailyLog?.findMany({
-    where: { userId, date: { gte: start, lte: end } }
-  }).catch(() => []);
-
-  const scores = dailyLogs.map((l: any) => l.score).filter((s: any) => typeof s === 'number');
-  const avgScore = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+  // Get scores for the week
+  const scores = await scoreRepository.findByRange(userId, weekStart, weekEnd);
   
-  let bestDay = null;
-  if (dailyLogs.length > 0) {
-    const sorted = [...dailyLogs].sort((a, b) => (b.score || 0) - (a.score || 0));
-    bestDay = { date: sorted[0].date.toISOString(), score: sorted[0].score || 0 };
-  }
+  const averageScore = scores.length > 0
+    ? scores.reduce((sum, s) => sum + (s.totalScore || 0), 0) / scores.length
+    : 0;
+
+  const perfectDays = scores.filter(s => s.totalScore && s.totalScore >= 95).length;
+  const excellentDays = scores.filter(s => s.totalScore && s.totalScore >= 85).length;
+
+  // Get habit completion
+  const habits = await habitRepository.findAll(userId, { status: 'ACTIVE' });
+  const habitStats = await Promise.all(
+    habits.map(async habit => {
+      const logs = await habitRepository.findLogsByRange(habit.id, userId, weekStart, weekEnd);
+      const completed = logs.filter(l => l.status === 'COMPLETED').length;
+      return {
+        habitId: habit.id,
+        habitName: habit.name,
+        completed,
+        total: logs.length,
+        rate: logs.length > 0 ? (completed / logs.length) * 100 : 0,
+      };
+    })
+  );
+
+  const mostConsistent = habitStats.reduce((best, current) => 
+    current.rate > (best?.rate || 0) ? current : best
+  , habitStats[0] || null);
+
+  const needsWork = habitStats.reduce((worst, current) => 
+    current.rate < (worst?.rate || 100) && current.total > 0 ? current : worst
+  , habitStats[0] || null);
+
+  // Get goals progress
+  const goals = await goalRepository.findAll(userId, { status: 'ACTIVE' });
+  const goalsCompleted = goals.filter(g => 
+    g.completedAt && 
+    new Date(g.completedAt) >= new Date(weekStart) &&
+    new Date(g.completedAt) <= new Date(weekEnd)
+  ).length;
+
+  // Get streak
+  const streak = await streakRepository.findByUserId(userId);
 
   return {
-    weekStart,
-    weekEnd: end.toISOString(),
-    averageScore: avgScore || 82,
-    bestDay: bestDay || { date: start.toISOString(), score: 90 },
-    totalHabitsCompleted: 45,
-    goalsAchieved: 2,
-    streakChange: 1,
-    topHabit: 'Morning Workout'
+    period: {
+      weekStart,
+      weekEnd,
+      totalDays: 7,
+    },
+    scores: {
+      average: Math.round(averageScore * 100) / 100,
+      perfectDays,
+      excellentDays,
+      distribution: scores.map(s => ({
+        date: s.date,
+        score: s.totalScore,
+        grade: s.overallGrade,
+      })),
+    },
+    habits: {
+      total: habits.length,
+      mostConsistent,
+      needsWork,
+      averageCompletion: habitStats.length > 0
+        ? habitStats.reduce((sum, h) => sum + h.rate, 0) / habitStats.length
+        : 0,
+    },
+    goals: {
+      active: goals.length,
+      completed: goalsCompleted,
+    },
+    streak: {
+      current: streak?.currentStreak || 0,
+      longest: streak?.longestStreak || 0,
+    },
   };
 }

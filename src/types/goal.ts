@@ -1,231 +1,413 @@
+import type {
+  Goal,
+  Milestone,
+  GoalProgress,
+  GoalType,
+  GoalPriority,
+  GoalStatus,
+  Project,
+  Tag,
+} from '@prisma/client';
+
 /**
- * Goal Types
- *
- * Complete type definitions for the RoutineOS goal system,
- * including goals, milestones, progress, and carry-over logic.
+ * Goal Management Types
+ * Complete type system for goal tracking and progress management
  */
 
-// ============================================================
-// ENUMS
-// ============================================================
+// ============================================================================
+// Core Goal Types
+// ============================================================================
 
-export enum GoalType {
-  DAILY = "DAILY",
-  WEEKLY = "WEEKLY",
-  MONTHLY = "MONTHLY",
-  QUARTERLY = "QUARTERLY",
-  YEARLY = "YEARLY",
-  CUSTOM = "CUSTOM",
+export interface GoalWithRelations extends Goal {
+  project: Project | null;
+  parentGoal: Goal | null;
+  subGoals: Goal[];
+  milestones: Milestone[];
+  progressLogs: GoalProgress[];
+  tags: Array<{ tag: Tag }>;
+  _count?: {
+    subGoals: number;
+    milestones: number;
+    progressLogs: number;
+  };
 }
 
-export enum GoalPriority {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
-  CRITICAL = "CRITICAL",
-}
-
-export enum GoalStatus {
-  ACTIVE = "ACTIVE",
-  COMPLETED = "COMPLETED",
-  MISSED = "MISSED",
-  CARRIED_OVER = "CARRIED_OVER",
-  ON_HOLD = "ON_HOLD",
-  CANCELLED = "CANCELLED",
-}
-
-export enum ProjectStatus {
-  PLANNING = "PLANNING",
-  ACTIVE = "ACTIVE",
-  ON_HOLD = "ON_HOLD",
-  COMPLETED = "COMPLETED",
-  ARCHIVED = "ARCHIVED",
-  CANCELLED = "CANCELLED",
-}
-
-export enum MilestoneStatus {
-  PENDING = "PENDING",
-  COMPLETED = "COMPLETED",
-  MISSED = "MISSED",
-}
-
-// ============================================================
-// GOAL
-// ============================================================
-
-export interface Goal {
+export interface GoalListItem {
   id: string;
-  userId: string;
-  projectId: string | null;
-  categoryId: string | null;
-
   title: string;
   description: string | null;
-
   type: GoalType;
   priority: GoalPriority;
   status: GoalStatus;
-
-  // Progress
-  isQuantifiable: boolean;
-  targetValue: number | null;
-  currentValue: number | null;
+  targetValue: number;
+  currentValue: number;
   unit: string | null;
-
-  // Timeline
-  startDate: string; // ISO date
-  dueDate: string; // ISO date
+  startDate: Date;
+  endDate: Date;
   completedAt: Date | null;
-
-  // Carry-over
-  isCarriedOver: boolean;
-  parentGoalId: string | null;
-  carryOverCount: number;
-
-  // Metadata
-  icon: string | null;
-  color: string | null;
-  tags: string | null;
-  notes: string | null;
-  sortOrder: number;
-  isArchived: boolean;
-
-  createdAt: Date;
-  updatedAt: Date;
+  progressPercentage: number;
+  daysRemaining: number;
+  isOverdue: boolean;
+  project: {
+    id: string;
+    name: string;
+    color: string | null;
+  } | null;
+  tags: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
+  milestonesCompleted: number;
+  milestonesTotal: number;
 }
 
-// ============================================================
-// GOAL PROGRESS
-// ============================================================
-
-export interface GoalProgress {
-  id: string;
-  goalId: string;
-  userId: string;
-
-  value: number;
-  note: string | null;
-
-  recordedAt: Date;
-  createdAt: Date;
-}
-
-// ============================================================
-// MILESTONE
-// ============================================================
-
-export interface Milestone {
-  id: string;
-  goalId: string;
-  userId: string;
-
-  title: string;
-  description: string | null;
-
-  targetValue: number | null;
-  dueDate: string | null;
-  status: MilestoneStatus;
-  completedAt: Date | null;
-
-  sortOrder: number;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// PROJECT
-// ============================================================
-
-export interface Project {
-  id: string;
-  userId: string;
-  categoryId: string | null;
-
-  name: string;
-  description: string | null;
-
-  status: ProjectStatus;
-  priority: GoalPriority;
-
-  startDate: string | null;
-  dueDate: string | null;
-  completedAt: Date | null;
-
-  color: string | null;
-  icon: string | null;
-  tags: string | null;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// GOAL WITH RELATIONS
-// ============================================================
-
-export interface GoalWithProgress extends Goal {
-  progress: GoalProgress[];
-  milestones: Milestone[];
-  completionPercentage: number;
-  velocity: number | null; // units per day
-  projectedCompletionDate: string | null;
-  isOnTrack: boolean;
-}
-
-export interface GoalWithMilestones extends Goal {
-  milestones: Milestone[];
-}
-
-// ============================================================
-// CARRY-OVER
-// ============================================================
-
-export interface CarryOverPreview {
-  goal: Goal;
-  remainingValue: number | null;
-  suggestedNewDueDate: string;
-  carryOverCount: number;
-}
-
-// ============================================================
-// FORM DATA
-// ============================================================
+// ============================================================================
+// Goal Creation & Update
+// ============================================================================
 
 export interface CreateGoalInput {
   title: string;
   description?: string;
   type: GoalType;
-  priority: GoalPriority;
-  projectId?: string;
-  categoryId?: string;
-  isQuantifiable?: boolean;
-  targetValue?: number;
+  priority?: GoalPriority;
+  targetValue: number;
+  currentValue?: number;
   unit?: string;
-  startDate: string;
-  dueDate: string;
-  icon?: string;
-  color?: string;
-  notes?: string;
+  startDate: Date;
+  endDate: Date;
+  projectId?: string;
+  parentGoalId?: string;
+  isPublic?: boolean;
+  tagIds?: string[];
+  milestones?: Array<{
+    title: string;
+    description?: string;
+    targetValue?: number;
+    dueDate?: Date;
+  }>;
 }
 
-export interface UpdateGoalInput extends Partial<CreateGoalInput> {
-  id: string;
+export interface UpdateGoalInput {
+  title?: string;
+  description?: string;
+  type?: GoalType;
+  priority?: GoalPriority;
   status?: GoalStatus;
+  targetValue?: number;
   currentValue?: number;
+  unit?: string;
+  startDate?: Date;
+  endDate?: Date;
+  projectId?: string | null;
+  parentGoalId?: string | null;
+  isPublic?: boolean;
+  tagIds?: string[];
+}
+
+export interface CreateGoalResponse {
+  success: boolean;
+  goal?: GoalWithRelations;
+  message?: string;
+}
+
+export interface UpdateGoalResponse {
+  success: boolean;
+  goal?: GoalWithRelations;
+  message?: string;
+}
+
+// ============================================================================
+// Goal Progress Tracking
+// ============================================================================
+
+export interface UpdateGoalProgressInput {
+  goalId: string;
+  value: number;
+  date?: Date;
+  note?: string;
+  autoComplete?: boolean; // auto-mark as complete if target reached
+}
+
+export interface UpdateGoalProgressResponse {
+  success: boolean;
+  progress?: GoalProgress;
+  goal?: GoalWithRelations;
+  completed?: boolean;
+  message?: string;
+}
+
+export interface BulkUpdateGoalProgressInput {
+  updates: Array<{
+    goalId: string;
+    value: number;
+    note?: string;
+  }>;
+  date?: Date;
+}
+
+export interface BulkUpdateGoalProgressResponse {
+  success: boolean;
+  updated: number;
+  failed: number;
+  errors?: Array<{
+    goalId: string;
+    error: string;
+  }>;
+}
+
+// ============================================================================
+// Goal Milestones
+// ============================================================================
+
+export interface CreateMilestoneInput {
+  goalId: string;
+  title: string;
+  description?: string;
+  targetValue?: number;
+  dueDate?: Date;
   sortOrder?: number;
 }
 
-export interface LogGoalProgressInput {
-  goalId: string;
-  value: number;
-  note?: string;
-  recordedAt?: string;
+export interface UpdateMilestoneInput {
+  title?: string;
+  description?: string;
+  targetValue?: number;
+  dueDate?: Date;
+  completedAt?: Date | null;
+  sortOrder?: number;
 }
+
+export interface CreateMilestoneResponse {
+  success: boolean;
+  milestone?: Milestone;
+  message?: string;
+}
+
+export interface CompleteMilestoneInput {
+  milestoneId: string;
+}
+
+export interface CompleteMilestoneResponse {
+  success: boolean;
+  milestone?: Milestone;
+  goalUpdated?: boolean;
+  message?: string;
+}
+
+// ============================================================================
+// Goal Carry-Over
+// ============================================================================
 
 export interface CarryOverGoalInput {
   goalId: string;
-  newDueDate: string;
-  adjustedTargetValue?: number;
+  newEndDate: Date;
+  newTargetValue?: number;
+  reason?: string;
+  adjustProgress?: boolean; // carry over current progress or reset
+}
+
+export interface CarryOverGoalResponse {
+  success: boolean;
+  newGoal?: GoalWithRelations;
+  originalGoal?: GoalWithRelations;
+  message?: string;
+}
+
+// ============================================================================
+// Goal Analytics
+// ============================================================================
+
+export interface GoalAnalytics {
+  goalId: string;
+  totalProgress: number;
+  progressPercentage: number;
+  remainingValue: number;
+  daysElapsed: number;
+  daysTotal: number;
+  daysRemaining: number;
+  isOverdue: boolean;
+  velocity: number; // progress per day
+  projectedCompletion: Date | null;
+  onTrack: boolean;
+  requiredDailyProgress: number;
+  averageDailyProgress: number;
+  bestDay: {
+    date: string;
+    value: number;
+  } | null;
+  recentTrend: 'IMPROVING' | 'DECLINING' | 'STABLE' | 'NO_DATA';
+}
+
+export interface GoalProgressHistory {
+  goalId: string;
+  entries: Array<{
+    date: Date;
+    value: number;
+    note: string | null;
+    cumulativeValue: number;
+  }>;
+  trendData: Array<{
+    date: string;
+    actual: number;
+    projected: number;
+    target: number;
+  }>;
+}
+
+// ============================================================================
+// Goal Queries & Filters
+// ============================================================================
+
+export interface GoalQueryParams {
+  type?: GoalType | GoalType[];
+  status?: GoalStatus | GoalStatus[];
+  priority?: GoalPriority | GoalPriority[];
+  projectId?: string;
+  parentGoalId?: string | null;
+  tagId?: string;
+  search?: string;
+  overdue?: boolean;
+  dueSoon?: boolean; // due within next 7 days
+  sortBy?: 'title' | 'endDate' | 'priority' | 'progress' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+  includeCompleted?: boolean;
+}
+
+export interface GoalFilterOptions {
+  types: GoalType[];
+  statuses: GoalStatus[];
+  priorities: GoalPriority[];
+  projects: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string }>;
+}
+
+// ============================================================================
+// Goal Grouping
+// ============================================================================
+
+export interface GoalsByType {
+  daily: GoalListItem[];
+  weekly: GoalListItem[];
+  monthly: GoalListItem[];
+  quarterly: GoalListItem[];
+  yearly: GoalListItem[];
+  custom: GoalListItem[];
+}
+
+export interface GoalsByStatus {
+  active: GoalListItem[];
+  completed: GoalListItem[];
+  missed: GoalListItem[];
+  carriedOver: GoalListItem[];
+  onHold: GoalListItem[];
+  cancelled: GoalListItem[];
+}
+
+export interface GoalsByPriority {
+  critical: GoalListItem[];
+  high: GoalListItem[];
+  medium: GoalListItem[];
+  low: GoalListItem[];
+}
+
+// ============================================================================
+// Today's Goals
+// ============================================================================
+
+export interface TodayGoal {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: GoalPriority;
+  currentValue: number;
+  targetValue: number;
+  unit: string | null;
+  progressPercentage: number;
+  endDate: Date;
+  daysRemaining: number;
+  isOverdue: boolean;
+  requiredTodayProgress: number;
+  project: {
+    id: string;
+    name: string;
+    color: string | null;
+  } | null;
+  todayProgress: number;
+  hasProgressToday: boolean;
+}
+
+// ============================================================================
+// Goal Completion
+// ============================================================================
+
+export interface CompleteGoalInput {
+  goalId: string;
+  completedAt?: Date;
+  finalValue?: number;
   note?: string;
 }
+
+export interface CompleteGoalResponse {
+  success: boolean;
+  goal?: GoalWithRelations;
+  achievementUnlocked?: boolean;
+  message?: string;
+}
+
+// ============================================================================
+// Goal Health Score
+// ============================================================================
+
+export interface GoalHealthScore {
+  goalId: string;
+  score: number; // 0-100
+  status: 'EXCELLENT' | 'GOOD' | 'AT_RISK' | 'CRITICAL';
+  factors: {
+    progressRate: number;
+    timeRemaining: number;
+    consistency: number;
+    milestoneCompletion: number;
+  };
+  recommendations: string[];
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+export function isGoalWithRelations(goal: unknown): goal is GoalWithRelations {
+  return (
+    typeof goal === 'object' &&
+    goal !== null &&
+    'id' in goal &&
+    'title' in goal &&
+    'type' in goal &&
+    'milestones' in goal
+  );
+}
+
+export function isGoalOverdue(goal: Pick<Goal, 'endDate' | 'status'>): boolean {
+  return (
+    goal.status === 'ACTIVE' &&
+    new Date(goal.endDate) < new Date()
+  );
+}
+
+export function calculateGoalProgress(
+  currentValue: number,
+  targetValue: number
+): number {
+  if (targetValue === 0) return 0;
+  return Math.min(100, Math.max(0, (currentValue / targetValue) * 100));
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+export type GoalGroupedByProject = Record<string, GoalListItem[]>;
+
+export type GoalCompletionMap = Record<string, boolean>;

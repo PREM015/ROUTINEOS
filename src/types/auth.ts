@@ -1,263 +1,341 @@
+import type { User, Role, DeviceType } from '@prisma/client';
+
 /**
- * Authentication & Authorization Types
- *
- * Defines all auth-related types for RoutineOS including
- * user roles, sessions, and authentication state.
+ * Authentication and Authorization Types
+ * Comprehensive type definitions for auth system
  */
 
-// ============================================================
-// ENUMS
-// ============================================================
+// ============================================================================
+// Session Types
+// ============================================================================
 
-export enum Role {
-  USER = "USER",
-  ADMIN = "ADMIN",
-  MODERATOR = "MODERATOR",
-}
-
-export enum Theme {
-  LIGHT = "LIGHT",
-  DARK = "DARK",
-  AUTO = "AUTO",
-  CUSTOM = "CUSTOM",
-}
-
-// ============================================================
-// USER PROFILE
-// ============================================================
-
-export interface UserProfile {
+export interface SessionUser {
   id: string;
-  name: string | null;
   email: string;
-  displayName: string | null;
-  avatarUrl: string | null;
-  bio: string | null;
-  timezone: string;
-  preferredLanguage: string;
+  name: string | null;
   role: Role;
-  isActive: boolean;
+  avatarUrl: string | null;
+  timezone: string;
   emailVerified: Date | null;
   onboardingCompletedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-// ============================================================
-// USER SETTINGS
-// ============================================================
-
-export interface UserSettings {
-  id: string;
-  userId: string;
-
-  // Localization
-  timezone: string;
-  language: string;
-  dateFormat: string;
-  timeFormat: "12h" | "24h";
-  weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
-
-  // UI
-  theme: Theme;
-  customThemeColors: Record<string, string> | null;
-  soundEnabled: boolean;
-  animationsEnabled: boolean;
-  compactMode: boolean;
-  defaultView: string;
-  showCompletedTasks: boolean;
-
-  // Sleep
-  targetBedtime: string | null;
-  targetWakeTime: string | null;
-  minSleepDuration: number | null;
-  sleepReminder: boolean;
-  sleepReminderTime: string | null;
-
-  // Scoring Weights
-  weightNonNeg: number;
-  weightGrowth: number;
-  weightBonus: number;
-
-  // Notifications
-  notificationsEnabled: boolean;
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  smsNotifications: boolean;
-  quietHoursStart: string | null;
-  quietHoursEnd: string | null;
-
-  // Reminders
-  dailyReminder: boolean;
-  dailyReminderTime: string | null;
-  habitReminders: boolean;
-  goalReminders: boolean;
-  weeklyReviewReminder: boolean;
-  monthlyResetReminder: boolean;
-  focusReminders: boolean;
-  breakReminders: boolean;
-
-  // Data
-  retroactiveEditDays: number;
-  autoArchiveCompletedDays: number;
-  dataRetentionDays: number;
-
-  // Privacy
-  profilePublic: boolean;
-  shareStats: boolean;
-
-  // Advanced
-  aiInsightsEnabled: boolean;
-  experimentalFeatures: boolean;
-
-  createdAt: Date;
-  updatedAt: Date;
+export interface SessionData {
+  user: SessionUser;
+  expires: string;
+  sessionToken?: string;
 }
 
-// ============================================================
-// USER SUBSCRIPTION
-// ============================================================
+// ============================================================================
+// Authentication Request/Response Types
+// ============================================================================
 
-export enum SubscriptionPlan {
-  FREE = "FREE",
-  PRO = "PRO",
-  PREMIUM = "PREMIUM",
-  ENTERPRISE = "ENTERPRISE",
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
+  timezone?: string;
 }
 
-export enum SubscriptionStatus {
-  ACTIVE = "ACTIVE",
-  PAST_DUE = "PAST_DUE",
-  CANCELLED = "CANCELLED",
-  UNPAID = "UNPAID",
+export interface RegisterResponse {
+  success: boolean;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  message?: string;
+  requiresEmailVerification?: boolean;
 }
 
-export interface UserSubscription {
-  id: string;
-  userId: string;
-  plan: SubscriptionPlan;
-  status: SubscriptionStatus;
-  currentPeriodStart: Date;
+export interface LoginInput {
+  email: string;
+  password: string;
+  remember?: boolean;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  user?: SessionUser;
+  requiresTwoFactor?: boolean;
+  requiresEmailVerification?: boolean;
+  message?: string;
+}
+
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+// ============================================================================
+// Two-Factor Authentication
+// ============================================================================
+
+export interface TwoFactorSetupResponse {
+  success: boolean;
+  secret?: string;
+  qrCode?: string;
+  backupCodes?: string[];
+}
+
+export interface TwoFactorVerifyInput {
+  code: string;
+  trustDevice?: boolean;
+}
+
+export interface TwoFactorVerifyResponse {
+  success: boolean;
+  message: string;
+}
+
+// ============================================================================
+// Email Verification
+// ============================================================================
+
+export interface EmailVerificationInput {
+  token: string;
+}
+
+export interface EmailVerificationResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ResendVerificationInput {
+  email: string;
+}
+
+export interface ResendVerificationResponse {
+  success: boolean;
+  message: string;
+}
+
+// ============================================================================
+// User Profile Types
+// ============================================================================
+
+export interface UserProfile extends Omit<User, 'passwordHash'> {
+  stats?: UserStats;
+  subscription?: UserSubscriptionInfo;
+}
+
+export interface UserStats {
+  totalHabits: number;
+  activeHabits: number;
+  totalGoals: number;
+  completedGoals: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalDays: number;
+  averageScore: number;
+}
+
+export interface UserSubscriptionInfo {
+  plan: string;
+  status: string;
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
-  stripeCustomerId: string | null;
-  stripeSubscriptionId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-// ============================================================
-// SESSION & AUTH STATE
-// ============================================================
-
-export interface AuthSession {
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-    image: string | null;
-    role: Role;
-  };
-  expires: string;
+export interface UpdateProfileInput {
+  name?: string;
+  displayName?: string;
+  bio?: string;
+  avatarUrl?: string;
+  timezone?: string;
+  preferredLanguage?: string;
 }
 
-export interface AuthUser {
+export interface UpdateProfileResponse {
+  success: boolean;
+  user?: UserProfile;
+  message?: string;
+}
+
+// ============================================================================
+// Session Management
+// ============================================================================
+
+export interface DeviceSessionInfo {
   id: string;
-  name: string | null;
+  deviceName: string | null;
+  deviceType: DeviceType | null;
+  ipAddress: string | null;
+  location: string | null;
+  lastActiveAt: Date;
+  isCurrent: boolean;
+}
+
+export interface ActiveSessionsResponse {
+  sessions: DeviceSessionInfo[];
+}
+
+export interface RevokeSessionInput {
+  sessionId: string;
+}
+
+export interface RevokeSessionResponse {
+  success: boolean;
+  message: string;
+}
+
+// ============================================================================
+// Authorization & Permissions
+// ============================================================================
+
+export interface Permission {
+  resource: string;
+  action: 'create' | 'read' | 'update' | 'delete' | 'manage';
+}
+
+export interface PermissionCheck {
+  userId: string;
+  resourceType: string;
+  resourceId?: string;
+  action: string;
+}
+
+export interface PermissionResult {
+  allowed: boolean;
+  reason?: string;
+}
+
+// ============================================================================
+// OAuth Provider Types
+// ============================================================================
+
+export interface OAuthProvider {
+  id: string;
+  name: string;
+  enabled: boolean;
+}
+
+export interface OAuthAccount {
+  provider: string;
+  providerAccountId: string;
   email: string;
-  image: string | null;
-  role: Role;
+  connectedAt: Date;
 }
 
-// ============================================================
-// AUTH RESULTS
-// ============================================================
+// ============================================================================
+// Account Security
+// ============================================================================
 
-export interface LoginResult {
+export interface AccountSecurityInfo {
+  emailVerified: boolean;
+  twoFactorEnabled: boolean;
+  passwordLastChanged: Date | null;
+  failedLoginAttempts: number;
+  isLocked: boolean;
+  lockedUntil: Date | null;
+  activeSessions: number;
+}
+
+export interface AccountDeletionInput {
+  password: string;
+  reason?: string;
+  confirmation: boolean;
+}
+
+export interface AccountDeletionResponse {
   success: boolean;
-  error?: string;
-  redirectTo?: string;
+  message: string;
+  scheduledFor?: Date;
 }
 
-export interface RegisterResult {
-  success: boolean;
-  userId?: string;
-  error?: string;
+// ============================================================================
+// Authentication Errors
+// ============================================================================
+
+export enum AuthErrorCode {
+  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
+  EMAIL_NOT_VERIFIED = 'EMAIL_NOT_VERIFIED',
+  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
+  ACCOUNT_DISABLED = 'ACCOUNT_DISABLED',
+  ACCOUNT_DELETED = 'ACCOUNT_DELETED',
+  TWO_FACTOR_REQUIRED = 'TWO_FACTOR_REQUIRED',
+  INVALID_TWO_FACTOR_CODE = 'INVALID_TWO_FACTOR_CODE',
+  INVALID_TOKEN = 'INVALID_TOKEN',
+  EXPIRED_TOKEN = 'EXPIRED_TOKEN',
+  TOKEN_ALREADY_USED = 'TOKEN_ALREADY_USED',
+  USER_NOT_FOUND = 'USER_NOT_FOUND',
+  USER_ALREADY_EXISTS = 'USER_ALREADY_EXISTS',
+  WEAK_PASSWORD = 'WEAK_PASSWORD',
+  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+  SESSION_EXPIRED = 'SESSION_EXPIRED',
+  INVALID_SESSION = 'INVALID_SESSION',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  FORBIDDEN = 'FORBIDDEN',
 }
 
-// ============================================================
-// PERMISSION TYPES
-// ============================================================
+export interface AuthError {
+  code: AuthErrorCode;
+  message: string;
+  details?: Record<string, unknown>;
+}
 
-export type Permission =
-  | "habit:create"
-  | "habit:read"
-  | "habit:update"
-  | "habit:delete"
-  | "habit:archive"
-  | "goal:create"
-  | "goal:read"
-  | "goal:update"
-  | "goal:delete"
-  | "routine:create"
-  | "routine:read"
-  | "routine:update"
-  | "routine:delete"
-  | "admin:users"
-  | "admin:audit"
-  | "admin:stats"
-  | "admin:ai";
+// ============================================================================
+// Type Guards
+// ============================================================================
 
-export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  [Role.USER]: [
-    "habit:create",
-    "habit:read",
-    "habit:update",
-    "habit:delete",
-    "habit:archive",
-    "goal:create",
-    "goal:read",
-    "goal:update",
-    "goal:delete",
-    "routine:create",
-    "routine:read",
-    "routine:update",
-    "routine:delete",
-  ],
-  [Role.MODERATOR]: [
-    "habit:create",
-    "habit:read",
-    "habit:update",
-    "habit:delete",
-    "habit:archive",
-    "goal:create",
-    "goal:read",
-    "goal:update",
-    "goal:delete",
-    "routine:create",
-    "routine:read",
-    "routine:update",
-    "routine:delete",
-    "admin:audit",
-    "admin:stats",
-  ],
-  [Role.ADMIN]: [
-    "habit:create",
-    "habit:read",
-    "habit:update",
-    "habit:delete",
-    "habit:archive",
-    "goal:create",
-    "goal:read",
-    "goal:update",
-    "goal:delete",
-    "routine:create",
-    "routine:read",
-    "routine:update",
-    "routine:delete",
-    "admin:users",
-    "admin:audit",
-    "admin:stats",
-    "admin:ai",
-  ],
-};
+export function isSessionUser(user: unknown): user is SessionUser {
+  return (
+    typeof user === 'object' &&
+    user !== null &&
+    'id' in user &&
+    'email' in user &&
+    'role' in user
+  );
+}
+
+export function isAuthError(error: unknown): error is AuthError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    Object.values(AuthErrorCode).includes((error as AuthError).code)
+  );
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+export type AuthenticatedHandler<T = void> = (
+  userId: string,
+  session: SessionData
+) => Promise<T>;
+
+export type PublicHandler<T = void> = () => Promise<T>;
+
+export type OptionalAuthHandler<T = void> = (
+  userId: string | null,
+  session: SessionData | null
+) => Promise<T>;

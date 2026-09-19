@@ -1,1 +1,3 @@
-// TODO: Implement pre-commit
+#!/usr/bin/env sh
+
+npm run lint

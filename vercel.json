@@ -1,6 +1,53 @@
 {
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "NEXTAUTH_SECRET": "@nextauth-secret",
+    "NEXTAUTH_URL": "@nextauth-url"
+  },
+  "build": {
+    "env": {
+      "SKIP_ENV_VALIDATION": "1"
+    }
+  },
+  "functions": {
+    "app/api/**": {
+      "maxDuration": 30
+    },
+    "app/api/cron/**": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
-    { "path": "/api/cron/compute-daily-scores", "schedule": "5 0 * * *" },
-    { "path": "/api/cron/generate-insights", "schedule": "0 6 * * 1" }
+    {
+      "path": "/api/cron/compute-daily-scores",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/generate-insights",
+      "schedule": "0 2 * * 0"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
   ]
 }

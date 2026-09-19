@@ -1,39 +1,43 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { recalculateStreak } from '@/lib/streaks/calculate-streak';
+import { auth } from '@/lib/auth';
+import { StreakRepository } from '@/server/repositories/streak.repository';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
+/**
+ * GET /api/streak
+ * Get user's current streak data
+ */
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const streak = await recalculateStreak(session.user.id, db);
-    return NextResponse.json(streak);
-  } catch (error) {
-    console.error('[STREAK_GET]', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
-  }
-}
+    const streakRepository = new StreakRepository();
+    let streak = await streakRepository.findByUserId(session.user.id);
 
-export async function POST(req: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Create streak if doesn't exist
+    if (!streak) {
+      streak = await streakRepository.create(session.user.id);
     }
 
-    const streak = await recalculateStreak(session.user.id, db);
-    
-    // In a full implementation, you might save this back to a user profile or streak table
-    // For now we just return the newly calculated state
+    // Get uncelebrated milestones
+    const milestones = await streakRepository.getUncelebratedMilestones(
+      session.user.id
+    );
 
-    return NextResponse.json(streak);
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...streak,
+        uncelebratedMilestones: milestones,
+      },
+    });
   } catch (error) {
-    console.error('[STREAK_POST]', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    console.error('Error fetching streak:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch streak' },
+      { status: 500 }
+    );
   }
 }

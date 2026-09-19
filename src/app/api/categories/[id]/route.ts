@@ -1,68 +1,33 @@
+import { auth } from '@/lib/auth';
+import { CategoryRepository } from '@/server/repositories/category.repository';
+import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { z } from 'zod';
 
-const UpdateCategorySchema = z.object({
-  name: z.string().min(1).optional(),
-  color: z.string().optional(),
-  icon: z.string().optional(),
-});
-
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const category = await db.category.findUnique({ where: { id: params.id } });
-    if (!category) return NextResponse.json({ error: 'Not Found' }, { status: 404 });
-    if (category.userId !== session.user.id && !category.isSystem) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
     }
 
-    return NextResponse.json(category);
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+    const categoryRepository = new CategoryRepository();
+    const category = await categoryRepository.findById(params.id, session.user.id);
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const category = await db.category.findUnique({ where: { id: params.id } });
-    if (!category || category.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden or Not Found' }, { status: 403 });
+    if (!category) {
+      return NextResponse.json(notFoundResponse('Category'), { status: 404 });
     }
 
-    const json = await req.json();
-    const data = UpdateCategorySchema.parse(json);
+    await categoryRepository.delete(params.id, session.user.id);
 
-    const updated = await db.category.update({
-      where: { id: params.id },
-      data,
-    });
-    return NextResponse.json(updated);
+    return NextResponse.json(successResponse({ deleted: true }));
   } catch (error) {
-    return NextResponse.json({ error: 'Bad Request' }, { status: 400 });
-  }
-}
-
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const category = await db.category.findUnique({ where: { id: params.id } });
-    if (!category || category.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden or Not Found' }, { status: 403 });
-    }
-
-    await db.category.delete({ where: { id: params.id } });
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error('Error deleting category:', error);
+    return NextResponse.json(
+      errorResponse('Failed to delete category'),
+      { status: 500 }
+    );
   }
 }

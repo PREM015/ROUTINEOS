@@ -1,58 +1,117 @@
 import { NextResponse } from 'next/server';
-import { ZodError } from 'zod';
 import { AppError } from './app-error';
-import { ERROR_CODES } from './error-codes';
-import { ErrorReporter } from '@/lib/monitoring/error-reporter';
+import { Prisma } from '@prisma/client';
+import { ZodError } from 'zod';
 
-export function handleApiError(error: unknown, req?: Request, userId?: string): NextResponse {
-  // Report error to monitoring service
-  if (error instanceof Error) {
-    if (req) {
-      ErrorReporter.reportApiError(error, req, userId);
-    } else {
-      ErrorReporter.report(error, { userId });
-    }
-  }
+/**
+ * Global Error Handler
+ */
 
-  // Handle known error types
+export function handleError(error: unknown): NextResponse {
+  console.error('Error occurred:', error);
+
+  // App errors
   if (error instanceof AppError) {
-    return NextResponse.json(
-      { 
-        success: false,
-        error: error.message, 
-        code: error.code, 
-        details: error.details 
-      }, 
-      { status: error.statusCode }
-    );
+    return NextResponse.json(error.toJSON(), { status: error.statusCode });
   }
 
+  // Zod validation errors
   if (error instanceof ZodError) {
     return NextResponse.json(
-      { 
-        success: false,
-        error: 'Validation failed', 
-        code: ERROR_CODES.VALIDATION_ERROR, 
-        details: formatZodError(error) 
-      }, 
+      {
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: error.flatten(),
+      },
       { status: 400 }
     );
   }
 
-  // Log unknown errors
-  console.error('Unhandled error:', error);
+  // Prisma errors
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return handlePrismaError(error);
+  }
 
-  // Generic error response
+  // Generic errors
+  if (error instanceof Error) {
+    return NextResponse.json(
+      {
+        error: process.env.NODE_ENV === 'production' 
+          ? 'Internal server error' 
+          : error.message,
+        code: 'INTERNAL_ERROR',
+      },
+      { status: 500 }
+    );
+  }
+
+  // Unknown errors
   return NextResponse.json(
-    { 
-      success: false,
-      error: 'Internal Server Error', 
-      code: ERROR_CODES.SERVER_ERROR 
-    }, 
+    {
+      error: 'An unexpected error occurred',
+      code: 'UNKNOWN_ERROR',
+    },
     { status: 500 }
   );
 }
 
-export function formatZodError(error: ZodError): string[] {
-  return error.issues.map((err: ZodError['issues'][number]) => `${err.path.join('.')}: ${err.message}`);
+function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextResponse {
+  switch (error.code) {
+    case 'P2002':
+      // Unique constraint violation
+      return NextResponse.json(
+        {
+          error: 'A record with this value already exists',
+          code: 'DUPLICATE_RECORD',
+          details: error.meta,
+        },
+        { status: 409 }
+      );
+
+    case 'P2025':
+      // Record not found
+      return NextResponse.json(
+        {
+          error: 'Record not found',
+          code: 'NOT_FOUND',
+        },
+        { status: 404 }
+      );
+
+    case 'P2003':
+      // Foreign key constraint violation
+      return NextResponse.json(
+        {
+          error: 'Related record not found',
+          code: 'FOREIGN_KEY_ERROR',
+          details: error.meta,
+        },
+        { status: 400 }
+      );
+
+    default:
+      return NextResponse.json(
+        {
+          error: 'Database operation failed',
+          code: 'DATABASE_ERROR',
+        },
+        { status: 500 }
+      );
+  }
+}
+
+/**
+ * Error logger for monitoring
+ */
+export function logError(error: unknown, context?: Record<string, any>) {
+  // In production, send to monitoring service (Sentry, DataDog, etc.)
+  console.error('ERROR:', {
+    timestamp: new Date().toISOString(),
+    error: error instanceof Error ? {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    } : error,
+    context,
+  });
 }

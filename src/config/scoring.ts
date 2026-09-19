@@ -1,227 +1,258 @@
 /**
- * Scoring Engine Configuration
- *
- * All constants and formulas used by the RoutineOS scoring engine.
- * Centralizing these makes it easy to tune the scoring system
- * without touching business logic spread across multiple files.
+ * Scoring Configuration
+ * Detailed configuration for the scoring system
  */
 
-// ============================================================
-// DEFAULT SCORING WEIGHTS
-// ============================================================
+import type { HabitTier } from '@prisma/client';
 
-/**
- * Default tier weights. These can be overridden per-user
- * through UserSettings.weightNonNeg / weightGrowth / weightBonus.
- */
-export const DEFAULT_WEIGHTS = {
-  /** Non-Negotiable tier — highest impact on overall score */
-  nonNeg: 1.0,
-  /** Growth tier — significant but less critical */
-  growth: 0.5,
-  /** Bonus tier — extra credit */
-  bonus: 0.25,
+// ============================================================================
+// Scoring Weights
+// ============================================================================
+
+export const SCORING_WEIGHTS = {
+  // Tier weights (how much each tier contributes to total score)
+  tiers: {
+    GROWTH: 1.0,
+    BONUS: 0.5,
+    LIFESTYLE: 0.6,
+    FLEXIBLE: 0.7,
+    ALTERNATIVE: 1.0,
+    OPTIONAL: 0.25,
+    EXPERIMENTAL: 0.1,
+    SPECIAL: 0.5,
+    JUST_FOR_FUN: 0.2,
+    UNDEFINED: 0.0,
+  } as Record<HabitTier, number>,
+  
+  // Component weights (for overall score calculation)
+  components: {
+    habits: 0.7, // 70% from habits
+    routine: 0.2, // 20% from routine completion
+    sleep: 0.1, // 10% from sleep quality
+  },
+  
+  // Minimum day multiplier
+  minimumDayMultiplier: 0.5, // Minimum day scores count as 50% of normal
 } as const;
 
-// ============================================================
-// SCORE BANDS
-// ============================================================
+// ============================================================================
+// Score Bands
+// ============================================================================
 
-/**
- * Thresholds (inclusive lower bound) for each score band.
- * Scores are always 0–100.
- */
-export const SCORE_BAND_THRESHOLDS = {
-  EXCEPTIONAL: 95,
-  EXCELLENT: 85,
-  GREAT: 75,
-  GOOD: 65,
-  FAIR: 50,
-  POOR: 25,
-  FAILED: 0,
+export const SCORE_BANDS = {
+  perfect: { min: 95, max: 100, grade: 'A+' as const, label: 'Perfect', color: '#10b981' },
+  excellent: { min: 85, max: 94, grade: 'A' as const, label: 'Excellent', color: '#22c55e' },
+  good: { min: 70, max: 84, grade: 'B' as const, label: 'Good', color: '#84cc16' },
+  fair: { min: 50, max: 69, grade: 'C' as const, label: 'Fair', color: '#eab308' },
+  poor: { min: 30, max: 49, grade: 'D' as const, label: 'Poor', color: '#f97316' },
+  incomplete: { min: 0, max: 29, grade: 'F' as const, label: 'Incomplete', color: '#ef4444' },
 } as const;
 
-// ============================================================
-// DAY MODE MULTIPLIERS
-// ============================================================
+// ============================================================================
+// Points System
+// ============================================================================
 
-/**
- * Applied to the computed raw score based on day mode.
- * Normal days: no adjustment.
- * Minimum days: score is scaled differently (only NN required).
- * Rest days: score is fixed at 100 (full day off).
- * Missed days: score is 0.
- */
-export const DAY_MODE_MULTIPLIERS = {
-  NORMAL: 1.0,
-  MINIMUM: 1.0,  // scoring logic handles minimum day rules separately
-  REST: null,    // null means "no score computed" → fixed 100
-  MISSED: 0.0,
+export const POINTS_SYSTEM = {
+  // Base points for habit completion
+  habitCompletion: {
+    GROWTH: 10,
+    BONUS: 5,
+    LIFESTYLE: 5,
+    FLEXIBLE: 7,
+    ALTERNATIVE: 10,
+    OPTIONAL: 3,
+    EXPERIMENTAL: 2,
+    SPECIAL: 5,
+    JUST_FOR_FUN: 3,
+    UNDEFINED: 0,
+  } as Record<HabitTier, number>,
+  
+  // Bonus points for streaks
+  streakBonus: {
+    7: 5, // 1 week
+    14: 10, // 2 weeks
+    30: 25, // 1 month
+    60: 50, // 2 months
+    100: 100, // 100 days
+    365: 365, // 1 year
+  },
+  
+  // Bonus points for perfect days
+  perfectDayBonus: 20,
+  
+  // Routine completion bonus
+  routineCompletionBonus: 10,
+  
+  // Sleep quality bonus
+  sleepQualityBonus: {
+    excellent: 10, // 8+ hours, good quality
+    good: 5, // 7-8 hours, decent quality
+    fair: 2, // 6-7 hours
+    poor: 0, // <6 hours
+  },
 } as const;
 
-/** Fixed score assigned on Rest Day */
-export const REST_DAY_SCORE = 100;
+// ============================================================================
+// Calculation Rules
+// ============================================================================
 
-/** Fixed score assigned on Missed Day */
-export const MISSED_DAY_SCORE = 0;
-
-// ============================================================
-// MINIMUM DAY RULES
-// ============================================================
-
-/**
- * On a Minimum Day, only Non-Negotiable habits count.
- * The score is computed solely from NN completion,
- * and Growth/Bonus do not penalize or benefit.
- */
-export const MINIMUM_DAY_CONFIG = {
-  /** Only these tiers count on a minimum day */
-  tiersIncluded: ["NON_NEGOTIABLE"] as const,
-  /** Score if all NNs completed */
-  fullScore: 100,
-  /** Score if NNs partially completed (proportional) */
-  partialScore: "proportional" as const,
-  /** Whether a minimum day counts toward streak */
-  countsForStreak: true,
-  /** Whether growth/bonus habits can still be logged (they just don't score) */
-  allowNonScoredLog: true,
+export const CALCULATION_RULES = {
+  // Minimum habits required for scoring
+  minimumHabitsForScoring: 1,
+  
+  // How to handle missing data
+  missingData: {
+    treatAsZero: false, // If true, missing habit logs count as 0, else excluded from calculation
+    includeInAverage: false, // Include days with no data in averages
+  },
+  
+  // Rest day behavior
+  restDay: {
+    countInStreak: true, // Rest days don't break streak
+    includeInScoring: false, // Rest days are not scored
+  },
+  
+  // Minimum day behavior
+  minimumDay: {
+    countInStreak: true, // Minimum days count in streak
+    scoringMultiplier: 0.5, // Count as 50% of regular score
+    requireAllNonNegotiables: true, // Must complete all non-negotiable habits
+  },
+  
+  // Partial completion
+  partialCompletion: {
+    enabled: true,
+    minimumPercentage: 50, // Must complete at least 50% to count as partial
+    scoreMultiplier: 0.7, // Partial completion worth 70% of full points
+  },
+  
+  // Rounding
+  rounding: {
+    decimals: 2, // Round to 2 decimal places
+    method: 'round' as 'round' | 'floor' | 'ceil',
+  },
 } as const;
 
-// ============================================================
-// STREAK RULES
-// ============================================================
+// ============================================================================
+// Thresholds
+// ============================================================================
 
-export const STREAK_CONFIG = {
-  /** Non-Negotiable completion % required to continue streak */
-  nonNegThreshold: 1.0, // 100% — all must be done
-
-  /** Growth completion % required to count (for core streak) */
-  growthThreshold: 0.6, // 60%
-
-  /** Rest days preserve the streak without counting toward it */
-  restDayPreservesStreak: true,
-
-  /** Minimum days preserve the streak if NNs completed */
-  minimumDayPreservesStreak: true,
-
-  /** Grace period: days after a missed day before streak resets */
-  gracePeriodDays: 0,
-
-  /** Milestone intervals (days) for celebratory notifications */
-  milestones: [3, 7, 14, 21, 30, 60, 90, 180, 365],
+export const THRESHOLDS = {
+  // Score thresholds for achievements
+  achievements: {
+    perfectDay: 95, // Score >= 95 = perfect day
+    excellentDay: 85, // Score >= 85 = excellent day
+    goodDay: 70, // Score >= 70 = good day
+  },
+  
+  // Completion rate thresholds
+  completionRate: {
+    excellent: 90, // >= 90% completion
+    good: 75, // >= 75% completion
+    needsImprovement: 50, // < 50% completion
+  },
+  
+  // Streak milestones
+  streakMilestones: [7, 14, 21, 30, 60, 90, 100, 180, 365],
+  
+  // Warning thresholds
+  warnings: {
+    lowScore: 50, // Warn if score < 50
+    lowCompletionRate: 60, // Warn if completion rate < 60%
+    streakAtRisk: 3, // Warn if haven't completed in 3 days
+  },
 } as const;
 
-// ============================================================
-// SCORE FORMULA
-// ============================================================
+// ============================================================================
+// Display Settings
+// ============================================================================
 
-/**
- * Core score formula:
- *
- *   coreScore = (
- *     (nonNegRaw * weightNonNeg) +
- *     (growthRaw * weightGrowth) +
- *     (bonusRaw * weightBonus)
- *   ) / (weightNonNeg + weightGrowth + weightBonus) * 100
- *
- * Where rawTierScore = completed / total (0–1).
- * If a tier has 0 habits scheduled, it's excluded from the formula.
- */
+export const DISPLAY_SETTINGS = {
+  // Score display format
+  scoreFormat: {
+    showPercentage: true,
+    showGrade: true,
+    showPoints: false,
+    showBreakdown: true,
+  },
+  
+  // Progress bar settings
+  progressBar: {
+    showPercentage: true,
+    animated: true,
+    colorCoded: true, // Use color based on score band
+  },
+  
+  // Chart settings
+  charts: {
+    defaultPeriod: 30, // days
+    showTrendLine: true,
+    showAverage: true,
+    smoothing: true,
+  },
+} as const;
 
-/**
- * Calculate a raw tier completion ratio.
- * Returns 1.0 if no habits are scheduled (tier not applicable).
- */
-export function calculateTierRatio(
-  completed: number,
-  total: number
-): number {
-  if (total === 0) return 1.0;
-  return Math.min(1.0, completed / total);
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+export function getScoreBand(percentage: number) {
+  if (percentage >= SCORE_BANDS.perfect.min) return SCORE_BANDS.perfect;
+  if (percentage >= SCORE_BANDS.excellent.min) return SCORE_BANDS.excellent;
+  if (percentage >= SCORE_BANDS.good.min) return SCORE_BANDS.good;
+  if (percentage >= SCORE_BANDS.fair.min) return SCORE_BANDS.fair;
+  if (percentage >= SCORE_BANDS.poor.min) return SCORE_BANDS.poor;
+  return SCORE_BANDS.incomplete;
 }
 
-/**
- * Calculate the weighted core score (0–100).
- */
-export function calculateCoreScore(params: {
-  nonNegCompleted: number;
-  nonNegTotal: number;
-  growthCompleted: number;
-  growthTotal: number;
-  bonusCompleted: number;
-  bonusTotal: number;
-  weightNonNeg: number;
-  weightGrowth: number;
-  weightBonus: number;
-}): number {
-  const {
-    nonNegCompleted,
-    nonNegTotal,
-    growthCompleted,
-    growthTotal,
-    bonusCompleted,
-    bonusTotal,
-    weightNonNeg,
-    weightGrowth,
-    weightBonus,
-  } = params;
-
-  let weightedSum = 0;
-  let totalWeight = 0;
-
-  if (nonNegTotal > 0) {
-    weightedSum += calculateTierRatio(nonNegCompleted, nonNegTotal) * weightNonNeg;
-    totalWeight += weightNonNeg;
-  }
-
-  if (growthTotal > 0) {
-    weightedSum += calculateTierRatio(growthCompleted, growthTotal) * weightGrowth;
-    totalWeight += weightGrowth;
-  }
-
-  // Bonus: only add bonus weight if bonus habits exist
-  if (bonusTotal > 0) {
-    weightedSum += calculateTierRatio(bonusCompleted, bonusTotal) * weightBonus;
-    totalWeight += weightBonus;
-  }
-
-  if (totalWeight === 0) return 100; // No habits scheduled → full score
-
-  const raw = (weightedSum / totalWeight) * 100;
-  return Math.round(Math.min(100, Math.max(0, raw)));
+export function getTierWeight(tier: HabitTier): number {
+  return SCORING_WEIGHTS.tiers[tier];
 }
 
-// ============================================================
-// HISTORICAL INTEGRITY
-// ============================================================
-
-export const HISTORY_CONFIG = {
-  /**
-   * Default number of days in the past a user can retroactively
-   * edit a habit log. Overridden by UserSettings.retroactiveEditDays.
-   */
-  defaultRetroactiveDays: 3,
-
-  /**
-   * Admins can retroactively edit up to this many days.
-   */
-  adminRetroactiveDays: 30,
-
-  /**
-   * Once a DailyScore is finalized, it is immutable unless
-   * an admin override is applied.
-   */
-  finalizeAfterDays: 1,
-} as const;
-
-// ============================================================
-// SCORE VALIDATION
-// ============================================================
-
-export function clampScore(score: number): number {
-  return Math.round(Math.min(100, Math.max(0, score)));
+export function getTierPoints(tier: HabitTier): number {
+  return POINTS_SYSTEM.habitCompletion[tier];
 }
 
-export function isValidScore(score: number): boolean {
-  return score >= 0 && score <= 100 && Number.isFinite(score);
+export function getStreakBonus(streakDays: number): number {
+  const milestones = Object.keys(POINTS_SYSTEM.streakBonus)
+    .map(Number)
+    .sort((a, b) => b - a);
+  
+  for (const milestone of milestones) {
+    if (streakDays >= milestone) {
+      return POINTS_SYSTEM.streakBonus[milestone as keyof typeof POINTS_SYSTEM.streakBonus];
+    }
+  }
+  
+  return 0;
+}
+
+export function roundScore(score: number): number {
+  const factor = Math.pow(10, CALCULATION_RULES.rounding.decimals);
+  
+  switch (CALCULATION_RULES.rounding.method) {
+    case 'floor':
+      return Math.floor(score * factor) / factor;
+    case 'ceil':
+      return Math.ceil(score * factor) / factor;
+    case 'round':
+    default:
+      return Math.round(score * factor) / factor;
+  }
+}
+
+export function isScoreExcellent(score: number): boolean {
+  return score >= THRESHOLDS.achievements.excellentDay;
+}
+
+export function isScorePerfect(score: number): boolean {
+  return score >= THRESHOLDS.achievements.perfectDay;
+}
+
+export function isCompletionRateGood(rate: number): boolean {
+  return rate >= THRESHOLDS.completionRate.good;
+}
+
+export function shouldWarnLowScore(score: number): boolean {
+  return score < THRESHOLDS.warnings.lowScore;
 }

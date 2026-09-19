@@ -1,47 +1,61 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { HabitService } from '@/server/services/habit.service';
+import { logHabitSchema } from '@/schemas/habit.schema';
+import { NextRequest, NextResponse } from 'next/server';
 
-const logSchema = z.object({
-  date: z.string(), // YYYY-MM-DD
-  status: z.enum(['COMPLETED', 'MISSED', 'PARTIAL']),
-  value: z.number().optional(),
-  notes: z.string().optional()
-});
-
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * POST /api/habits/[id]/log
+ * Log habit completion
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body = await req.json();
-    const data = logSchema.parse(body);
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Verify habit ownership
-    const habit = await db.habit.findUnique({
-      where: { id: params.id, userId: session.user.id }
+    const body = await request.json();
+
+    // Validate input
+    const validated = logHabitSchema.safeParse({
+      habitId: params.id,
+      ...body,
     });
-    if (!habit) return NextResponse.json({ error: "Not Found" }, { status: 404 });
 
-    const log = await db.habitLog.upsert({
-      where: {
-        habitId_date: {
-          habitId: params.id,
-          date: data.date
-        }
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const habitService = new HabitService();
+    const result = await habitService.logHabit(session.user.id, validated.data);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        log: result.log,
+        streakUpdated: result.streakUpdated,
+        newStreak: result.newStreak,
       },
-      update: data,
-      create: {
-        ...data,
-        habitId: params.id,
-        userId: session.user.id
-      }
     });
-
-    return NextResponse.json(log);
   } catch (error) {
-    return NextResponse.json({ error: "Invalid data or internal error" }, { status: 400 });
+    console.error('Error logging habit:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to log habit' },
+      { status: 500 }
+    );
   }
 }

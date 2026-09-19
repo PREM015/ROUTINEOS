@@ -1,32 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { HabitService } from '@/server/services/habit.service';
+import { NextRequest, NextResponse } from 'next/server';
 
-const archiveSchema = z.object({
-  reason: z.string().optional()
-});
-
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * POST /api/habits/[id]/archive
+ * Archive habit
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body = await req.json();
-    const data = archiveSchema.parse(body);
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const habit = await db.habit.update({
-      where: { id: params.id, userId: session.user.id },
-      data: {
-        status: 'ARCHIVED',
-        archiveReason: data.reason,
-        archivedAt: new Date()
-      }
-    });
+    const body = await request.json();
+    const { reason } = body;
 
-    return NextResponse.json(habit);
+    const habitService = new HabitService();
+    await habitService.archiveHabit(session.user.id, params.id, reason);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Invalid data or error" }, { status: 400 });
+    console.error('Error archiving habit:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to archive habit' },
+      { status: 500 }
+    );
   }
 }

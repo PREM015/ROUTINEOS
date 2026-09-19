@@ -1,58 +1,155 @@
 'use client';
-import React from 'react';
 
-interface InsightWidgetProps {
-  insight?: {
-    summary: string;
-    type: string;
-    createdAt: string;
-  } | null;
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+
+interface Insight {
+  id: string;
+  period: string;
+  summary: string;
+  wins: string;
+  suggestions: string;
+  generatedAt: Date;
 }
 
-export const InsightWidget: React.FC<InsightWidgetProps> = ({ insight }) => {
-  if (!insight) {
+export function InsightWidget() {
+  const [insight, setInsight] = useState<Insight | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    fetchLatestInsight();
+  }, []);
+
+  async function fetchLatestInsight() {
+    try {
+      const res = await fetch('/api/insights/latest?period=WEEKLY');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setInsight(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching insight:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function generateNewInsight() {
+    setGenerating(true);
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+
+      const res = await fetch('/api/insights/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          period: 'WEEKLY',
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setInsight(data.data);
+      }
+    } catch (error) {
+      console.error('Error generating insight:', error);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow h-full flex flex-col justify-center items-center">
-        <svg className="w-8 h-8 text-gray-400 mb-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-        <p className="text-gray-500 dark:text-gray-400">Insights loading...</p>
-      </div>
+      <Card className="p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        </div>
+      </Card>
     );
   }
 
-  const getTypeColor = (type: string) => {
-    switch(type.toLowerCase()) {
-      case 'warning': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
-      case 'positive': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'suggestion': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
-      default: return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300';
-    }
-  };
+  if (!insight) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
+        <p className="text-gray-600 mb-4">
+          Get personalized insights powered by AI
+        </p>
+        <Button onClick={generateNewInsight} disabled={generating}>
+          {generating ? 'Generating...' : 'Generate Insight'}
+        </Button>
+      </Card>
+    );
+  }
+
+  const wins = insight.wins.split('\n').filter(Boolean);
+  const suggestions = insight.suggestions.split('\n').filter(Boolean);
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow h-full flex flex-col relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-        <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-          <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-        </svg>
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">AI Insights</h3>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={generateNewInsight}
+          disabled={generating}
+        >
+          {generating ? '...' : '🔄'}
+        </Button>
       </div>
-      
-      <div className="flex justify-between items-start mb-3 z-10">
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">AI Insight</h3>
-        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(insight.type)}`}>
-          {insight.type}
-        </span>
+
+      <div className="space-y-4">
+        {/* Summary */}
+        <div>
+          <p className="text-sm text-gray-900">{insight.summary}</p>
+        </div>
+
+        {/* Wins */}
+        {wins.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2 text-green-700">✨ Wins</h4>
+            <ul className="space-y-1">
+              {wins.slice(0, 2).map((win, i) => (
+                <li key={i} className="text-sm text-gray-700">
+                  • {win}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Suggestions */}
+        {suggestions.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold mb-2 text-blue-700">
+              💡 Suggestions
+            </h4>
+            <ul className="space-y-1">
+              {suggestions.slice(0, 3).map((suggestion, i) => (
+                <li key={i} className="text-sm text-gray-700">
+                  • {suggestion}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="text-xs text-gray-500 pt-2 border-t">
+          Generated {new Date(insight.generatedAt).toLocaleDateString()}
+        </div>
       </div>
-      
-      <div className="flex-grow z-10">
-        <p className="text-gray-700 dark:text-gray-300 italic">"{insight.summary}"</p>
-      </div>
-      
-      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 z-10 text-right">
-        <span className="text-xs text-gray-500 dark:text-gray-400">{insight.createdAt}</span>
-      </div>
-    </div>
+    </Card>
   );
-};
+}

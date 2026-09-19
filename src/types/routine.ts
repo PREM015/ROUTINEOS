@@ -1,178 +1,39 @@
+import type {
+  RoutineTemplate,
+  RoutineBlock,
+  RoutineException,
+  RoutineLog,
+  DayType,
+  RoutineLogStatus,
+  Category,
+} from '@prisma/client';
+
 /**
- * Routine Types
- *
- * Complete type definitions for the RoutineOS routine engine,
- * including templates, blocks, exceptions, and logs.
+ * Routine Management Types
+ * Complete type system for daily routine management
  */
 
-// ============================================================
-// ENUMS
-// ============================================================
-
-export enum DayType {
-  WORKDAY = "WORKDAY",
-  WEEKEND = "WEEKEND",
-  HOLIDAY = "HOLIDAY",
-  EXAM_DAY = "EXAM_DAY",
-  LOW_ENERGY = "LOW_ENERGY",
-  CUSTOM = "CUSTOM",
-}
-
-export enum RoutineLogStatus {
-  COMPLETED = "COMPLETED",
-  MISSED = "MISSED",
-  PARTIAL = "PARTIAL",
-  IN_PROGRESS = "IN_PROGRESS",
-}
-
-// ============================================================
-// ROUTINE TEMPLATE
-// ============================================================
-
-export interface RoutineTemplate {
-  id: string;
-  userId: string;
-
-  name: string;
-  description: string | null;
-  dayType: DayType;
-  isDefault: boolean;
-
-  color: string | null;
-  icon: string | null;
-  isActive: boolean;
-  archivedAt: Date | null;
-
-  estimatedDuration: number | null; // total minutes
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// ROUTINE BLOCK
-// ============================================================
-
-export interface RoutineBlock {
-  id: string;
-  userId: string;
-  templateId: string;
-  categoryId: string | null;
-
-  name: string;
-  description: string | null;
-  icon: string | null;
-  color: string | null;
-
-  startTime: string; // HH:mm
-  endTime: string; // HH:mm
-  isOvernight: boolean;
-
-  isFlexible: boolean;
-  isOptional: boolean;
-  sortOrder: number;
-
-  // Metadata
-  tags: string | null;
-  notes: string | null;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// ROUTINE EXCEPTION
-// ============================================================
-
-export interface RoutineException {
-  id: string;
-  userId: string;
-  templateId: string;
-
-  date: string; // ISO date YYYY-MM-DD
-  overrideDayType: DayType | null;
-  reason: string | null;
-
-  createdAt: Date;
-}
-
-// ============================================================
-// ROUTINE LOG
-// ============================================================
-
-export interface RoutineLog {
-  id: string;
-  userId: string;
-  templateId: string;
-  blockId: string | null;
-
-  date: string; // ISO date YYYY-MM-DD
-  status: RoutineLogStatus;
-
-  scheduledStart: string | null;
-  scheduledEnd: string | null;
-  actualStart: string | null;
-  actualEnd: string | null;
-
-  notes: string | null;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// ROUTINE WITH RELATIONS
-// ============================================================
+// ============================================================================
+// Core Routine Types
+// ============================================================================
 
 export interface RoutineTemplateWithBlocks extends RoutineTemplate {
-  blocks: RoutineBlock[];
+  blocks: RoutineBlockWithCategory[];
+  exceptions: RoutineException[];
+  _count?: {
+    blocks: number;
+    exceptions: number;
+  };
 }
 
-export interface RoutineBlockWithLog extends RoutineBlock {
-  todayLog: RoutineLog | null;
+export interface RoutineBlockWithCategory extends RoutineBlock {
+  category: Category | null;
+  logs: RoutineLog[];
 }
 
-export interface TodayRoutine {
-  template: RoutineTemplate;
-  blocks: RoutineBlockWithLog[];
-  currentBlock: RoutineBlockWithLog | null;
-  nextBlock: RoutineBlockWithLog | null;
-  completionPercentage: number;
-}
-
-// ============================================================
-// TIME SLOT
-// ============================================================
-
-export interface TimeSlot {
-  start: string; // HH:mm
-  end: string; // HH:mm
-  isOvernight: boolean;
-}
-
-export interface RoutineConflict {
-  blockA: RoutineBlock;
-  blockB: RoutineBlock;
-  overlapMinutes: number;
-}
-
-// ============================================================
-// MINIMUM DAY TEMPLATE
-// ============================================================
-
-export interface MinimumDayTemplate {
-  id: string;
-  userId: string;
-  name: string;
-  habitIds: string[];
-  isDefault: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// FORM DATA
-// ============================================================
+// ============================================================================
+// Routine Template Management
+// ============================================================================
 
 export interface CreateRoutineTemplateInput {
   name: string;
@@ -183,46 +44,300 @@ export interface CreateRoutineTemplateInput {
   icon?: string;
 }
 
-export interface UpdateRoutineTemplateInput
-  extends Partial<CreateRoutineTemplateInput> {
-  id: string;
+export interface UpdateRoutineTemplateInput {
+  name?: string;
+  description?: string;
+  dayType?: DayType;
+  isDefault?: boolean;
+  color?: string;
+  icon?: string;
   isActive?: boolean;
 }
 
+export interface CreateRoutineTemplateResponse {
+  success: boolean;
+  template?: RoutineTemplateWithBlocks;
+  message?: string;
+}
+
+export interface UpdateRoutineTemplateResponse {
+  success: boolean;
+  template?: RoutineTemplateWithBlocks;
+  message?: string;
+}
+
+// ============================================================================
+// Routine Block Management
+// ============================================================================
+
 export interface CreateRoutineBlockInput {
   templateId: string;
-  name: string;
+  startTime: string; // HH:mm format
+  endTime: string; // HH:mm format
+  title: string;
   description?: string;
-  icon?: string;
-  color?: string;
-  categoryId?: string;
-  startTime: string;
-  endTime: string;
-  isOvernight?: boolean;
-  isFlexible?: boolean;
-  isOptional?: boolean;
-  sortOrder?: number;
   notes?: string;
-  tags?: string;
+  color?: string;
+  icon?: string;
+  categoryId?: string;
+  energyLevel?: 'HIGH' | 'MEDIUM' | 'LOW';
+  trackCompletion?: boolean;
+  isRecurring?: boolean;
+  sortOrder?: number;
 }
 
-export interface UpdateRoutineBlockInput
-  extends Partial<CreateRoutineBlockInput> {
-  id: string;
+export interface UpdateRoutineBlockInput {
+  startTime?: string;
+  endTime?: string;
+  title?: string;
+  description?: string;
+  notes?: string;
+  color?: string;
+  icon?: string;
+  categoryId?: string | null;
+  energyLevel?: 'HIGH' | 'MEDIUM' | 'LOW' | null;
+  trackCompletion?: boolean;
+  isRecurring?: boolean;
+  sortOrder?: number;
 }
+
+export interface CreateRoutineBlockResponse {
+  success: boolean;
+  block?: RoutineBlockWithCategory;
+  conflicts?: RoutineConflict[];
+  message?: string;
+}
+
+export interface UpdateRoutineBlockResponse {
+  success: boolean;
+  block?: RoutineBlockWithCategory;
+  conflicts?: RoutineConflict[];
+  message?: string;
+}
+
+// ============================================================================
+// Routine Conflicts
+// ============================================================================
+
+export interface RoutineConflict {
+  type: 'TIME_OVERLAP' | 'DURATION_INVALID' | 'OVERNIGHT_CONFLICT';
+  blockId: string;
+  conflictingBlockId?: string;
+  message: string;
+  severity: 'ERROR' | 'WARNING';
+}
+
+export interface ConflictCheckResult {
+  hasConflicts: boolean;
+  conflicts: RoutineConflict[];
+}
+
+// ============================================================================
+// Routine Exceptions
+// ============================================================================
 
 export interface CreateRoutineExceptionInput {
-  templateId: string;
-  date: string;
-  overrideDayType?: DayType;
+  date: string; // YYYY-MM-DD
+  dayType: DayType;
+  templateId?: string;
+  note?: string;
   reason?: string;
 }
 
+export interface CreateRoutineExceptionResponse {
+  success: boolean;
+  exception?: RoutineException;
+  message?: string;
+}
+
+// ============================================================================
+// Routine for Specific Day
+// ============================================================================
+
+export interface DayRoutine {
+  date: string;
+  dayType: DayType;
+  isException: boolean;
+  template: RoutineTemplateWithBlocks | null;
+  blocks: DayRoutineBlock[];
+}
+
+export interface DayRoutineBlock {
+  id: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  description: string | null;
+  notes: string | null;
+  color: string | null;
+  icon: string | null;
+  category: {
+    id: string;
+    name: string;
+    color: string | null;
+  } | null;
+  energyLevel: string | null;
+  trackCompletion: boolean;
+  durationMinutes: number;
+  isOvernight: boolean;
+  log: {
+    id: string;
+    status: RoutineLogStatus;
+    actualStartTime: string | null;
+    actualEndTime: string | null;
+    durationMinutes: number | null;
+    focusRating: number | null;
+    productivityRating: number | null;
+    note: string | null;
+  } | null;
+}
+
+// ============================================================================
+// Current Routine Block
+// ============================================================================
+
+export interface CurrentRoutineBlock {
+  block: DayRoutineBlock;
+  isActive: boolean;
+  startedAt: Date;
+  endsAt: Date;
+  minutesElapsed: number;
+  minutesRemaining: number;
+  progressPercentage: number;
+  nextBlock: DayRoutineBlock | null;
+}
+
+// ============================================================================
+// Routine Logging
+// ============================================================================
+
 export interface LogRoutineBlockInput {
-  blockId: string;
+  routineBlockId: string;
   date: string;
   status: RoutineLogStatus;
-  actualStart?: string;
-  actualEnd?: string;
-  notes?: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  focusRating?: number; // 1-5
+  productivityRating?: number; // 1-5
+  energyLevel?: number; // 1-5
+  note?: string;
 }
+
+export interface LogRoutineBlockResponse {
+  success: boolean;
+  log?: RoutineLog;
+  message?: string;
+}
+
+// ============================================================================
+// Routine Analytics
+// ============================================================================
+
+export interface RoutineAnalytics {
+  templateId: string;
+  totalBlocks: number;
+  trackedBlocks: number;
+  totalLogs: number;
+  completedLogs: number;
+  missedLogs: number;
+  partialLogs: number;
+  completionRate: number;
+  averageFocusRating: number | null;
+  averageProductivityRating: number | null;
+  totalDuration: number; // planned minutes
+  actualDuration: number; // logged minutes
+  adherenceRate: number; // actual/planned
+}
+
+export interface RoutineBlockAnalytics {
+  blockId: string;
+  blockTitle: string;
+  totalLogs: number;
+  completedLogs: number;
+  completionRate: number;
+  averageFocusRating: number | null;
+  averageProductivityRating: number | null;
+  averageDelay: number; // minutes difference from planned start
+  bestTime: string | null; // time of day with best focus
+}
+
+// ============================================================================
+// Routine Calculations
+// ============================================================================
+
+export interface RoutineDuration {
+  totalMinutes: number;
+  hours: number;
+  minutes: number;
+  formattedDuration: string; // "2h 30m"
+}
+
+export interface TimeRange {
+  startTime: string;
+  endTime: string;
+  isOvernight: boolean;
+}
+
+export interface TimeOverlap {
+  overlaps: boolean;
+  overlapMinutes: number;
+}
+
+// ============================================================================
+// Routine Queries
+// ============================================================================
+
+export interface RoutineQueryParams {
+  dayType?: DayType;
+  isActive?: boolean;
+  sortBy?: 'name' | 'createdAt' | 'dayType';
+  sortOrder?: 'asc' | 'desc';
+}
+
+// ============================================================================
+// Routine Suggestions
+// ============================================================================
+
+export interface RoutineSuggestion {
+  type: 'ADD_BLOCK' | 'ADJUST_TIME' | 'ENERGY_MISMATCH' | 'DURATION_WARNING';
+  blockId?: string;
+  message: string;
+  suggestion: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+export function isRoutineTemplateWithBlocks(
+  template: unknown
+): template is RoutineTemplateWithBlocks {
+  return (
+    typeof template === 'object' &&
+    template !== null &&
+    'id' in template &&
+    'blocks' in template &&
+    Array.isArray((template as RoutineTemplateWithBlocks).blocks)
+  );
+}
+
+export function isValidTimeFormat(time: string): boolean {
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+}
+
+export function isOvernightBlock(startTime: string, endTime: string): boolean {
+  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [endHour, endMin] = endTime.split(':').map(Number);
+  const startMinutes = startHour * 60 + startMin;
+  const endMinutes = endHour * 60 + endMin;
+  return endMinutes <= startMinutes;
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+export type RoutineTemplatesByDayType = Record<DayType, RoutineTemplateWithBlocks[]>;
+
+export type DayTypeLabels = Record<DayType, string>;

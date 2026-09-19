@@ -1,33 +1,41 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { HabitService } from '@/server/services/habit.service';
+import { NextRequest, NextResponse } from 'next/server';
 
-const pauseSchema = z.object({
-  pausedUntil: z.string().optional(), // ISO date or empty for indefinite
-  reason: z.string().optional()
-});
-
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * POST /api/habits/[id]/pause
+ * Pause habit
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body = await req.json();
-    const data = pauseSchema.parse(body);
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const habit = await db.habit.update({
-      where: { id: params.id, userId: session.user.id },
-      data: {
-        status: 'PAUSED',
-        pausedUntil: data.pausedUntil ? new Date(data.pausedUntil) : null,
-        pauseReason: data.reason
-      }
-    });
+    const body = await request.json();
+    const { reason, resumeDate } = body;
 
-    return NextResponse.json(habit);
+    const habitService = new HabitService();
+    await habitService.pauseHabit(session.user.id, params.id, reason, resumeDate);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Invalid data or error" }, { status: 400 });
+    console.error('Error pausing habit:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to pause habit' },
+      { status: 500 }
+    );
   }
 }

@@ -1,15 +1,37 @@
-"use client";
-import React from 'react';
-import { WifiOff } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+'use client';
 
-export function NetworkError({ onRetry }: { onRetry?: () => void }) {
+import { ErrorState } from './ErrorState';
+import { useEffect, useState } from 'react';
+
+export function NetworkError() {
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  if (isOnline) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
-      <WifiOff className="w-12 h-12 text-orange-500" />
-      <h3 className="text-xl font-bold">Network Error</h3>
-      <p className="text-gray-500">Please check your internet connection.</p>
-      {onRetry && <Button onClick={onRetry} variant="outline">Retry</Button>}
-    </div>
+    <ErrorState
+      title="No Internet Connection"
+      message="Please check your network connection and try again."
+      showRefresh={false}
+      action={{
+        label: 'Retry',
+        onClick: () => window.location.reload(),
+      }}
+    />
   );
 }

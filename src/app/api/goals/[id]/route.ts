@@ -1,66 +1,93 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { z } from 'zod';
+import { auth } from '@/lib/auth';
+import { GoalService } from '@/server/services/goal.service';
+import { GoalRepository } from '@/server/repositories/goal.repository';
+import { updateGoalSchema } from '@/schemas/goal.schema';
+import { NextRequest, NextResponse } from 'next/server';
 
-const updateGoalSchema = z.object({
-  title: z.string().optional(),
-  description: z.string().optional(),
-  targetValue: z.number().optional(),
-  currentValue: z.number().optional(),
-  status: z.enum(['ACTIVE', 'COMPLETED', 'ABANDONED']).optional(),
-  dueDate: z.string().optional(),
-});
-
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const goal = await db.goal.findUnique({
-      where: { id: params.id, userId: session.user.id },
-      include: { progress: true },
-    });
+    const goalRepository = new GoalRepository();
+    const goal = await goalRepository.findWithRelations(params.id, session.user.id);
 
-    if (!goal) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    if (!goal) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
 
-    return NextResponse.json(goal);
+    return NextResponse.json({ success: true, data: goal });
   } catch (error) {
+    console.error('Error fetching goal:', error);
     return NextResponse.json({ error: 'Failed to fetch goal' }, { status: 500 });
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const json = await request.json();
-    const data = updateGoalSchema.parse(json);
+    const body = await request.json();
+    const validated = updateGoalSchema.safeParse(body);
 
-    const goal = await db.goal.update({
-      where: { id: params.id, userId: session.user.id },
-      data,
-    });
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json(goal);
+    const goalService = new GoalService();
+    const goal = await goalService.updateGoal(
+      session.user.id,
+      params.id,
+      validated.data
+    );
+
+    return NextResponse.json({ success: true, data: goal });
   } catch (error) {
+    console.error('Error updating goal:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json({ error: 'Failed to update goal' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    await db.goal.delete({
-      where: { id: params.id, userId: session.user.id },
-    });
+    const goalService = new GoalService();
+    await goalService.deleteGoal(session.user.id, params.id);
 
-    return new NextResponse(null, { status: 204 });
+    return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting goal:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json({ error: 'Failed to delete goal' }, { status: 500 });
   }
 }

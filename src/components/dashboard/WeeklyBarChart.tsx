@@ -1,129 +1,123 @@
 'use client';
 
-import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
-import { AlertCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
 
-// Assuming basic placeholder structures if they don't exist yet, but conforming to standard imports.
-// Import EmptyState and Badge per rules.
-import { EmptyState, Badge } from '@/components/ui';
-
-interface DayData {
+interface DayScore {
   date: string;
+  day: string;
+  totalScore: number;
   coreScore: number;
-  isToday: boolean;
-  dayType: 'NORMAL' | 'MINIMUM' | 'REST' | 'MISSED';
+  growthScore: number;
+  bonusScore: number;
 }
 
-interface WeeklyBarChartProps {
-  days: DayData[];
-  weeklyScore: number;
-  weeklyBand: 'EXCELLENT' | 'GOOD' | 'NEEDS_IMPROVEMENT' | 'RESET';
-}
+export function WeeklyBarChart() {
+  const [data, setData] = useState<DayScore[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const bandColors = {
-  EXCELLENT: 'bg-emerald-500 text-black',
-  GOOD: 'bg-teal-500 text-black',
-  NEEDS_IMPROVEMENT: 'bg-amber-500 text-black',
-  RESET: 'bg-red-500 text-white',
-};
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-const bandLabels = {
-  EXCELLENT: 'Excellent',
-  GOOD: 'Good',
-  NEEDS_IMPROVEMENT: 'Needs Improvement',
-  RESET: 'Reset',
-};
+  async function fetchData() {
+    try {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
 
-export default function WeeklyBarChart({ days, weeklyScore, weeklyBand }: WeeklyBarChartProps) {
-  if (!days || days.length === 0) {
+      const res = await fetch(
+        `/api/scores/daily?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`
+      );
+      const result = await res.json();
+
+      if (result.success) {
+        const chartData = result.data.map((score: any) => ({
+          date: score.date,
+          day: new Date(score.date).toLocaleDateString('en-US', { weekday: 'short' }),
+          totalScore: score.totalScore || 0,
+          coreScore: score.coreScore || 0,
+          growthScore: score.growthScore || 0,
+          bonusScore: score.bonusScore || 0,
+        }));
+        setData(chartData);
+      }
+    } catch (error) {
+      console.error('Error fetching weekly data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="w-full h-[300px] bg-zinc-900 rounded-xl flex items-center justify-center p-6 border border-zinc-800">
-        {/* We use EmptyState if available, inline fallback isn't needed if we assume it exists as instructed. */}
-        <EmptyState 
-          icon={<AlertCircle className="w-8 h-8 text-zinc-500" />}
-          title="No data for this week yet."
-          description="Complete your daily core tasks to see your progress here."
-        />
-      </div>
+      <Card className="p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-48 bg-gray-200 rounded"></div>
+        </div>
+      </Card>
     );
   }
 
-  const formatXAxis = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload as DayData;
-      return (
-        <div className="bg-zinc-800 border border-zinc-700 p-3 rounded-lg shadow-xl">
-          <p className="text-zinc-300 text-sm mb-1">{data.date}</p>
-          <p className="text-white font-semibold">Score: {data.coreScore}%</p>
-          <p className="text-zinc-400 text-xs mt-1 uppercase">{data.dayType}</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  const maxScore = Math.max(...data.map(d => d.totalScore), 100);
 
   return (
-    <div className="w-full bg-zinc-900 rounded-xl p-6 border border-zinc-800">
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <h3 className="text-zinc-100 font-semibold text-lg">Weekly Progress</h3>
-          <p className="text-zinc-400 text-sm">Your core scores for the last 7 days</p>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-2xl font-bold text-zinc-100">{weeklyScore}%</span>
-          <Badge className={`mt-1 font-semibold ${bandColors[weeklyBand]}`}>
-            {bandLabels[weeklyBand]}
-          </Badge>
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold">Last 7 Days</h3>
+        <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+            <span>Core</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-green-600"></div>
+            <span>Growth</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-yellow-600"></div>
+            <span>Bonus</span>
+          </div>
         </div>
       </div>
 
-      <div className="h-[240px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={days} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#3f3f46" />
-            <XAxis 
-              dataKey="date" 
-              tickFormatter={formatXAxis} 
-              stroke="#a1a1aa" 
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              dy={10}
-            />
-            <YAxis 
-              domain={[0, 100]} 
-              stroke="#a1a1aa" 
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}%`}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#27272a' }} />
-            <Bar dataKey="coreScore" radius={[4, 4, 0, 0]}>
-              {days.map((entry, index) => {
-                let fill = '#10b981'; // emerald-500 for normal
-                if (entry.dayType === 'REST') fill = '#52525b'; // zinc-600
-                if (entry.dayType === 'MISSED') fill = '#ef4444'; // red-500
-                if (entry.dayType === 'MINIMUM') fill = '#f59e0b'; // amber-500
-                
-                return (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={fill}
-                    className={entry.isToday ? "drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" : ""} 
+      <div className="flex items-end justify-between gap-2 h-48">
+        {data.map((day, index) => {
+          const coreHeight = (day.coreScore / maxScore) * 100;
+          const growthHeight = (day.growthScore / maxScore) * 100;
+          const bonusHeight = (day.bonusScore / maxScore) * 100;
+
+          return (
+            <div key={index} className="flex-1 flex flex-col items-center gap-2">
+              <div className="w-full flex flex-col-reverse gap-0.5">
+                {bonusHeight > 0 && (
+                  <div
+                    className="w-full bg-yellow-600 rounded-t"
+                    style={{ height: `${bonusHeight}%` }}
                   />
-                );
-              })}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+                )}
+                {growthHeight > 0 && (
+                  <div
+                    className="w-full bg-green-600"
+                    style={{ height: `${growthHeight}%` }}
+                  />
+                )}
+                {coreHeight > 0 && (
+                  <div
+                    className="w-full bg-blue-600 rounded-b"
+                    style={{ height: `${coreHeight}%` }}
+                  />
+                )}
+              </div>
+              <div className="text-center">
+                <div className="text-xs font-medium">{day.day}</div>
+                <div className="text-xs text-gray-600">{Math.round(day.totalScore)}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
-    </div>
+    </Card>
   );
 }

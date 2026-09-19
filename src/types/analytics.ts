@@ -1,269 +1,536 @@
 /**
  * Analytics Types
- *
- * Complete type definitions for the RoutineOS analytics engine,
- * including trends, summaries, and insight aggregations.
+ * Complete type system for analytics and insights
  */
 
-// ============================================================
-// ENUMS
-// ============================================================
+// ============================================================================
+// Period Types
+// ============================================================================
 
-export enum AnalyticsPeriod {
-  DAILY = "DAILY",
-  WEEKLY = "WEEKLY",
-  MONTHLY = "MONTHLY",
-  QUARTERLY = "QUARTERLY",
-  YEARLY = "YEARLY",
+export type AnalyticsPeriod = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
+
+export interface DateRange {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
 }
 
-export enum TrendDirection {
-  UP = "UP",
-  DOWN = "DOWN",
-  STABLE = "STABLE",
+// ============================================================================
+// Dashboard Analytics
+// ============================================================================
+
+export interface DashboardAnalytics {
+  overview: {
+    currentStreak: number;
+    longestStreak: number;
+    todayScore: number | null;
+    weekAverageScore: number;
+    monthAverageScore: number;
+    activeHabits: number;
+    activeGoals: number;
+    completionRateToday: number;
+  };
+  habits: {
+    total: number;
+    active: number;
+    paused: number;
+    archived: number;
+    completionRate: number;
+    mostConsistent: HabitConsistencyInfo | null;
+    needsAttention: HabitConsistencyInfo | null;
+  };
+  goals: {
+    total: number;
+    active: number;
+    completed: number;
+    onTrack: number;
+    atRisk: number;
+    overdue: number;
+    completionRate: number;
+  };
+  recentActivity: ActivitySummary[];
+  upcomingDeadlines: UpcomingDeadline[];
 }
 
-// ============================================================
-// CORE METRIC
-// ============================================================
-
-export interface Metric {
-  value: number;
-  label: string;
-  unit?: string;
-  change?: number; // absolute change from previous period
-  changePercent?: number;
-  trend?: TrendDirection;
-}
-
-export interface DataPoint {
-  date: string; // ISO date
-  value: number;
-  label?: string;
-}
-
-export interface TimeSeries {
-  period: AnalyticsPeriod;
-  data: DataPoint[];
-  average: number;
-  min: number;
-  max: number;
-  trend: TrendDirection;
-}
-
-// ============================================================
-// DAILY ANALYTICS
-// ============================================================
-
-export interface DailyAnalytics {
-  date: string;
-  overallScore: number;
-  nonNegScore: number;
-  growthScore: number;
-  bonusScore: number;
-  habitsCompleted: number;
-  habitsTotal: number;
-  sleepDurationMinutes: number | null;
-  sleepQualityScore: number | null;
-  energyLevel: number | null;
-  moodScore: number | null;
-  focusMinutes: number | null;
-  dayMode: string;
-}
-
-// ============================================================
-// WEEKLY ANALYTICS
-// ============================================================
-
-export interface WeeklyAnalytics {
-  weekStart: string; // ISO date of Monday
-  weekEnd: string; // ISO date of Sunday
-  weekNumber: number;
-  year: number;
-
-  // Score summary
-  averageScore: number;
-  bestDay: DailyAnalytics | null;
-  worstDay: DailyAnalytics | null;
-  perfectDays: number;
-  activeDays: number;
-
-  // Habit stats
-  totalHabitsCompleted: number;
-  totalHabitsScheduled: number;
+export interface HabitConsistencyInfo {
+  id: string;
+  name: string;
+  tier: string;
   completionRate: number;
-  bestHabit: HabitStat | null;
-  mostMissedHabit: HabitStat | null;
-
-  // Sleep
-  averageSleepMinutes: number | null;
-  daysMetSleepTarget: number;
-
-  // vs previous week
-  scoreChange: number;
-  completionRateChange: number;
-
-  days: DailyAnalytics[];
+  currentStreak: number;
 }
 
-// ============================================================
-// MONTHLY ANALYTICS
-// ============================================================
-
-export interface MonthlyAnalytics {
-  month: number; // 1-12
-  year: number;
-  daysInMonth: number;
-
-  // Score
-  averageScore: number;
-  highestScore: number;
-  lowestScore: number;
-  perfectDays: number;
-  activeDays: number;
-
-  // Habits
-  completionRate: number;
-  totalCompletions: number;
-
-  // Streak
-  longestStreakThisMonth: number;
-
-  // Top performers
-  topHabits: HabitStat[];
-  bottomHabits: HabitStat[];
-
-  // vs previous month
-  scoreChange: number;
-  completionRateChange: number;
-
-  weeks: WeeklyAnalytics[];
+export interface ActivitySummary {
+  type: 'HABIT_COMPLETED' | 'GOAL_COMPLETED' | 'PERFECT_DAY' | 'MILESTONE_REACHED';
+  title: string;
+  description: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
 }
 
-// ============================================================
-// HABIT ANALYTICS
-// ============================================================
+export interface UpcomingDeadline {
+  type: 'GOAL' | 'MILESTONE' | 'PROJECT';
+  id: string;
+  title: string;
+  dueDate: Date;
+  daysUntilDue: number;
+  progress: number;
+  priority: string;
+}
 
-export interface HabitStat {
+// ============================================================================
+// Habit Analytics
+// ============================================================================
+
+export interface HabitAnalyticsSummary {
   habitId: string;
   habitName: string;
   tier: string;
-  completionRate: number;
-  streak: number;
-  totalCompletions: number;
-  totalScheduled: number;
-  frictionScore: number; // 0-1, higher = more friction
+  period: DateRange;
+  
+  completion: {
+    totalDays: number;
+    scheduledDays: number;
+    completedDays: number;
+    missedDays: number;
+    skippedDays: number;
+    completionRate: number;
+  };
+  
+  streaks: {
+    current: number;
+    longest: number;
+    average: number;
+  };
+  
+  performance: {
+    averageDifficulty: number | null;
+    averageDuration: number | null;
+    totalDuration: number;
+    averageEnergyLevel: number | null;
+    averageMoodImprovement: number | null;
+  };
+  
+  patterns: {
+    bestDayOfWeek: string | null;
+    worstDayOfWeek: string | null;
+    bestTimeOfDay: string | null;
+    consistencyScore: number; // 0-100
+  };
+  
+  trends: Array<{
+    date: string;
+    completed: boolean;
+    duration: number | null;
+    difficulty: number | null;
+  }>;
 }
 
-export interface HabitFrictionAnalysis {
-  habitId: string;
-  habitName: string;
-  frictionScore: number;
-  missedDays: number;
-  skipDays: number;
-  patterns: string[]; // e.g. ["Missed on Mondays", "High miss rate on weekends"]
-  recommendation: string | null;
+export interface AllHabitsAnalytics {
+  period: DateRange;
+  totalHabits: number;
+  
+  byTier: {
+    tier: string;
+    count: number;
+    completionRate: number;
+    averageStreak: number;
+  }[];
+  
+  topPerformers: Array<{
+    habitId: string;
+    habitName: string;
+    completionRate: number;
+    currentStreak: number;
+  }>;
+  
+  needsAttention: Array<{
+    habitId: string;
+    habitName: string;
+    completionRate: number;
+    daysSinceLast: number;
+    reason: string;
+  }>;
+  
+  overallStats: {
+    totalCompletions: number;
+    averageCompletionRate: number;
+    totalDuration: number;
+    averageStreak: number;
+  };
 }
 
-// ============================================================
-// STREAK ANALYTICS
-// ============================================================
+// ============================================================================
+// Goal Analytics
+// ============================================================================
+
+export interface GoalAnalyticsSummary {
+  goalId: string;
+  goalTitle: string;
+  type: string;
+  priority: string;
+  period: DateRange;
+  
+  progress: {
+    current: number;
+    target: number;
+    percentage: number;
+    remaining: number;
+  };
+  
+  velocity: {
+    overall: number; // units per day
+    recent: number; // last 7 days
+    required: number; // to meet deadline
+    onTrack: boolean;
+  };
+  
+  timeline: {
+    startDate: Date;
+    endDate: Date;
+    daysElapsed: number;
+    daysTotal: number;
+    daysRemaining: number;
+    projectedCompletion: Date | null;
+  };
+  
+  milestones: {
+    total: number;
+    completed: number;
+    upcoming: number;
+    overdue: number;
+  };
+  
+  progressHistory: Array<{
+    date: string;
+    value: number;
+    cumulative: number;
+  }>;
+}
+
+export interface AllGoalsAnalytics {
+  period: DateRange;
+  totalGoals: number;
+  
+  byStatus: {
+    status: string;
+    count: number;
+    percentage: number;
+  }[];
+  
+  byType: {
+    type: string;
+    count: number;
+    completionRate: number;
+    averageProgress: number;
+  }[];
+  
+  performance: {
+    onTrack: number;
+    atRisk: number;
+    overdue: number;
+    completed: number;
+    averageProgress: number;
+    averageVelocity: number;
+  };
+  
+  topGoals: Array<{
+    goalId: string;
+    title: string;
+    progress: number;
+    velocity: number;
+  }>;
+}
+
+// ============================================================================
+// Streak Analytics
+// ============================================================================
 
 export interface StreakAnalytics {
-  currentStreak: number;
-  longestStreak: number;
-  coreStreak: number;
-  totalDaysTracked: number;
-  streakHistory: StreakPeriod[];
+  current: {
+    total: number;
+    core: number;
+    growth: number;
+    minimum: number;
+  };
+  
+  longest: {
+    total: number;
+    core: number;
+    growth: number;
+    minimum: number;
+  };
+  
+  history: {
+    totalDays: number;
+    completedDays: number;
+    minimumDays: number;
+    restDays: number;
+    perfectDays: number;
+  };
+  
+  milestones: Array<{
+    type: string;
+    days: number;
+    reachedDate: string;
+    celebrated: boolean;
+  }>;
+  
+  timeline: Array<{
+    date: string;
+    hasStreak: boolean;
+    isMinimumDay: boolean;
+    isRestDay: boolean;
+    score: number | null;
+  }>;
+  
+  projections: {
+    nextMilestone: number | null;
+    daysToNextMilestone: number | null;
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  };
 }
 
-export interface StreakPeriod {
-  start: string;
-  end: string;
-  length: number;
-  broken: boolean;
-  breakReason: string | null;
+// ============================================================================
+// Score Analytics
+// ============================================================================
+
+export interface ScoreAnalyticsSummary {
+  period: DateRange;
+  
+  averages: {
+    core: number;
+    growth: number;
+    bonus: number;
+    total: number;
+  };
+  
+  distribution: {
+    grade: string;
+    count: number;
+    percentage: number;
+  }[];
+  
+  trends: {
+    improving: boolean;
+    trendDirection: 'UP' | 'DOWN' | 'STABLE';
+    changePercentage: number;
+    comparisonPeriod: DateRange;
+  };
+  
+  specialDays: {
+    minimumDays: number;
+    restDays: number;
+    perfectDays: number;
+    excellentDays: number;
+  };
+  
+  timeline: Array<{
+    date: string;
+    core: number | null;
+    growth: number | null;
+    bonus: number | null;
+    total: number | null;
+    grade: string | null;
+  }>;
 }
 
-// ============================================================
-// INSIGHT TYPES
-// ============================================================
+// ============================================================================
+// Sleep Analytics
+// ============================================================================
 
-export enum InsightCategory {
-  HABIT = "HABIT",
-  SLEEP = "SLEEP",
-  MOOD = "MOOD",
-  ENERGY = "ENERGY",
-  PRODUCTIVITY = "PRODUCTIVITY",
-  ROUTINE = "ROUTINE",
-  GOAL = "GOAL",
-  STREAK = "STREAK",
-  GENERAL = "GENERAL",
+export interface SleepAnalyticsSummary {
+  period: DateRange;
+  
+  averages: {
+    duration: number; // minutes
+    bedtime: string; // HH:mm
+    wakeTime: string; // HH:mm
+    quality: number | null;
+    interruptions: number | null;
+  };
+  
+  consistency: {
+    bedtimeVariance: number;
+    wakeTimeVariance: number;
+    durationVariance: number;
+    score: number; // 0-100
+  };
+  
+  debt: {
+    total: number;
+    average: number;
+    trend: 'IMPROVING' | 'WORSENING' | 'STABLE';
+  };
+  
+  quality: {
+    averageRating: number | null;
+    daysFeelRested: number;
+    percentageRested: number;
+  };
+  
+  timeline: Array<{
+    date: string;
+    duration: number;
+    quality: number | null;
+    deficit: number;
+  }>;
 }
 
-export enum InsightSeverity {
-  INFO = "INFO",
-  POSITIVE = "POSITIVE",
-  WARNING = "WARNING",
-  CRITICAL = "CRITICAL",
+// ============================================================================
+// Context Analytics
+// ============================================================================
+
+export interface ContextAnalytics {
+  period: DateRange;
+  
+  byDayType: {
+    dayType: string;
+    count: number;
+    averageScore: number;
+    averageCompletionRate: number;
+  }[];
+  
+  byWeekday: {
+    weekday: string;
+    count: number;
+    averageScore: number;
+    averageCompletionRate: number;
+    bestHabits: string[];
+    worstHabits: string[];
+  }[];
+  
+  correlations: {
+    sleepVsScore: number; // -1 to 1
+    energyVsCompletion: number;
+    moodVsProductivity: number;
+  };
 }
 
-export interface AIInsight {
-  id: string;
-  userId: string;
-  period: AnalyticsPeriod;
-  periodLabel: string; // e.g., "Week 37, 2026"
+// ============================================================================
+// Friction Analysis
+// ============================================================================
 
-  category: InsightCategory;
-  severity: InsightSeverity;
-
-  title: string;
-  summary: string;
-  details: string | null;
-
-  recommendation: string | null;
-  dataPoints: DataPoint[];
-
-  isRead: boolean;
-  isDismissed: boolean;
-
-  generatedAt: Date;
+export interface FrictionAnalysis {
+  habitId: string;
+  habitName: string;
+  
+  frictionScore: number; // 0-100, higher = more friction
+  
+  indicators: {
+    highDifficulty: boolean;
+    inconsistentCompletion: boolean;
+    frequentSkips: boolean;
+    decliningTrend: boolean;
+    lowMoodAfter: boolean;
+  };
+  
+  patterns: {
+    strugglingDays: string[]; // weekdays
+    strugglingTimes: string[]; // time ranges
+    strugglingContexts: string[];
+  };
+  
+  recommendations: string[];
 }
 
-// ============================================================
-// PRODUCTIVITY PATTERN
-// ============================================================
+// ============================================================================
+// Trend Analysis
+// ============================================================================
 
-export interface ProductivityPattern {
-  id: string;
-  userId: string;
+export interface TrendAnalysis {
+  metric: string;
+  period: DateRange;
+  
+  direction: 'IMPROVING' | 'DECLINING' | 'STABLE';
+  strength: number; // 0-1
+  
+  current: number;
+  previous: number;
+  change: {
+    absolute: number;
+    percentage: number;
+  };
+  
+  forecast: {
+    nextPeriod: number;
+    confidence: number;
+  };
+  
+  dataPoints: Array<{
+    date: string;
+    value: number;
+  }>;
+}
 
-  dayOfWeek: number | null; // 0-6
-  hourOfDay: number | null; // 0-23
+// ============================================================================
+// Comparative Analytics
+// ============================================================================
 
+export interface ComparativeAnalytics {
+  current: AnalyticsPeriodSummary;
+  previous: AnalyticsPeriodSummary;
+  comparison: {
+    scoreChange: number;
+    completionRateChange: number;
+    streakChange: number;
+    goalsCompletedChange: number;
+    improved: boolean;
+    insights: string[];
+  };
+}
+
+export interface AnalyticsPeriodSummary {
+  period: DateRange;
   averageScore: number;
   completionRate: number;
-  focusMinutes: number | null;
-  energyLevel: number | null;
-
-  sampleSize: number;
-  periodStart: string;
-  periodEnd: string;
-
-  createdAt: Date;
+  streak: number;
+  goalsCompleted: number;
+  perfectDays: number;
 }
 
-// ============================================================
-// ANALYTICS REQUEST
-// ============================================================
+// ============================================================================
+// Export Types
+// ============================================================================
 
-export interface AnalyticsRequest {
-  period: AnalyticsPeriod;
-  startDate: string;
-  endDate: string;
-  habitIds?: string[];
-  goalIds?: string[];
-  includeHabitBreakdown?: boolean;
-  includeSleepData?: boolean;
-  includeMoodData?: boolean;
+export interface AnalyticsExportData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  exportDate: Date;
+  period: DateRange;
+  
+  habits: HabitAnalyticsSummary[];
+  goals: GoalAnalyticsSummary[];
+  scores: ScoreAnalyticsSummary;
+  sleep: SleepAnalyticsSummary;
+  streaks: StreakAnalytics;
+  
+  summary: {
+    totalDays: number;
+    averageScore: number;
+    completionRate: number;
+    totalHabitsCompleted: number;
+    totalGoalsCompleted: number;
+    currentStreak: number;
+  };
+}
+
+// ============================================================================
+// Helper Types
+// ============================================================================
+
+export interface MetricDataPoint {
+  timestamp: Date | string;
+  value: number;
+  label?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ChartDataset {
+  label: string;
+  data: MetricDataPoint[];
+  color?: string;
+  type?: 'line' | 'bar' | 'area';
 }

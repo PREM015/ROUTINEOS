@@ -1,24 +1,38 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { auth } from '@/lib/auth';
+import { HabitService } from '@/server/services/habit.service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * POST /api/habits/[id]/resume
+ * Resume paused habit
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const habit = await db.habit.update({
-      where: { id: params.id, userId: session.user.id },
-      data: {
-        status: 'ACTIVE',
-        pausedUntil: null,
-        pauseReason: null
-      }
-    });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    return NextResponse.json(habit);
+    const habitService = new HabitService();
+    await habitService.resumeHabit(session.user.id, params.id);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Error resuming habit" }, { status: 500 });
+    console.error('Error resuming habit:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to resume habit' },
+      { status: 500 }
+    );
   }
 }

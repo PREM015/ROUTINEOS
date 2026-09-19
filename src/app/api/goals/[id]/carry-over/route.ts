@@ -1,49 +1,52 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
+import { GoalService } from '@/server/services/goal.service';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createCarryOverGoal } from '@/lib/goals/carry-over';
-import { Goal } from '@/types/goal';
 
 const carryOverSchema = z.object({
-  newDueDate: z.string(),
-  adjustedTargetValue: z.number().optional(),
-  note: z.string().optional(),
+  newEndDate: z.coerce.date(),
+  adjustProgress: z.boolean().optional(),
 });
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    const json = await request.json();
-    const data = carryOverSchema.parse(json);
+    const body = await request.json();
+    const validated = carryOverSchema.safeParse(body);
 
-    const oldGoal = await db.goal.findUnique({
-      where: { id: params.id, userId: session.user.id },
-    });
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-    if (!oldGoal) return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    const goalService = new GoalService();
+    const newGoal = await goalService.carryOverGoal(
+      session.user.id,
+      params.id,
+      validated.data.newEndDate,
+      validated.data.adjustProgress
+    );
 
-    const newGoalData = createCarryOverGoal(oldGoal as Goal, data.newDueDate);
-    
-    // Create new goal
-    const newGoal = await db.goal.create({
-      data: {
-        ...newGoalData,
-        targetValue: data.adjustedTargetValue ?? oldGoal.targetValue,
-      },
-    });
-
-    // Close old goal
-    await db.goal.update({
-      where: { id: params.id },
-      data: { status: 'ABANDONED', note: data.note || 'Carried over' },
-    });
-
-    return NextResponse.json(newGoal, { status: 201 });
+    return NextResponse.json({ success: true, data: newGoal });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to carry over goal' }, { status: 500 });
+    console.error('Error carrying over goal:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to carry over goal' },
+      { status: 500 }
+    );
   }
 }

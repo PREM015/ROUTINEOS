@@ -1,55 +1,130 @@
-import type { HabitOverrideType, HabitStatus } from '@/generated/prisma/client';
-import { isHabitDueByFrequency, type FrequencyContext, type FrequencyHabit } from '@/lib/scheduling/frequency';
+import type { HabitOverrideType } from '@prisma/client';
+import { HabitRepository } from '@/server/repositories/habit.repository';
+import type { HabitEligibility, HabitEligibilityReason } from '@/types/habit';
+import { isHabitScheduled } from './scheduling';
 
-export type HabitOverrideForEligibility = {
-  type: HabitOverrideType;
-  startDate: string;
-  endDate?: string | null;
-};
+/**
+ * Habit Eligibility
+ * Determine if a habit should be completed on a given date
+ */
 
-export type HabitForEligibility = FrequencyHabit & {
-  status: HabitStatus;
-  overrides?: HabitOverrideForEligibility[];
-};
+const habitRepository = new HabitRepository();
 
-export type HabitEligibility = {
-  eligible: boolean;
-  reason: 'ACTIVE' | 'INACTIVE' | 'OUTSIDE_DATE_RANGE' | 'OVERRIDDEN' | 'NOT_DUE';
-  override?: HabitOverrideForEligibility;
-};
+export async function calculateHabitEligibility(
+  habitId: string,
+  userId: string,
+  date: string
+): Promise<HabitEligibility> {
+  // Get habit
+  const habit = await habitRepository.findById(habitId, userId);
+  if (!habit) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'HABIT_NOT_FOUND' as HabitEligibilityReason,
+    };
+  }
 
-function dateOnly(value: Date | string | null | undefined): string | null {
-  if (!value) return null;
-  return value instanceof Date ? value.toISOString().slice(0, 10) : value.slice(0, 10);
+  // Check if archived
+  if (habit.status === 'ARCHIVED') {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'ARCHIVED',
+    };
+  }
+
+  // Check if paused
+  if (habit.status === 'PAUSED') {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'PAUSED',
+    };
+  }
+
+  // Check start and end dates
+  const dateObj = new Date(date);
+  if (dateObj < new Date(habit.startDate)) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'BEFORE_START_DATE',
+    };
+  }
+
+  if (habit.endDate && dateObj > new Date(habit.endDate)) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'AFTER_END_DATE',
+    };
+  }
+
+  // Check for active overrides
+  const overrides = await habitRepository.findActiveOverrides(habitId, userId, date);
+  const skipOverride = overrides.find(o => o.type === 'SKIP_TODAY' || o.type === 'SKIP_RANGE');
+  if (skipOverride) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'SKIPPED',
+      override: skipOverride,
+    };
+  }
+
+  const pauseOverride = overrides.find(o => o.type === 'PAUSE');
+  if (pauseOverride) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'PAUSED',
+      override: pauseOverride,
+    };
+  }
+
+  const notApplicableOverride = overrides.find(o => o.type === 'NOT_APPLICABLE');
+  if (notApplicableOverride) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'NOT_APPLICABLE',
+      override: notApplicableOverride,
+    };
+  }
+
+  // Check if scheduled for this date
+  const scheduled = await isHabitScheduled(habit, date);
+  if (!scheduled) {
+    return {
+      habitId,
+      date,
+      isEligible: false,
+      reason: 'NOT_SCHEDULED',
+    };
+  }
+
+  // Habit is eligible
+  return {
+    habitId,
+    date,
+    isEligible: true,
+  };
 }
 
-function appliesOnDate(override: HabitOverrideForEligibility, date: string): boolean {
-  const end = override.endDate ?? override.startDate;
-  return override.startDate <= date && end >= date;
-}
-
-/** The one authoritative answer to “should this habit appear for this date?” */
-export function getHabitEligibility(
-  habit: HabitForEligibility,
-  date: string,
-  frequencyContext: FrequencyContext = {},
-): HabitEligibility {
-  if (habit.status !== 'ACTIVE') return { eligible: false, reason: 'INACTIVE' };
-
-  const startDate = dateOnly(habit.startDate);
-  const endDate = dateOnly(habit.endDate);
-  if ((startDate && date < startDate) || (endDate && date > endDate)) {
-    return { eligible: false, reason: 'OUTSIDE_DATE_RANGE' };
-  }
-
-  const override = habit.overrides?.find((item) => appliesOnDate(item, date));
-  if (override && ['SKIP_TODAY', 'SKIP_RANGE', 'PAUSE', 'NOT_APPLICABLE'].includes(override.type)) {
-    return { eligible: false, reason: 'OVERRIDDEN', override };
-  }
-
-  if (!isHabitDueByFrequency(habit, date, frequencyContext)) {
-    return { eligible: false, reason: 'NOT_DUE', override };
-  }
-
-  return { eligible: true, reason: 'ACTIVE', override };
+export async function checkHabitEligibility(
+  habitId: string,
+  userId: string,
+  date: string
+): Promise<boolean> {
+  const eligibility = await calculateHabitEligibility(habitId, userId, date);
+  return eligibility.isEligible;
 }

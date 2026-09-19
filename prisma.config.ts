@@ -1,12 +1,52 @@
-import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+/**
+ * Prisma Configuration File
+ * Required for Prisma Client v7+
+ */
+
+import { defineConfig } from 'prisma/config';
 
 export default defineConfig({
-  schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
+  // Generator configuration
+  generator: {
+    provider: 'prisma-client-js',
+    output: '../src/generated/prisma',
+    previewFeatures: ['metrics', 'tracing', 'fullTextSearch'],
   },
-  datasource: {
-    url: env("DATABASE_URL"),
+
+  // Client configuration
+  client: {
+    // Log levels for debugging
+    log: [
+      {
+        level: 'query',
+        emit: 'event',
+      },
+      {
+        level: 'error',
+        emit: 'stdout',
+      },
+      {
+        level: 'warn',
+        emit: 'stdout',
+      },
+    ],
+    
+    // Error formatting
+    errorFormat: 'pretty',
+    
+    // Connection pool configuration
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL,
+      },
+    },
+  },
+
+  // Performance settings
+  engineType: 'binary',
+  
+  // Telemetry
+  telemetry: {
+    enabled: process.env.NODE_ENV === 'production',
   },
 });

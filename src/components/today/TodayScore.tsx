@@ -1,29 +1,87 @@
 'use client';
 
-import { getScoreBandColor, getScoreBandEmoji, getScoreBandLabel } from '@/lib/scoring/bands';
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
+import { Progress } from '@/components/ui/Progress';
+import { SCORE_BANDS } from '@/config/scoring';
+import type { ScoreGrade } from '@/types/score';
 
 interface TodayScoreProps {
-  score: number;
-  coreScore: number;
+  date: string;
 }
 
-export function TodayScore({ score, coreScore }: TodayScoreProps) {
-  const colorClass = getScoreBandColor(score);
-  const emoji = getScoreBandEmoji(score);
-  const label = getScoreBandLabel(score);
+export function TodayScore({ date }: TodayScoreProps) {
+  const [score, setScore] = useState<number | null>(null);
+  const [grade, setGrade] = useState<ScoreGrade | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchScore();
+  }, [date]);
+
+  async function fetchScore() {
+    try {
+      const res = await fetch(`/api/score/${date}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        setScore(data.data.totalScore);
+        setGrade(data.data.overallGrade);
+      }
+    } catch (error) {
+      // Score might not exist yet
+      setScore(0);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-24 bg-gray-200 rounded"></div>
+        </div>
+      </Card>
+    );
+  }
+
+  const scoreValue = score || 0;
+  const gradeInfo = grade ? SCORE_BANDS[grade] : SCORE_BANDS.incomplete;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex flex-col items-center justify-center">
-      <div className="text-zinc-400 font-medium mb-4 uppercase tracking-wider text-sm">Today's Score</div>
-      <div className="relative w-32 h-32 flex flex-col items-center justify-center rounded-full border-4 border-zinc-800">
-        <div className={\`text-4xl font-bold \${colorClass}\`}>{score}</div>
-        <div className="text-sm text-zinc-500">/ 100</div>
+    <Card className="p-6">
+      <h3 className="text-lg font-semibold mb-4">Today's Score</h3>
+
+      <div className="flex items-center gap-6">
+        <div className="flex-1">
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-5xl font-bold" style={{ color: gradeInfo.color }}>
+              {Math.round(scoreValue)}
+            </span>
+            <span className="text-gray-600">/ 100</span>
+          </div>
+          <div
+            className="inline-block px-3 py-1 rounded-full text-sm font-semibold"
+            style={{
+              backgroundColor: `${gradeInfo.color}20`,
+              color: gradeInfo.color,
+            }}
+          >
+            Grade: {grade || 'F'}
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <Progress
+            value={scoreValue}
+            className="h-4 mb-2"
+            indicatorColor={gradeInfo.color}
+          />
+          <p className="text-sm text-gray-600">{gradeInfo.description}</p>
+        </div>
       </div>
-      <div className="mt-4 flex items-center gap-2">
-        <span className="text-2xl">{emoji}</span>
-        <span className={\`font-semibold \${colorClass}\`}>{label}</span>
-      </div>
-      <div className="mt-2 text-xs text-zinc-500">Core Score: {coreScore}</div>
-    </div>
+    </Card>
   );
 }

@@ -1,105 +1,228 @@
+import type { HabitTier } from '@prisma/client';
+
 /**
- * Habit Tiers Configuration
- *
- * Defines the three-tier habit system used throughout RoutineOS:
- *   - Non-Negotiable: Core habits that MUST be done every eligible day
- *   - Growth: Important habits that contribute to personal development
- *   - Bonus: Optional extras that add extra points when completed
+ * Habit Tier Constants
+ * Configuration and metadata for habit tiers
  */
 
 export interface HabitTierConfig {
-  id: "NON_NEGOTIABLE" | "GROWTH" | "BONUS";
-  name: string;
-  shortName: string;
+  tier: HabitTier;
+  label: string;
   description: string;
-  icon: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  /** Scoring weight applied to this tier (0–1) */
+  longDescription: string;
+  defaultPoints: number;
   defaultWeight: number;
-  /** Score required in this tier to maintain streak */
-  streakThreshold: number;
-  /** Order in the UI (lower = first) */
-  sortOrder: number;
-  /** Maximum % this tier can contribute to overall score (0–100) */
-  maxContribution: number;
+  color: string;
+  icon: string;
+  examples: string[];
+  recommendedFrequency: string[];
 }
 
-export const HABIT_TIERS: Record<
-  "NON_NEGOTIABLE" | "GROWTH" | "BONUS",
-  HabitTierConfig
-> = {
-  NON_NEGOTIABLE: {
-    id: "NON_NEGOTIABLE",
-    name: "Non-Negotiable",
-    shortName: "Core",
-    description:
-      "Foundational habits that must be completed every eligible day. Missing these directly impacts your streak.",
-    icon: "🔑",
-    color: "#ef4444",
-    bgColor: "#fef2f2",
-    borderColor: "#fca5a5",
-    defaultWeight: 1.0,
-    streakThreshold: 1.0, // must complete ALL non-negotiables
-    sortOrder: 1,
-    maxContribution: 70,
-  },
+export const HABIT_TIER_CONFIG: Record<HabitTier, HabitTierConfig> = {
   GROWTH: {
-    id: "GROWTH",
-    name: "Growth",
-    shortName: "Growth",
-    description:
-      "Important habits that drive personal development. Missing some is acceptable but aim for consistency.",
-    icon: "🌱",
-    color: "#22c55e",
-    bgColor: "#f0fdf4",
-    borderColor: "#86efac",
-    defaultWeight: 0.5,
-    streakThreshold: 0.6, // must complete ≥60% of growth habits
-    sortOrder: 2,
-    maxContribution: 20,
+    tier: 'GROWTH',
+    label: 'Growth',
+    description: 'Core habits for personal development',
+    longDescription: 'Essential habits that drive personal growth and self-improvement. These are your foundation.',
+    defaultPoints: 10,
+    defaultWeight: 1.0,
+    color: '#3b82f6',
+    icon: '🌱',
+    examples: [
+      'Exercise 30 minutes',
+      'Read for 20 minutes',
+      'Practice meditation',
+      'Journal daily',
+      'Study new skill',
+    ],
+    recommendedFrequency: ['DAILY', 'SPECIFIC_WEEKDAYS'],
   },
+  
   BONUS: {
-    id: "BONUS",
-    name: "Bonus",
-    shortName: "Bonus",
-    description:
-      "Optional extras that reward you for going above and beyond. Every bonus habit adds to your score.",
-    icon: "⭐",
-    color: "#f59e0b",
-    bgColor: "#fffbeb",
-    borderColor: "#fcd34d",
-    defaultWeight: 0.25,
-    streakThreshold: 0, // bonus habits don't affect streaks
-    sortOrder: 3,
-    maxContribution: 10,
+    tier: 'BONUS',
+    label: 'Bonus',
+    description: 'Extra habits for optimization',
+    longDescription: 'Additional habits that enhance your routine but are not critical. These provide bonus points.',
+    defaultPoints: 5,
+    defaultWeight: 0.5,
+    color: '#10b981',
+    icon: '⭐',
+    examples: [
+      'Cold shower',
+      'Practice gratitude',
+      'Stretch',
+      'Listen to podcast',
+      'Tidy workspace',
+    ],
+    recommendedFrequency: ['DAILY', 'WEEKLY_TARGET', 'SPECIFIC_WEEKDAYS'],
   },
-};
+  
+  OPTIONAL: {
+    tier: 'OPTIONAL',
+    label: 'Optional',
+    description: 'Flexible habits to explore',
+    longDescription: 'Habits you want to explore without pressure. No penalty for skipping.',
+    defaultPoints: 3,
+    defaultWeight: 0.25,
+    color: '#8b5cf6',
+    icon: '🎯',
+    examples: [
+      'Try new recipe',
+      'Learn new word',
+      'Take photos',
+      'Practice instrument',
+    ],
+    recommendedFrequency: ['WEEKLY_TARGET', 'MONTHLY_TARGET', 'RANDOM'],
+  },
+  
+  EXPERIMENTAL: {
+    tier: 'EXPERIMENTAL',
+    label: 'Experimental',
+    description: 'Testing new habits',
+    longDescription: 'Habits in trial phase. Track to see if they stick before committing.',
+    defaultPoints: 2,
+    defaultWeight: 0.1,
+    color: '#f59e0b',
+    icon: '🧪',
+    examples: [
+      'Wake up at 5 AM',
+      'Intermittent fasting',
+      'New workout routine',
+    ],
+    recommendedFrequency: ['DAILY', 'SPECIFIC_WEEKDAYS', 'WEEKLY_TARGET'],
+  },
+  
+  UNDEFINED: {
+    tier: 'UNDEFINED',
+    label: 'Undefined',
+    description: 'Uncategorized habits',
+    longDescription: 'Habits not yet assigned to a tier. Assign a tier to include in scoring.',
+    defaultPoints: 0,
+    defaultWeight: 0,
+    color: '#6b7280',
+    icon: '❓',
+    examples: [],
+    recommendedFrequency: [],
+  },
+  
+  ALTERNATIVE: {
+    tier: 'ALTERNATIVE',
+    label: 'Alternative',
+    description: 'Substitute habits',
+    longDescription: 'Alternative versions of other habits. Only one from the group needs completion.',
+    defaultPoints: 10,
+    defaultWeight: 1.0,
+    color: '#14b8a6',
+    icon: '🔄',
+    examples: [
+      'Gym OR home workout',
+      'Run OR swim',
+      'Read OR audiobook',
+    ],
+    recommendedFrequency: ['DAILY', 'SPECIFIC_WEEKDAYS'],
+  },
+  
+  SPECIAL: {
+    tier: 'SPECIAL',
+    label: 'Special',
+    description: 'Context-specific habits',
+    longDescription: 'Habits that only apply in specific contexts or situations.',
+    defaultPoints: 5,
+    defaultWeight: 0.5,
+    color: '#ec4899',
+    icon: '🌟',
+    examples: [
+      'Exam day routine',
+      'Travel workout',
+      'Social event preparation',
+    ],
+    recommendedFrequency: ['CUSTOM', 'ONE_TIME'],
+  },
+  
+  FLEXIBLE: {
+    tier: 'FLEXIBLE',
+    label: 'Flexible',
+    description: 'Adaptable habits',
+    longDescription: 'Habits with flexible scheduling and completion criteria.',
+    defaultPoints: 7,
+    defaultWeight: 0.7,
+    color: '#06b6d4',
+    icon: '🌊',
+    examples: [
+      'Connect with friend (weekly)',
+      'Creative project (when inspired)',
+      'Deep work (3x week)',
+    ],
+    recommendedFrequency: ['WEEKLY_TARGET', 'MONTHLY_TARGET'],
+  },
+  
+  JUST_FOR_FUN: {
+    tier: 'JUST_FOR_FUN',
+    label: 'Just for Fun',
+    description: 'Enjoyment-focused habits',
+    longDescription: 'Habits purely for enjoyment and leisure. No pressure, just fun.',
+    defaultPoints: 3,
+    defaultWeight: 0.2,
+    color: '#f97316',
+    icon: '🎉',
+    examples: [
+      'Play video game',
+      'Watch favorite show',
+      'Browse hobby subreddit',
+      'Play with pet',
+    ],
+    recommendedFrequency: ['RANDOM', 'WEEKLY_TARGET'],
+  },
+  
+  LIFESTYLE: {
+    tier: 'LIFESTYLE',
+    label: 'Lifestyle',
+    description: 'Daily living habits',
+    longDescription: 'Essential life maintenance habits that keep things running smoothly.',
+    defaultPoints: 5,
+    defaultWeight: 0.6,
+    color: '#22c55e',
+    icon: '🏡',
+    examples: [
+      'Make bed',
+      'Drink 8 glasses of water',
+      'Plan tomorrow',
+      'Prepare meals',
+      'Clean workspace',
+    ],
+    recommendedFrequency: ['DAILY'],
+  },
+} as const;
 
-export const HABIT_TIER_LIST = Object.values(HABIT_TIERS);
-
-/** Ordered tier IDs for display */
-export const TIER_ORDER: Array<"NON_NEGOTIABLE" | "GROWTH" | "BONUS"> = [
-  "NON_NEGOTIABLE",
-  "GROWTH",
-  "BONUS",
+export const HABIT_TIERS_ORDERED: HabitTier[] = [
+  'GROWTH',
+  'BONUS',
+  'LIFESTYLE',
+  'FLEXIBLE',
+  'ALTERNATIVE',
+  'OPTIONAL',
+  'EXPERIMENTAL',
+  'SPECIAL',
+  'JUST_FOR_FUN',
+  'UNDEFINED',
 ];
 
-export function getTierConfig(
-  tier: "NON_NEGOTIABLE" | "GROWTH" | "BONUS"
-): HabitTierConfig {
-  return HABIT_TIERS[tier];
+export function getHabitTierConfig(tier: HabitTier): HabitTierConfig {
+  return HABIT_TIER_CONFIG[tier];
 }
 
-/** Returns true if a habit in this tier is required for streak maintenance */
-export function isTierStreakCritical(
-  tier: "NON_NEGOTIABLE" | "GROWTH" | "BONUS"
-): boolean {
-  return HABIT_TIERS[tier].streakThreshold > 0;
+export function getHabitTierLabel(tier: HabitTier): string {
+  return HABIT_TIER_CONFIG[tier].label;
 }
 
-/** Minimum Day rules: which tiers are required on a Minimum Day */
-export const MINIMUM_DAY_REQUIRED_TIERS: Array<
-  "NON_NEGOTIABLE" | "GROWTH" | "BONUS"
-> = ["NON_NEGOTIABLE"];
+export function getHabitTierColor(tier: HabitTier): string {
+  return HABIT_TIER_CONFIG[tier].color;
+}
+
+export function getHabitTierWeight(tier: HabitTier): number {
+  return HABIT_TIER_CONFIG[tier].defaultWeight;
+}
+
+export function getHabitTierPoints(tier: HabitTier): number {
+  return HABIT_TIER_CONFIG[tier].defaultPoints;
+}

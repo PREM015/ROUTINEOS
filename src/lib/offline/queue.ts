@@ -1,15 +1,103 @@
-export interface OfflineAction { id: string; type: string; payload: any; timestamp: number; retries: number; }
-const QUEUE_KEY = 'offline_action_queue';
-export async function enqueueAction(action: Omit<OfflineAction, 'id' | 'timestamp' | 'retries'>): Promise<void> {
-  const queue = await getQueue();
-  queue.push({ ...action, id: crypto.randomUUID(), timestamp: Date.now(), retries: 0 });
+/**
+ * Offline Queue
+ * Queue actions when offline
+ */
+
+interface QueuedAction {
+  id: string;
+  type: 'HABIT_LOG' | 'GOAL_PROGRESS' | 'REFLECTION';
+  data: any;
+  timestamp: number;
+}
+
+const QUEUE_KEY = 'routineos_offline_queue';
+
+export function queueAction(type: QueuedAction['type'], data: any): string {
+  const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  const action: QueuedAction = {
+    id,
+    type,
+    data,
+    timestamp: Date.now(),
+  };
+
+  const queue = getQueue();
+  queue.push(action);
+  saveQueue(queue);
+
+  return id;
+}
+
+export function getQueue(): QueuedAction[] {
+  if (typeof window === 'undefined') return [];
+
+  const stored = localStorage.getItem(QUEUE_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export function saveQueue(queue: QueuedAction[]): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 }
-export async function getQueue(): Promise<OfflineAction[]> {
-  const data = localStorage.getItem(QUEUE_KEY); return data ? JSON.parse(data) : [];
+
+export function removeFromQueue(id: string): void {
+  const queue = getQueue();
+  const filtered = queue.filter(action => action.id !== id);
+  saveQueue(filtered);
 }
-export async function removeFromQueue(id: string): Promise<void> {
-  let queue = await getQueue(); queue = queue.filter(item => item.id !== id);
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+
+export function clearQueue(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(QUEUE_KEY);
 }
-export async function clearQueue(): Promise<void> { localStorage.removeItem(QUEUE_KEY); }
+
+export async function syncQueue(): Promise<{
+  synced: number;
+  failed: number;
+}> {
+  const queue = getQueue();
+  let synced = 0;
+  let failed = 0;
+
+  for (const action of queue) {
+    try {
+      await syncAction(action);
+      removeFromQueue(action.id);
+      synced++;
+    } catch (error) {
+      console.error('Failed to sync action:', action, error);
+      failed++;
+    }
+  }
+
+  return { synced, failed };
+}
+
+async function syncAction(action: QueuedAction): Promise<void> {
+  switch (action.type) {
+    case 'HABIT_LOG':
+      await fetch(`/api/habits/${action.data.habitId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action.data),
+      });
+      break;
+
+    case 'GOAL_PROGRESS':
+      await fetch(`/api/goals/${action.data.goalId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action.data),
+      });
+      break;
+
+    case 'REFLECTION':
+      await fetch('/api/reflections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action.data),
+      });
+      break;
+  }
+}

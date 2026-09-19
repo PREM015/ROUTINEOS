@@ -1,61 +1,87 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { z } from "zod";
+import { auth } from '@/lib/auth';
+import { RoutineService } from '@/server/services/routine.service';
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 const createTemplateSchema = z.object({
-  name: z.string().min(1),
-  dayType: z.enum(['WORKDAY', 'WEEKEND', 'HOLIDAY', 'CUSTOM']),
-  isDefault: z.boolean().optional().default(false)
+  name: z.string().min(1).max(100),
+  description: z.string().optional(),
+  dayType: z.enum(['WORKDAY', 'WEEKEND', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM']),
+  isDefault: z.boolean().optional(),
+  color: z.string().optional(),
+  icon: z.string().optional(),
 });
 
-export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * GET /api/routine
+ * Get all routine templates for user
+ */
+export async function GET(request: NextRequest) {
   try {
-    const templates = await db.routineTemplate.findMany({
-      where: { userId: session.user.id },
-      include: {
-        blocks: {
-          orderBy: { startTime: 'asc' }
-        }
-      }
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const routineService = new RoutineService();
+    const templates = await routineService['routineRepository'].findAllTemplates(
+      session.user.id
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: templates,
     });
-    return NextResponse.json(templates);
   } catch (error) {
-    return NextResponse.json({ error: "Error fetching routines" }, { status: 500 });
+    console.error('Error fetching routine templates:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch routine templates' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+/**
+ * POST /api/routine
+ * Create new routine template
+ */
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
-    const data = createTemplateSchema.parse(body);
-
-    if (data.isDefault) {
-      await db.routineTemplate.updateMany({
-        where: { userId: session.user.id, dayType: data.dayType, isDefault: true },
-        data: { isDefault: false }
-      });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const template = await db.routineTemplate.create({
-      data: {
-        ...data,
-        userId: session.user.id
-      }
-    });
+    const body = await request.json();
+    const validated = createTemplateSchema.safeParse(body);
 
-    return NextResponse.json(template, { status: 201 });
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid input', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const routineService = new RoutineService();
+    const template = await routineService.createTemplate(
+      session.user.id,
+      validated.data
+    );
+
+    return NextResponse.json(
+      { success: true, data: template },
+      { status: 201 }
+    );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+    console.error('Error creating routine template:', error);
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: 'Failed to create routine template' },
+      { status: 500 }
+    );
   }
 }

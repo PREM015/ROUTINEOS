@@ -1,129 +1,135 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
 
-interface ProgressRingsProps {
-  coreScore: number | null;     // 0-100 — emerald-500 ring
-  growthScore: number | null;   // 0-100 — teal-400 ring
-  bonusScore: number | null;    // 0-100 — amber-500 ring
-  size?: number;         // default 200
-  animated?: boolean;
+interface ProgressData {
+  habits: number;
+  goals: number;
+  routine: number;
+  sleep: number;
 }
 
-export default function ProgressRings({
-  coreScore,
-  growthScore,
-  bonusScore,
-  size = 200,
-  animated = true,
-}: ProgressRingsProps) {
-  const safeCoreScore = coreScore ?? 0;
-  const safeGrowthScore = growthScore ?? 0;
-  const safeBonusScore = bonusScore ?? 0;
-  const strokeWidth = size * 0.08;
-  const gap = size * 0.02;
-  const center = size / 2;
-
-  // Radii
-  const rCore = center - strokeWidth / 2;
-  const rGrowth = rCore - strokeWidth - gap;
-  const rBonus = rGrowth - strokeWidth - gap;
-
-  // Circumferences
-  const cCore = 2 * Math.PI * rCore;
-  const cGrowth = 2 * Math.PI * rGrowth;
-  const cBonus = 2 * Math.PI * rBonus;
-
-  // Dash offsets
-  const oCore = cCore - (safeCoreScore / 100) * cCore;
-  const oGrowth = cGrowth - (safeGrowthScore / 100) * cGrowth;
-  const oBonus = cBonus - (safeBonusScore / 100) * cBonus;
-
-  const coreCount = useMotionValue(0);
-  const growthCount = useMotionValue(0);
-  const bonusCount = useMotionValue(0);
-
-  const roundedCore = useTransform(coreCount, (latest) => Math.round(latest));
-  const roundedGrowth = useTransform(growthCount, (latest) => Math.round(latest));
-  const roundedBonus = useTransform(bonusCount, (latest) => Math.round(latest));
+export function ProgressRings() {
+  const [data, setData] = useState<ProgressData>({
+    habits: 0,
+    goals: 0,
+    routine: 0,
+    sleep: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (animated) {
-      animate(coreCount, safeCoreScore, { duration: 1, type: 'spring', bounce: 0.2 });
-      animate(growthCount, safeGrowthScore, { duration: 1, type: 'spring', bounce: 0.2 });
-      animate(bonusCount, safeBonusScore, { duration: 1, type: 'spring', bounce: 0.2 });
-    } else {
-      coreCount.set(safeCoreScore);
-      growthCount.set(safeGrowthScore);
-      bonusCount.set(safeBonusScore);
+    fetchData();
+  }, []);
+
+  async function fetchData() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch today's completion rates
+      const [habitsRes, goalsRes, routineRes, sleepRes] = await Promise.all([
+        fetch(`/api/habits/today?date=${today}`),
+        fetch('/api/goals?status=ACTIVE'),
+        fetch(`/api/routine/today?date=${today}`),
+        fetch(`/api/sleep?date=${today}`),
+      ]);
+
+      const [habits, goals, routine, sleep] = await Promise.all([
+        habitsRes.json(),
+        goalsRes.json(),
+        routineRes.json(),
+        sleepRes.json(),
+      ]);
+
+      // Calculate completion rates
+      const habitRate = habits.success && habits.data.length > 0
+        ? (habits.data.filter((h: any) => h.log?.status === 'COMPLETED').length / habits.data.length) * 100
+        : 0;
+
+      const goalRate = goals.success && goals.data.length > 0
+        ? (goals.data.filter((g: any) => g.progressPercentage >= 80).length / goals.data.length) * 100
+        : 0;
+
+      const routineRate = routine.success && routine.data.blocks?.length > 0
+        ? (routine.data.blocks.filter((b: any) => b.log?.status === 'COMPLETED').length / routine.data.blocks.filter((b: any) => b.trackCompletion).length) * 100
+        : 0;
+
+      const sleepRate = sleep.success && sleep.data?.actualDurationMinutes
+        ? Math.min(100, (sleep.data.actualDurationMinutes / 480) * 100)
+        : 0;
+
+      setData({
+        habits: Math.round(habitRate),
+        goals: Math.round(goalRate),
+        routine: Math.round(routineRate),
+        sleep: Math.round(sleepRate),
+      });
+    } catch (error) {
+      console.error('Error fetching progress data:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [safeCoreScore, safeGrowthScore, safeBonusScore, animated, coreCount, growthCount, bonusCount]);
+  }
 
-  return (
-    <div className="relative flex items-center justify-center bg-zinc-900 rounded-2xl p-4" style={{ width: size + 32, height: size + 32 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
-        {/* Background Rings */}
-        <circle cx={center} cy={center} r={rCore} fill="none" strokeWidth={strokeWidth} className="stroke-emerald-950" />
-        <circle cx={center} cy={center} r={rGrowth} fill="none" strokeWidth={strokeWidth} className="stroke-teal-950" />
-        <circle cx={center} cy={center} r={rBonus} fill="none" strokeWidth={strokeWidth} className="stroke-amber-950" />
-
-        {/* Foreground Rings */}
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={rCore}
-          fill="none"
-          strokeWidth={strokeWidth}
-          className="stroke-emerald-500"
-          strokeLinecap="round"
-          strokeDasharray={cCore}
-          initial={{ strokeDashoffset: animated ? cCore : oCore }}
-          animate={{ strokeDashoffset: oCore }}
-          transition={{ duration: 1, type: 'spring', bounce: 0.2 }}
-        />
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={rGrowth}
-          fill="none"
-          strokeWidth={strokeWidth}
-          className="stroke-teal-400"
-          strokeLinecap="round"
-          strokeDasharray={cGrowth}
-          initial={{ strokeDashoffset: animated ? cGrowth : oGrowth }}
-          animate={{ strokeDashoffset: oGrowth }}
-          transition={{ duration: 1, type: 'spring', bounce: 0.2 }}
-        />
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={rBonus}
-          fill="none"
-          strokeWidth={strokeWidth}
-          className="stroke-amber-500"
-          strokeLinecap="round"
-          strokeDasharray={cBonus}
-          initial={{ strokeDashoffset: animated ? cBonus : oBonus }}
-          animate={{ strokeDashoffset: oBonus }}
-          transition={{ duration: 1, type: 'spring', bounce: 0.2 }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <div className="flex flex-col items-center space-y-1">
-          <div className="flex items-center text-emerald-500 text-sm font-bold">
-            <span className="w-3 h-3 rounded-full bg-emerald-500 mr-1" />
-            <motion.span>{roundedCore}</motion.span>%
-          </div>
-          <div className="flex items-center text-teal-400 text-sm font-bold">
-            <span className="w-3 h-3 rounded-full bg-teal-400 mr-1" />
-            <motion.span>{roundedGrowth}</motion.span>%
-          </div>
-          <div className="flex items-center text-amber-500 text-sm font-bold">
-            <span className="w-3 h-3 rounded-full bg-amber-500 mr-1" />
-            <motion.span>{roundedBonus}</motion.span>%
+  if (loading) {
+    return (
+      <Card className="p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
           </div>
         </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-6">
+      <h3 className="text-lg font-semibold mb-6">Today's Progress</h3>
+
+      <div className="space-y-4">
+        <ProgressRing label="Habits" value={data.habits} color="blue" />
+        <ProgressRing label="Goals" value={data.goals} color="green" />
+        <ProgressRing label="Routine" value={data.routine} color="purple" />
+        <ProgressRing label="Sleep" value={data.sleep} color="indigo" />
+      </div>
+    </Card>
+  );
+}
+
+function ProgressRing({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  const colorClasses = {
+    blue: 'text-blue-600',
+    green: 'text-green-600',
+    purple: 'text-purple-600',
+    indigo: 'text-indigo-600',
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm font-medium">{label}</span>
+      <div className="flex items-center gap-3">
+        <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full bg-${color}-600 transition-all duration-500`}
+            style={{ width: `${value}%` }}
+          />
+        </div>
+        <span className={`text-sm font-semibold ${colorClasses[color as keyof typeof colorClasses]} w-12 text-right`}>
+          {value}%
+        </span>
       </div>
     </div>
   );

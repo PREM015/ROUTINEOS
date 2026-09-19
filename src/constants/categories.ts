@@ -1,169 +1,128 @@
 /**
- * Habit & Goal Categories
- *
- * Predefined categories for organizing habits and goals.
- * Users can also create their own custom categories.
+ * Category Constants
+ * Predefined categories with metadata
  */
 
 export interface CategoryDefinition {
-  id: string; // stable slug used as default category key
+  id: string;
   name: string;
   description: string;
-  icon: string;
   color: string;
-  /** Whether this is a system (built-in) category */
-  isSystem: boolean;
-  /** Suggested tier for habits in this category */
-  defaultTier?: "NON_NEGOTIABLE" | "GROWTH" | "BONUS";
+  icon: string;
+  sortOrder: number;
 }
 
 export const DEFAULT_CATEGORIES: CategoryDefinition[] = [
-  // ---- Health & Fitness ----
   {
-    id: "health",
-    name: "Health & Fitness",
-    description: "Physical health, exercise, and body care",
-    icon: "💪",
-    color: "#ef4444",
-    isSystem: true,
-    defaultTier: "NON_NEGOTIABLE",
+    id: 'health-fitness',
+    name: 'Health & Fitness',
+    description: 'Physical health, exercise, and nutrition',
+    color: '#10b981',
+    icon: '💪',
+    sortOrder: 1,
   },
   {
-    id: "nutrition",
-    name: "Nutrition",
-    description: "Diet, meals, hydration, and supplements",
-    icon: "🥗",
-    color: "#22c55e",
-    isSystem: true,
-    defaultTier: "NON_NEGOTIABLE",
+    id: 'productivity',
+    name: 'Productivity',
+    description: 'Work, study, and task completion',
+    color: '#3b82f6',
+    icon: '🎯',
+    sortOrder: 2,
   },
   {
-    id: "sleep",
-    name: "Sleep",
-    description: "Sleep schedule, quality, and recovery",
-    icon: "😴",
-    color: "#6366f1",
-    isSystem: true,
-    defaultTier: "NON_NEGOTIABLE",
+    id: 'mindfulness',
+    name: 'Mindfulness',
+    description: 'Meditation, reflection, and mental health',
+    color: '#8b5cf6',
+    icon: '🧘',
+    sortOrder: 3,
   },
   {
-    id: "mental-health",
-    name: "Mental Health",
-    description: "Meditation, mindfulness, and emotional wellbeing",
-    icon: "🧘",
-    color: "#8b5cf6",
-    isSystem: true,
-    defaultTier: "GROWTH",
+    id: 'learning',
+    name: 'Learning',
+    description: 'Education, skill development, and reading',
+    color: '#f59e0b',
+    icon: '📚',
+    sortOrder: 4,
   },
+  {
+    id: 'creativity',
+    name: 'Creativity',
+    description: 'Art, writing, music, and creative pursuits',
+    color: '#ec4899',
+    icon: '🎨',
+    sortOrder: 5,
+  },
+  {
+    id: 'social',
+    name: 'Social',
+    description: 'Relationships, communication, and networking',
+    color: '#06b6d4',
+    icon: '👥',
+    sortOrder: 6,
+  },
+  {
+    id: 'finance',
+    name: 'Finance',
+    description: 'Money management, budgeting, and investing',
+    color: '#22c55e',
+    icon: '💰',
+    sortOrder: 7,
+  },
+  {
+    id: 'home',
+    name: 'Home & Living',
+    description: 'Chores, organization, and home improvement',
+    color: '#ef4444',
+    icon: '🏠',
+    sortOrder: 8,
+  },
+  {
+    id: 'personal-care',
+    name: 'Personal Care',
+    description: 'Self-care, grooming, and hygiene',
+    color: '#a855f7',
+    icon: '✨',
+    sortOrder: 9,
+  },
+  {
+    id: 'hobbies',
+    name: 'Hobbies',
+    description: 'Leisure activities and personal interests',
+    color: '#14b8a6',
+    icon: '🎮',
+    sortOrder: 10,
+  },
+] as const;
 
-  // ---- Learning & Growth ----
-  {
-    id: "learning",
-    name: "Learning",
-    description: "Study, reading, and skill development",
-    icon: "📚",
-    color: "#3b82f6",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
-  {
-    id: "career",
-    name: "Career",
-    description: "Work, professional development, and projects",
-    icon: "💼",
-    color: "#0ea5e9",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
-  {
-    id: "creativity",
-    name: "Creativity",
-    description: "Art, writing, music, and creative expression",
-    icon: "🎨",
-    color: "#f97316",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
+export const CATEGORY_COLORS = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#f59e0b', // amber
+  '#eab308', // yellow
+  '#84cc16', // lime
+  '#22c55e', // green
+  '#10b981', // emerald
+  '#14b8a6', // teal
+  '#06b6d4', // cyan
+  '#0ea5e9', // sky
+  '#3b82f6', // blue
+  '#6366f1', // indigo
+  '#8b5cf6', // violet
+  '#a855f7', // purple
+  '#d946ef', // fuchsia
+  '#ec4899', // pink
+  '#f43f5e', // rose
+] as const;
 
-  // ---- Relationships & Social ----
-  {
-    id: "relationships",
-    name: "Relationships",
-    description: "Family, friends, and social connections",
-    icon: "❤️",
-    color: "#ec4899",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
+export type CategoryColor = typeof CATEGORY_COLORS[number];
 
-  // ---- Finance ----
-  {
-    id: "finance",
-    name: "Finance",
-    description: "Budget tracking, savings, and investments",
-    icon: "💰",
-    color: "#eab308",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
+export function getCategoryById(id: string): CategoryDefinition | undefined {
+  return DEFAULT_CATEGORIES.find(cat => cat.id === id);
+}
 
-  // ---- Lifestyle & Home ----
-  {
-    id: "lifestyle",
-    name: "Lifestyle",
-    description: "Daily routines, personal care, and home",
-    icon: "🏠",
-    color: "#14b8a6",
-    isSystem: true,
-    defaultTier: "BONUS",
-  },
-  {
-    id: "hobbies",
-    name: "Hobbies",
-    description: "Leisure activities and personal interests",
-    icon: "🎯",
-    color: "#f59e0b",
-    isSystem: true,
-    defaultTier: "BONUS",
-  },
-
-  // ---- Spirituality & Purpose ----
-  {
-    id: "spirituality",
-    name: "Spirituality",
-    description: "Spiritual practices, values, and purpose",
-    icon: "✨",
-    color: "#a78bfa",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
-
-  // ---- Productivity ----
-  {
-    id: "productivity",
-    name: "Productivity",
-    description: "Focus, planning, and efficiency",
-    icon: "⚡",
-    color: "#64748b",
-    isSystem: true,
-    defaultTier: "GROWTH",
-  },
-];
-
-/** Map for O(1) lookup by category ID */
-export const CATEGORY_MAP: Record<string, CategoryDefinition> =
-  Object.fromEntries(DEFAULT_CATEGORIES.map((c) => [c.id, c]));
-
-/** Get category by id, falling back to a safe default */
-export function getCategoryById(id: string): CategoryDefinition {
-  return (
-    CATEGORY_MAP[id] ?? {
-      id: "other",
-      name: "Other",
-      description: "Uncategorized",
-      icon: "📌",
-      color: "#94a3b8",
-      isSystem: false,
-    }
+export function getCategoryByName(name: string): CategoryDefinition | undefined {
+  return DEFAULT_CATEGORIES.find(
+    cat => cat.name.toLowerCase() === name.toLowerCase()
   );
 }

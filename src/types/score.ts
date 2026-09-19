@@ -1,190 +1,390 @@
+import type { DailyScore } from '@prisma/client';
+
 /**
- * Score Types
- *
- * Complete type definitions for the RoutineOS scoring engine,
- * including daily scores, bands, snapshots, and tier scores.
+ * Scoring System Types
+ * Complete type system for daily scoring and performance tracking
  */
 
-// ============================================================
-// ENUMS
-// ============================================================
+// ============================================================================
+// Core Score Types
+// ============================================================================
 
-export enum DayMode {
-  NORMAL = "NORMAL",
-  MINIMUM = "MINIMUM",
-  REST = "REST",
-  MISSED = "MISSED",
+export interface DailyScoreWithContext extends DailyScore {
+  context: {
+    isMinimumDay: boolean;
+    isRestDay: boolean;
+    dayType: string | null;
+  };
+  breakdown: ScoreBreakdown;
 }
 
-export enum ScoreBand {
-  EXCEPTIONAL = "EXCEPTIONAL", // 95-100
-  EXCELLENT = "EXCELLENT",     // 85-94
-  GREAT = "GREAT",             // 75-84
-  GOOD = "GOOD",               // 65-74
-  FAIR = "FAIR",               // 50-64
-  POOR = "POOR",               // 25-49
-  FAILED = "FAILED",           // 0-24
+// ============================================================================
+// Score Calculation
+// ============================================================================
+
+export interface ScoreBreakdown {
+  core: {
+    score: number;
+    maxScore: number;
+    percentage: number;
+    habits: HabitScoreContribution[];
+  };
+  growth: {
+    score: number;
+    maxScore: number;
+    percentage: number;
+    habits: HabitScoreContribution[];
+  };
+  bonus: {
+    score: number;
+    maxScore: number;
+    percentage: number;
+    habits: HabitScoreContribution[];
+  };
+  total: {
+    score: number;
+    maxScore: number;
+    percentage: number;
+  };
+  grade: ScoreGrade;
 }
 
-// ============================================================
-// TIER SCORE
-// ============================================================
-
-export interface TierScore {
-  /** Number of habits completed */
-  completed: number;
-  /** Total number of habits eligible for today */
-  total: number;
-  /** Raw weighted score 0–100 */
-  raw: number;
-  /** Contribution weight (e.g. 1.0, 0.5, 0.25) */
+export interface HabitScoreContribution {
+  habitId: string;
+  habitName: string;
+  tier: string;
+  status: string;
+  points: number;
   weight: number;
-  /** Weighted contribution to overall score */
-  weighted: number;
+  contribution: number;
 }
 
-// ============================================================
-// SCORE SNAPSHOT
-// ============================================================
+// ============================================================================
+// Score Calculation Input
+// ============================================================================
 
-/**
- * Immutable snapshot of the scoring weights and configuration
- * captured at the time of calculation. Used for historical
- * integrity – changing weights doesn't retroactively alter past scores.
- */
-export interface ScoreSnapshot {
+export interface CalculateDailyScoreInput {
+  userId: string;
+  date: string; // YYYY-MM-DD
+  isMinimumDay?: boolean;
+  minimumDayTemplateId?: string;
+  minimumDayReason?: string;
+  isRestDay?: boolean;
+  restDayReason?: string;
+  contextTags?: string[];
+}
+
+export interface CalculateDailyScoreResponse {
+  success: boolean;
+  score?: DailyScoreWithContext;
+  message?: string;
+}
+
+// ============================================================================
+// Score Settings
+// ============================================================================
+
+export interface ScoreSettings {
   weightNonNeg: number;
   weightGrowth: number;
   weightBonus: number;
-  totalEligibleHabits: number;
-  dayMode: DayMode;
-  capturedAt: string; // ISO timestamp
+  minimumDayThreshold: number; // minimum core score percentage for minimum day
+  perfectDayThreshold: number; // score percentage for perfect day
+  excellentDayThreshold: number;
+  goodDayThreshold: number;
 }
 
-// ============================================================
-// DAILY SCORE
-// ============================================================
-
-export interface DailyScore {
-  id: string;
-  userId: string;
-  date: string; // ISO date YYYY-MM-DD
-
-  // Per-tier scores
-  nonNegScore: number; // 0-100
-  growthScore: number; // 0-100
-  bonusScore: number;  // 0-100
-
-  // Combined
-  coreScore: number;   // weighted combination, 0-100
-  overallScore: number; // final score after mode adjustments, 0-100
-
-  // Context
-  dayMode: DayMode;
-  band: ScoreBand;
-
-  // Habit counts
-  nonNegCompleted: number;
-  nonNegTotal: number;
-  growthCompleted: number;
-  growthTotal: number;
-  bonusCompleted: number;
-  bonusTotal: number;
-
-  // Historical integrity snapshot
-  snapshot: ScoreSnapshot;
-
-  // Flags
-  isFinalized: boolean;
-  finalizedAt: Date | null;
-
-  // Manual override
-  manualOverride: boolean;
-  manualOverrideReason: string | null;
-
-  notes: string | null;
-
-  createdAt: Date;
-  updatedAt: Date;
+export interface UpdateScoreSettingsInput {
+  weightNonNeg?: number;
+  weightGrowth?: number;
+  weightBonus?: number;
 }
 
-// ============================================================
-// SCORE COMPUTATION INPUTS
-// ============================================================
-
-export interface ScoreComputationInput {
-  userId: string;
-  date: string;
-  dayMode: DayMode;
-  nonNegCompleted: number;
-  nonNegTotal: number;
-  growthCompleted: number;
-  growthTotal: number;
-  bonusCompleted: number;
-  bonusTotal: number;
-  weightNonNeg: number;
-  weightGrowth: number;
-  weightBonus: number;
+export interface UpdateScoreSettingsResponse {
+  success: boolean;
+  settings?: ScoreSettings;
+  message?: string;
 }
 
-export interface ScoreResult {
-  nonNegScore: number;
-  growthScore: number;
-  bonusScore: number;
-  coreScore: number;
-  overallScore: number;
-  band: ScoreBand;
-}
+// ============================================================================
+// Score Grades
+// ============================================================================
 
-// ============================================================
-// SCORE DISPLAY HELPERS
-// ============================================================
+export type ScoreGrade = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
 
-export interface ScoreBandConfig {
-  band: ScoreBand;
-  min: number;
-  max: number;
+export interface ScoreGradeInfo {
+  grade: ScoreGrade;
   label: string;
+  description: string;
   color: string;
-  emoji: string;
+  minPercentage: number;
+  maxPercentage: number;
 }
 
-export const SCORE_BANDS: ScoreBandConfig[] = [
-  { band: ScoreBand.EXCEPTIONAL, min: 95, max: 100, label: "Exceptional", color: "#10b981", emoji: "🌟" },
-  { band: ScoreBand.EXCELLENT,   min: 85, max: 94,  label: "Excellent",   color: "#22c55e", emoji: "✨" },
-  { band: ScoreBand.GREAT,       min: 75, max: 84,  label: "Great",       color: "#84cc16", emoji: "🔥" },
-  { band: ScoreBand.GOOD,        min: 65, max: 74,  label: "Good",        color: "#eab308", emoji: "👍" },
-  { band: ScoreBand.FAIR,        min: 50, max: 64,  label: "Fair",        color: "#f97316", emoji: "🙂" },
-  { band: ScoreBand.POOR,        min: 25, max: 49,  label: "Poor",        color: "#ef4444", emoji: "😔" },
-  { band: ScoreBand.FAILED,      min: 0,  max: 24,  label: "Failed",      color: "#dc2626", emoji: "💔" },
-];
+export const SCORE_GRADES: Record<ScoreGrade, ScoreGradeInfo> = {
+  'A+': {
+    grade: 'A+',
+    label: 'Perfect',
+    description: 'Outstanding performance!',
+    color: '#10b981',
+    minPercentage: 95,
+    maxPercentage: 100,
+  },
+  'A': {
+    grade: 'A',
+    label: 'Excellent',
+    description: 'Great job!',
+    color: '#22c55e',
+    minPercentage: 85,
+    maxPercentage: 94,
+  },
+  'B': {
+    grade: 'B',
+    label: 'Good',
+    description: 'Well done',
+    color: '#84cc16',
+    minPercentage: 70,
+    maxPercentage: 84,
+  },
+  'C': {
+    grade: 'C',
+    label: 'Fair',
+    description: 'Keep going',
+    color: '#eab308',
+    minPercentage: 50,
+    maxPercentage: 69,
+  },
+  'D': {
+    grade: 'D',
+    label: 'Poor',
+    description: 'Room for improvement',
+    color: '#f97316',
+    minPercentage: 30,
+    maxPercentage: 49,
+  },
+  'F': {
+    grade: 'F',
+    label: 'Incomplete',
+    description: 'Try again tomorrow',
+    color: '#ef4444',
+    minPercentage: 0,
+    maxPercentage: 29,
+  },
+};
 
-export function getScoreBand(score: number): ScoreBand {
-  if (score >= 95) return ScoreBand.EXCEPTIONAL;
-  if (score >= 85) return ScoreBand.EXCELLENT;
-  if (score >= 75) return ScoreBand.GREAT;
-  if (score >= 65) return ScoreBand.GOOD;
-  if (score >= 50) return ScoreBand.FAIR;
-  if (score >= 25) return ScoreBand.POOR;
-  return ScoreBand.FAILED;
+// ============================================================================
+// Score Analytics
+// ============================================================================
+
+export interface ScoreAnalytics {
+  period: {
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+  };
+  averages: {
+    coreScore: number;
+    growthScore: number;
+    bonusScore: number;
+    totalScore: number;
+  };
+  distribution: {
+    grade: ScoreGrade;
+    count: number;
+    percentage: number;
+  }[];
+  trends: {
+    date: string;
+    coreScore: number;
+    growthScore: number;
+    bonusScore: number;
+    totalScore: number;
+    grade: ScoreGrade;
+  }[];
+  best: {
+    date: string;
+    score: number;
+    grade: ScoreGrade;
+  } | null;
+  worst: {
+    date: string;
+    score: number;
+    grade: ScoreGrade;
+  } | null;
+  streaks: {
+    currentPerfectDays: number;
+    longestPerfectDays: number;
+    currentExcellentDays: number;
+    longestExcellentDays: number;
+  };
+  specialDays: {
+    minimumDays: number;
+    restDays: number;
+    perfectDays: number;
+  };
 }
 
-export function getScoreBandConfig(band: ScoreBand): ScoreBandConfig {
-  return SCORE_BANDS.find((b) => b.band === band) ?? SCORE_BANDS[6];
+// ============================================================================
+// Score Comparison
+// ============================================================================
+
+export interface ScoreComparison {
+  current: {
+    period: string;
+    averageScore: number;
+    grade: ScoreGrade;
+  };
+  previous: {
+    period: string;
+    averageScore: number;
+    grade: ScoreGrade;
+  };
+  change: {
+    absolute: number;
+    percentage: number;
+    improved: boolean;
+  };
+  insights: string[];
 }
 
-// ============================================================
-// FORM DATA
-// ============================================================
+// ============================================================================
+// Minimum Day & Rest Day
+// ============================================================================
 
-export interface SetDayModeInput {
+export interface ActivateMinimumDayInput {
   date: string;
-  mode: DayMode;
+  templateId?: string;
   reason?: string;
 }
 
-export interface ManualScoreOverrideInput {
+export interface ActivateMinimumDayResponse {
+  success: boolean;
+  score?: DailyScoreWithContext;
+  message?: string;
+}
+
+export interface ActivateRestDayInput {
   date: string;
-  overallScore: number;
-  reason: string;
+  reason?: string;
+}
+
+export interface ActivateRestDayResponse {
+  success: boolean;
+  score?: DailyScoreWithContext;
+  message?: string;
+}
+
+// ============================================================================
+// Score History
+// ============================================================================
+
+export interface ScoreHistoryEntry {
+  date: string;
+  coreScore: number | null;
+  growthScore: number | null;
+  bonusScore: number | null;
+  totalScore: number | null;
+  grade: ScoreGrade | null;
+  isMinimumDay: boolean;
+  isRestDay: boolean;
+  habitCompletionRate: number | null;
+  routineCompletionRate: number | null;
+}
+
+export interface ScoreHistoryRange {
+  startDate: string;
+  endDate: string;
+  entries: ScoreHistoryEntry[];
+  summary: {
+    daysWithData: number;
+    averageScore: number;
+    highestScore: number;
+    lowestScore: number;
+    mostCommonGrade: ScoreGrade;
+  };
+}
+
+// ============================================================================
+// Score Snapshot
+// ============================================================================
+
+export interface ScoreSnapshot {
+  date: string;
+  weights: {
+    nonNeg: number;
+    growth: number;
+    bonus: number;
+  };
+  habits: Array<{
+    id: string;
+    name: string;
+    tier: string;
+    points: number;
+    status: string;
+  }>;
+  calculationData: {
+    coreHabits: number;
+    coreCompleted: number;
+    growthHabits: number;
+    growthCompleted: number;
+    bonusHabits: number;
+    bonusCompleted: number;
+  };
+  metadata: {
+    calculatedAt: Date;
+    version: string;
+  };
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+export function getGradeFromPercentage(percentage: number): ScoreGrade {
+  if (percentage >= 95) return 'A+';
+  if (percentage >= 85) return 'A';
+  if (percentage >= 70) return 'B';
+  if (percentage >= 50) return 'C';
+  if (percentage >= 30) return 'D';
+  return 'F';
+}
+
+export function getGradeInfo(grade: ScoreGrade): ScoreGradeInfo {
+  return SCORE_GRADES[grade];
+}
+
+export function calculateTotalScore(
+  coreScore: number,
+  growthScore: number,
+  bonusScore: number,
+  weights: { nonNeg: number; growth: number; bonus: number }
+): number {
+  return (
+    coreScore * weights.nonNeg +
+    growthScore * weights.growth +
+    bonusScore * weights.bonus
+  );
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+export function isDailyScoreWithContext(
+  score: unknown
+): score is DailyScoreWithContext {
+  return (
+    typeof score === 'object' &&
+    score !== null &&
+    'id' in score &&
+    'breakdown' in score &&
+    'context' in score
+  );
+}
+
+export function isValidScoreGrade(grade: unknown): grade is ScoreGrade {
+  return (
+    typeof grade === 'string' &&
+    ['A+', 'A', 'B', 'C', 'D', 'F'].includes(grade)
+  );
 }

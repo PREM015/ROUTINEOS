@@ -1,30 +1,40 @@
 import { z } from 'zod';
-import { GoalType, GoalPriority, GoalStatus } from '@/generated/prisma/client';
 
-export const CreateGoalSchema = z.object({
+export const createGoalSchema = z.object({
   title: z.string().min(1).max(200),
-  description: z.string().optional(),
-  type: z.nativeEnum(GoalType),           // ✅ Use Prisma enum
-  priority: z.nativeEnum(GoalPriority),   // ✅ Fixed
-  status: z.nativeEnum(GoalStatus).default('ACTIVE'), // ✅ Fixed
+  description: z.string().max(2000).optional(),
+  type: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'CUSTOM']),
+  priority: z
+    .enum([
+      'CRITICAL',
+      'HIGH',
+      'MEDIUM',
+      'LOW',
+      'PERSONAL',
+      'ACADEMIC',
+      'PROFESSIONAL',
+      'NON_PROFIT',
+    ])
+    .optional(),
   targetValue: z.number().positive(),
-  currentValue: z.number().default(0),
+  currentValue: z.number().min(0).optional(),
   unit: z.string().optional(),
-  startDate: z.string().or(z.date()),
-  endDate: z.string().or(z.date()),
-  projectId: z.string().optional(),
-  parentGoalId: z.string().optional(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date(),
+  projectId: z.string().uuid().optional(),
+  parentGoalId: z.string().uuid().optional(),
+  isPublic: z.boolean().optional(),
+  tagIds: z.array(z.string().uuid()).optional(),
+  milestones: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string().optional(),
+        targetValue: z.number().optional(),
+        dueDate: z.coerce.date().optional(),
+      })
+    )
+    .optional(),
 });
 
-export const UpdateGoalSchema = CreateGoalSchema.partial();
-
-export const LogProgressSchema = z.object({
-  goalId: z.string(),
-  value: z.number(),
-  note: z.string().optional(),
-});
-
-export const CarryOverSchema = z.object({
-  goalId: z.string(),
-  newEndDate: z.string().or(z.date()),
-});
+export const updateGoalSchema = createGoalSchema.partial();

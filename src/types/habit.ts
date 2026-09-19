@@ -1,259 +1,387 @@
+import type {
+  Habit,
+  HabitLog,
+  HabitOverride,
+  HabitTier,
+  HabitStatus,
+  HabitLogStatus,
+  HabitFrequencyType,
+  HabitOverrideType,
+  Category,
+  Tag,
+} from '@prisma/client';
+
 /**
- * Habit Types
- *
- * Complete type definitions for the RoutineOS habit engine,
- * including habits, logs, tiers, frequency, and overrides.
+ * Habit Management Types
+ * Complete type system for habit tracking and management
  */
 
-// ============================================================
-// ENUMS
-// ============================================================
+// ============================================================================
+// Core Habit Types
+// ============================================================================
 
-export enum HabitTier {
-  NON_NEGOTIABLE = "NON_NEGOTIABLE",
-  GROWTH = "GROWTH",
-  BONUS = "BONUS",
+export interface HabitWithRelations extends Habit {
+  category: Category | null;
+  tags: Array<{ tag: Tag }>;
+  logs: HabitLog[];
+  overrides: HabitOverride[];
+  _count?: {
+    logs: number;
+    overrides: number;
+  };
 }
 
-export enum HabitStatus {
-  DRAFT = "DRAFT",
-  ACTIVE = "ACTIVE",
-  PAUSED = "PAUSED",
-  ARCHIVED = "ARCHIVED",
-  COMPLETED = "COMPLETED",
-}
-
-export enum HabitLogStatus {
-  COMPLETED = "COMPLETED",
-  MISSED = "MISSED",
-  SKIPPED = "SKIPPED",
-  NOT_APPLICABLE = "NOT_APPLICABLE",
-  PARTIAL = "PARTIAL",
-}
-
-export enum HabitFrequencyType {
-  DAILY = "DAILY",
-  SPECIFIC_WEEKDAYS = "SPECIFIC_WEEKDAYS",
-  WEEKLY_TARGET = "WEEKLY_TARGET",
-  MONTHLY_TARGET = "MONTHLY_TARGET",
-  YEARLY_TARGET = "YEARLY_TARGET",
-  RANDOM = "RANDOM",
-  ONE_TIME = "ONE_TIME",
-  CUSTOM = "CUSTOM",
-}
-
-export enum HabitOverrideType {
-  SKIP_TODAY = "SKIP_TODAY",
-  SKIP_RANGE = "SKIP_RANGE",
-  PAUSE = "PAUSE",
-  NOT_APPLICABLE = "NOT_APPLICABLE",
-  RESCHEDULE = "RESCHEDULE",
-}
-
-// ============================================================
-// FREQUENCY CONFIGURATION
-// ============================================================
-
-export interface WeeklyFrequencyConfig {
-  type: HabitFrequencyType.SPECIFIC_WEEKDAYS;
-  /** 0=Sunday, 1=Monday, …, 6=Saturday */
-  days: number[];
-}
-
-export interface WeeklyTargetConfig {
-  type: HabitFrequencyType.WEEKLY_TARGET;
-  target: number; // times per week
-}
-
-export interface MonthlyTargetConfig {
-  type: HabitFrequencyType.MONTHLY_TARGET;
-  target: number; // times per month
-}
-
-export interface YearlyTargetConfig {
-  type: HabitFrequencyType.YEARLY_TARGET;
-  target: number; // times per year
-}
-
-export interface DailyFrequencyConfig {
-  type: HabitFrequencyType.DAILY;
-}
-
-export interface OneTimeFrequencyConfig {
-  type: HabitFrequencyType.ONE_TIME;
-  date: string; // ISO date
-}
-
-export interface CustomFrequencyConfig {
-  type: HabitFrequencyType.CUSTOM;
-  /** Cron-like expression or raw interval object */
-  expression: string;
-}
-
-export type HabitFrequencyConfig =
-  | DailyFrequencyConfig
-  | WeeklyFrequencyConfig
-  | WeeklyTargetConfig
-  | MonthlyTargetConfig
-  | YearlyTargetConfig
-  | OneTimeFrequencyConfig
-  | CustomFrequencyConfig;
-
-// ============================================================
-// CORE HABIT MODEL
-// ============================================================
-
-export interface Habit {
+export interface HabitListItem {
   id: string;
-  userId: string;
-  categoryId: string | null;
-
-  // Identity
   name: string;
   description: string | null;
-  icon: string | null;
-  color: string | null;
-
-  // Classification
   tier: HabitTier;
   status: HabitStatus;
-
-  // Scheduling
+  color: string | null;
+  icon: string | null;
   frequencyType: HabitFrequencyType;
-  frequencyConfig: HabitFrequencyConfig | null;
-
-  // Timing (optional)
-  scheduledTime: string | null; // HH:mm
-  estimatedDuration: number | null; // minutes
-
-  // Lifecycle
-  startDate: string; // ISO date
-  endDate: string | null; // ISO date
-  pausedAt: Date | null;
-  pausedUntil: Date | null;
-  archivedAt: Date | null;
-  archiveReason: string | null;
-
-  // Scoring
-  weight: number;
-  isActive: boolean;
-
-  // Metadata
-  notes: string | null;
-  sortOrder: number;
-  completionCount: number;
-
-  createdAt: Date;
-  updatedAt: Date;
+  frequencyValue: string | null;
+  targetCount: number | null;
+  category: {
+    id: string;
+    name: string;
+    color: string | null;
+  } | null;
+  tags: Array<{
+    id: string;
+    name: string;
+    color: string | null;
+  }>;
+  streakCount: number;
+  completionRate: number | null;
+  lastCompletedDate: string | null;
 }
 
-// ============================================================
-// HABIT LOG
-// ============================================================
-
-export interface HabitLog {
-  id: string;
-  userId: string;
-  habitId: string;
-
-  date: string; // ISO date YYYY-MM-DD
-  status: HabitLogStatus;
-
-  completedAt: Date | null;
-  duration: number | null; // minutes actually spent
-  value: number | null; // for numeric habits
-
-  notes: string | null;
-  mood: number | null; // 1-5 scale
-
-  // Scoring snapshot
-  scoreContribution: number | null;
-
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================================
-// HABIT OVERRIDE
-// ============================================================
-
-export interface HabitOverride {
-  id: string;
-  userId: string;
-  habitId: string;
-
-  overrideType: HabitOverrideType;
-  startDate: string; // ISO date
-  endDate: string | null; // ISO date (null = indefinite)
-
-  reason: string | null;
-
-  createdAt: Date;
-}
-
-// ============================================================
-// HABIT WITH RELATIONS
-// ============================================================
-
-export interface HabitWithLog extends Habit {
-  todayLog: HabitLog | null;
-  streak: number;
-  completionRate: number; // 0-1
-}
-
-export interface HabitWithStats extends Habit {
-  currentStreak: number;
-  longestStreak: number;
-  completionRate: number;
-  totalCompletions: number;
-  lastCompleted: string | null;
-}
-
-// ============================================================
-// GROUPED HABITS (for Today page)
-// ============================================================
-
-export interface GroupedHabits {
-  nonNegotiable: HabitWithLog[];
-  growth: HabitWithLog[];
-  bonus: HabitWithLog[];
-}
-
-// ============================================================
-// HABIT FORM DATA
-// ============================================================
+// ============================================================================
+// Habit Creation & Update
+// ============================================================================
 
 export interface CreateHabitInput {
   name: string;
   description?: string;
-  icon?: string;
-  color?: string;
   tier: HabitTier;
   categoryId?: string;
+  color?: string;
+  icon?: string;
   frequencyType: HabitFrequencyType;
-  frequencyConfig?: HabitFrequencyConfig;
-  scheduledTime?: string;
+  frequencyValue?: string;
+  targetCount?: number;
+  startDate?: Date;
+  endDate?: Date;
+  reminderTime?: string;
+  reminderEnabled?: boolean;
+  points?: number;
   estimatedDuration?: number;
-  startDate: string;
-  endDate?: string;
-  weight?: number;
-  notes?: string;
+  difficulty?: number;
+  isPublic?: boolean;
+  tagIds?: string[];
 }
 
-export interface UpdateHabitInput extends Partial<CreateHabitInput> {
-  id: string;
+export interface UpdateHabitInput {
+  name?: string;
+  description?: string;
+  tier?: HabitTier;
   status?: HabitStatus;
-  sortOrder?: number;
+  categoryId?: string | null;
+  color?: string;
+  icon?: string;
+  frequencyType?: HabitFrequencyType;
+  frequencyValue?: string;
+  targetCount?: number;
+  startDate?: Date;
+  endDate?: Date;
+  reminderTime?: string;
+  reminderEnabled?: boolean;
+  points?: number;
+  estimatedDuration?: number;
+  difficulty?: number;
+  isPublic?: boolean;
+  tagIds?: string[];
 }
+
+export interface CreateHabitResponse {
+  success: boolean;
+  habit?: HabitWithRelations;
+  message?: string;
+}
+
+export interface UpdateHabitResponse {
+  success: boolean;
+  habit?: HabitWithRelations;
+  message?: string;
+}
+
+// ============================================================================
+// Habit Logging
+// ============================================================================
 
 export interface LogHabitInput {
   habitId: string;
-  date: string;
+  date: string; // YYYY-MM-DD
   status: HabitLogStatus;
-  notes?: string;
-  duration?: number;
-  value?: number;
-  mood?: number;
+  completedAt?: Date;
+  durationMinutes?: number;
+  quantity?: number;
+  difficulty?: number;
+  energyLevel?: number;
+  moodBefore?: number;
+  moodAfter?: number;
+  note?: string;
+}
+
+export interface LogHabitResponse {
+  success: boolean;
+  log?: HabitLog;
+  streakUpdated?: boolean;
+  newStreak?: number;
+  message?: string;
+}
+
+export interface BulkLogHabitsInput {
+  logs: Array<{
+    habitId: string;
+    status: HabitLogStatus;
+    note?: string;
+  }>;
+  date: string;
+}
+
+export interface BulkLogHabitsResponse {
+  success: boolean;
+  logged: number;
+  failed: number;
+  errors?: Array<{
+    habitId: string;
+    error: string;
+  }>;
+}
+
+// ============================================================================
+// Habit Overrides
+// ============================================================================
+
+export interface CreateHabitOverrideInput {
+  habitId: string;
+  type: HabitOverrideType;
+  startDate: string;
+  endDate?: string;
+  reason?: string;
+}
+
+export interface CreateHabitOverrideResponse {
+  success: boolean;
+  override?: HabitOverride;
+  message?: string;
+}
+
+// ============================================================================
+// Habit Scheduling & Frequency
+// ============================================================================
+
+export interface HabitFrequency {
+  type: HabitFrequencyType;
+  value: string | null;
+  displayText: string;
+}
+
+export interface HabitSchedule {
+  habitId: string;
+  isScheduledFor: (date: Date) => boolean;
+  getNextScheduledDate: (after: Date) => Date | null;
+  getPreviousScheduledDate: (before: Date) => Date | null;
+}
+
+export interface HabitEligibility {
+  habitId: string;
+  date: string;
+  isEligible: boolean;
+  reason?: HabitEligibilityReason;
+  override?: HabitOverride;
+}
+
+export enum HabitEligibilityReason {
+  SCHEDULED = 'SCHEDULED',
+  NOT_SCHEDULED = 'NOT_SCHEDULED',
+  BEFORE_START_DATE = 'BEFORE_START_DATE',
+  AFTER_END_DATE = 'AFTER_END_DATE',
+  PAUSED = 'PAUSED',
+  SKIPPED = 'SKIPPED',
+  NOT_APPLICABLE = 'NOT_APPLICABLE',
+  ARCHIVED = 'ARCHIVED',
+}
+
+// ============================================================================
+// Habit Analytics
+// ============================================================================
+
+export interface HabitAnalytics {
+  habitId: string;
+  totalLogs: number;
+  completedLogs: number;
+  missedLogs: number;
+  skippedLogs: number;
+  completionRate: number;
+  currentStreak: number;
+  longestStreak: number;
+  averageDifficulty: number | null;
+  averageDuration: number | null;
+  totalDuration: number;
+  lastCompletedDate: string | null;
+  bestDay: {
+    date: string;
+    count: number;
+  } | null;
+  worstDay: {
+    date: string;
+    count: number;
+  } | null;
+}
+
+export interface HabitTrendData {
+  date: string;
+  completed: number;
+  missed: number;
+  skipped: number;
+  completionRate: number;
+}
+
+export interface HabitCalendarData {
+  date: string;
+  status: HabitLogStatus | null;
+  note: string | null;
+}
+
+// ============================================================================
+// Habit Queries & Filters
+// ============================================================================
+
+export interface HabitQueryParams {
+  status?: HabitStatus | HabitStatus[];
+  tier?: HabitTier | HabitTier[];
+  categoryId?: string;
+  tagId?: string;
+  search?: string;
+  sortBy?: 'name' | 'createdAt' | 'streak' | 'completionRate';
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+  includeArchived?: boolean;
+}
+
+export interface HabitFilterOptions {
+  statuses: HabitStatus[];
+  tiers: HabitTier[];
+  categories: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string }>;
+}
+
+// ============================================================================
+// Today's Habits
+// ============================================================================
+
+export interface TodayHabit {
+  id: string;
+  name: string;
+  description: string | null;
+  tier: HabitTier;
+  color: string | null;
+  icon: string | null;
+  targetCount: number | null;
+  estimatedDuration: number | null;
+  category: {
+    id: string;
+    name: string;
+    color: string | null;
+  } | null;
+  log: {
+    id: string;
+    status: HabitLogStatus;
+    completedAt: Date | null;
+    quantity: number | null;
+    note: string | null;
+  } | null;
+  isEligible: boolean;
+  eligibilityReason?: HabitEligibilityReason;
+}
+
+export interface TodayHabitsByTier {
+  nonNegotiable: TodayHabit[];
+  growth: TodayHabit[];
+  bonus: TodayHabit[];
+}
+
+// ============================================================================
+// Habit History
+// ============================================================================
+
+export interface HabitHistoryEntry {
+  date: string;
+  status: HabitLogStatus | null;
+  completedAt: Date | null;
+  durationMinutes: number | null;
+  quantity: number | null;
+  difficulty: number | null;
+  note: string | null;
+  isScheduled: boolean;
+  override: {
+    type: HabitOverrideType;
+    reason: string | null;
+  } | null;
+}
+
+export interface HabitHistoryRange {
+  habitId: string;
+  startDate: string;
+  endDate: string;
+  entries: HabitHistoryEntry[];
+  stats: {
+    totalDays: number;
+    scheduledDays: number;
+    completedDays: number;
+    missedDays: number;
+    skippedDays: number;
+    completionRate: number;
+  };
+}
+
+// ============================================================================
+// Habit Actions
+// ============================================================================
+
+export interface ArchiveHabitInput {
+  habitId: string;
+  reason?: string;
+}
+
+export interface ArchiveHabitResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface PauseHabitInput {
+  habitId: string;
+  reason?: string;
+  resumeDate?: string;
+}
+
+export interface PauseHabitResponse {
+  success: boolean;
+  message: string;
+  override?: HabitOverride;
+}
+
+export interface ResumeHabitInput {
+  habitId: string;
+}
+
+export interface ResumeHabitResponse {
+  success: boolean;
+  message: string;
 }
 
 export interface SkipHabitInput {
@@ -262,8 +390,56 @@ export interface SkipHabitInput {
   reason?: string;
 }
 
-export interface PauseHabitInput {
-  habitId: string;
-  pausedUntil?: string; // ISO date
-  reason?: string;
+export interface SkipHabitResponse {
+  success: boolean;
+  message: string;
+  override?: HabitOverride;
 }
+
+// ============================================================================
+// Habit Tier Metadata
+// ============================================================================
+
+export interface HabitTierConfig {
+  tier: HabitTier;
+  label: string;
+  description: string;
+  defaultPoints: number;
+  defaultWeight: number;
+  color: string;
+  icon: string;
+  suggestedFrequency: HabitFrequencyType[];
+}
+
+// ============================================================================
+// Type Guards
+// ============================================================================
+
+export function isHabitWithRelations(habit: unknown): habit is HabitWithRelations {
+  return (
+    typeof habit === 'object' &&
+    habit !== null &&
+    'id' in habit &&
+    'name' in habit &&
+    'tier' in habit &&
+    'category' in habit &&
+    'tags' in habit
+  );
+}
+
+export function isValidHabitLogStatus(status: unknown): status is HabitLogStatus {
+  return (
+    typeof status === 'string' &&
+    ['COMPLETED', 'MISSED', 'SKIPPED', 'NOT_APPLICABLE', 'PARTIAL'].includes(status)
+  );
+}
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+export type HabitGroupedByTier = Record<HabitTier, HabitListItem[]>;
+
+export type HabitsByDate = Record<string, TodayHabit[]>;
+
+export type HabitCompletionMap = Record<string, boolean>;

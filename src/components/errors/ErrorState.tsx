@@ -1,21 +1,43 @@
-"use client";
-import React from 'react';
-import { AlertCircle } from 'lucide-react';
+'use client';
+
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 
 interface ErrorStateProps {
   title?: string;
   message?: string;
-  onRetry?: () => void;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  showRefresh?: boolean;
 }
 
-export function ErrorState({ title = 'Something went wrong', message = 'An unexpected error occurred.', onRetry }: ErrorStateProps) {
+export function ErrorState({
+  title = 'Something went wrong',
+  message = 'An unexpected error occurred. Please try again.',
+  action,
+  showRefresh = true,
+}: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center space-y-4">
-      <AlertCircle className="w-12 h-12 text-red-500" />
-      <h3 className="text-xl font-bold">{title}</h3>
-      <p className="text-gray-500">{message}</p>
-      {onRetry && <Button onClick={onRetry} variant="outline">Retry</Button>}
-    </div>
+    <Card className="p-12 text-center">
+      <div className="max-w-md mx-auto">
+        <div className="text-6xl mb-4">⚠️</div>
+        <h2 className="text-2xl font-bold mb-2">{title}</h2>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex gap-3 justify-center">
+          {showRefresh && (
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+          )}
+          {action && (
+            <Button variant="outline" onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 }
