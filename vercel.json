@@ -3,16 +3,13 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXTAUTH_URL": "@nextauth-url"
-  },
+
   "build": {
     "env": {
       "SKIP_ENV_VALIDATION": "1"
     }
   },
+
   "functions": {
     "app/api/**": {
       "maxDuration": 30
@@ -21,6 +18,7 @@
       "maxDuration": 60
     }
   },
+
   "crons": [
     {
       "path": "/api/cron/compute-daily-scores",
@@ -31,6 +29,7 @@
       "schedule": "0 2 * * 0"
     }
   ],
+
   "headers": [
     {
       "source": "/api/(.*)",
