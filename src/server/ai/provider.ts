@@ -7,9 +7,16 @@ import { z } from 'zod';
  * OpenAI integration for insight generation
  */
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 const insightSchema = z.object({
   summary: z.string(),
@@ -40,7 +47,7 @@ export async function generateInsight(
   const prompt = buildInsightPrompt(data, period);
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
       messages: [
         {
