@@ -1,4 +1,4 @@
-import { POMODORO_DEFAULTS, type PomodoroDefaults } from './pomodoro';
+import { POMODORO_DEFAULTS } from './pomodoro';
 
 /**
  * Break scheduling logic for focus sessions.

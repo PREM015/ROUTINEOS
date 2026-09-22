@@ -34,7 +34,7 @@ function itemToCreateData(
   item: CreateNutritionItemData
 ): Prisma.NutritionEntryCreateInput {
   return {
-    userId,
+    user: { connect: { id: userId } },
     date,
     mealType,
     foodName: item.foodName,

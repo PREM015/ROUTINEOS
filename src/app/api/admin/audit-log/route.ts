@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import prisma from '@/lib/prisma';
 import { auditService } from '@/server/audit/audit.service';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is admin
-    const user = await prisma?.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { role: true },
     });

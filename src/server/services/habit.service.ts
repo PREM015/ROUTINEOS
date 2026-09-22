@@ -1,10 +1,9 @@
-import type { HabitTier, HabitStatus, HabitLogStatus, Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
-import { ScoreRepository } from '@/server/repositories/score.repository';
 import type { HabitWithRelations, CreateHabitInput, UpdateHabitInput, LogHabitInput } from '@/types/habit';
 import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
-import { calculateHabitEligibility, isHabitScheduled } from '@/lib/habits/eligibility';
+import { calculateHabitEligibility } from '@/lib/habits/eligibility';
 import { calculateStreak, recordStreakMilestone } from '@/lib/streaks/calculate-streak';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { ScoringService } from './scoring.service';
@@ -17,13 +16,11 @@ import { ScoringService } from './scoring.service';
 export class HabitService {
   private habitRepository: HabitRepository;
   private streakRepository: StreakRepository;
-  private scoreRepository: ScoreRepository;
   private auditRepository: AuditRepository;
 
   constructor() {
     this.habitRepository = new HabitRepository();
     this.streakRepository = new StreakRepository();
-    this.scoreRepository = new ScoreRepository();
     this.auditRepository = new AuditRepository();
   }
 

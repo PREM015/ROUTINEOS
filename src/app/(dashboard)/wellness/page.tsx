@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { HeartPulse } from 'lucide-react';
-import { WellnessStats } from '@/components/wellness/WellnessStats';
+import WellnessStats from '@/components/wellness/WellnessStats';
 import MoodTracker from '@/components/wellness/MoodTracker';
 
 /**

@@ -26,8 +26,8 @@ const goalFilterSchema = z.object({
     )
     .optional(),
   timeline: z.enum(['all', 'active', 'completed', 'cancelled', 'overdue', 'dueSoon']).optional(),
-  projectId: z.string().uuid().optional(),
-  parentGoalId: z.string().uuid().optional(),
+  projectId: z.string().cuid().optional(),
+  parentGoalId: z.string().cuid().optional(),
   search: z.string().optional(),
   sortBy: z.enum(['title', 'endDate', 'priority', 'createdAt']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),

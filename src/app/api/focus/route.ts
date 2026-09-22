@@ -96,14 +96,42 @@ export async function POST(request: NextRequest) {
     }
 
     const repository = new FocusRepository();
+    const input = validated.data;
+
+    // Timer payload shape: normalize seconds onto the minutes-based model so a
+    // well-formed timer POST can never 400. Completed sessions are stored with
+    // completedAt in a single write; early stops keep their actual duration.
+    if ('type' in input) {
+      const titles: Record<typeof input.type, string> = {
+        focus: 'Focus session',
+        'short-break': 'Short break',
+        'long-break': 'Long break',
+        stopwatch: 'Stopwatch session',
+      };
+      const focusSession = await repository.createSession(session.user.id, {
+        title: titles[input.type],
+        plannedDuration: Math.max(1, Math.round(input.plannedSeconds / 60)),
+        actualDuration: Math.max(0, Math.round(input.actualSeconds / 60)),
+        techniques: input.type === 'focus' ? ['Pomodoro'] : undefined,
+        startedAt: input.startedAt ?? new Date(),
+        completedAt:
+          input.completed === true ? (input.endedAt ?? new Date()) : undefined,
+      });
+
+      return NextResponse.json(
+        { success: true, data: focusSession },
+        { status: 201 }
+      );
+    }
+
     const focusSession = await repository.createSession(session.user.id, {
-      title: validated.data.title,
-      description: validated.data.description,
-      categoryId: validated.data.categoryId,
-      plannedDuration: validated.data.plannedDuration,
-      techniques: validated.data.techniques,
-      energyBefore: validated.data.energyBefore,
-      startedAt: validated.data.startedAt,
+      title: input.title,
+      description: input.description,
+      categoryId: input.categoryId,
+      plannedDuration: input.plannedDuration,
+      techniques: input.techniques,
+      energyBefore: input.energyBefore,
+      startedAt: input.startedAt,
     });
 
     return NextResponse.json(

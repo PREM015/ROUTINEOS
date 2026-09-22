@@ -216,11 +216,29 @@ export class UserRepository extends BaseRepository {
   }
 
   /**
+   * Find settings for all users with sleep prompts enabled and a bedtime set.
+   * Used by the sleep-notifications cron to create/auto-start prompts.
+   */
+  async findUsersWithSleepPromptsEnabled() {
+    try {
+      return await this.prisma.userSettings.findMany({
+        where: {
+          sleepReminder: true,
+          targetBedtime: { not: null },
+        },
+        include: { user: true },
+      });
+    } catch (error) {
+      this.handleError(error, 'findUsersWithSleepPromptsEnabled');
+    }
+  }
+
+  /**
    * Create user settings
    */
   async createSettings(
     userId: string,
-    data?: Partial<Prisma.UserSettingsCreateInput>
+    data?: Partial<Prisma.UserSettingsUncheckedCreateInput>
   ): Promise<UserSettings> {
     try {
       return await this.prisma.userSettings.create({

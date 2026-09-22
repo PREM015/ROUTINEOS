@@ -74,6 +74,11 @@ export type TaskTag = $Result.DefaultSelection<Prisma.$TaskTagPayload>
  */
 export type JournalEntryTag = $Result.DefaultSelection<Prisma.$JournalEntryTagPayload>
 /**
+ * Model JournalRevision
+ * 
+ */
+export type JournalRevision = $Result.DefaultSelection<Prisma.$JournalRevisionPayload>
+/**
  * Model RoutineTemplate
  * 
  */
@@ -153,6 +158,11 @@ export type TaskDependency = $Result.DefaultSelection<Prisma.$TaskDependencyPayl
  * 
  */
 export type SleepLog = $Result.DefaultSelection<Prisma.$SleepLogPayload>
+/**
+ * Model SleepSession
+ * 
+ */
+export type SleepSession = $Result.DefaultSelection<Prisma.$SleepSessionPayload>
 /**
  * Model MoodLog
  * 
@@ -411,6 +421,7 @@ export type RoutineLogStatus = (typeof RoutineLogStatus)[keyof typeof RoutineLog
 
 
 export const HabitTier: {
+  NON_NEGOTIABLE: 'NON_NEGOTIABLE',
   GROWTH: 'GROWTH',
   BONUS: 'BONUS',
   OPTIONAL: 'OPTIONAL',
@@ -625,6 +636,11 @@ export const NotificationType: {
   STREAK_BROKEN: 'STREAK_BROKEN',
   FOCUS_SESSION_END: 'FOCUS_SESSION_END',
   REMINDER_SNOOZED: 'REMINDER_SNOOZED',
+  SLEEP_REMINDER: 'SLEEP_REMINDER',
+  SLEEP_STARTED: 'SLEEP_STARTED',
+  SLEEP_ENDED: 'SLEEP_ENDED',
+  SLEEP_PROMPT: 'SLEEP_PROMPT',
+  SLEEP_TRACKING_STARTED: 'SLEEP_TRACKING_STARTED',
   MOTIVATIONAL: 'MOTIVATIONAL',
   PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
   SYSTEM_UPDATE: 'SYSTEM_UPDATE'
@@ -753,6 +769,24 @@ export const AuditAction: {
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction]
 
+
+export const SleepSessionStatus: {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+};
+
+export type SleepSessionStatus = (typeof SleepSessionStatus)[keyof typeof SleepSessionStatus]
+
+
+export const SleepStartSource: {
+  USER_CONFIRMED: 'USER_CONFIRMED',
+  MANUAL: 'MANUAL',
+  AUTO_NO_RESPONSE: 'AUTO_NO_RESPONSE'
+};
+
+export type SleepStartSource = (typeof SleepStartSource)[keyof typeof SleepStartSource]
+
 }
 
 export type Role = $Enums.Role
@@ -874,6 +908,14 @@ export const FeedbackStatus: typeof $Enums.FeedbackStatus
 export type AuditAction = $Enums.AuditAction
 
 export const AuditAction: typeof $Enums.AuditAction
+
+export type SleepSessionStatus = $Enums.SleepSessionStatus
+
+export const SleepSessionStatus: typeof $Enums.SleepSessionStatus
+
+export type SleepStartSource = $Enums.SleepStartSource
+
+export const SleepStartSource: typeof $Enums.SleepStartSource
 
 /**
  * ##  Prisma Client ʲˢ
@@ -1117,6 +1159,16 @@ export class PrismaClient<
   get journalEntryTag(): Prisma.JournalEntryTagDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.journalRevision`: Exposes CRUD operations for the **JournalRevision** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more JournalRevisions
+    * const journalRevisions = await prisma.journalRevision.findMany()
+    * ```
+    */
+  get journalRevision(): Prisma.JournalRevisionDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.routineTemplate`: Exposes CRUD operations for the **RoutineTemplate** model.
     * Example usage:
     * ```ts
@@ -1275,6 +1327,16 @@ export class PrismaClient<
     * ```
     */
   get sleepLog(): Prisma.SleepLogDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.sleepSession`: Exposes CRUD operations for the **SleepSession** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SleepSessions
+    * const sleepSessions = await prisma.sleepSession.findMany()
+    * ```
+    */
+  get sleepSession(): Prisma.SleepSessionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.moodLog`: Exposes CRUD operations for the **MoodLog** model.
@@ -2094,6 +2156,7 @@ export namespace Prisma {
     GoalTag: 'GoalTag',
     TaskTag: 'TaskTag',
     JournalEntryTag: 'JournalEntryTag',
+    JournalRevision: 'JournalRevision',
     RoutineTemplate: 'RoutineTemplate',
     RoutineBlock: 'RoutineBlock',
     RoutineException: 'RoutineException',
@@ -2110,6 +2173,7 @@ export namespace Prisma {
     Task: 'Task',
     TaskDependency: 'TaskDependency',
     SleepLog: 'SleepLog',
+    SleepSession: 'SleepSession',
     MoodLog: 'MoodLog',
     EnergyLog: 'EnergyLog',
     WeatherLog: 'WeatherLog',
@@ -2161,7 +2225,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "userSubscription" | "quote" | "userSettings" | "passwordResetToken" | "emailVerificationToken" | "category" | "tag" | "habitTag" | "goalTag" | "taskTag" | "journalEntryTag" | "routineTemplate" | "routineBlock" | "routineException" | "routineLog" | "habit" | "habitLog" | "habitOverride" | "minimumDayTemplate" | "minimumDayTemplateHabit" | "project" | "goal" | "milestone" | "goalProgress" | "task" | "taskDependency" | "sleepLog" | "moodLog" | "energyLog" | "weatherLog" | "healthMetric" | "nutritionEntry" | "dailyScore" | "dailyReflection" | "journalEntry" | "focusSession" | "break" | "timeEntry" | "productivityPattern" | "userConnection" | "challenge" | "challengeParticipant" | "automationRule" | "location" | "calendarSync" | "streak" | "streakMilestone" | "achievement" | "weeklyReview" | "monthlyReset" | "aIInsight" | "template" | "attachment" | "notificationLog" | "pushSubscription" | "integration" | "deviceSession" | "dataExport" | "auditLog" | "activityLog" | "feedback" | "featureFlag" | "aPIKey"
+      modelProps: "user" | "userSubscription" | "quote" | "userSettings" | "passwordResetToken" | "emailVerificationToken" | "category" | "tag" | "habitTag" | "goalTag" | "taskTag" | "journalEntryTag" | "journalRevision" | "routineTemplate" | "routineBlock" | "routineException" | "routineLog" | "habit" | "habitLog" | "habitOverride" | "minimumDayTemplate" | "minimumDayTemplateHabit" | "project" | "goal" | "milestone" | "goalProgress" | "task" | "taskDependency" | "sleepLog" | "sleepSession" | "moodLog" | "energyLog" | "weatherLog" | "healthMetric" | "nutritionEntry" | "dailyScore" | "dailyReflection" | "journalEntry" | "focusSession" | "break" | "timeEntry" | "productivityPattern" | "userConnection" | "challenge" | "challengeParticipant" | "automationRule" | "location" | "calendarSync" | "streak" | "streakMilestone" | "achievement" | "weeklyReview" | "monthlyReset" | "aIInsight" | "template" | "attachment" | "notificationLog" | "pushSubscription" | "integration" | "deviceSession" | "dataExport" | "auditLog" | "activityLog" | "feedback" | "featureFlag" | "aPIKey"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3050,6 +3114,80 @@ export namespace Prisma {
           count: {
             args: Prisma.JournalEntryTagCountArgs<ExtArgs>
             result: $Utils.Optional<JournalEntryTagCountAggregateOutputType> | number
+          }
+        }
+      }
+      JournalRevision: {
+        payload: Prisma.$JournalRevisionPayload<ExtArgs>
+        fields: Prisma.JournalRevisionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.JournalRevisionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.JournalRevisionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>
+          }
+          findFirst: {
+            args: Prisma.JournalRevisionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.JournalRevisionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>
+          }
+          findMany: {
+            args: Prisma.JournalRevisionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>[]
+          }
+          create: {
+            args: Prisma.JournalRevisionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>
+          }
+          createMany: {
+            args: Prisma.JournalRevisionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.JournalRevisionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>[]
+          }
+          delete: {
+            args: Prisma.JournalRevisionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>
+          }
+          update: {
+            args: Prisma.JournalRevisionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>
+          }
+          deleteMany: {
+            args: Prisma.JournalRevisionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.JournalRevisionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.JournalRevisionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>[]
+          }
+          upsert: {
+            args: Prisma.JournalRevisionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$JournalRevisionPayload>
+          }
+          aggregate: {
+            args: Prisma.JournalRevisionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateJournalRevision>
+          }
+          groupBy: {
+            args: Prisma.JournalRevisionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<JournalRevisionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.JournalRevisionCountArgs<ExtArgs>
+            result: $Utils.Optional<JournalRevisionCountAggregateOutputType> | number
           }
         }
       }
@@ -4234,6 +4372,80 @@ export namespace Prisma {
           count: {
             args: Prisma.SleepLogCountArgs<ExtArgs>
             result: $Utils.Optional<SleepLogCountAggregateOutputType> | number
+          }
+        }
+      }
+      SleepSession: {
+        payload: Prisma.$SleepSessionPayload<ExtArgs>
+        fields: Prisma.SleepSessionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SleepSessionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SleepSessionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>
+          }
+          findFirst: {
+            args: Prisma.SleepSessionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SleepSessionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>
+          }
+          findMany: {
+            args: Prisma.SleepSessionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>[]
+          }
+          create: {
+            args: Prisma.SleepSessionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>
+          }
+          createMany: {
+            args: Prisma.SleepSessionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.SleepSessionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>[]
+          }
+          delete: {
+            args: Prisma.SleepSessionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>
+          }
+          update: {
+            args: Prisma.SleepSessionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>
+          }
+          deleteMany: {
+            args: Prisma.SleepSessionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SleepSessionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.SleepSessionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>[]
+          }
+          upsert: {
+            args: Prisma.SleepSessionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SleepSessionPayload>
+          }
+          aggregate: {
+            args: Prisma.SleepSessionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSleepSession>
+          }
+          groupBy: {
+            args: Prisma.SleepSessionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SleepSessionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SleepSessionCountArgs<ExtArgs>
+            result: $Utils.Optional<SleepSessionCountAggregateOutputType> | number
           }
         }
       }
@@ -7036,6 +7248,7 @@ export namespace Prisma {
     goalTag?: GoalTagOmit
     taskTag?: TaskTagOmit
     journalEntryTag?: JournalEntryTagOmit
+    journalRevision?: JournalRevisionOmit
     routineTemplate?: RoutineTemplateOmit
     routineBlock?: RoutineBlockOmit
     routineException?: RoutineExceptionOmit
@@ -7052,6 +7265,7 @@ export namespace Prisma {
     task?: TaskOmit
     taskDependency?: TaskDependencyOmit
     sleepLog?: SleepLogOmit
+    sleepSession?: SleepSessionOmit
     moodLog?: MoodLogOmit
     energyLog?: EnergyLogOmit
     weatherLog?: WeatherLogOmit
@@ -7183,12 +7397,14 @@ export namespace Prisma {
     projects: number
     tasks: number
     sleepLogs: number
+    sleepSessions: number
     moodLogs: number
     energyLogs: number
     weatherLogs: number
     healthMetrics: number
     nutritionEntries: number
     journalEntries: number
+    journalRevisions: number
     dailyReflections: number
     focusSessions: number
     breaks: number
@@ -7238,12 +7454,14 @@ export namespace Prisma {
     projects?: boolean | UserCountOutputTypeCountProjectsArgs
     tasks?: boolean | UserCountOutputTypeCountTasksArgs
     sleepLogs?: boolean | UserCountOutputTypeCountSleepLogsArgs
+    sleepSessions?: boolean | UserCountOutputTypeCountSleepSessionsArgs
     moodLogs?: boolean | UserCountOutputTypeCountMoodLogsArgs
     energyLogs?: boolean | UserCountOutputTypeCountEnergyLogsArgs
     weatherLogs?: boolean | UserCountOutputTypeCountWeatherLogsArgs
     healthMetrics?: boolean | UserCountOutputTypeCountHealthMetricsArgs
     nutritionEntries?: boolean | UserCountOutputTypeCountNutritionEntriesArgs
     journalEntries?: boolean | UserCountOutputTypeCountJournalEntriesArgs
+    journalRevisions?: boolean | UserCountOutputTypeCountJournalRevisionsArgs
     dailyReflections?: boolean | UserCountOutputTypeCountDailyReflectionsArgs
     focusSessions?: boolean | UserCountOutputTypeCountFocusSessionsArgs
     breaks?: boolean | UserCountOutputTypeCountBreaksArgs
@@ -7396,6 +7614,13 @@ export namespace Prisma {
   /**
    * UserCountOutputType without action
    */
+  export type UserCountOutputTypeCountSleepSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SleepSessionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
   export type UserCountOutputTypeCountMoodLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: MoodLogWhereInput
   }
@@ -7433,6 +7658,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountJournalEntriesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: JournalEntryWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountJournalRevisionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: JournalRevisionWhereInput
   }
 
   /**
@@ -8127,10 +8359,12 @@ export namespace Prisma {
 
   export type JournalEntryCountOutputType = {
     tags: number
+    revisions: number
   }
 
   export type JournalEntryCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tags?: boolean | JournalEntryCountOutputTypeCountTagsArgs
+    revisions?: boolean | JournalEntryCountOutputTypeCountRevisionsArgs
   }
 
   // Custom InputTypes
@@ -8149,6 +8383,13 @@ export namespace Prisma {
    */
   export type JournalEntryCountOutputTypeCountTagsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: JournalEntryTagWhereInput
+  }
+
+  /**
+   * JournalEntryCountOutputType without action
+   */
+  export type JournalEntryCountOutputTypeCountRevisionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: JournalRevisionWhereInput
   }
 
 
@@ -8597,12 +8838,14 @@ export namespace Prisma {
     projects?: boolean | User$projectsArgs<ExtArgs>
     tasks?: boolean | User$tasksArgs<ExtArgs>
     sleepLogs?: boolean | User$sleepLogsArgs<ExtArgs>
+    sleepSessions?: boolean | User$sleepSessionsArgs<ExtArgs>
     moodLogs?: boolean | User$moodLogsArgs<ExtArgs>
     energyLogs?: boolean | User$energyLogsArgs<ExtArgs>
     weatherLogs?: boolean | User$weatherLogsArgs<ExtArgs>
     healthMetrics?: boolean | User$healthMetricsArgs<ExtArgs>
     nutritionEntries?: boolean | User$nutritionEntriesArgs<ExtArgs>
     journalEntries?: boolean | User$journalEntriesArgs<ExtArgs>
+    journalRevisions?: boolean | User$journalRevisionsArgs<ExtArgs>
     dailyReflections?: boolean | User$dailyReflectionsArgs<ExtArgs>
     focusSessions?: boolean | User$focusSessionsArgs<ExtArgs>
     breaks?: boolean | User$breaksArgs<ExtArgs>
@@ -8741,12 +8984,14 @@ export namespace Prisma {
     projects?: boolean | User$projectsArgs<ExtArgs>
     tasks?: boolean | User$tasksArgs<ExtArgs>
     sleepLogs?: boolean | User$sleepLogsArgs<ExtArgs>
+    sleepSessions?: boolean | User$sleepSessionsArgs<ExtArgs>
     moodLogs?: boolean | User$moodLogsArgs<ExtArgs>
     energyLogs?: boolean | User$energyLogsArgs<ExtArgs>
     weatherLogs?: boolean | User$weatherLogsArgs<ExtArgs>
     healthMetrics?: boolean | User$healthMetricsArgs<ExtArgs>
     nutritionEntries?: boolean | User$nutritionEntriesArgs<ExtArgs>
     journalEntries?: boolean | User$journalEntriesArgs<ExtArgs>
+    journalRevisions?: boolean | User$journalRevisionsArgs<ExtArgs>
     dailyReflections?: boolean | User$dailyReflectionsArgs<ExtArgs>
     focusSessions?: boolean | User$focusSessionsArgs<ExtArgs>
     breaks?: boolean | User$breaksArgs<ExtArgs>
@@ -8804,12 +9049,14 @@ export namespace Prisma {
       projects: Prisma.$ProjectPayload<ExtArgs>[]
       tasks: Prisma.$TaskPayload<ExtArgs>[]
       sleepLogs: Prisma.$SleepLogPayload<ExtArgs>[]
+      sleepSessions: Prisma.$SleepSessionPayload<ExtArgs>[]
       moodLogs: Prisma.$MoodLogPayload<ExtArgs>[]
       energyLogs: Prisma.$EnergyLogPayload<ExtArgs>[]
       weatherLogs: Prisma.$WeatherLogPayload<ExtArgs>[]
       healthMetrics: Prisma.$HealthMetricPayload<ExtArgs>[]
       nutritionEntries: Prisma.$NutritionEntryPayload<ExtArgs>[]
       journalEntries: Prisma.$JournalEntryPayload<ExtArgs>[]
+      journalRevisions: Prisma.$JournalRevisionPayload<ExtArgs>[]
       dailyReflections: Prisma.$DailyReflectionPayload<ExtArgs>[]
       focusSessions: Prisma.$FocusSessionPayload<ExtArgs>[]
       breaks: Prisma.$BreakPayload<ExtArgs>[]
@@ -9280,12 +9527,14 @@ export namespace Prisma {
     projects<T extends User$projectsArgs<ExtArgs> = {}>(args?: Subset<T, User$projectsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tasks<T extends User$tasksArgs<ExtArgs> = {}>(args?: Subset<T, User$tasksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     sleepLogs<T extends User$sleepLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$sleepLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SleepLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    sleepSessions<T extends User$sleepSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$sleepSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     moodLogs<T extends User$moodLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$moodLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MoodLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     energyLogs<T extends User$energyLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$energyLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$EnergyLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     weatherLogs<T extends User$weatherLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$weatherLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WeatherLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     healthMetrics<T extends User$healthMetricsArgs<ExtArgs> = {}>(args?: Subset<T, User$healthMetricsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HealthMetricPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     nutritionEntries<T extends User$nutritionEntriesArgs<ExtArgs> = {}>(args?: Subset<T, User$nutritionEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$NutritionEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     journalEntries<T extends User$journalEntriesArgs<ExtArgs> = {}>(args?: Subset<T, User$journalEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    journalRevisions<T extends User$journalRevisionsArgs<ExtArgs> = {}>(args?: Subset<T, User$journalRevisionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     dailyReflections<T extends User$dailyReflectionsArgs<ExtArgs> = {}>(args?: Subset<T, User$dailyReflectionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DailyReflectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     focusSessions<T extends User$focusSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$focusSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FocusSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     breaks<T extends User$breaksArgs<ExtArgs> = {}>(args?: Subset<T, User$breaksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$BreakPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -10163,6 +10412,30 @@ export namespace Prisma {
   }
 
   /**
+   * User.sleepSessions
+   */
+  export type User$sleepSessionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    where?: SleepSessionWhereInput
+    orderBy?: SleepSessionOrderByWithRelationInput | SleepSessionOrderByWithRelationInput[]
+    cursor?: SleepSessionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: SleepSessionScalarFieldEnum | SleepSessionScalarFieldEnum[]
+  }
+
+  /**
    * User.moodLogs
    */
   export type User$moodLogsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -10304,6 +10577,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: JournalEntryScalarFieldEnum | JournalEntryScalarFieldEnum[]
+  }
+
+  /**
+   * User.journalRevisions
+   */
+  export type User$journalRevisionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    where?: JournalRevisionWhereInput
+    orderBy?: JournalRevisionOrderByWithRelationInput | JournalRevisionOrderByWithRelationInput[]
+    cursor?: JournalRevisionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: JournalRevisionScalarFieldEnum | JournalRevisionScalarFieldEnum[]
   }
 
   /**
@@ -13432,6 +13729,8 @@ export namespace Prisma {
   export type UserSettingsAvgAggregateOutputType = {
     weekStartsOn: number | null
     minSleepDuration: number | null
+    autoStartSleepAfterMinutes: number | null
+    sleepAutoStartAfterMinutes: number | null
     weightNonNeg: number | null
     weightGrowth: number | null
     weightBonus: number | null
@@ -13443,6 +13742,8 @@ export namespace Prisma {
   export type UserSettingsSumAggregateOutputType = {
     weekStartsOn: number | null
     minSleepDuration: number | null
+    autoStartSleepAfterMinutes: number | null
+    sleepAutoStartAfterMinutes: number | null
     weightNonNeg: number | null
     weightGrowth: number | null
     weightBonus: number | null
@@ -13471,6 +13772,9 @@ export namespace Prisma {
     minSleepDuration: number | null
     sleepReminder: boolean | null
     sleepReminderTime: string | null
+    autoStartSleepAfterMinutes: number | null
+    sleepAutoStartEnabled: boolean | null
+    sleepAutoStartAfterMinutes: number | null
     weightNonNeg: number | null
     weightGrowth: number | null
     weightBonus: number | null
@@ -13519,6 +13823,9 @@ export namespace Prisma {
     minSleepDuration: number | null
     sleepReminder: boolean | null
     sleepReminderTime: string | null
+    autoStartSleepAfterMinutes: number | null
+    sleepAutoStartEnabled: boolean | null
+    sleepAutoStartAfterMinutes: number | null
     weightNonNeg: number | null
     weightGrowth: number | null
     weightBonus: number | null
@@ -13567,6 +13874,9 @@ export namespace Prisma {
     minSleepDuration: number
     sleepReminder: number
     sleepReminderTime: number
+    autoStartSleepAfterMinutes: number
+    sleepAutoStartEnabled: number
+    sleepAutoStartAfterMinutes: number
     weightNonNeg: number
     weightGrowth: number
     weightBonus: number
@@ -13600,6 +13910,8 @@ export namespace Prisma {
   export type UserSettingsAvgAggregateInputType = {
     weekStartsOn?: true
     minSleepDuration?: true
+    autoStartSleepAfterMinutes?: true
+    sleepAutoStartAfterMinutes?: true
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
@@ -13611,6 +13923,8 @@ export namespace Prisma {
   export type UserSettingsSumAggregateInputType = {
     weekStartsOn?: true
     minSleepDuration?: true
+    autoStartSleepAfterMinutes?: true
+    sleepAutoStartAfterMinutes?: true
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
@@ -13639,6 +13953,9 @@ export namespace Prisma {
     minSleepDuration?: true
     sleepReminder?: true
     sleepReminderTime?: true
+    autoStartSleepAfterMinutes?: true
+    sleepAutoStartEnabled?: true
+    sleepAutoStartAfterMinutes?: true
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
@@ -13687,6 +14004,9 @@ export namespace Prisma {
     minSleepDuration?: true
     sleepReminder?: true
     sleepReminderTime?: true
+    autoStartSleepAfterMinutes?: true
+    sleepAutoStartEnabled?: true
+    sleepAutoStartAfterMinutes?: true
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
@@ -13735,6 +14055,9 @@ export namespace Prisma {
     minSleepDuration?: true
     sleepReminder?: true
     sleepReminderTime?: true
+    autoStartSleepAfterMinutes?: true
+    sleepAutoStartEnabled?: true
+    sleepAutoStartAfterMinutes?: true
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
@@ -13870,6 +14193,9 @@ export namespace Prisma {
     minSleepDuration: number | null
     sleepReminder: boolean
     sleepReminderTime: string | null
+    autoStartSleepAfterMinutes: number
+    sleepAutoStartEnabled: boolean
+    sleepAutoStartAfterMinutes: number
     weightNonNeg: number
     weightGrowth: number
     weightBonus: number
@@ -13937,6 +14263,9 @@ export namespace Prisma {
     minSleepDuration?: boolean
     sleepReminder?: boolean
     sleepReminderTime?: boolean
+    autoStartSleepAfterMinutes?: boolean
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: boolean
     weightNonNeg?: boolean
     weightGrowth?: boolean
     weightBonus?: boolean
@@ -13986,6 +14315,9 @@ export namespace Prisma {
     minSleepDuration?: boolean
     sleepReminder?: boolean
     sleepReminderTime?: boolean
+    autoStartSleepAfterMinutes?: boolean
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: boolean
     weightNonNeg?: boolean
     weightGrowth?: boolean
     weightBonus?: boolean
@@ -14035,6 +14367,9 @@ export namespace Prisma {
     minSleepDuration?: boolean
     sleepReminder?: boolean
     sleepReminderTime?: boolean
+    autoStartSleepAfterMinutes?: boolean
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: boolean
     weightNonNeg?: boolean
     weightGrowth?: boolean
     weightBonus?: boolean
@@ -14084,6 +14419,9 @@ export namespace Prisma {
     minSleepDuration?: boolean
     sleepReminder?: boolean
     sleepReminderTime?: boolean
+    autoStartSleepAfterMinutes?: boolean
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: boolean
     weightNonNeg?: boolean
     weightGrowth?: boolean
     weightBonus?: boolean
@@ -14112,7 +14450,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
+  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
   export type UserSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -14148,6 +14486,9 @@ export namespace Prisma {
       minSleepDuration: number | null
       sleepReminder: boolean
       sleepReminderTime: string | null
+      autoStartSleepAfterMinutes: number
+      sleepAutoStartEnabled: boolean
+      sleepAutoStartAfterMinutes: number
       weightNonNeg: number
       weightGrowth: number
       weightBonus: number
@@ -14617,6 +14958,9 @@ export namespace Prisma {
     readonly minSleepDuration: FieldRef<"UserSettings", 'Int'>
     readonly sleepReminder: FieldRef<"UserSettings", 'Boolean'>
     readonly sleepReminderTime: FieldRef<"UserSettings", 'String'>
+    readonly autoStartSleepAfterMinutes: FieldRef<"UserSettings", 'Int'>
+    readonly sleepAutoStartEnabled: FieldRef<"UserSettings", 'Boolean'>
+    readonly sleepAutoStartAfterMinutes: FieldRef<"UserSettings", 'Int'>
     readonly weightNonNeg: FieldRef<"UserSettings", 'Float'>
     readonly weightGrowth: FieldRef<"UserSettings", 'Float'>
     readonly weightBonus: FieldRef<"UserSettings", 'Float'>
@@ -23896,6 +24240,1090 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: JournalEntryTagInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model JournalRevision
+   */
+
+  export type AggregateJournalRevision = {
+    _count: JournalRevisionCountAggregateOutputType | null
+    _min: JournalRevisionMinAggregateOutputType | null
+    _max: JournalRevisionMaxAggregateOutputType | null
+  }
+
+  export type JournalRevisionMinAggregateOutputType = {
+    id: string | null
+    entryId: string | null
+    userId: string | null
+    title: string | null
+    content: string | null
+    createdAt: Date | null
+  }
+
+  export type JournalRevisionMaxAggregateOutputType = {
+    id: string | null
+    entryId: string | null
+    userId: string | null
+    title: string | null
+    content: string | null
+    createdAt: Date | null
+  }
+
+  export type JournalRevisionCountAggregateOutputType = {
+    id: number
+    entryId: number
+    userId: number
+    title: number
+    content: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type JournalRevisionMinAggregateInputType = {
+    id?: true
+    entryId?: true
+    userId?: true
+    title?: true
+    content?: true
+    createdAt?: true
+  }
+
+  export type JournalRevisionMaxAggregateInputType = {
+    id?: true
+    entryId?: true
+    userId?: true
+    title?: true
+    content?: true
+    createdAt?: true
+  }
+
+  export type JournalRevisionCountAggregateInputType = {
+    id?: true
+    entryId?: true
+    userId?: true
+    title?: true
+    content?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type JournalRevisionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which JournalRevision to aggregate.
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of JournalRevisions to fetch.
+     */
+    orderBy?: JournalRevisionOrderByWithRelationInput | JournalRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: JournalRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` JournalRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` JournalRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned JournalRevisions
+    **/
+    _count?: true | JournalRevisionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: JournalRevisionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: JournalRevisionMaxAggregateInputType
+  }
+
+  export type GetJournalRevisionAggregateType<T extends JournalRevisionAggregateArgs> = {
+        [P in keyof T & keyof AggregateJournalRevision]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateJournalRevision[P]>
+      : GetScalarType<T[P], AggregateJournalRevision[P]>
+  }
+
+
+
+
+  export type JournalRevisionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: JournalRevisionWhereInput
+    orderBy?: JournalRevisionOrderByWithAggregationInput | JournalRevisionOrderByWithAggregationInput[]
+    by: JournalRevisionScalarFieldEnum[] | JournalRevisionScalarFieldEnum
+    having?: JournalRevisionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: JournalRevisionCountAggregateInputType | true
+    _min?: JournalRevisionMinAggregateInputType
+    _max?: JournalRevisionMaxAggregateInputType
+  }
+
+  export type JournalRevisionGroupByOutputType = {
+    id: string
+    entryId: string
+    userId: string
+    title: string | null
+    content: string
+    createdAt: Date
+    _count: JournalRevisionCountAggregateOutputType | null
+    _min: JournalRevisionMinAggregateOutputType | null
+    _max: JournalRevisionMaxAggregateOutputType | null
+  }
+
+  type GetJournalRevisionGroupByPayload<T extends JournalRevisionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<JournalRevisionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof JournalRevisionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], JournalRevisionGroupByOutputType[P]>
+            : GetScalarType<T[P], JournalRevisionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type JournalRevisionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    entryId?: boolean
+    userId?: boolean
+    title?: boolean
+    content?: boolean
+    createdAt?: boolean
+    entry?: boolean | JournalEntryDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["journalRevision"]>
+
+  export type JournalRevisionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    entryId?: boolean
+    userId?: boolean
+    title?: boolean
+    content?: boolean
+    createdAt?: boolean
+    entry?: boolean | JournalEntryDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["journalRevision"]>
+
+  export type JournalRevisionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    entryId?: boolean
+    userId?: boolean
+    title?: boolean
+    content?: boolean
+    createdAt?: boolean
+    entry?: boolean | JournalEntryDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["journalRevision"]>
+
+  export type JournalRevisionSelectScalar = {
+    id?: boolean
+    entryId?: boolean
+    userId?: boolean
+    title?: boolean
+    content?: boolean
+    createdAt?: boolean
+  }
+
+  export type JournalRevisionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "entryId" | "userId" | "title" | "content" | "createdAt", ExtArgs["result"]["journalRevision"]>
+  export type JournalRevisionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    entry?: boolean | JournalEntryDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type JournalRevisionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    entry?: boolean | JournalEntryDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type JournalRevisionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    entry?: boolean | JournalEntryDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $JournalRevisionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "JournalRevision"
+    objects: {
+      entry: Prisma.$JournalEntryPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      entryId: string
+      userId: string
+      title: string | null
+      content: string
+      createdAt: Date
+    }, ExtArgs["result"]["journalRevision"]>
+    composites: {}
+  }
+
+  type JournalRevisionGetPayload<S extends boolean | null | undefined | JournalRevisionDefaultArgs> = $Result.GetResult<Prisma.$JournalRevisionPayload, S>
+
+  type JournalRevisionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<JournalRevisionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: JournalRevisionCountAggregateInputType | true
+    }
+
+  export interface JournalRevisionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['JournalRevision'], meta: { name: 'JournalRevision' } }
+    /**
+     * Find zero or one JournalRevision that matches the filter.
+     * @param {JournalRevisionFindUniqueArgs} args - Arguments to find a JournalRevision
+     * @example
+     * // Get one JournalRevision
+     * const journalRevision = await prisma.journalRevision.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends JournalRevisionFindUniqueArgs>(args: SelectSubset<T, JournalRevisionFindUniqueArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one JournalRevision that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {JournalRevisionFindUniqueOrThrowArgs} args - Arguments to find a JournalRevision
+     * @example
+     * // Get one JournalRevision
+     * const journalRevision = await prisma.journalRevision.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends JournalRevisionFindUniqueOrThrowArgs>(args: SelectSubset<T, JournalRevisionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first JournalRevision that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionFindFirstArgs} args - Arguments to find a JournalRevision
+     * @example
+     * // Get one JournalRevision
+     * const journalRevision = await prisma.journalRevision.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends JournalRevisionFindFirstArgs>(args?: SelectSubset<T, JournalRevisionFindFirstArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first JournalRevision that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionFindFirstOrThrowArgs} args - Arguments to find a JournalRevision
+     * @example
+     * // Get one JournalRevision
+     * const journalRevision = await prisma.journalRevision.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends JournalRevisionFindFirstOrThrowArgs>(args?: SelectSubset<T, JournalRevisionFindFirstOrThrowArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more JournalRevisions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all JournalRevisions
+     * const journalRevisions = await prisma.journalRevision.findMany()
+     * 
+     * // Get first 10 JournalRevisions
+     * const journalRevisions = await prisma.journalRevision.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const journalRevisionWithIdOnly = await prisma.journalRevision.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends JournalRevisionFindManyArgs>(args?: SelectSubset<T, JournalRevisionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a JournalRevision.
+     * @param {JournalRevisionCreateArgs} args - Arguments to create a JournalRevision.
+     * @example
+     * // Create one JournalRevision
+     * const JournalRevision = await prisma.journalRevision.create({
+     *   data: {
+     *     // ... data to create a JournalRevision
+     *   }
+     * })
+     * 
+     */
+    create<T extends JournalRevisionCreateArgs>(args: SelectSubset<T, JournalRevisionCreateArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many JournalRevisions.
+     * @param {JournalRevisionCreateManyArgs} args - Arguments to create many JournalRevisions.
+     * @example
+     * // Create many JournalRevisions
+     * const journalRevision = await prisma.journalRevision.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends JournalRevisionCreateManyArgs>(args?: SelectSubset<T, JournalRevisionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many JournalRevisions and returns the data saved in the database.
+     * @param {JournalRevisionCreateManyAndReturnArgs} args - Arguments to create many JournalRevisions.
+     * @example
+     * // Create many JournalRevisions
+     * const journalRevision = await prisma.journalRevision.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many JournalRevisions and only return the `id`
+     * const journalRevisionWithIdOnly = await prisma.journalRevision.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends JournalRevisionCreateManyAndReturnArgs>(args?: SelectSubset<T, JournalRevisionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a JournalRevision.
+     * @param {JournalRevisionDeleteArgs} args - Arguments to delete one JournalRevision.
+     * @example
+     * // Delete one JournalRevision
+     * const JournalRevision = await prisma.journalRevision.delete({
+     *   where: {
+     *     // ... filter to delete one JournalRevision
+     *   }
+     * })
+     * 
+     */
+    delete<T extends JournalRevisionDeleteArgs>(args: SelectSubset<T, JournalRevisionDeleteArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one JournalRevision.
+     * @param {JournalRevisionUpdateArgs} args - Arguments to update one JournalRevision.
+     * @example
+     * // Update one JournalRevision
+     * const journalRevision = await prisma.journalRevision.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends JournalRevisionUpdateArgs>(args: SelectSubset<T, JournalRevisionUpdateArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more JournalRevisions.
+     * @param {JournalRevisionDeleteManyArgs} args - Arguments to filter JournalRevisions to delete.
+     * @example
+     * // Delete a few JournalRevisions
+     * const { count } = await prisma.journalRevision.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends JournalRevisionDeleteManyArgs>(args?: SelectSubset<T, JournalRevisionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more JournalRevisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many JournalRevisions
+     * const journalRevision = await prisma.journalRevision.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends JournalRevisionUpdateManyArgs>(args: SelectSubset<T, JournalRevisionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more JournalRevisions and returns the data updated in the database.
+     * @param {JournalRevisionUpdateManyAndReturnArgs} args - Arguments to update many JournalRevisions.
+     * @example
+     * // Update many JournalRevisions
+     * const journalRevision = await prisma.journalRevision.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more JournalRevisions and only return the `id`
+     * const journalRevisionWithIdOnly = await prisma.journalRevision.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends JournalRevisionUpdateManyAndReturnArgs>(args: SelectSubset<T, JournalRevisionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one JournalRevision.
+     * @param {JournalRevisionUpsertArgs} args - Arguments to update or create a JournalRevision.
+     * @example
+     * // Update or create a JournalRevision
+     * const journalRevision = await prisma.journalRevision.upsert({
+     *   create: {
+     *     // ... data to create a JournalRevision
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the JournalRevision we want to update
+     *   }
+     * })
+     */
+    upsert<T extends JournalRevisionUpsertArgs>(args: SelectSubset<T, JournalRevisionUpsertArgs<ExtArgs>>): Prisma__JournalRevisionClient<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of JournalRevisions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionCountArgs} args - Arguments to filter JournalRevisions to count.
+     * @example
+     * // Count the number of JournalRevisions
+     * const count = await prisma.journalRevision.count({
+     *   where: {
+     *     // ... the filter for the JournalRevisions we want to count
+     *   }
+     * })
+    **/
+    count<T extends JournalRevisionCountArgs>(
+      args?: Subset<T, JournalRevisionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], JournalRevisionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a JournalRevision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends JournalRevisionAggregateArgs>(args: Subset<T, JournalRevisionAggregateArgs>): Prisma.PrismaPromise<GetJournalRevisionAggregateType<T>>
+
+    /**
+     * Group by JournalRevision.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {JournalRevisionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends JournalRevisionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: JournalRevisionGroupByArgs['orderBy'] }
+        : { orderBy?: JournalRevisionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, JournalRevisionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetJournalRevisionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the JournalRevision model
+   */
+  readonly fields: JournalRevisionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for JournalRevision.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__JournalRevisionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    entry<T extends JournalEntryDefaultArgs<ExtArgs> = {}>(args?: Subset<T, JournalEntryDefaultArgs<ExtArgs>>): Prisma__JournalEntryClient<$Result.GetResult<Prisma.$JournalEntryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the JournalRevision model
+   */
+  interface JournalRevisionFieldRefs {
+    readonly id: FieldRef<"JournalRevision", 'String'>
+    readonly entryId: FieldRef<"JournalRevision", 'String'>
+    readonly userId: FieldRef<"JournalRevision", 'String'>
+    readonly title: FieldRef<"JournalRevision", 'String'>
+    readonly content: FieldRef<"JournalRevision", 'String'>
+    readonly createdAt: FieldRef<"JournalRevision", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * JournalRevision findUnique
+   */
+  export type JournalRevisionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which JournalRevision to fetch.
+     */
+    where: JournalRevisionWhereUniqueInput
+  }
+
+  /**
+   * JournalRevision findUniqueOrThrow
+   */
+  export type JournalRevisionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which JournalRevision to fetch.
+     */
+    where: JournalRevisionWhereUniqueInput
+  }
+
+  /**
+   * JournalRevision findFirst
+   */
+  export type JournalRevisionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which JournalRevision to fetch.
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of JournalRevisions to fetch.
+     */
+    orderBy?: JournalRevisionOrderByWithRelationInput | JournalRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for JournalRevisions.
+     */
+    cursor?: JournalRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` JournalRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` JournalRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of JournalRevisions.
+     */
+    distinct?: JournalRevisionScalarFieldEnum | JournalRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * JournalRevision findFirstOrThrow
+   */
+  export type JournalRevisionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which JournalRevision to fetch.
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of JournalRevisions to fetch.
+     */
+    orderBy?: JournalRevisionOrderByWithRelationInput | JournalRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for JournalRevisions.
+     */
+    cursor?: JournalRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` JournalRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` JournalRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of JournalRevisions.
+     */
+    distinct?: JournalRevisionScalarFieldEnum | JournalRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * JournalRevision findMany
+   */
+  export type JournalRevisionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * Filter, which JournalRevisions to fetch.
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of JournalRevisions to fetch.
+     */
+    orderBy?: JournalRevisionOrderByWithRelationInput | JournalRevisionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing JournalRevisions.
+     */
+    cursor?: JournalRevisionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` JournalRevisions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` JournalRevisions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of JournalRevisions.
+     */
+    distinct?: JournalRevisionScalarFieldEnum | JournalRevisionScalarFieldEnum[]
+  }
+
+  /**
+   * JournalRevision create
+   */
+  export type JournalRevisionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a JournalRevision.
+     */
+    data: XOR<JournalRevisionCreateInput, JournalRevisionUncheckedCreateInput>
+  }
+
+  /**
+   * JournalRevision createMany
+   */
+  export type JournalRevisionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many JournalRevisions.
+     */
+    data: JournalRevisionCreateManyInput | JournalRevisionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * JournalRevision createManyAndReturn
+   */
+  export type JournalRevisionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * The data used to create many JournalRevisions.
+     */
+    data: JournalRevisionCreateManyInput | JournalRevisionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * JournalRevision update
+   */
+  export type JournalRevisionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a JournalRevision.
+     */
+    data: XOR<JournalRevisionUpdateInput, JournalRevisionUncheckedUpdateInput>
+    /**
+     * Choose, which JournalRevision to update.
+     */
+    where: JournalRevisionWhereUniqueInput
+  }
+
+  /**
+   * JournalRevision updateMany
+   */
+  export type JournalRevisionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update JournalRevisions.
+     */
+    data: XOR<JournalRevisionUpdateManyMutationInput, JournalRevisionUncheckedUpdateManyInput>
+    /**
+     * Filter which JournalRevisions to update
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * Limit how many JournalRevisions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * JournalRevision updateManyAndReturn
+   */
+  export type JournalRevisionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * The data used to update JournalRevisions.
+     */
+    data: XOR<JournalRevisionUpdateManyMutationInput, JournalRevisionUncheckedUpdateManyInput>
+    /**
+     * Filter which JournalRevisions to update
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * Limit how many JournalRevisions to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * JournalRevision upsert
+   */
+  export type JournalRevisionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the JournalRevision to update in case it exists.
+     */
+    where: JournalRevisionWhereUniqueInput
+    /**
+     * In case the JournalRevision found by the `where` argument doesn't exist, create a new JournalRevision with this data.
+     */
+    create: XOR<JournalRevisionCreateInput, JournalRevisionUncheckedCreateInput>
+    /**
+     * In case the JournalRevision was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<JournalRevisionUpdateInput, JournalRevisionUncheckedUpdateInput>
+  }
+
+  /**
+   * JournalRevision delete
+   */
+  export type JournalRevisionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    /**
+     * Filter which JournalRevision to delete.
+     */
+    where: JournalRevisionWhereUniqueInput
+  }
+
+  /**
+   * JournalRevision deleteMany
+   */
+  export type JournalRevisionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which JournalRevisions to delete
+     */
+    where?: JournalRevisionWhereInput
+    /**
+     * Limit how many JournalRevisions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * JournalRevision without action
+   */
+  export type JournalRevisionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
   }
 
 
@@ -43967,6 +45395,1168 @@ export namespace Prisma {
 
 
   /**
+   * Model SleepSession
+   */
+
+  export type AggregateSleepSession = {
+    _count: SleepSessionCountAggregateOutputType | null
+    _avg: SleepSessionAvgAggregateOutputType | null
+    _sum: SleepSessionSumAggregateOutputType | null
+    _min: SleepSessionMinAggregateOutputType | null
+    _max: SleepSessionMaxAggregateOutputType | null
+  }
+
+  export type SleepSessionAvgAggregateOutputType = {
+    durationMinutes: number | null
+  }
+
+  export type SleepSessionSumAggregateOutputType = {
+    durationMinutes: number | null
+  }
+
+  export type SleepSessionMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    startedAt: Date | null
+    endedAt: Date | null
+    status: $Enums.SleepSessionStatus | null
+    source: $Enums.SleepStartSource | null
+    promptKey: string | null
+    durationMinutes: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SleepSessionMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    startedAt: Date | null
+    endedAt: Date | null
+    status: $Enums.SleepSessionStatus | null
+    source: $Enums.SleepStartSource | null
+    promptKey: string | null
+    durationMinutes: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type SleepSessionCountAggregateOutputType = {
+    id: number
+    userId: number
+    startedAt: number
+    endedAt: number
+    status: number
+    source: number
+    promptKey: number
+    durationMinutes: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SleepSessionAvgAggregateInputType = {
+    durationMinutes?: true
+  }
+
+  export type SleepSessionSumAggregateInputType = {
+    durationMinutes?: true
+  }
+
+  export type SleepSessionMinAggregateInputType = {
+    id?: true
+    userId?: true
+    startedAt?: true
+    endedAt?: true
+    status?: true
+    source?: true
+    promptKey?: true
+    durationMinutes?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SleepSessionMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    startedAt?: true
+    endedAt?: true
+    status?: true
+    source?: true
+    promptKey?: true
+    durationMinutes?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type SleepSessionCountAggregateInputType = {
+    id?: true
+    userId?: true
+    startedAt?: true
+    endedAt?: true
+    status?: true
+    source?: true
+    promptKey?: true
+    durationMinutes?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SleepSessionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SleepSession to aggregate.
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SleepSessions to fetch.
+     */
+    orderBy?: SleepSessionOrderByWithRelationInput | SleepSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SleepSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SleepSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SleepSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SleepSessions
+    **/
+    _count?: true | SleepSessionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SleepSessionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SleepSessionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SleepSessionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SleepSessionMaxAggregateInputType
+  }
+
+  export type GetSleepSessionAggregateType<T extends SleepSessionAggregateArgs> = {
+        [P in keyof T & keyof AggregateSleepSession]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSleepSession[P]>
+      : GetScalarType<T[P], AggregateSleepSession[P]>
+  }
+
+
+
+
+  export type SleepSessionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SleepSessionWhereInput
+    orderBy?: SleepSessionOrderByWithAggregationInput | SleepSessionOrderByWithAggregationInput[]
+    by: SleepSessionScalarFieldEnum[] | SleepSessionScalarFieldEnum
+    having?: SleepSessionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SleepSessionCountAggregateInputType | true
+    _avg?: SleepSessionAvgAggregateInputType
+    _sum?: SleepSessionSumAggregateInputType
+    _min?: SleepSessionMinAggregateInputType
+    _max?: SleepSessionMaxAggregateInputType
+  }
+
+  export type SleepSessionGroupByOutputType = {
+    id: string
+    userId: string
+    startedAt: Date
+    endedAt: Date | null
+    status: $Enums.SleepSessionStatus
+    source: $Enums.SleepStartSource
+    promptKey: string | null
+    durationMinutes: number | null
+    createdAt: Date
+    updatedAt: Date
+    _count: SleepSessionCountAggregateOutputType | null
+    _avg: SleepSessionAvgAggregateOutputType | null
+    _sum: SleepSessionSumAggregateOutputType | null
+    _min: SleepSessionMinAggregateOutputType | null
+    _max: SleepSessionMaxAggregateOutputType | null
+  }
+
+  type GetSleepSessionGroupByPayload<T extends SleepSessionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SleepSessionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SleepSessionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SleepSessionGroupByOutputType[P]>
+            : GetScalarType<T[P], SleepSessionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SleepSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    startedAt?: boolean
+    endedAt?: boolean
+    status?: boolean
+    source?: boolean
+    promptKey?: boolean
+    durationMinutes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["sleepSession"]>
+
+  export type SleepSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    startedAt?: boolean
+    endedAt?: boolean
+    status?: boolean
+    source?: boolean
+    promptKey?: boolean
+    durationMinutes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["sleepSession"]>
+
+  export type SleepSessionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    startedAt?: boolean
+    endedAt?: boolean
+    status?: boolean
+    source?: boolean
+    promptKey?: boolean
+    durationMinutes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["sleepSession"]>
+
+  export type SleepSessionSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    startedAt?: boolean
+    endedAt?: boolean
+    status?: boolean
+    source?: boolean
+    promptKey?: boolean
+    durationMinutes?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SleepSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "startedAt" | "endedAt" | "status" | "source" | "promptKey" | "durationMinutes" | "createdAt" | "updatedAt", ExtArgs["result"]["sleepSession"]>
+  export type SleepSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type SleepSessionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type SleepSessionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $SleepSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SleepSession"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      startedAt: Date
+      endedAt: Date | null
+      status: $Enums.SleepSessionStatus
+      source: $Enums.SleepStartSource
+      promptKey: string | null
+      durationMinutes: number | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["sleepSession"]>
+    composites: {}
+  }
+
+  type SleepSessionGetPayload<S extends boolean | null | undefined | SleepSessionDefaultArgs> = $Result.GetResult<Prisma.$SleepSessionPayload, S>
+
+  type SleepSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SleepSessionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SleepSessionCountAggregateInputType | true
+    }
+
+  export interface SleepSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SleepSession'], meta: { name: 'SleepSession' } }
+    /**
+     * Find zero or one SleepSession that matches the filter.
+     * @param {SleepSessionFindUniqueArgs} args - Arguments to find a SleepSession
+     * @example
+     * // Get one SleepSession
+     * const sleepSession = await prisma.sleepSession.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SleepSessionFindUniqueArgs>(args: SelectSubset<T, SleepSessionFindUniqueArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SleepSession that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SleepSessionFindUniqueOrThrowArgs} args - Arguments to find a SleepSession
+     * @example
+     * // Get one SleepSession
+     * const sleepSession = await prisma.sleepSession.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SleepSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, SleepSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SleepSession that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionFindFirstArgs} args - Arguments to find a SleepSession
+     * @example
+     * // Get one SleepSession
+     * const sleepSession = await prisma.sleepSession.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SleepSessionFindFirstArgs>(args?: SelectSubset<T, SleepSessionFindFirstArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SleepSession that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionFindFirstOrThrowArgs} args - Arguments to find a SleepSession
+     * @example
+     * // Get one SleepSession
+     * const sleepSession = await prisma.sleepSession.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SleepSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, SleepSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SleepSessions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SleepSessions
+     * const sleepSessions = await prisma.sleepSession.findMany()
+     * 
+     * // Get first 10 SleepSessions
+     * const sleepSessions = await prisma.sleepSession.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const sleepSessionWithIdOnly = await prisma.sleepSession.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SleepSessionFindManyArgs>(args?: SelectSubset<T, SleepSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SleepSession.
+     * @param {SleepSessionCreateArgs} args - Arguments to create a SleepSession.
+     * @example
+     * // Create one SleepSession
+     * const SleepSession = await prisma.sleepSession.create({
+     *   data: {
+     *     // ... data to create a SleepSession
+     *   }
+     * })
+     * 
+     */
+    create<T extends SleepSessionCreateArgs>(args: SelectSubset<T, SleepSessionCreateArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SleepSessions.
+     * @param {SleepSessionCreateManyArgs} args - Arguments to create many SleepSessions.
+     * @example
+     * // Create many SleepSessions
+     * const sleepSession = await prisma.sleepSession.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SleepSessionCreateManyArgs>(args?: SelectSubset<T, SleepSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many SleepSessions and returns the data saved in the database.
+     * @param {SleepSessionCreateManyAndReturnArgs} args - Arguments to create many SleepSessions.
+     * @example
+     * // Create many SleepSessions
+     * const sleepSession = await prisma.sleepSession.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many SleepSessions and only return the `id`
+     * const sleepSessionWithIdOnly = await prisma.sleepSession.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends SleepSessionCreateManyAndReturnArgs>(args?: SelectSubset<T, SleepSessionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a SleepSession.
+     * @param {SleepSessionDeleteArgs} args - Arguments to delete one SleepSession.
+     * @example
+     * // Delete one SleepSession
+     * const SleepSession = await prisma.sleepSession.delete({
+     *   where: {
+     *     // ... filter to delete one SleepSession
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SleepSessionDeleteArgs>(args: SelectSubset<T, SleepSessionDeleteArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SleepSession.
+     * @param {SleepSessionUpdateArgs} args - Arguments to update one SleepSession.
+     * @example
+     * // Update one SleepSession
+     * const sleepSession = await prisma.sleepSession.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SleepSessionUpdateArgs>(args: SelectSubset<T, SleepSessionUpdateArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SleepSessions.
+     * @param {SleepSessionDeleteManyArgs} args - Arguments to filter SleepSessions to delete.
+     * @example
+     * // Delete a few SleepSessions
+     * const { count } = await prisma.sleepSession.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SleepSessionDeleteManyArgs>(args?: SelectSubset<T, SleepSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SleepSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SleepSessions
+     * const sleepSession = await prisma.sleepSession.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SleepSessionUpdateManyArgs>(args: SelectSubset<T, SleepSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SleepSessions and returns the data updated in the database.
+     * @param {SleepSessionUpdateManyAndReturnArgs} args - Arguments to update many SleepSessions.
+     * @example
+     * // Update many SleepSessions
+     * const sleepSession = await prisma.sleepSession.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more SleepSessions and only return the `id`
+     * const sleepSessionWithIdOnly = await prisma.sleepSession.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends SleepSessionUpdateManyAndReturnArgs>(args: SelectSubset<T, SleepSessionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one SleepSession.
+     * @param {SleepSessionUpsertArgs} args - Arguments to update or create a SleepSession.
+     * @example
+     * // Update or create a SleepSession
+     * const sleepSession = await prisma.sleepSession.upsert({
+     *   create: {
+     *     // ... data to create a SleepSession
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SleepSession we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SleepSessionUpsertArgs>(args: SelectSubset<T, SleepSessionUpsertArgs<ExtArgs>>): Prisma__SleepSessionClient<$Result.GetResult<Prisma.$SleepSessionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SleepSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionCountArgs} args - Arguments to filter SleepSessions to count.
+     * @example
+     * // Count the number of SleepSessions
+     * const count = await prisma.sleepSession.count({
+     *   where: {
+     *     // ... the filter for the SleepSessions we want to count
+     *   }
+     * })
+    **/
+    count<T extends SleepSessionCountArgs>(
+      args?: Subset<T, SleepSessionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SleepSessionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SleepSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SleepSessionAggregateArgs>(args: Subset<T, SleepSessionAggregateArgs>): Prisma.PrismaPromise<GetSleepSessionAggregateType<T>>
+
+    /**
+     * Group by SleepSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SleepSessionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SleepSessionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SleepSessionGroupByArgs['orderBy'] }
+        : { orderBy?: SleepSessionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SleepSessionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSleepSessionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SleepSession model
+   */
+  readonly fields: SleepSessionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SleepSession.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SleepSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SleepSession model
+   */
+  interface SleepSessionFieldRefs {
+    readonly id: FieldRef<"SleepSession", 'String'>
+    readonly userId: FieldRef<"SleepSession", 'String'>
+    readonly startedAt: FieldRef<"SleepSession", 'DateTime'>
+    readonly endedAt: FieldRef<"SleepSession", 'DateTime'>
+    readonly status: FieldRef<"SleepSession", 'SleepSessionStatus'>
+    readonly source: FieldRef<"SleepSession", 'SleepStartSource'>
+    readonly promptKey: FieldRef<"SleepSession", 'String'>
+    readonly durationMinutes: FieldRef<"SleepSession", 'Int'>
+    readonly createdAt: FieldRef<"SleepSession", 'DateTime'>
+    readonly updatedAt: FieldRef<"SleepSession", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SleepSession findUnique
+   */
+  export type SleepSessionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SleepSession to fetch.
+     */
+    where: SleepSessionWhereUniqueInput
+  }
+
+  /**
+   * SleepSession findUniqueOrThrow
+   */
+  export type SleepSessionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SleepSession to fetch.
+     */
+    where: SleepSessionWhereUniqueInput
+  }
+
+  /**
+   * SleepSession findFirst
+   */
+  export type SleepSessionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SleepSession to fetch.
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SleepSessions to fetch.
+     */
+    orderBy?: SleepSessionOrderByWithRelationInput | SleepSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SleepSessions.
+     */
+    cursor?: SleepSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SleepSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SleepSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SleepSessions.
+     */
+    distinct?: SleepSessionScalarFieldEnum | SleepSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SleepSession findFirstOrThrow
+   */
+  export type SleepSessionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SleepSession to fetch.
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SleepSessions to fetch.
+     */
+    orderBy?: SleepSessionOrderByWithRelationInput | SleepSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SleepSessions.
+     */
+    cursor?: SleepSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SleepSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SleepSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SleepSessions.
+     */
+    distinct?: SleepSessionScalarFieldEnum | SleepSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SleepSession findMany
+   */
+  export type SleepSessionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * Filter, which SleepSessions to fetch.
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SleepSessions to fetch.
+     */
+    orderBy?: SleepSessionOrderByWithRelationInput | SleepSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SleepSessions.
+     */
+    cursor?: SleepSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SleepSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SleepSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SleepSessions.
+     */
+    distinct?: SleepSessionScalarFieldEnum | SleepSessionScalarFieldEnum[]
+  }
+
+  /**
+   * SleepSession create
+   */
+  export type SleepSessionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a SleepSession.
+     */
+    data: XOR<SleepSessionCreateInput, SleepSessionUncheckedCreateInput>
+  }
+
+  /**
+   * SleepSession createMany
+   */
+  export type SleepSessionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SleepSessions.
+     */
+    data: SleepSessionCreateManyInput | SleepSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SleepSession createManyAndReturn
+   */
+  export type SleepSessionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * The data used to create many SleepSessions.
+     */
+    data: SleepSessionCreateManyInput | SleepSessionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * SleepSession update
+   */
+  export type SleepSessionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a SleepSession.
+     */
+    data: XOR<SleepSessionUpdateInput, SleepSessionUncheckedUpdateInput>
+    /**
+     * Choose, which SleepSession to update.
+     */
+    where: SleepSessionWhereUniqueInput
+  }
+
+  /**
+   * SleepSession updateMany
+   */
+  export type SleepSessionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SleepSessions.
+     */
+    data: XOR<SleepSessionUpdateManyMutationInput, SleepSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which SleepSessions to update
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * Limit how many SleepSessions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SleepSession updateManyAndReturn
+   */
+  export type SleepSessionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * The data used to update SleepSessions.
+     */
+    data: XOR<SleepSessionUpdateManyMutationInput, SleepSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which SleepSessions to update
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * Limit how many SleepSessions to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * SleepSession upsert
+   */
+  export type SleepSessionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the SleepSession to update in case it exists.
+     */
+    where: SleepSessionWhereUniqueInput
+    /**
+     * In case the SleepSession found by the `where` argument doesn't exist, create a new SleepSession with this data.
+     */
+    create: XOR<SleepSessionCreateInput, SleepSessionUncheckedCreateInput>
+    /**
+     * In case the SleepSession was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SleepSessionUpdateInput, SleepSessionUncheckedUpdateInput>
+  }
+
+  /**
+   * SleepSession delete
+   */
+  export type SleepSessionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+    /**
+     * Filter which SleepSession to delete.
+     */
+    where: SleepSessionWhereUniqueInput
+  }
+
+  /**
+   * SleepSession deleteMany
+   */
+  export type SleepSessionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SleepSessions to delete
+     */
+    where?: SleepSessionWhereInput
+    /**
+     * Limit how many SleepSessions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SleepSession without action
+   */
+  export type SleepSessionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SleepSession
+     */
+    select?: SleepSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SleepSession
+     */
+    omit?: SleepSessionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: SleepSessionInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model MoodLog
    */
 
@@ -52516,6 +55106,7 @@ export namespace Prisma {
     gratitude: string | null
     isFavorite: boolean | null
     isArchived: boolean | null
+    deletedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -52531,6 +55122,7 @@ export namespace Prisma {
     gratitude: string | null
     isFavorite: boolean | null
     isArchived: boolean | null
+    deletedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -52546,6 +55138,7 @@ export namespace Prisma {
     gratitude: number
     isFavorite: number
     isArchived: number
+    deletedAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -52573,6 +55166,7 @@ export namespace Prisma {
     gratitude?: true
     isFavorite?: true
     isArchived?: true
+    deletedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -52588,6 +55182,7 @@ export namespace Prisma {
     gratitude?: true
     isFavorite?: true
     isArchived?: true
+    deletedAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -52603,6 +55198,7 @@ export namespace Prisma {
     gratitude?: true
     isFavorite?: true
     isArchived?: true
+    deletedAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -52705,6 +55301,7 @@ export namespace Prisma {
     gratitude: string | null
     isFavorite: boolean
     isArchived: boolean
+    deletedAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: JournalEntryCountAggregateOutputType | null
@@ -52739,10 +55336,12 @@ export namespace Prisma {
     gratitude?: boolean
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     tags?: boolean | JournalEntry$tagsArgs<ExtArgs>
+    revisions?: boolean | JournalEntry$revisionsArgs<ExtArgs>
     _count?: boolean | JournalEntryCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["journalEntry"]>
 
@@ -52757,6 +55356,7 @@ export namespace Prisma {
     gratitude?: boolean
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -52773,6 +55373,7 @@ export namespace Prisma {
     gratitude?: boolean
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -52789,14 +55390,16 @@ export namespace Prisma {
     gratitude?: boolean
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type JournalEntryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "date" | "title" | "content" | "mood" | "energy" | "gratitude" | "isFavorite" | "isArchived" | "createdAt" | "updatedAt", ExtArgs["result"]["journalEntry"]>
+  export type JournalEntryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "date" | "title" | "content" | "mood" | "energy" | "gratitude" | "isFavorite" | "isArchived" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["journalEntry"]>
   export type JournalEntryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     tags?: boolean | JournalEntry$tagsArgs<ExtArgs>
+    revisions?: boolean | JournalEntry$revisionsArgs<ExtArgs>
     _count?: boolean | JournalEntryCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type JournalEntryIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -52811,6 +55414,7 @@ export namespace Prisma {
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
       tags: Prisma.$JournalEntryTagPayload<ExtArgs>[]
+      revisions: Prisma.$JournalRevisionPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -52823,6 +55427,7 @@ export namespace Prisma {
       gratitude: string | null
       isFavorite: boolean
       isArchived: boolean
+      deletedAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["journalEntry"]>
@@ -53221,6 +55826,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     tags<T extends JournalEntry$tagsArgs<ExtArgs> = {}>(args?: Subset<T, JournalEntry$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalEntryTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    revisions<T extends JournalEntry$revisionsArgs<ExtArgs> = {}>(args?: Subset<T, JournalEntry$revisionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JournalRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -53260,6 +55866,7 @@ export namespace Prisma {
     readonly gratitude: FieldRef<"JournalEntry", 'String'>
     readonly isFavorite: FieldRef<"JournalEntry", 'Boolean'>
     readonly isArchived: FieldRef<"JournalEntry", 'Boolean'>
+    readonly deletedAt: FieldRef<"JournalEntry", 'DateTime'>
     readonly createdAt: FieldRef<"JournalEntry", 'DateTime'>
     readonly updatedAt: FieldRef<"JournalEntry", 'DateTime'>
   }
@@ -53684,6 +56291,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: JournalEntryTagScalarFieldEnum | JournalEntryTagScalarFieldEnum[]
+  }
+
+  /**
+   * JournalEntry.revisions
+   */
+  export type JournalEntry$revisionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the JournalRevision
+     */
+    select?: JournalRevisionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the JournalRevision
+     */
+    omit?: JournalRevisionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: JournalRevisionInclude<ExtArgs> | null
+    where?: JournalRevisionWhereInput
+    orderBy?: JournalRevisionOrderByWithRelationInput | JournalRevisionOrderByWithRelationInput[]
+    cursor?: JournalRevisionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: JournalRevisionScalarFieldEnum | JournalRevisionScalarFieldEnum[]
   }
 
   /**
@@ -87217,6 +89848,9 @@ export namespace Prisma {
     minSleepDuration: 'minSleepDuration',
     sleepReminder: 'sleepReminder',
     sleepReminderTime: 'sleepReminderTime',
+    autoStartSleepAfterMinutes: 'autoStartSleepAfterMinutes',
+    sleepAutoStartEnabled: 'sleepAutoStartEnabled',
+    sleepAutoStartAfterMinutes: 'sleepAutoStartAfterMinutes',
     weightNonNeg: 'weightNonNeg',
     weightGrowth: 'weightGrowth',
     weightBonus: 'weightBonus',
@@ -87337,6 +89971,18 @@ export namespace Prisma {
   };
 
   export type JournalEntryTagScalarFieldEnum = (typeof JournalEntryTagScalarFieldEnum)[keyof typeof JournalEntryTagScalarFieldEnum]
+
+
+  export const JournalRevisionScalarFieldEnum: {
+    id: 'id',
+    entryId: 'entryId',
+    userId: 'userId',
+    title: 'title',
+    content: 'content',
+    createdAt: 'createdAt'
+  };
+
+  export type JournalRevisionScalarFieldEnum = (typeof JournalRevisionScalarFieldEnum)[keyof typeof JournalRevisionScalarFieldEnum]
 
 
   export const RoutineTemplateScalarFieldEnum: {
@@ -87641,6 +90287,22 @@ export namespace Prisma {
   export type SleepLogScalarFieldEnum = (typeof SleepLogScalarFieldEnum)[keyof typeof SleepLogScalarFieldEnum]
 
 
+  export const SleepSessionScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    startedAt: 'startedAt',
+    endedAt: 'endedAt',
+    status: 'status',
+    source: 'source',
+    promptKey: 'promptKey',
+    durationMinutes: 'durationMinutes',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SleepSessionScalarFieldEnum = (typeof SleepSessionScalarFieldEnum)[keyof typeof SleepSessionScalarFieldEnum]
+
+
   export const MoodLogScalarFieldEnum: {
     id: 'id',
     userId: 'userId',
@@ -87787,6 +90449,7 @@ export namespace Prisma {
     gratitude: 'gratitude',
     isFavorite: 'isFavorite',
     isArchived: 'isArchived',
+    deletedAt: 'deletedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -88639,6 +91302,34 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'SleepSessionStatus'
+   */
+  export type EnumSleepSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SleepSessionStatus'>
+    
+
+
+  /**
+   * Reference to a field of type 'SleepSessionStatus[]'
+   */
+  export type ListEnumSleepSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SleepSessionStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'SleepStartSource'
+   */
+  export type EnumSleepStartSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SleepStartSource'>
+    
+
+
+  /**
+   * Reference to a field of type 'SleepStartSource[]'
+   */
+  export type ListEnumSleepStartSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SleepStartSource[]'>
+    
+
+
+  /**
    * Reference to a field of type 'WeatherCondition'
    */
   export type EnumWeatherConditionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WeatherCondition'>
@@ -88869,12 +91560,14 @@ export namespace Prisma {
     projects?: ProjectListRelationFilter
     tasks?: TaskListRelationFilter
     sleepLogs?: SleepLogListRelationFilter
+    sleepSessions?: SleepSessionListRelationFilter
     moodLogs?: MoodLogListRelationFilter
     energyLogs?: EnergyLogListRelationFilter
     weatherLogs?: WeatherLogListRelationFilter
     healthMetrics?: HealthMetricListRelationFilter
     nutritionEntries?: NutritionEntryListRelationFilter
     journalEntries?: JournalEntryListRelationFilter
+    journalRevisions?: JournalRevisionListRelationFilter
     dailyReflections?: DailyReflectionListRelationFilter
     focusSessions?: FocusSessionListRelationFilter
     breaks?: BreakListRelationFilter
@@ -88952,12 +91645,14 @@ export namespace Prisma {
     projects?: ProjectOrderByRelationAggregateInput
     tasks?: TaskOrderByRelationAggregateInput
     sleepLogs?: SleepLogOrderByRelationAggregateInput
+    sleepSessions?: SleepSessionOrderByRelationAggregateInput
     moodLogs?: MoodLogOrderByRelationAggregateInput
     energyLogs?: EnergyLogOrderByRelationAggregateInput
     weatherLogs?: WeatherLogOrderByRelationAggregateInput
     healthMetrics?: HealthMetricOrderByRelationAggregateInput
     nutritionEntries?: NutritionEntryOrderByRelationAggregateInput
     journalEntries?: JournalEntryOrderByRelationAggregateInput
+    journalRevisions?: JournalRevisionOrderByRelationAggregateInput
     dailyReflections?: DailyReflectionOrderByRelationAggregateInput
     focusSessions?: FocusSessionOrderByRelationAggregateInput
     breaks?: BreakOrderByRelationAggregateInput
@@ -89038,12 +91733,14 @@ export namespace Prisma {
     projects?: ProjectListRelationFilter
     tasks?: TaskListRelationFilter
     sleepLogs?: SleepLogListRelationFilter
+    sleepSessions?: SleepSessionListRelationFilter
     moodLogs?: MoodLogListRelationFilter
     energyLogs?: EnergyLogListRelationFilter
     weatherLogs?: WeatherLogListRelationFilter
     healthMetrics?: HealthMetricListRelationFilter
     nutritionEntries?: NutritionEntryListRelationFilter
     journalEntries?: JournalEntryListRelationFilter
+    journalRevisions?: JournalRevisionListRelationFilter
     dailyReflections?: DailyReflectionListRelationFilter
     focusSessions?: FocusSessionListRelationFilter
     breaks?: BreakListRelationFilter
@@ -89342,6 +92039,9 @@ export namespace Prisma {
     minSleepDuration?: IntNullableFilter<"UserSettings"> | number | null
     sleepReminder?: BoolFilter<"UserSettings"> | boolean
     sleepReminderTime?: StringNullableFilter<"UserSettings"> | string | null
+    autoStartSleepAfterMinutes?: IntFilter<"UserSettings"> | number
+    sleepAutoStartEnabled?: BoolFilter<"UserSettings"> | boolean
+    sleepAutoStartAfterMinutes?: IntFilter<"UserSettings"> | number
     weightNonNeg?: FloatFilter<"UserSettings"> | number
     weightGrowth?: FloatFilter<"UserSettings"> | number
     weightBonus?: FloatFilter<"UserSettings"> | number
@@ -89391,6 +92091,9 @@ export namespace Prisma {
     minSleepDuration?: SortOrderInput | SortOrder
     sleepReminder?: SortOrder
     sleepReminderTime?: SortOrderInput | SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartEnabled?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -89443,6 +92146,9 @@ export namespace Prisma {
     minSleepDuration?: IntNullableFilter<"UserSettings"> | number | null
     sleepReminder?: BoolFilter<"UserSettings"> | boolean
     sleepReminderTime?: StringNullableFilter<"UserSettings"> | string | null
+    autoStartSleepAfterMinutes?: IntFilter<"UserSettings"> | number
+    sleepAutoStartEnabled?: BoolFilter<"UserSettings"> | boolean
+    sleepAutoStartAfterMinutes?: IntFilter<"UserSettings"> | number
     weightNonNeg?: FloatFilter<"UserSettings"> | number
     weightGrowth?: FloatFilter<"UserSettings"> | number
     weightBonus?: FloatFilter<"UserSettings"> | number
@@ -89492,6 +92198,9 @@ export namespace Prisma {
     minSleepDuration?: SortOrderInput | SortOrder
     sleepReminder?: SortOrder
     sleepReminderTime?: SortOrderInput | SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartEnabled?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -89548,6 +92257,9 @@ export namespace Prisma {
     minSleepDuration?: IntNullableWithAggregatesFilter<"UserSettings"> | number | null
     sleepReminder?: BoolWithAggregatesFilter<"UserSettings"> | boolean
     sleepReminderTime?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    autoStartSleepAfterMinutes?: IntWithAggregatesFilter<"UserSettings"> | number
+    sleepAutoStartEnabled?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    sleepAutoStartAfterMinutes?: IntWithAggregatesFilter<"UserSettings"> | number
     weightNonNeg?: FloatWithAggregatesFilter<"UserSettings"> | number
     weightGrowth?: FloatWithAggregatesFilter<"UserSettings"> | number
     weightBonus?: FloatWithAggregatesFilter<"UserSettings"> | number
@@ -90073,6 +92785,69 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"JournalEntryTag"> | string
     entryId?: StringWithAggregatesFilter<"JournalEntryTag"> | string
     tagId?: StringWithAggregatesFilter<"JournalEntryTag"> | string
+  }
+
+  export type JournalRevisionWhereInput = {
+    AND?: JournalRevisionWhereInput | JournalRevisionWhereInput[]
+    OR?: JournalRevisionWhereInput[]
+    NOT?: JournalRevisionWhereInput | JournalRevisionWhereInput[]
+    id?: StringFilter<"JournalRevision"> | string
+    entryId?: StringFilter<"JournalRevision"> | string
+    userId?: StringFilter<"JournalRevision"> | string
+    title?: StringNullableFilter<"JournalRevision"> | string | null
+    content?: StringFilter<"JournalRevision"> | string
+    createdAt?: DateTimeFilter<"JournalRevision"> | Date | string
+    entry?: XOR<JournalEntryScalarRelationFilter, JournalEntryWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type JournalRevisionOrderByWithRelationInput = {
+    id?: SortOrder
+    entryId?: SortOrder
+    userId?: SortOrder
+    title?: SortOrderInput | SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+    entry?: JournalEntryOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type JournalRevisionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: JournalRevisionWhereInput | JournalRevisionWhereInput[]
+    OR?: JournalRevisionWhereInput[]
+    NOT?: JournalRevisionWhereInput | JournalRevisionWhereInput[]
+    entryId?: StringFilter<"JournalRevision"> | string
+    userId?: StringFilter<"JournalRevision"> | string
+    title?: StringNullableFilter<"JournalRevision"> | string | null
+    content?: StringFilter<"JournalRevision"> | string
+    createdAt?: DateTimeFilter<"JournalRevision"> | Date | string
+    entry?: XOR<JournalEntryScalarRelationFilter, JournalEntryWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id">
+
+  export type JournalRevisionOrderByWithAggregationInput = {
+    id?: SortOrder
+    entryId?: SortOrder
+    userId?: SortOrder
+    title?: SortOrderInput | SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+    _count?: JournalRevisionCountOrderByAggregateInput
+    _max?: JournalRevisionMaxOrderByAggregateInput
+    _min?: JournalRevisionMinOrderByAggregateInput
+  }
+
+  export type JournalRevisionScalarWhereWithAggregatesInput = {
+    AND?: JournalRevisionScalarWhereWithAggregatesInput | JournalRevisionScalarWhereWithAggregatesInput[]
+    OR?: JournalRevisionScalarWhereWithAggregatesInput[]
+    NOT?: JournalRevisionScalarWhereWithAggregatesInput | JournalRevisionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"JournalRevision"> | string
+    entryId?: StringWithAggregatesFilter<"JournalRevision"> | string
+    userId?: StringWithAggregatesFilter<"JournalRevision"> | string
+    title?: StringNullableWithAggregatesFilter<"JournalRevision"> | string | null
+    content?: StringWithAggregatesFilter<"JournalRevision"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"JournalRevision"> | Date | string
   }
 
   export type RoutineTemplateWhereInput = {
@@ -91726,6 +94501,89 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"SleepLog"> | Date | string
   }
 
+  export type SleepSessionWhereInput = {
+    AND?: SleepSessionWhereInput | SleepSessionWhereInput[]
+    OR?: SleepSessionWhereInput[]
+    NOT?: SleepSessionWhereInput | SleepSessionWhereInput[]
+    id?: StringFilter<"SleepSession"> | string
+    userId?: StringFilter<"SleepSession"> | string
+    startedAt?: DateTimeFilter<"SleepSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"SleepSession"> | Date | string | null
+    status?: EnumSleepSessionStatusFilter<"SleepSession"> | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFilter<"SleepSession"> | $Enums.SleepStartSource
+    promptKey?: StringNullableFilter<"SleepSession"> | string | null
+    durationMinutes?: IntNullableFilter<"SleepSession"> | number | null
+    createdAt?: DateTimeFilter<"SleepSession"> | Date | string
+    updatedAt?: DateTimeFilter<"SleepSession"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type SleepSessionOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrderInput | SortOrder
+    status?: SortOrder
+    source?: SortOrder
+    promptKey?: SortOrderInput | SortOrder
+    durationMinutes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type SleepSessionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_promptKey?: SleepSessionUserIdPromptKeyCompoundUniqueInput
+    AND?: SleepSessionWhereInput | SleepSessionWhereInput[]
+    OR?: SleepSessionWhereInput[]
+    NOT?: SleepSessionWhereInput | SleepSessionWhereInput[]
+    userId?: StringFilter<"SleepSession"> | string
+    startedAt?: DateTimeFilter<"SleepSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"SleepSession"> | Date | string | null
+    status?: EnumSleepSessionStatusFilter<"SleepSession"> | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFilter<"SleepSession"> | $Enums.SleepStartSource
+    promptKey?: StringNullableFilter<"SleepSession"> | string | null
+    durationMinutes?: IntNullableFilter<"SleepSession"> | number | null
+    createdAt?: DateTimeFilter<"SleepSession"> | Date | string
+    updatedAt?: DateTimeFilter<"SleepSession"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "userId_promptKey">
+
+  export type SleepSessionOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrderInput | SortOrder
+    status?: SortOrder
+    source?: SortOrder
+    promptKey?: SortOrderInput | SortOrder
+    durationMinutes?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: SleepSessionCountOrderByAggregateInput
+    _avg?: SleepSessionAvgOrderByAggregateInput
+    _max?: SleepSessionMaxOrderByAggregateInput
+    _min?: SleepSessionMinOrderByAggregateInput
+    _sum?: SleepSessionSumOrderByAggregateInput
+  }
+
+  export type SleepSessionScalarWhereWithAggregatesInput = {
+    AND?: SleepSessionScalarWhereWithAggregatesInput | SleepSessionScalarWhereWithAggregatesInput[]
+    OR?: SleepSessionScalarWhereWithAggregatesInput[]
+    NOT?: SleepSessionScalarWhereWithAggregatesInput | SleepSessionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SleepSession"> | string
+    userId?: StringWithAggregatesFilter<"SleepSession"> | string
+    startedAt?: DateTimeWithAggregatesFilter<"SleepSession"> | Date | string
+    endedAt?: DateTimeNullableWithAggregatesFilter<"SleepSession"> | Date | string | null
+    status?: EnumSleepSessionStatusWithAggregatesFilter<"SleepSession"> | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceWithAggregatesFilter<"SleepSession"> | $Enums.SleepStartSource
+    promptKey?: StringNullableWithAggregatesFilter<"SleepSession"> | string | null
+    durationMinutes?: IntNullableWithAggregatesFilter<"SleepSession"> | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"SleepSession"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"SleepSession"> | Date | string
+  }
+
   export type MoodLogWhereInput = {
     AND?: MoodLogWhereInput | MoodLogWhereInput[]
     OR?: MoodLogWhereInput[]
@@ -92433,10 +95291,12 @@ export namespace Prisma {
     gratitude?: StringNullableFilter<"JournalEntry"> | string | null
     isFavorite?: BoolFilter<"JournalEntry"> | boolean
     isArchived?: BoolFilter<"JournalEntry"> | boolean
+    deletedAt?: DateTimeNullableFilter<"JournalEntry"> | Date | string | null
     createdAt?: DateTimeFilter<"JournalEntry"> | Date | string
     updatedAt?: DateTimeFilter<"JournalEntry"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     tags?: JournalEntryTagListRelationFilter
+    revisions?: JournalRevisionListRelationFilter
   }
 
   export type JournalEntryOrderByWithRelationInput = {
@@ -92450,10 +95310,12 @@ export namespace Prisma {
     gratitude?: SortOrderInput | SortOrder
     isFavorite?: SortOrder
     isArchived?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
     tags?: JournalEntryTagOrderByRelationAggregateInput
+    revisions?: JournalRevisionOrderByRelationAggregateInput
   }
 
   export type JournalEntryWhereUniqueInput = Prisma.AtLeast<{
@@ -92471,10 +95333,12 @@ export namespace Prisma {
     gratitude?: StringNullableFilter<"JournalEntry"> | string | null
     isFavorite?: BoolFilter<"JournalEntry"> | boolean
     isArchived?: BoolFilter<"JournalEntry"> | boolean
+    deletedAt?: DateTimeNullableFilter<"JournalEntry"> | Date | string | null
     createdAt?: DateTimeFilter<"JournalEntry"> | Date | string
     updatedAt?: DateTimeFilter<"JournalEntry"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     tags?: JournalEntryTagListRelationFilter
+    revisions?: JournalRevisionListRelationFilter
   }, "id" | "userId_date">
 
   export type JournalEntryOrderByWithAggregationInput = {
@@ -92488,6 +95352,7 @@ export namespace Prisma {
     gratitude?: SortOrderInput | SortOrder
     isFavorite?: SortOrder
     isArchived?: SortOrder
+    deletedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: JournalEntryCountOrderByAggregateInput
@@ -92511,6 +95376,7 @@ export namespace Prisma {
     gratitude?: StringNullableWithAggregatesFilter<"JournalEntry"> | string | null
     isFavorite?: BoolWithAggregatesFilter<"JournalEntry"> | boolean
     isArchived?: BoolWithAggregatesFilter<"JournalEntry"> | boolean
+    deletedAt?: DateTimeNullableWithAggregatesFilter<"JournalEntry"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"JournalEntry"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"JournalEntry"> | Date | string
   }
@@ -95201,12 +98067,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -95284,12 +98152,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -95367,12 +98237,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -95450,12 +98322,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -95794,6 +98668,9 @@ export namespace Prisma {
     minSleepDuration?: number | null
     sleepReminder?: boolean
     sleepReminderTime?: string | null
+    autoStartSleepAfterMinutes?: number
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: number
     weightNonNeg?: number
     weightGrowth?: number
     weightBonus?: number
@@ -95843,6 +98720,9 @@ export namespace Prisma {
     minSleepDuration?: number | null
     sleepReminder?: boolean
     sleepReminderTime?: string | null
+    autoStartSleepAfterMinutes?: number
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: number
     weightNonNeg?: number
     weightGrowth?: number
     weightBonus?: number
@@ -95890,6 +98770,9 @@ export namespace Prisma {
     minSleepDuration?: NullableIntFieldUpdateOperationsInput | number | null
     sleepReminder?: BoolFieldUpdateOperationsInput | boolean
     sleepReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    autoStartSleepAfterMinutes?: IntFieldUpdateOperationsInput | number
+    sleepAutoStartEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepAutoStartAfterMinutes?: IntFieldUpdateOperationsInput | number
     weightNonNeg?: FloatFieldUpdateOperationsInput | number
     weightGrowth?: FloatFieldUpdateOperationsInput | number
     weightBonus?: FloatFieldUpdateOperationsInput | number
@@ -95939,6 +98822,9 @@ export namespace Prisma {
     minSleepDuration?: NullableIntFieldUpdateOperationsInput | number | null
     sleepReminder?: BoolFieldUpdateOperationsInput | boolean
     sleepReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    autoStartSleepAfterMinutes?: IntFieldUpdateOperationsInput | number
+    sleepAutoStartEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepAutoStartAfterMinutes?: IntFieldUpdateOperationsInput | number
     weightNonNeg?: FloatFieldUpdateOperationsInput | number
     weightGrowth?: FloatFieldUpdateOperationsInput | number
     weightBonus?: FloatFieldUpdateOperationsInput | number
@@ -95987,6 +98873,9 @@ export namespace Prisma {
     minSleepDuration?: number | null
     sleepReminder?: boolean
     sleepReminderTime?: string | null
+    autoStartSleepAfterMinutes?: number
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: number
     weightNonNeg?: number
     weightGrowth?: number
     weightBonus?: number
@@ -96034,6 +98923,9 @@ export namespace Prisma {
     minSleepDuration?: NullableIntFieldUpdateOperationsInput | number | null
     sleepReminder?: BoolFieldUpdateOperationsInput | boolean
     sleepReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    autoStartSleepAfterMinutes?: IntFieldUpdateOperationsInput | number
+    sleepAutoStartEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepAutoStartAfterMinutes?: IntFieldUpdateOperationsInput | number
     weightNonNeg?: FloatFieldUpdateOperationsInput | number
     weightGrowth?: FloatFieldUpdateOperationsInput | number
     weightBonus?: FloatFieldUpdateOperationsInput | number
@@ -96082,6 +98974,9 @@ export namespace Prisma {
     minSleepDuration?: NullableIntFieldUpdateOperationsInput | number | null
     sleepReminder?: BoolFieldUpdateOperationsInput | boolean
     sleepReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    autoStartSleepAfterMinutes?: IntFieldUpdateOperationsInput | number
+    sleepAutoStartEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepAutoStartAfterMinutes?: IntFieldUpdateOperationsInput | number
     weightNonNeg?: FloatFieldUpdateOperationsInput | number
     weightGrowth?: FloatFieldUpdateOperationsInput | number
     weightBonus?: FloatFieldUpdateOperationsInput | number
@@ -96597,6 +99492,67 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     entryId?: StringFieldUpdateOperationsInput | string
     tagId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type JournalRevisionCreateInput = {
+    id?: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+    entry: JournalEntryCreateNestedOneWithoutRevisionsInput
+    user: UserCreateNestedOneWithoutJournalRevisionsInput
+  }
+
+  export type JournalRevisionUncheckedCreateInput = {
+    id?: string
+    entryId: string
+    userId: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type JournalRevisionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entry?: JournalEntryUpdateOneRequiredWithoutRevisionsNestedInput
+    user?: UserUpdateOneRequiredWithoutJournalRevisionsNestedInput
+  }
+
+  export type JournalRevisionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    entryId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type JournalRevisionCreateManyInput = {
+    id?: string
+    entryId: string
+    userId: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type JournalRevisionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type JournalRevisionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    entryId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type RoutineTemplateCreateInput = {
@@ -98434,6 +101390,96 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type SleepSessionCreateInput = {
+    id?: string
+    startedAt?: Date | string
+    endedAt?: Date | string | null
+    status?: $Enums.SleepSessionStatus
+    source?: $Enums.SleepStartSource
+    promptKey?: string | null
+    durationMinutes?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutSleepSessionsInput
+  }
+
+  export type SleepSessionUncheckedCreateInput = {
+    id?: string
+    userId: string
+    startedAt?: Date | string
+    endedAt?: Date | string | null
+    status?: $Enums.SleepSessionStatus
+    source?: $Enums.SleepStartSource
+    promptKey?: string | null
+    durationMinutes?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SleepSessionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutSleepSessionsNestedInput
+  }
+
+  export type SleepSessionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SleepSessionCreateManyInput = {
+    id?: string
+    userId: string
+    startedAt?: Date | string
+    endedAt?: Date | string | null
+    status?: $Enums.SleepSessionStatus
+    source?: $Enums.SleepStartSource
+    promptKey?: string | null
+    durationMinutes?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SleepSessionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SleepSessionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type MoodLogCreateInput = {
     id?: string
     timestamp?: Date | string
@@ -99235,10 +102281,12 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutJournalEntriesInput
     tags?: JournalEntryTagCreateNestedManyWithoutEntryInput
+    revisions?: JournalRevisionCreateNestedManyWithoutEntryInput
   }
 
   export type JournalEntryUncheckedCreateInput = {
@@ -99252,9 +102300,11 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     tags?: JournalEntryTagUncheckedCreateNestedManyWithoutEntryInput
+    revisions?: JournalRevisionUncheckedCreateNestedManyWithoutEntryInput
   }
 
   export type JournalEntryUpdateInput = {
@@ -99267,10 +102317,12 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutJournalEntriesNestedInput
     tags?: JournalEntryTagUpdateManyWithoutEntryNestedInput
+    revisions?: JournalRevisionUpdateManyWithoutEntryNestedInput
   }
 
   export type JournalEntryUncheckedUpdateInput = {
@@ -99284,9 +102336,11 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: JournalEntryTagUncheckedUpdateManyWithoutEntryNestedInput
+    revisions?: JournalRevisionUncheckedUpdateManyWithoutEntryNestedInput
   }
 
   export type JournalEntryCreateManyInput = {
@@ -99300,6 +102354,7 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -99314,6 +102369,7 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -99329,6 +102385,7 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -102492,6 +105549,12 @@ export namespace Prisma {
     none?: SleepLogWhereInput
   }
 
+  export type SleepSessionListRelationFilter = {
+    every?: SleepSessionWhereInput
+    some?: SleepSessionWhereInput
+    none?: SleepSessionWhereInput
+  }
+
   export type MoodLogListRelationFilter = {
     every?: MoodLogWhereInput
     some?: MoodLogWhereInput
@@ -102526,6 +105589,12 @@ export namespace Prisma {
     every?: JournalEntryWhereInput
     some?: JournalEntryWhereInput
     none?: JournalEntryWhereInput
+  }
+
+  export type JournalRevisionListRelationFilter = {
+    every?: JournalRevisionWhereInput
+    some?: JournalRevisionWhereInput
+    none?: JournalRevisionWhereInput
   }
 
   export type DailyReflectionListRelationFilter = {
@@ -102778,6 +105847,10 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type SleepSessionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type MoodLogOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -102799,6 +105872,10 @@ export namespace Prisma {
   }
 
   export type JournalEntryOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type JournalRevisionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -103297,6 +106374,9 @@ export namespace Prisma {
     minSleepDuration?: SortOrder
     sleepReminder?: SortOrder
     sleepReminderTime?: SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartEnabled?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -103328,6 +106408,8 @@ export namespace Prisma {
   export type UserSettingsAvgOrderByAggregateInput = {
     weekStartsOn?: SortOrder
     minSleepDuration?: SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -103356,6 +106438,9 @@ export namespace Prisma {
     minSleepDuration?: SortOrder
     sleepReminder?: SortOrder
     sleepReminderTime?: SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartEnabled?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -103404,6 +106489,9 @@ export namespace Prisma {
     minSleepDuration?: SortOrder
     sleepReminder?: SortOrder
     sleepReminderTime?: SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartEnabled?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -103435,6 +106523,8 @@ export namespace Prisma {
   export type UserSettingsSumOrderByAggregateInput = {
     weekStartsOn?: SortOrder
     minSleepDuration?: SortOrder
+    autoStartSleepAfterMinutes?: SortOrder
+    sleepAutoStartAfterMinutes?: SortOrder
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
@@ -103787,6 +106877,33 @@ export namespace Prisma {
     id?: SortOrder
     entryId?: SortOrder
     tagId?: SortOrder
+  }
+
+  export type JournalRevisionCountOrderByAggregateInput = {
+    id?: SortOrder
+    entryId?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type JournalRevisionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    entryId?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type JournalRevisionMinOrderByAggregateInput = {
+    id?: SortOrder
+    entryId?: SortOrder
+    userId?: SortOrder
+    title?: SortOrder
+    content?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type EnumDayTypeFilter<$PrismaModel = never> = {
@@ -105066,6 +108183,92 @@ export namespace Prisma {
     _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
+  export type EnumSleepSessionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepSessionStatus | EnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepSessionStatusFilter<$PrismaModel> | $Enums.SleepSessionStatus
+  }
+
+  export type EnumSleepStartSourceFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepStartSource | EnumSleepStartSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepStartSourceFilter<$PrismaModel> | $Enums.SleepStartSource
+  }
+
+  export type SleepSessionUserIdPromptKeyCompoundUniqueInput = {
+    userId: string
+    promptKey: string
+  }
+
+  export type SleepSessionCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrder
+    status?: SortOrder
+    source?: SortOrder
+    promptKey?: SortOrder
+    durationMinutes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SleepSessionAvgOrderByAggregateInput = {
+    durationMinutes?: SortOrder
+  }
+
+  export type SleepSessionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrder
+    status?: SortOrder
+    source?: SortOrder
+    promptKey?: SortOrder
+    durationMinutes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SleepSessionMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    startedAt?: SortOrder
+    endedAt?: SortOrder
+    status?: SortOrder
+    source?: SortOrder
+    promptKey?: SortOrder
+    durationMinutes?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SleepSessionSumOrderByAggregateInput = {
+    durationMinutes?: SortOrder
+  }
+
+  export type EnumSleepSessionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepSessionStatus | EnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepSessionStatusWithAggregatesFilter<$PrismaModel> | $Enums.SleepSessionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSleepSessionStatusFilter<$PrismaModel>
+    _max?: NestedEnumSleepSessionStatusFilter<$PrismaModel>
+  }
+
+  export type EnumSleepStartSourceWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepStartSource | EnumSleepStartSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepStartSourceWithAggregatesFilter<$PrismaModel> | $Enums.SleepStartSource
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSleepStartSourceFilter<$PrismaModel>
+    _max?: NestedEnumSleepStartSourceFilter<$PrismaModel>
+  }
+
   export type MoodLogCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
@@ -105561,6 +108764,7 @@ export namespace Prisma {
     gratitude?: SortOrder
     isFavorite?: SortOrder
     isArchived?: SortOrder
+    deletedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -105581,6 +108785,7 @@ export namespace Prisma {
     gratitude?: SortOrder
     isFavorite?: SortOrder
     isArchived?: SortOrder
+    deletedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -105596,6 +108801,7 @@ export namespace Prisma {
     gratitude?: SortOrder
     isFavorite?: SortOrder
     isArchived?: SortOrder
+    deletedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -107499,6 +110705,13 @@ export namespace Prisma {
     connect?: SleepLogWhereUniqueInput | SleepLogWhereUniqueInput[]
   }
 
+  export type SleepSessionCreateNestedManyWithoutUserInput = {
+    create?: XOR<SleepSessionCreateWithoutUserInput, SleepSessionUncheckedCreateWithoutUserInput> | SleepSessionCreateWithoutUserInput[] | SleepSessionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SleepSessionCreateOrConnectWithoutUserInput | SleepSessionCreateOrConnectWithoutUserInput[]
+    createMany?: SleepSessionCreateManyUserInputEnvelope
+    connect?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+  }
+
   export type MoodLogCreateNestedManyWithoutUserInput = {
     create?: XOR<MoodLogCreateWithoutUserInput, MoodLogUncheckedCreateWithoutUserInput> | MoodLogCreateWithoutUserInput[] | MoodLogUncheckedCreateWithoutUserInput[]
     connectOrCreate?: MoodLogCreateOrConnectWithoutUserInput | MoodLogCreateOrConnectWithoutUserInput[]
@@ -107539,6 +110752,13 @@ export namespace Prisma {
     connectOrCreate?: JournalEntryCreateOrConnectWithoutUserInput | JournalEntryCreateOrConnectWithoutUserInput[]
     createMany?: JournalEntryCreateManyUserInputEnvelope
     connect?: JournalEntryWhereUniqueInput | JournalEntryWhereUniqueInput[]
+  }
+
+  export type JournalRevisionCreateNestedManyWithoutUserInput = {
+    create?: XOR<JournalRevisionCreateWithoutUserInput, JournalRevisionUncheckedCreateWithoutUserInput> | JournalRevisionCreateWithoutUserInput[] | JournalRevisionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutUserInput | JournalRevisionCreateOrConnectWithoutUserInput[]
+    createMany?: JournalRevisionCreateManyUserInputEnvelope
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
   }
 
   export type DailyReflectionCreateNestedManyWithoutUserInput = {
@@ -107881,6 +111101,13 @@ export namespace Prisma {
     connect?: SleepLogWhereUniqueInput | SleepLogWhereUniqueInput[]
   }
 
+  export type SleepSessionUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<SleepSessionCreateWithoutUserInput, SleepSessionUncheckedCreateWithoutUserInput> | SleepSessionCreateWithoutUserInput[] | SleepSessionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SleepSessionCreateOrConnectWithoutUserInput | SleepSessionCreateOrConnectWithoutUserInput[]
+    createMany?: SleepSessionCreateManyUserInputEnvelope
+    connect?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+  }
+
   export type MoodLogUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<MoodLogCreateWithoutUserInput, MoodLogUncheckedCreateWithoutUserInput> | MoodLogCreateWithoutUserInput[] | MoodLogUncheckedCreateWithoutUserInput[]
     connectOrCreate?: MoodLogCreateOrConnectWithoutUserInput | MoodLogCreateOrConnectWithoutUserInput[]
@@ -107921,6 +111148,13 @@ export namespace Prisma {
     connectOrCreate?: JournalEntryCreateOrConnectWithoutUserInput | JournalEntryCreateOrConnectWithoutUserInput[]
     createMany?: JournalEntryCreateManyUserInputEnvelope
     connect?: JournalEntryWhereUniqueInput | JournalEntryWhereUniqueInput[]
+  }
+
+  export type JournalRevisionUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<JournalRevisionCreateWithoutUserInput, JournalRevisionUncheckedCreateWithoutUserInput> | JournalRevisionCreateWithoutUserInput[] | JournalRevisionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutUserInput | JournalRevisionCreateOrConnectWithoutUserInput[]
+    createMany?: JournalRevisionCreateManyUserInputEnvelope
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
   }
 
   export type DailyReflectionUncheckedCreateNestedManyWithoutUserInput = {
@@ -108408,6 +111642,20 @@ export namespace Prisma {
     deleteMany?: SleepLogScalarWhereInput | SleepLogScalarWhereInput[]
   }
 
+  export type SleepSessionUpdateManyWithoutUserNestedInput = {
+    create?: XOR<SleepSessionCreateWithoutUserInput, SleepSessionUncheckedCreateWithoutUserInput> | SleepSessionCreateWithoutUserInput[] | SleepSessionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SleepSessionCreateOrConnectWithoutUserInput | SleepSessionCreateOrConnectWithoutUserInput[]
+    upsert?: SleepSessionUpsertWithWhereUniqueWithoutUserInput | SleepSessionUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: SleepSessionCreateManyUserInputEnvelope
+    set?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    disconnect?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    delete?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    connect?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    update?: SleepSessionUpdateWithWhereUniqueWithoutUserInput | SleepSessionUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: SleepSessionUpdateManyWithWhereWithoutUserInput | SleepSessionUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: SleepSessionScalarWhereInput | SleepSessionScalarWhereInput[]
+  }
+
   export type MoodLogUpdateManyWithoutUserNestedInput = {
     create?: XOR<MoodLogCreateWithoutUserInput, MoodLogUncheckedCreateWithoutUserInput> | MoodLogCreateWithoutUserInput[] | MoodLogUncheckedCreateWithoutUserInput[]
     connectOrCreate?: MoodLogCreateOrConnectWithoutUserInput | MoodLogCreateOrConnectWithoutUserInput[]
@@ -108490,6 +111738,20 @@ export namespace Prisma {
     update?: JournalEntryUpdateWithWhereUniqueWithoutUserInput | JournalEntryUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: JournalEntryUpdateManyWithWhereWithoutUserInput | JournalEntryUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: JournalEntryScalarWhereInput | JournalEntryScalarWhereInput[]
+  }
+
+  export type JournalRevisionUpdateManyWithoutUserNestedInput = {
+    create?: XOR<JournalRevisionCreateWithoutUserInput, JournalRevisionUncheckedCreateWithoutUserInput> | JournalRevisionCreateWithoutUserInput[] | JournalRevisionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutUserInput | JournalRevisionCreateOrConnectWithoutUserInput[]
+    upsert?: JournalRevisionUpsertWithWhereUniqueWithoutUserInput | JournalRevisionUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: JournalRevisionCreateManyUserInputEnvelope
+    set?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    disconnect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    delete?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    update?: JournalRevisionUpdateWithWhereUniqueWithoutUserInput | JournalRevisionUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: JournalRevisionUpdateManyWithWhereWithoutUserInput | JournalRevisionUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: JournalRevisionScalarWhereInput | JournalRevisionScalarWhereInput[]
   }
 
   export type DailyReflectionUpdateManyWithoutUserNestedInput = {
@@ -109166,6 +112428,20 @@ export namespace Prisma {
     deleteMany?: SleepLogScalarWhereInput | SleepLogScalarWhereInput[]
   }
 
+  export type SleepSessionUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<SleepSessionCreateWithoutUserInput, SleepSessionUncheckedCreateWithoutUserInput> | SleepSessionCreateWithoutUserInput[] | SleepSessionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: SleepSessionCreateOrConnectWithoutUserInput | SleepSessionCreateOrConnectWithoutUserInput[]
+    upsert?: SleepSessionUpsertWithWhereUniqueWithoutUserInput | SleepSessionUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: SleepSessionCreateManyUserInputEnvelope
+    set?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    disconnect?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    delete?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    connect?: SleepSessionWhereUniqueInput | SleepSessionWhereUniqueInput[]
+    update?: SleepSessionUpdateWithWhereUniqueWithoutUserInput | SleepSessionUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: SleepSessionUpdateManyWithWhereWithoutUserInput | SleepSessionUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: SleepSessionScalarWhereInput | SleepSessionScalarWhereInput[]
+  }
+
   export type MoodLogUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<MoodLogCreateWithoutUserInput, MoodLogUncheckedCreateWithoutUserInput> | MoodLogCreateWithoutUserInput[] | MoodLogUncheckedCreateWithoutUserInput[]
     connectOrCreate?: MoodLogCreateOrConnectWithoutUserInput | MoodLogCreateOrConnectWithoutUserInput[]
@@ -109248,6 +112524,20 @@ export namespace Prisma {
     update?: JournalEntryUpdateWithWhereUniqueWithoutUserInput | JournalEntryUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: JournalEntryUpdateManyWithWhereWithoutUserInput | JournalEntryUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: JournalEntryScalarWhereInput | JournalEntryScalarWhereInput[]
+  }
+
+  export type JournalRevisionUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<JournalRevisionCreateWithoutUserInput, JournalRevisionUncheckedCreateWithoutUserInput> | JournalRevisionCreateWithoutUserInput[] | JournalRevisionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutUserInput | JournalRevisionCreateOrConnectWithoutUserInput[]
+    upsert?: JournalRevisionUpsertWithWhereUniqueWithoutUserInput | JournalRevisionUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: JournalRevisionCreateManyUserInputEnvelope
+    set?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    disconnect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    delete?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    update?: JournalRevisionUpdateWithWhereUniqueWithoutUserInput | JournalRevisionUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: JournalRevisionUpdateManyWithWhereWithoutUserInput | JournalRevisionUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: JournalRevisionScalarWhereInput | JournalRevisionScalarWhereInput[]
   }
 
   export type DailyReflectionUncheckedUpdateManyWithoutUserNestedInput = {
@@ -110266,6 +113556,34 @@ export namespace Prisma {
     upsert?: TagUpsertWithoutJournalEntriesInput
     connect?: TagWhereUniqueInput
     update?: XOR<XOR<TagUpdateToOneWithWhereWithoutJournalEntriesInput, TagUpdateWithoutJournalEntriesInput>, TagUncheckedUpdateWithoutJournalEntriesInput>
+  }
+
+  export type JournalEntryCreateNestedOneWithoutRevisionsInput = {
+    create?: XOR<JournalEntryCreateWithoutRevisionsInput, JournalEntryUncheckedCreateWithoutRevisionsInput>
+    connectOrCreate?: JournalEntryCreateOrConnectWithoutRevisionsInput
+    connect?: JournalEntryWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutJournalRevisionsInput = {
+    create?: XOR<UserCreateWithoutJournalRevisionsInput, UserUncheckedCreateWithoutJournalRevisionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutJournalRevisionsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type JournalEntryUpdateOneRequiredWithoutRevisionsNestedInput = {
+    create?: XOR<JournalEntryCreateWithoutRevisionsInput, JournalEntryUncheckedCreateWithoutRevisionsInput>
+    connectOrCreate?: JournalEntryCreateOrConnectWithoutRevisionsInput
+    upsert?: JournalEntryUpsertWithoutRevisionsInput
+    connect?: JournalEntryWhereUniqueInput
+    update?: XOR<XOR<JournalEntryUpdateToOneWithWhereWithoutRevisionsInput, JournalEntryUpdateWithoutRevisionsInput>, JournalEntryUncheckedUpdateWithoutRevisionsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutJournalRevisionsNestedInput = {
+    create?: XOR<UserCreateWithoutJournalRevisionsInput, UserUncheckedCreateWithoutJournalRevisionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutJournalRevisionsInput
+    upsert?: UserUpsertWithoutJournalRevisionsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutJournalRevisionsInput, UserUpdateWithoutJournalRevisionsInput>, UserUncheckedUpdateWithoutJournalRevisionsInput>
   }
 
   export type UserCreateNestedOneWithoutRoutineTemplatesInput = {
@@ -111708,6 +115026,28 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSleepLogsInput, UserUpdateWithoutSleepLogsInput>, UserUncheckedUpdateWithoutSleepLogsInput>
   }
 
+  export type UserCreateNestedOneWithoutSleepSessionsInput = {
+    create?: XOR<UserCreateWithoutSleepSessionsInput, UserUncheckedCreateWithoutSleepSessionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSleepSessionsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type EnumSleepSessionStatusFieldUpdateOperationsInput = {
+    set?: $Enums.SleepSessionStatus
+  }
+
+  export type EnumSleepStartSourceFieldUpdateOperationsInput = {
+    set?: $Enums.SleepStartSource
+  }
+
+  export type UserUpdateOneRequiredWithoutSleepSessionsNestedInput = {
+    create?: XOR<UserCreateWithoutSleepSessionsInput, UserUncheckedCreateWithoutSleepSessionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutSleepSessionsInput
+    upsert?: UserUpsertWithoutSleepSessionsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutSleepSessionsInput, UserUpdateWithoutSleepSessionsInput>, UserUncheckedUpdateWithoutSleepSessionsInput>
+  }
+
   export type UserCreateNestedOneWithoutMoodLogsInput = {
     create?: XOR<UserCreateWithoutMoodLogsInput, UserUncheckedCreateWithoutMoodLogsInput>
     connectOrCreate?: UserCreateOrConnectWithoutMoodLogsInput
@@ -111823,11 +115163,25 @@ export namespace Prisma {
     connect?: JournalEntryTagWhereUniqueInput | JournalEntryTagWhereUniqueInput[]
   }
 
+  export type JournalRevisionCreateNestedManyWithoutEntryInput = {
+    create?: XOR<JournalRevisionCreateWithoutEntryInput, JournalRevisionUncheckedCreateWithoutEntryInput> | JournalRevisionCreateWithoutEntryInput[] | JournalRevisionUncheckedCreateWithoutEntryInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutEntryInput | JournalRevisionCreateOrConnectWithoutEntryInput[]
+    createMany?: JournalRevisionCreateManyEntryInputEnvelope
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+  }
+
   export type JournalEntryTagUncheckedCreateNestedManyWithoutEntryInput = {
     create?: XOR<JournalEntryTagCreateWithoutEntryInput, JournalEntryTagUncheckedCreateWithoutEntryInput> | JournalEntryTagCreateWithoutEntryInput[] | JournalEntryTagUncheckedCreateWithoutEntryInput[]
     connectOrCreate?: JournalEntryTagCreateOrConnectWithoutEntryInput | JournalEntryTagCreateOrConnectWithoutEntryInput[]
     createMany?: JournalEntryTagCreateManyEntryInputEnvelope
     connect?: JournalEntryTagWhereUniqueInput | JournalEntryTagWhereUniqueInput[]
+  }
+
+  export type JournalRevisionUncheckedCreateNestedManyWithoutEntryInput = {
+    create?: XOR<JournalRevisionCreateWithoutEntryInput, JournalRevisionUncheckedCreateWithoutEntryInput> | JournalRevisionCreateWithoutEntryInput[] | JournalRevisionUncheckedCreateWithoutEntryInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutEntryInput | JournalRevisionCreateOrConnectWithoutEntryInput[]
+    createMany?: JournalRevisionCreateManyEntryInputEnvelope
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
   }
 
   export type UserUpdateOneRequiredWithoutJournalEntriesNestedInput = {
@@ -111852,6 +115206,20 @@ export namespace Prisma {
     deleteMany?: JournalEntryTagScalarWhereInput | JournalEntryTagScalarWhereInput[]
   }
 
+  export type JournalRevisionUpdateManyWithoutEntryNestedInput = {
+    create?: XOR<JournalRevisionCreateWithoutEntryInput, JournalRevisionUncheckedCreateWithoutEntryInput> | JournalRevisionCreateWithoutEntryInput[] | JournalRevisionUncheckedCreateWithoutEntryInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutEntryInput | JournalRevisionCreateOrConnectWithoutEntryInput[]
+    upsert?: JournalRevisionUpsertWithWhereUniqueWithoutEntryInput | JournalRevisionUpsertWithWhereUniqueWithoutEntryInput[]
+    createMany?: JournalRevisionCreateManyEntryInputEnvelope
+    set?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    disconnect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    delete?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    update?: JournalRevisionUpdateWithWhereUniqueWithoutEntryInput | JournalRevisionUpdateWithWhereUniqueWithoutEntryInput[]
+    updateMany?: JournalRevisionUpdateManyWithWhereWithoutEntryInput | JournalRevisionUpdateManyWithWhereWithoutEntryInput[]
+    deleteMany?: JournalRevisionScalarWhereInput | JournalRevisionScalarWhereInput[]
+  }
+
   export type JournalEntryTagUncheckedUpdateManyWithoutEntryNestedInput = {
     create?: XOR<JournalEntryTagCreateWithoutEntryInput, JournalEntryTagUncheckedCreateWithoutEntryInput> | JournalEntryTagCreateWithoutEntryInput[] | JournalEntryTagUncheckedCreateWithoutEntryInput[]
     connectOrCreate?: JournalEntryTagCreateOrConnectWithoutEntryInput | JournalEntryTagCreateOrConnectWithoutEntryInput[]
@@ -111864,6 +115232,20 @@ export namespace Prisma {
     update?: JournalEntryTagUpdateWithWhereUniqueWithoutEntryInput | JournalEntryTagUpdateWithWhereUniqueWithoutEntryInput[]
     updateMany?: JournalEntryTagUpdateManyWithWhereWithoutEntryInput | JournalEntryTagUpdateManyWithWhereWithoutEntryInput[]
     deleteMany?: JournalEntryTagScalarWhereInput | JournalEntryTagScalarWhereInput[]
+  }
+
+  export type JournalRevisionUncheckedUpdateManyWithoutEntryNestedInput = {
+    create?: XOR<JournalRevisionCreateWithoutEntryInput, JournalRevisionUncheckedCreateWithoutEntryInput> | JournalRevisionCreateWithoutEntryInput[] | JournalRevisionUncheckedCreateWithoutEntryInput[]
+    connectOrCreate?: JournalRevisionCreateOrConnectWithoutEntryInput | JournalRevisionCreateOrConnectWithoutEntryInput[]
+    upsert?: JournalRevisionUpsertWithWhereUniqueWithoutEntryInput | JournalRevisionUpsertWithWhereUniqueWithoutEntryInput[]
+    createMany?: JournalRevisionCreateManyEntryInputEnvelope
+    set?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    disconnect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    delete?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    connect?: JournalRevisionWhereUniqueInput | JournalRevisionWhereUniqueInput[]
+    update?: JournalRevisionUpdateWithWhereUniqueWithoutEntryInput | JournalRevisionUpdateWithWhereUniqueWithoutEntryInput[]
+    updateMany?: JournalRevisionUpdateManyWithWhereWithoutEntryInput | JournalRevisionUpdateManyWithWhereWithoutEntryInput[]
+    deleteMany?: JournalRevisionScalarWhereInput | JournalRevisionScalarWhereInput[]
   }
 
   export type UserCreateNestedOneWithoutFocusSessionsInput = {
@@ -113023,6 +116405,40 @@ export namespace Prisma {
     _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
+  export type NestedEnumSleepSessionStatusFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepSessionStatus | EnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepSessionStatusFilter<$PrismaModel> | $Enums.SleepSessionStatus
+  }
+
+  export type NestedEnumSleepStartSourceFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepStartSource | EnumSleepStartSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepStartSourceFilter<$PrismaModel> | $Enums.SleepStartSource
+  }
+
+  export type NestedEnumSleepSessionStatusWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepSessionStatus | EnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepSessionStatus[] | ListEnumSleepSessionStatusFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepSessionStatusWithAggregatesFilter<$PrismaModel> | $Enums.SleepSessionStatus
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSleepSessionStatusFilter<$PrismaModel>
+    _max?: NestedEnumSleepSessionStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumSleepStartSourceWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.SleepStartSource | EnumSleepStartSourceFieldRefInput<$PrismaModel>
+    in?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    notIn?: $Enums.SleepStartSource[] | ListEnumSleepStartSourceFieldRefInput<$PrismaModel>
+    not?: NestedEnumSleepStartSourceWithAggregatesFilter<$PrismaModel> | $Enums.SleepStartSource
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumSleepStartSourceFilter<$PrismaModel>
+    _max?: NestedEnumSleepStartSourceFilter<$PrismaModel>
+  }
+
   export type NestedEnumWeatherConditionFilter<$PrismaModel = never> = {
     equals?: $Enums.WeatherCondition | EnumWeatherConditionFieldRefInput<$PrismaModel>
     in?: $Enums.WeatherCondition[] | ListEnumWeatherConditionFieldRefInput<$PrismaModel>
@@ -113263,6 +116679,9 @@ export namespace Prisma {
     minSleepDuration?: number | null
     sleepReminder?: boolean
     sleepReminderTime?: string | null
+    autoStartSleepAfterMinutes?: number
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: number
     weightNonNeg?: number
     weightGrowth?: number
     weightBonus?: number
@@ -113310,6 +116729,9 @@ export namespace Prisma {
     minSleepDuration?: number | null
     sleepReminder?: boolean
     sleepReminderTime?: string | null
+    autoStartSleepAfterMinutes?: number
+    sleepAutoStartEnabled?: boolean
+    sleepAutoStartAfterMinutes?: number
     weightNonNeg?: number
     weightGrowth?: number
     weightBonus?: number
@@ -114068,6 +117490,40 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type SleepSessionCreateWithoutUserInput = {
+    id?: string
+    startedAt?: Date | string
+    endedAt?: Date | string | null
+    status?: $Enums.SleepSessionStatus
+    source?: $Enums.SleepStartSource
+    promptKey?: string | null
+    durationMinutes?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SleepSessionUncheckedCreateWithoutUserInput = {
+    id?: string
+    startedAt?: Date | string
+    endedAt?: Date | string | null
+    status?: $Enums.SleepSessionStatus
+    source?: $Enums.SleepStartSource
+    promptKey?: string | null
+    durationMinutes?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type SleepSessionCreateOrConnectWithoutUserInput = {
+    where: SleepSessionWhereUniqueInput
+    create: XOR<SleepSessionCreateWithoutUserInput, SleepSessionUncheckedCreateWithoutUserInput>
+  }
+
+  export type SleepSessionCreateManyUserInputEnvelope = {
+    data: SleepSessionCreateManyUserInput | SleepSessionCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type MoodLogCreateWithoutUserInput = {
     id?: string
     timestamp?: Date | string
@@ -114260,9 +117716,11 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     tags?: JournalEntryTagCreateNestedManyWithoutEntryInput
+    revisions?: JournalRevisionCreateNestedManyWithoutEntryInput
   }
 
   export type JournalEntryUncheckedCreateWithoutUserInput = {
@@ -114275,9 +117733,11 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     tags?: JournalEntryTagUncheckedCreateNestedManyWithoutEntryInput
+    revisions?: JournalRevisionUncheckedCreateNestedManyWithoutEntryInput
   }
 
   export type JournalEntryCreateOrConnectWithoutUserInput = {
@@ -114287,6 +117747,32 @@ export namespace Prisma {
 
   export type JournalEntryCreateManyUserInputEnvelope = {
     data: JournalEntryCreateManyUserInput | JournalEntryCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type JournalRevisionCreateWithoutUserInput = {
+    id?: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+    entry: JournalEntryCreateNestedOneWithoutRevisionsInput
+  }
+
+  export type JournalRevisionUncheckedCreateWithoutUserInput = {
+    id?: string
+    entryId: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type JournalRevisionCreateOrConnectWithoutUserInput = {
+    where: JournalRevisionWhereUniqueInput
+    create: XOR<JournalRevisionCreateWithoutUserInput, JournalRevisionUncheckedCreateWithoutUserInput>
+  }
+
+  export type JournalRevisionCreateManyUserInputEnvelope = {
+    data: JournalRevisionCreateManyUserInput | JournalRevisionCreateManyUserInput[]
     skipDuplicates?: boolean
   }
 
@@ -115549,6 +119035,9 @@ export namespace Prisma {
     minSleepDuration?: NullableIntFieldUpdateOperationsInput | number | null
     sleepReminder?: BoolFieldUpdateOperationsInput | boolean
     sleepReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    autoStartSleepAfterMinutes?: IntFieldUpdateOperationsInput | number
+    sleepAutoStartEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepAutoStartAfterMinutes?: IntFieldUpdateOperationsInput | number
     weightNonNeg?: FloatFieldUpdateOperationsInput | number
     weightGrowth?: FloatFieldUpdateOperationsInput | number
     weightBonus?: FloatFieldUpdateOperationsInput | number
@@ -115596,6 +119085,9 @@ export namespace Prisma {
     minSleepDuration?: NullableIntFieldUpdateOperationsInput | number | null
     sleepReminder?: BoolFieldUpdateOperationsInput | boolean
     sleepReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    autoStartSleepAfterMinutes?: IntFieldUpdateOperationsInput | number
+    sleepAutoStartEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepAutoStartAfterMinutes?: IntFieldUpdateOperationsInput | number
     weightNonNeg?: FloatFieldUpdateOperationsInput | number
     weightGrowth?: FloatFieldUpdateOperationsInput | number
     weightBonus?: FloatFieldUpdateOperationsInput | number
@@ -116203,6 +119695,38 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"SleepLog"> | Date | string
   }
 
+  export type SleepSessionUpsertWithWhereUniqueWithoutUserInput = {
+    where: SleepSessionWhereUniqueInput
+    update: XOR<SleepSessionUpdateWithoutUserInput, SleepSessionUncheckedUpdateWithoutUserInput>
+    create: XOR<SleepSessionCreateWithoutUserInput, SleepSessionUncheckedCreateWithoutUserInput>
+  }
+
+  export type SleepSessionUpdateWithWhereUniqueWithoutUserInput = {
+    where: SleepSessionWhereUniqueInput
+    data: XOR<SleepSessionUpdateWithoutUserInput, SleepSessionUncheckedUpdateWithoutUserInput>
+  }
+
+  export type SleepSessionUpdateManyWithWhereWithoutUserInput = {
+    where: SleepSessionScalarWhereInput
+    data: XOR<SleepSessionUpdateManyMutationInput, SleepSessionUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type SleepSessionScalarWhereInput = {
+    AND?: SleepSessionScalarWhereInput | SleepSessionScalarWhereInput[]
+    OR?: SleepSessionScalarWhereInput[]
+    NOT?: SleepSessionScalarWhereInput | SleepSessionScalarWhereInput[]
+    id?: StringFilter<"SleepSession"> | string
+    userId?: StringFilter<"SleepSession"> | string
+    startedAt?: DateTimeFilter<"SleepSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"SleepSession"> | Date | string | null
+    status?: EnumSleepSessionStatusFilter<"SleepSession"> | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFilter<"SleepSession"> | $Enums.SleepStartSource
+    promptKey?: StringNullableFilter<"SleepSession"> | string | null
+    durationMinutes?: IntNullableFilter<"SleepSession"> | number | null
+    createdAt?: DateTimeFilter<"SleepSession"> | Date | string
+    updatedAt?: DateTimeFilter<"SleepSession"> | Date | string
+  }
+
   export type MoodLogUpsertWithWhereUniqueWithoutUserInput = {
     where: MoodLogWhereUniqueInput
     update: XOR<MoodLogUpdateWithoutUserInput, MoodLogUncheckedUpdateWithoutUserInput>
@@ -116399,8 +119923,37 @@ export namespace Prisma {
     gratitude?: StringNullableFilter<"JournalEntry"> | string | null
     isFavorite?: BoolFilter<"JournalEntry"> | boolean
     isArchived?: BoolFilter<"JournalEntry"> | boolean
+    deletedAt?: DateTimeNullableFilter<"JournalEntry"> | Date | string | null
     createdAt?: DateTimeFilter<"JournalEntry"> | Date | string
     updatedAt?: DateTimeFilter<"JournalEntry"> | Date | string
+  }
+
+  export type JournalRevisionUpsertWithWhereUniqueWithoutUserInput = {
+    where: JournalRevisionWhereUniqueInput
+    update: XOR<JournalRevisionUpdateWithoutUserInput, JournalRevisionUncheckedUpdateWithoutUserInput>
+    create: XOR<JournalRevisionCreateWithoutUserInput, JournalRevisionUncheckedCreateWithoutUserInput>
+  }
+
+  export type JournalRevisionUpdateWithWhereUniqueWithoutUserInput = {
+    where: JournalRevisionWhereUniqueInput
+    data: XOR<JournalRevisionUpdateWithoutUserInput, JournalRevisionUncheckedUpdateWithoutUserInput>
+  }
+
+  export type JournalRevisionUpdateManyWithWhereWithoutUserInput = {
+    where: JournalRevisionScalarWhereInput
+    data: XOR<JournalRevisionUpdateManyMutationInput, JournalRevisionUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type JournalRevisionScalarWhereInput = {
+    AND?: JournalRevisionScalarWhereInput | JournalRevisionScalarWhereInput[]
+    OR?: JournalRevisionScalarWhereInput[]
+    NOT?: JournalRevisionScalarWhereInput | JournalRevisionScalarWhereInput[]
+    id?: StringFilter<"JournalRevision"> | string
+    entryId?: StringFilter<"JournalRevision"> | string
+    userId?: StringFilter<"JournalRevision"> | string
+    title?: StringNullableFilter<"JournalRevision"> | string | null
+    content?: StringFilter<"JournalRevision"> | string
+    createdAt?: DateTimeFilter<"JournalRevision"> | Date | string
   }
 
   export type DailyReflectionUpsertWithWhereUniqueWithoutUserInput = {
@@ -117536,12 +121089,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -117618,12 +121173,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -117716,12 +121273,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -117798,12 +121357,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -117880,12 +121441,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -117962,12 +121525,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -118060,12 +121625,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -118142,12 +121709,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -118224,12 +121793,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -118306,12 +121877,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -118404,12 +121977,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -118486,12 +122061,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -118569,12 +122146,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -118651,12 +122230,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -118749,12 +122330,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -118831,12 +122414,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -118913,12 +122498,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -118995,12 +122582,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -119093,12 +122682,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -119175,12 +122766,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -119256,12 +122849,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -119338,12 +122933,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -119674,12 +123271,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -119756,12 +123355,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -119902,12 +123503,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -119984,12 +123587,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -120162,12 +123767,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -120244,12 +123851,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -120978,9 +124587,11 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutJournalEntriesInput
+    revisions?: JournalRevisionCreateNestedManyWithoutEntryInput
   }
 
   export type JournalEntryUncheckedCreateWithoutTagsInput = {
@@ -120994,8 +124605,10 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    revisions?: JournalRevisionUncheckedCreateNestedManyWithoutEntryInput
   }
 
   export type JournalEntryCreateOrConnectWithoutTagsInput = {
@@ -121053,9 +124666,11 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutJournalEntriesNestedInput
+    revisions?: JournalRevisionUpdateManyWithoutEntryNestedInput
   }
 
   export type JournalEntryUncheckedUpdateWithoutTagsInput = {
@@ -121069,8 +124684,10 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revisions?: JournalRevisionUncheckedUpdateManyWithoutEntryNestedInput
   }
 
   export type TagUpsertWithoutJournalEntriesInput = {
@@ -121106,6 +124723,442 @@ export namespace Prisma {
     habits?: HabitTagUncheckedUpdateManyWithoutTagNestedInput
     goals?: GoalTagUncheckedUpdateManyWithoutTagNestedInput
     tasks?: TaskTagUncheckedUpdateManyWithoutTagNestedInput
+  }
+
+  export type JournalEntryCreateWithoutRevisionsInput = {
+    id?: string
+    date: string
+    title?: string | null
+    content: string
+    mood?: number | null
+    energy?: number | null
+    gratitude?: string | null
+    isFavorite?: boolean
+    isArchived?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutJournalEntriesInput
+    tags?: JournalEntryTagCreateNestedManyWithoutEntryInput
+  }
+
+  export type JournalEntryUncheckedCreateWithoutRevisionsInput = {
+    id?: string
+    userId: string
+    date: string
+    title?: string | null
+    content: string
+    mood?: number | null
+    energy?: number | null
+    gratitude?: string | null
+    isFavorite?: boolean
+    isArchived?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tags?: JournalEntryTagUncheckedCreateNestedManyWithoutEntryInput
+  }
+
+  export type JournalEntryCreateOrConnectWithoutRevisionsInput = {
+    where: JournalEntryWhereUniqueInput
+    create: XOR<JournalEntryCreateWithoutRevisionsInput, JournalEntryUncheckedCreateWithoutRevisionsInput>
+  }
+
+  export type UserCreateWithoutJournalRevisionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionCreateNestedOneWithoutUserInput
+    quotes?: QuoteCreateNestedManyWithoutUserInput
+    categories?: CategoryCreateNestedManyWithoutUserInput
+    tags?: TagCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogCreateNestedManyWithoutUserInput
+    habits?: HabitCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateCreateNestedManyWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    projects?: ProjectCreateNestedManyWithoutUserInput
+    tasks?: TaskCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
+    breaks?: BreakCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightCreateNestedManyWithoutUserInput
+    streak?: StreakCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneCreateNestedManyWithoutUserInput
+    achievements?: AchievementCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetCreateNestedManyWithoutUserInput
+    challenges?: ChallengeCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantCreateNestedManyWithoutUserInput
+    connections?: UserConnectionCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleCreateNestedManyWithoutUserInput
+    locations?: LocationCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenCreateNestedManyWithoutUserInput
+    templates?: TemplateCreateNestedManyWithoutUserInput
+    attachments?: AttachmentCreateNestedManyWithoutUserInput
+    integrations?: IntegrationCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
+    dataExports?: DataExportCreateNestedManyWithoutUserInput
+    feedback?: FeedbackCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutJournalRevisionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
+    quotes?: QuoteUncheckedCreateNestedManyWithoutUserInput
+    categories?: CategoryUncheckedCreateNestedManyWithoutUserInput
+    tags?: TagUncheckedCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockUncheckedCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogUncheckedCreateNestedManyWithoutUserInput
+    habits?: HabitUncheckedCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedCreateNestedManyWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
+    breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternUncheckedCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreUncheckedCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightUncheckedCreateNestedManyWithoutUserInput
+    streak?: StreakUncheckedCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneUncheckedCreateNestedManyWithoutUserInput
+    achievements?: AchievementUncheckedCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewUncheckedCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetUncheckedCreateNestedManyWithoutUserInput
+    challenges?: ChallengeUncheckedCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantUncheckedCreateNestedManyWithoutUserInput
+    connections?: UserConnectionUncheckedCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionUncheckedCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleUncheckedCreateNestedManyWithoutUserInput
+    locations?: LocationUncheckedCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncUncheckedCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogUncheckedCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogUncheckedCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutUserInput
+    attachments?: AttachmentUncheckedCreateNestedManyWithoutUserInput
+    integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
+    dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
+    feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutJournalRevisionsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutJournalRevisionsInput, UserUncheckedCreateWithoutJournalRevisionsInput>
+  }
+
+  export type JournalEntryUpsertWithoutRevisionsInput = {
+    update: XOR<JournalEntryUpdateWithoutRevisionsInput, JournalEntryUncheckedUpdateWithoutRevisionsInput>
+    create: XOR<JournalEntryCreateWithoutRevisionsInput, JournalEntryUncheckedCreateWithoutRevisionsInput>
+    where?: JournalEntryWhereInput
+  }
+
+  export type JournalEntryUpdateToOneWithWhereWithoutRevisionsInput = {
+    where?: JournalEntryWhereInput
+    data: XOR<JournalEntryUpdateWithoutRevisionsInput, JournalEntryUncheckedUpdateWithoutRevisionsInput>
+  }
+
+  export type JournalEntryUpdateWithoutRevisionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    date?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    mood?: NullableIntFieldUpdateOperationsInput | number | null
+    energy?: NullableIntFieldUpdateOperationsInput | number | null
+    gratitude?: NullableStringFieldUpdateOperationsInput | string | null
+    isFavorite?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutJournalEntriesNestedInput
+    tags?: JournalEntryTagUpdateManyWithoutEntryNestedInput
+  }
+
+  export type JournalEntryUncheckedUpdateWithoutRevisionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    date?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    mood?: NullableIntFieldUpdateOperationsInput | number | null
+    energy?: NullableIntFieldUpdateOperationsInput | number | null
+    gratitude?: NullableStringFieldUpdateOperationsInput | string | null
+    isFavorite?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tags?: JournalEntryTagUncheckedUpdateManyWithoutEntryNestedInput
+  }
+
+  export type UserUpsertWithoutJournalRevisionsInput = {
+    update: XOR<UserUpdateWithoutJournalRevisionsInput, UserUncheckedUpdateWithoutJournalRevisionsInput>
+    create: XOR<UserCreateWithoutJournalRevisionsInput, UserUncheckedCreateWithoutJournalRevisionsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutJournalRevisionsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutJournalRevisionsInput, UserUncheckedUpdateWithoutJournalRevisionsInput>
+  }
+
+  export type UserUpdateWithoutJournalRevisionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUpdateManyWithoutUserNestedInput
+    categories?: CategoryUpdateManyWithoutUserNestedInput
+    tags?: TagUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUpdateManyWithoutUserNestedInput
+    habits?: HabitUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUpdateManyWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    projects?: ProjectUpdateManyWithoutUserNestedInput
+    tasks?: TaskUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
+    breaks?: BreakUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUpdateManyWithoutUserNestedInput
+    streak?: StreakUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUpdateManyWithoutUserNestedInput
+    locations?: LocationUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUpdateManyWithoutUserNestedInput
+    templates?: TemplateUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutJournalRevisionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUncheckedUpdateManyWithoutUserNestedInput
+    categories?: CategoryUncheckedUpdateManyWithoutUserNestedInput
+    tags?: TagUncheckedUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUncheckedUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUncheckedUpdateManyWithoutUserNestedInput
+    habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedUpdateManyWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
+    breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUncheckedUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUncheckedUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUncheckedUpdateManyWithoutUserNestedInput
+    streak?: StreakUncheckedUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUncheckedUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUncheckedUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUncheckedUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUncheckedUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUncheckedUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUncheckedUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUncheckedUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUncheckedUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUncheckedUpdateManyWithoutUserNestedInput
+    locations?: LocationUncheckedUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUncheckedUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUncheckedUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUncheckedUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutRoutineTemplatesInput = {
@@ -121150,12 +125203,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -121232,12 +125287,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -121412,12 +125469,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -121494,12 +125553,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -121608,12 +125669,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -121690,12 +125753,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -121908,12 +125973,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -121990,12 +126057,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -122178,12 +126247,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -122260,12 +126331,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -122397,12 +126470,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -122479,12 +126554,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -122653,12 +126730,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -122735,12 +126814,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -122886,12 +126967,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -122968,12 +127051,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -123050,12 +127135,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -123132,12 +127219,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -123429,12 +127518,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -123511,12 +127602,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -123801,12 +127894,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -123883,12 +127978,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -124060,12 +128157,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -124142,12 +128241,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -124297,12 +128398,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -124379,12 +128482,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -124556,12 +128661,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -124638,12 +128745,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -124720,12 +128829,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -124802,12 +128913,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -124922,12 +129035,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -125004,12 +129119,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -125310,12 +129427,14 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -125392,12 +129511,14 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -125695,12 +129816,14 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -125777,12 +129900,14 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -125952,12 +130077,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -126034,12 +130161,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -126486,12 +130615,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -126568,12 +130699,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -127150,12 +131283,14 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     projects?: ProjectCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -127232,12 +131367,14 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -127609,12 +131746,14 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     projects?: ProjectUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -127691,12 +131830,14 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -128249,12 +132390,14 @@ export namespace Prisma {
     goals?: GoalCreateNestedManyWithoutUserInput
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -128331,12 +132474,14 @@ export namespace Prisma {
     goals?: GoalUncheckedCreateNestedManyWithoutUserInput
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -128429,12 +132574,14 @@ export namespace Prisma {
     goals?: GoalUpdateManyWithoutUserNestedInput
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -128511,12 +132658,366 @@ export namespace Prisma {
     goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
+    breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUncheckedUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUncheckedUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUncheckedUpdateManyWithoutUserNestedInput
+    streak?: StreakUncheckedUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUncheckedUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUncheckedUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUncheckedUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUncheckedUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUncheckedUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUncheckedUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUncheckedUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUncheckedUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUncheckedUpdateManyWithoutUserNestedInput
+    locations?: LocationUncheckedUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUncheckedUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUncheckedUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUncheckedUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutSleepSessionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionCreateNestedOneWithoutUserInput
+    quotes?: QuoteCreateNestedManyWithoutUserInput
+    categories?: CategoryCreateNestedManyWithoutUserInput
+    tags?: TagCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogCreateNestedManyWithoutUserInput
+    habits?: HabitCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateCreateNestedManyWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    projects?: ProjectCreateNestedManyWithoutUserInput
+    tasks?: TaskCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
+    breaks?: BreakCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightCreateNestedManyWithoutUserInput
+    streak?: StreakCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneCreateNestedManyWithoutUserInput
+    achievements?: AchievementCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetCreateNestedManyWithoutUserInput
+    challenges?: ChallengeCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantCreateNestedManyWithoutUserInput
+    connections?: UserConnectionCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleCreateNestedManyWithoutUserInput
+    locations?: LocationCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenCreateNestedManyWithoutUserInput
+    templates?: TemplateCreateNestedManyWithoutUserInput
+    attachments?: AttachmentCreateNestedManyWithoutUserInput
+    integrations?: IntegrationCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
+    dataExports?: DataExportCreateNestedManyWithoutUserInput
+    feedback?: FeedbackCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutSleepSessionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
+    quotes?: QuoteUncheckedCreateNestedManyWithoutUserInput
+    categories?: CategoryUncheckedCreateNestedManyWithoutUserInput
+    tags?: TagUncheckedCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockUncheckedCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogUncheckedCreateNestedManyWithoutUserInput
+    habits?: HabitUncheckedCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedCreateNestedManyWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
+    breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternUncheckedCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreUncheckedCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightUncheckedCreateNestedManyWithoutUserInput
+    streak?: StreakUncheckedCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneUncheckedCreateNestedManyWithoutUserInput
+    achievements?: AchievementUncheckedCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewUncheckedCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetUncheckedCreateNestedManyWithoutUserInput
+    challenges?: ChallengeUncheckedCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantUncheckedCreateNestedManyWithoutUserInput
+    connections?: UserConnectionUncheckedCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionUncheckedCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleUncheckedCreateNestedManyWithoutUserInput
+    locations?: LocationUncheckedCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncUncheckedCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogUncheckedCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogUncheckedCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutUserInput
+    attachments?: AttachmentUncheckedCreateNestedManyWithoutUserInput
+    integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
+    dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
+    feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutSleepSessionsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutSleepSessionsInput, UserUncheckedCreateWithoutSleepSessionsInput>
+  }
+
+  export type UserUpsertWithoutSleepSessionsInput = {
+    update: XOR<UserUpdateWithoutSleepSessionsInput, UserUncheckedUpdateWithoutSleepSessionsInput>
+    create: XOR<UserCreateWithoutSleepSessionsInput, UserUncheckedCreateWithoutSleepSessionsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutSleepSessionsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutSleepSessionsInput, UserUncheckedUpdateWithoutSleepSessionsInput>
+  }
+
+  export type UserUpdateWithoutSleepSessionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUpdateManyWithoutUserNestedInput
+    categories?: CategoryUpdateManyWithoutUserNestedInput
+    tags?: TagUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUpdateManyWithoutUserNestedInput
+    habits?: HabitUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUpdateManyWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    projects?: ProjectUpdateManyWithoutUserNestedInput
+    tasks?: TaskUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
+    breaks?: BreakUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUpdateManyWithoutUserNestedInput
+    streak?: StreakUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUpdateManyWithoutUserNestedInput
+    locations?: LocationUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUpdateManyWithoutUserNestedInput
+    templates?: TemplateUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutSleepSessionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUncheckedUpdateManyWithoutUserNestedInput
+    categories?: CategoryUncheckedUpdateManyWithoutUserNestedInput
+    tags?: TagUncheckedUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUncheckedUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUncheckedUpdateManyWithoutUserNestedInput
+    habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedUpdateManyWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -128594,11 +133095,13 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -128676,11 +133179,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -128774,11 +133279,13 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -128856,11 +133363,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -128938,11 +133447,13 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -129020,11 +133531,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -129118,11 +133631,13 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -129200,11 +133715,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -129282,11 +133799,13 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -129364,11 +133883,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -129462,11 +133983,13 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -129544,11 +134067,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -129626,11 +134151,13 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -129708,11 +134235,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -129806,11 +134335,13 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -129888,11 +134419,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -129970,11 +134503,13 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -130052,11 +134587,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -130150,11 +134687,13 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -130232,11 +134771,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -130314,12 +134855,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -130396,12 +134939,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -130494,12 +135039,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -130576,12 +135123,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -130658,12 +135207,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
     timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
@@ -130740,12 +135291,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
     timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
@@ -130838,12 +135391,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
     timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
@@ -130920,12 +135475,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
     timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
@@ -131002,11 +135559,13 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -131084,11 +135643,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -131148,6 +135709,32 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type JournalRevisionCreateWithoutEntryInput = {
+    id?: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutJournalRevisionsInput
+  }
+
+  export type JournalRevisionUncheckedCreateWithoutEntryInput = {
+    id?: string
+    userId: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+  }
+
+  export type JournalRevisionCreateOrConnectWithoutEntryInput = {
+    where: JournalRevisionWhereUniqueInput
+    create: XOR<JournalRevisionCreateWithoutEntryInput, JournalRevisionUncheckedCreateWithoutEntryInput>
+  }
+
+  export type JournalRevisionCreateManyEntryInputEnvelope = {
+    data: JournalRevisionCreateManyEntryInput | JournalRevisionCreateManyEntryInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserUpsertWithoutJournalEntriesInput = {
     update: XOR<UserUpdateWithoutJournalEntriesInput, UserUncheckedUpdateWithoutJournalEntriesInput>
     create: XOR<UserCreateWithoutJournalEntriesInput, UserUncheckedCreateWithoutJournalEntriesInput>
@@ -131202,11 +135789,13 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -131284,11 +135873,13 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -131339,6 +135930,22 @@ export namespace Prisma {
     data: XOR<JournalEntryTagUpdateManyMutationInput, JournalEntryTagUncheckedUpdateManyWithoutEntryInput>
   }
 
+  export type JournalRevisionUpsertWithWhereUniqueWithoutEntryInput = {
+    where: JournalRevisionWhereUniqueInput
+    update: XOR<JournalRevisionUpdateWithoutEntryInput, JournalRevisionUncheckedUpdateWithoutEntryInput>
+    create: XOR<JournalRevisionCreateWithoutEntryInput, JournalRevisionUncheckedCreateWithoutEntryInput>
+  }
+
+  export type JournalRevisionUpdateWithWhereUniqueWithoutEntryInput = {
+    where: JournalRevisionWhereUniqueInput
+    data: XOR<JournalRevisionUpdateWithoutEntryInput, JournalRevisionUncheckedUpdateWithoutEntryInput>
+  }
+
+  export type JournalRevisionUpdateManyWithWhereWithoutEntryInput = {
+    where: JournalRevisionScalarWhereInput
+    data: XOR<JournalRevisionUpdateManyMutationInput, JournalRevisionUncheckedUpdateManyWithoutEntryInput>
+  }
+
   export type UserCreateWithoutFocusSessionsInput = {
     id?: string
     name?: string | null
@@ -131382,12 +135989,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
     timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
@@ -131464,12 +136073,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
     timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
@@ -131635,12 +136246,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
     timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
@@ -131717,12 +136330,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
     timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
@@ -131860,12 +136475,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
@@ -131942,12 +136559,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
@@ -132091,12 +136710,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
@@ -132173,12 +136794,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
@@ -132312,12 +136935,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -132394,12 +137019,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -132673,12 +137300,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -132755,12 +137384,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -133036,12 +137667,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -133118,12 +137751,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -133216,12 +137851,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -133298,12 +137935,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -133380,12 +138019,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -133462,12 +138103,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -133549,12 +138192,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -133631,12 +138276,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -133729,12 +138376,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -133811,12 +138460,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -133904,12 +138555,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -133986,12 +138639,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -134068,12 +138723,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -134150,12 +138807,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -134274,12 +138933,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -134356,12 +139017,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -134487,12 +139150,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -134569,12 +139234,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -134706,12 +139373,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -134788,12 +139457,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -134870,12 +139541,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -134952,12 +139625,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -135050,12 +139725,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -135132,12 +139809,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -135214,12 +139893,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -135296,12 +139977,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -135394,12 +140077,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -135476,12 +140161,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -135558,12 +140245,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -135640,12 +140329,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -135738,12 +140429,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -135820,12 +140513,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -135902,12 +140597,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -135984,12 +140681,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -136082,12 +140781,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -136164,12 +140865,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -136246,12 +140949,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -136328,12 +141033,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -136426,12 +141133,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -136508,12 +141217,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -136590,12 +141301,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -136672,12 +141385,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -136770,12 +141485,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -136852,12 +141569,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -136934,12 +141653,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -137016,12 +141737,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -137114,12 +141837,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -137196,12 +141921,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -137278,12 +142005,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -137360,12 +142089,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -137458,12 +142189,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -137540,12 +142273,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -137622,12 +142357,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -137704,12 +142441,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -137802,12 +142541,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -137884,12 +142625,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -137966,12 +142709,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -138048,12 +142793,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -138146,12 +142893,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -138228,12 +142977,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -138310,12 +143061,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -138392,12 +143145,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -138490,12 +143245,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -138572,12 +143329,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -138654,12 +143413,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -138736,12 +143497,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -138834,12 +143597,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -138916,12 +143681,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -138998,12 +143765,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -139080,12 +143849,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -139178,12 +143949,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -139260,12 +144033,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -139342,12 +144117,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -139424,12 +144201,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -139522,12 +144301,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -139604,12 +144385,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -139686,12 +144469,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -139768,12 +144553,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -139866,12 +144653,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -139948,12 +144737,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -140030,12 +144821,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -140112,12 +144905,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -140210,12 +145005,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -140292,12 +145089,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -140374,12 +145173,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -140456,12 +145257,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -140554,12 +145357,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -140636,12 +145441,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -140718,12 +145525,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -140800,12 +145609,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -140898,12 +145709,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -140980,12 +145793,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -141062,12 +145877,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -141144,12 +145961,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -141242,12 +146061,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -141324,12 +146145,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -141406,12 +146229,14 @@ export namespace Prisma {
     projects?: ProjectCreateNestedManyWithoutUserInput
     tasks?: TaskCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
     breaks?: BreakCreateNestedManyWithoutUserInput
@@ -141488,12 +146313,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
     sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
     moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
     energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
     weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
     dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
     focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
     breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
@@ -141586,12 +146413,14 @@ export namespace Prisma {
     projects?: ProjectUpdateManyWithoutUserNestedInput
     tasks?: TaskUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
     breaks?: BreakUpdateManyWithoutUserNestedInput
@@ -141668,12 +146497,14 @@ export namespace Prisma {
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
     sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
     moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
     energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
     weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
     dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
     breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
@@ -141949,6 +146780,18 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type SleepSessionCreateManyUserInput = {
+    id?: string
+    startedAt?: Date | string
+    endedAt?: Date | string | null
+    status?: $Enums.SleepSessionStatus
+    source?: $Enums.SleepStartSource
+    promptKey?: string | null
+    durationMinutes?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type MoodLogCreateManyUserInput = {
     id?: string
     timestamp?: Date | string
@@ -142025,8 +146868,17 @@ export namespace Prisma {
     gratitude?: string | null
     isFavorite?: boolean
     isArchived?: boolean
+    deletedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
+  }
+
+  export type JournalRevisionCreateManyUserInput = {
+    id?: string
+    entryId: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
   }
 
   export type DailyReflectionCreateManyUserInput = {
@@ -143255,6 +148107,42 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type SleepSessionUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SleepSessionUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SleepSessionUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    status?: EnumSleepSessionStatusFieldUpdateOperationsInput | $Enums.SleepSessionStatus
+    source?: EnumSleepStartSourceFieldUpdateOperationsInput | $Enums.SleepStartSource
+    promptKey?: NullableStringFieldUpdateOperationsInput | string | null
+    durationMinutes?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type MoodLogUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     timestamp?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -143463,9 +148351,11 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: JournalEntryTagUpdateManyWithoutEntryNestedInput
+    revisions?: JournalRevisionUpdateManyWithoutEntryNestedInput
   }
 
   export type JournalEntryUncheckedUpdateWithoutUserInput = {
@@ -143478,9 +148368,11 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tags?: JournalEntryTagUncheckedUpdateManyWithoutEntryNestedInput
+    revisions?: JournalRevisionUncheckedUpdateManyWithoutEntryNestedInput
   }
 
   export type JournalEntryUncheckedUpdateManyWithoutUserInput = {
@@ -143493,8 +148385,33 @@ export namespace Prisma {
     gratitude?: NullableStringFieldUpdateOperationsInput | string | null
     isFavorite?: BoolFieldUpdateOperationsInput | boolean
     isArchived?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type JournalRevisionUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    entry?: JournalEntryUpdateOneRequiredWithoutRevisionsNestedInput
+  }
+
+  export type JournalRevisionUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    entryId?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type JournalRevisionUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    entryId?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DailyReflectionUpdateWithoutUserInput = {
@@ -146464,6 +151381,14 @@ export namespace Prisma {
     tagId: string
   }
 
+  export type JournalRevisionCreateManyEntryInput = {
+    id?: string
+    userId: string
+    title?: string | null
+    content: string
+    createdAt?: Date | string
+  }
+
   export type JournalEntryTagUpdateWithoutEntryInput = {
     id?: StringFieldUpdateOperationsInput | string
     tag?: TagUpdateOneRequiredWithoutJournalEntriesNestedInput
@@ -146477,6 +151402,30 @@ export namespace Prisma {
   export type JournalEntryTagUncheckedUpdateManyWithoutEntryInput = {
     id?: StringFieldUpdateOperationsInput | string
     tagId?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type JournalRevisionUpdateWithoutEntryInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutJournalRevisionsNestedInput
+  }
+
+  export type JournalRevisionUncheckedUpdateWithoutEntryInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type JournalRevisionUncheckedUpdateManyWithoutEntryInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    title?: NullableStringFieldUpdateOperationsInput | string | null
+    content?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type BreakCreateManyFocusSessionInput = {

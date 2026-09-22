@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 
@@ -16,11 +16,7 @@ export function StreakCard() {
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStreak();
-  }, []);
-
-  async function fetchStreak() {
+  const fetchStreak = useCallback(async () => {
     try {
       const res = await fetch('/api/streak');
       const data = await res.json();
@@ -32,7 +28,12 @@ export function StreakCard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    fetchStreak().catch(() => undefined);
+  }, [fetchStreak]);
 
   if (loading) {
     return (

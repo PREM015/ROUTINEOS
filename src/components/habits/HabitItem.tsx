@@ -19,13 +19,13 @@ export default function HabitItem({ habit, date, onToggle, onSkip }: HabitItemPr
   const log = habit.logs?.find(l => l.date === date);
   const isCompleted = log?.status === 'COMPLETED';
   
-  const streak = habit.stats?.currentStreak || 0;
+  const streak = habit.streakCount || 0;
 
   const getTierColor = () => {
     switch (habit.tier) {
-      case 'CORE': return 'border-blue-500';
-      case 'SECONDARY': return 'border-green-500';
-      case 'FLEX': return 'border-purple-500';
+      case 'GROWTH': return 'border-blue-500';
+      case 'BONUS': return 'border-green-500';
+      case 'LIFESTYLE': return 'border-purple-500';
       default: return 'border-gray-500';
     }
   };

@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { JournalRevision, Prisma } from '@prisma/client';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import {
   createJournalEntrySchema,
@@ -54,7 +54,8 @@ export interface UpdateJournalEntryResult {
 
 /**
  * Update a journal entry. Tag changes are applied as a full replacement via the
- * join table.
+ * join table. When the title or content changes, the previous title/content is
+ * snapshotted into a revision BEFORE overwriting so history is never lost.
  */
 export async function updateJournalEntry(
   userId: string,
@@ -63,6 +64,23 @@ export async function updateJournalEntry(
 ): Promise<UpdateJournalEntryResult> {
   const data = updateJournalEntrySchema.parse(input);
   const { tagIds, ...fields } = data;
+
+  const existing = await journalRepository.findById(userId, entryId);
+  if (!existing) {
+    throw new Error('Journal entry not found');
+  }
+
+  const titleChanged = fields.title !== undefined && fields.title !== existing.title;
+  const contentChanged =
+    fields.content !== undefined && fields.content !== existing.content;
+  if (titleChanged || contentChanged) {
+    await journalRepository.createRevision(
+      userId,
+      entryId,
+      existing.title,
+      existing.content
+    );
+  }
 
   const updateData: Prisma.JournalEntryUpdateInput = {
     title: fields.title ?? undefined,
@@ -109,13 +127,107 @@ export async function getJournalEntryByDate(
 }
 
 /**
- * Delete an entry owned by the user.
+ * Fetch a single entry owned by the user, including soft-deleted ones,
+ * or `null` when not found. Used by restore/permanent-delete flows.
+ */
+export async function getJournalEntryIncludingDeleted(
+  userId: string,
+  entryId: string
+): Promise<JournalEntryWithRelations | null> {
+  return (await journalRepository.findById(
+    userId,
+    entryId,
+    true
+  )) as JournalEntryWithRelations | null;
+}
+
+/**
+ * Delete an entry owned by the user (hard delete).
  */
 export async function deleteJournalEntry(
   userId: string,
   entryId: string
 ): Promise<void> {
   await journalRepository.delete(userId, entryId);
+}
+
+/**
+ * Soft delete an entry owned by the user. The row and its revision history
+ * are preserved and can be restored.
+ */
+export async function softDeleteJournalEntry(
+  userId: string,
+  entryId: string
+): Promise<JournalEntryWithRelations> {
+  await journalRepository.softDelete(userId, entryId);
+  return (await journalRepository.findById(
+    userId,
+    entryId,
+    true
+  )) as JournalEntryWithRelations;
+}
+
+/**
+ * Restore a soft-deleted entry owned by the user.
+ */
+export async function restoreJournalEntry(
+  userId: string,
+  entryId: string
+): Promise<JournalEntryWithRelations> {
+  await journalRepository.restore(userId, entryId);
+  return (await journalRepository.findById(
+    userId,
+    entryId
+  )) as JournalEntryWithRelations;
+}
+
+/**
+ * Permanently delete an entry owned by the user, including its revisions.
+ */
+export async function permanentlyDeleteJournalEntry(
+  userId: string,
+  entryId: string
+): Promise<void> {
+  await journalRepository.permanentDelete(userId, entryId);
+}
+
+/**
+ * List soft-deleted entries (the trash) for a user, newest deletion first.
+ */
+export async function listDeletedJournalEntries(
+  userId: string,
+  options: { limit?: number; offset?: number } = {}
+): Promise<JournalEntryWithRelations[]> {
+  return (await journalRepository.findDeleted(
+    userId,
+    options
+  )) as JournalEntryWithRelations[];
+}
+
+/**
+ * List revisions of an entry owned by the user, newest first.
+ */
+export async function listJournalRevisions(
+  userId: string,
+  entryId: string
+): Promise<JournalRevision[]> {
+  return journalRepository.listRevisions(userId, entryId);
+}
+
+/**
+ * Restore a revision's title/content onto its entry. The pre-restore content
+ * is snapshotted first so restoring never destroys history.
+ */
+export async function restoreJournalRevision(
+  userId: string,
+  entryId: string,
+  revisionId: string
+): Promise<JournalEntryWithRelations> {
+  await journalRepository.restoreRevision(userId, entryId, revisionId);
+  return (await journalRepository.findById(
+    userId,
+    entryId
+  )) as JournalEntryWithRelations;
 }
 
 /**

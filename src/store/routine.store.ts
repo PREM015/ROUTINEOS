@@ -13,10 +13,9 @@
 
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
-import type { RoutineBlock, RoutineTemplate } from '@prisma/client';
+import type { RoutineBlock, RoutineLog, RoutineTemplate } from '@prisma/client';
 import type {
   DayRoutine,
-  DayRoutineBlock,
   RoutineLogStatus,
 } from '@/types/routine';
 
@@ -25,7 +24,7 @@ export interface RoutineTemplateItem extends RoutineTemplate {
   _count?: { blocks: number };
 }
 
-export type BlockLog = NonNullable<DayRoutineBlock['log']>;
+export type BlockLog = Partial<RoutineLog>;
 
 export type RoutineDayType =
   | 'WORKDAY'

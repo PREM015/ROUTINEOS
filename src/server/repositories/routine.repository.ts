@@ -1,11 +1,10 @@
+import { DayType, RoutineLogStatus } from '@prisma/client';
 import type {
   RoutineTemplate,
   RoutineBlock,
   RoutineException,
   RoutineLog,
   Prisma,
-  DayType,
-  RoutineLogStatus,
 } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
@@ -60,10 +59,10 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Find all templates for user
    */
-  async findAllTemplates(userId: string) {
+  async findAllTemplates(userId: string, includeInactive = false) {
     try {
       return await this.prisma.routineTemplate.findMany({
-        where: { userId, isActive: true },
+        where: { userId, ...(includeInactive ? {} : { isActive: true }) },
         include: {
           blocks: {
             orderBy: { sortOrder: 'asc' },
@@ -251,6 +250,31 @@ export class RoutineRepository extends BaseRepository {
   }
 
   /**
+   * Find exceptions within a date range (inclusive)
+   */
+  async findExceptionsByRange(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<RoutineException[]> {
+    try {
+      return await this.prisma.routineException.findMany({
+        where: {
+          userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        include: { template: true },
+        orderBy: { date: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findExceptionsByRange');
+    }
+  }
+
+  /**
    * Create routine exception
    */
   async createException(
@@ -319,6 +343,41 @@ export class RoutineRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'findLogsByDate');
+    }
+  }
+
+  /**
+   * Find logs for a date range (inclusive) in one query
+   */
+  async findLogsByRange(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<RoutineLog[]> {
+    try {
+      return await this.prisma.routineLog.findMany({
+        where: {
+          userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        include: {
+          routineBlock: {
+            select: {
+              id: true,
+              title: true,
+              startTime: true,
+              endTime: true,
+              category: true,
+            },
+          },
+        },
+        orderBy: { date: 'asc', createdAt: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findLogsByRange');
     }
   }
 

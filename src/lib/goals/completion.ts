@@ -6,10 +6,10 @@ export function checkGoalCompletion(goal: Goal): boolean {
   return current >= goal.targetValue;
 }
 
-export function markGoalComplete(goal: Goal): Partial<Goal> {
+export function markGoalComplete(_goal: Goal): Partial<Goal> {
   return {
     status: 'COMPLETED',
-    completedAt: new Date().toISOString()
+    completedAt: new Date()
   };
 }
 

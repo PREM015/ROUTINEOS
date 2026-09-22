@@ -1,7 +1,9 @@
-import type { HabitOverrideType } from '@prisma/client';
+import { format } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { HabitRepository } from '@/server/repositories/habit.repository';
-import type { HabitEligibility, HabitEligibilityReason } from '@/types/habit';
-import { isHabitScheduled } from './scheduling';
+import { HabitEligibility, HabitEligibilityReason } from '@/types/habit';
+import { DEFAULT_TZ } from '@/lib/dates';
+import { isHabitScheduledForDate } from './scheduling';
 
 /**
  * Habit Eligibility
@@ -32,7 +34,7 @@ export async function calculateHabitEligibility(
       habitId,
       date,
       isEligible: false,
-      reason: 'ARCHIVED',
+      reason: HabitEligibilityReason.ARCHIVED,
     };
   }
 
@@ -42,28 +44,32 @@ export async function calculateHabitEligibility(
       habitId,
       date,
       isEligible: false,
-      reason: 'PAUSED',
+      reason: HabitEligibilityReason.PAUSED,
     };
   }
 
-  // Check start and end dates
-  const dateObj = new Date(date);
-  if (dateObj < new Date(habit.startDate)) {
+  // Check start and end dates (calendar-day comparison in the user's timezone,
+  // so a habit created "today" is eligible today).
+  const startDay = format(toZonedTime(habit.startDate, DEFAULT_TZ), 'yyyy-MM-dd');
+  if (date < startDay) {
     return {
       habitId,
       date,
       isEligible: false,
-      reason: 'BEFORE_START_DATE',
+      reason: HabitEligibilityReason.BEFORE_START_DATE,
     };
   }
 
-  if (habit.endDate && dateObj > new Date(habit.endDate)) {
-    return {
-      habitId,
-      date,
-      isEligible: false,
-      reason: 'AFTER_END_DATE',
-    };
+  if (habit.endDate) {
+    const endDay = format(toZonedTime(habit.endDate, DEFAULT_TZ), 'yyyy-MM-dd');
+    if (date > endDay) {
+      return {
+        habitId,
+        date,
+        isEligible: false,
+        reason: HabitEligibilityReason.AFTER_END_DATE,
+      };
+    }
   }
 
   // Check for active overrides
@@ -74,7 +80,7 @@ export async function calculateHabitEligibility(
       habitId,
       date,
       isEligible: false,
-      reason: 'SKIPPED',
+      reason: HabitEligibilityReason.SKIPPED,
       override: skipOverride,
     };
   }
@@ -85,7 +91,7 @@ export async function calculateHabitEligibility(
       habitId,
       date,
       isEligible: false,
-      reason: 'PAUSED',
+      reason: HabitEligibilityReason.PAUSED,
       override: pauseOverride,
     };
   }
@@ -96,19 +102,19 @@ export async function calculateHabitEligibility(
       habitId,
       date,
       isEligible: false,
-      reason: 'NOT_APPLICABLE',
+      reason: HabitEligibilityReason.NOT_APPLICABLE,
       override: notApplicableOverride,
     };
   }
 
   // Check if scheduled for this date
-  const scheduled = await isHabitScheduled(habit, date);
+  const scheduled = isHabitScheduledForDate(habit, date, DEFAULT_TZ);
   if (!scheduled) {
     return {
       habitId,
       date,
       isEligible: false,
-      reason: 'NOT_SCHEDULED',
+      reason: HabitEligibilityReason.NOT_SCHEDULED,
     };
   }
 

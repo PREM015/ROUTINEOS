@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@prisma/client": [
+        "./src/generated/prisma"
       ]
     },
     "forceConsistentCasingInFileNames": true,
@@ -51,6 +54,7 @@
     "node_modules",
     ".next",
     "out",
-    "dist"
+    "dist",
+    "tests"
   ]
 }

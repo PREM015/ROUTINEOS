@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/Button';
+import AddHabitModal from '@/components/habits/AddHabitModal';
 import type { HabitTier, HabitLogStatus } from '@prisma/client';
 import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
 
@@ -27,29 +28,43 @@ interface TodayHabitChecklistProps {
 export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
   const [habits, setHabits] = useState<TodayHabit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchTodayHabits();
-  }, [date]);
-
-  async function fetchTodayHabits() {
+  const fetchTodayHabits = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch(`/api/habits/today?date=${date}`);
       const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to load today's habits");
       if (data.success) {
         setHabits(data.data);
       }
-    } catch (error) {
-      console.error('Error fetching today\'s habits:', error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load today's habits");
     } finally {
       setLoading(false);
     }
-  }
+  }, [date]);
+
+  useEffect(() => {
+    fetchTodayHabits();
+  }, [fetchTodayHabits]);
 
   async function toggleHabit(habitId: string, currentStatus: HabitLogStatus | null) {
+    if (togglingId) return;
     const newStatus: HabitLogStatus = currentStatus === 'COMPLETED' ? 'MISSED' : 'COMPLETED';
-
+    setTogglingId(habitId);
+    setError(null);
+    // Optimistic update with rollback on failure.
+    const previous = habits;
+    setHabits((prev) =>
+      prev.map((h) =>
+        h.id === habitId ? { ...h, log: { id: h.log?.id ?? `local-${habitId}`, status: newStatus } } : h
+      )
+    );
     try {
       const res = await fetch(`/api/habits/${habitId}/log`, {
         method: 'POST',
@@ -57,16 +72,18 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
         body: JSON.stringify({
           date,
           status: newStatus,
-          completedAt: newStatus === 'COMPLETED' ? new Date() : null,
+          completedAt: newStatus === 'COMPLETED' ? new Date().toISOString() : null,
         }),
       });
-
-      if (res.ok) {
-        // Refresh habits
-        fetchTodayHabits();
-      }
-    } catch (error) {
-      console.error('Error toggling habit:', error);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed to save habit log');
+      // Reconcile with server truth (score + streak update downstream).
+      fetchTodayHabits();
+    } catch (err) {
+      setHabits(previous);
+      setError(err instanceof Error ? err.message : 'Failed to save habit log');
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -98,7 +115,16 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
 
   return (
     <Card className="p-6">
-      <h2 className="text-xl font-bold mb-6">Today's Habits</h2>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <h2 className="text-xl font-bold">Today&apos;s Habits</h2>
+        <Button size="sm" variant="outline" onClick={() => setModalOpen(true)}>
+          + Add Habit
+        </Button>
+      </div>
+
+      {error && (
+        <p role="alert" className="text-sm text-red-500 mb-4">{error}</p>
+      )}
 
       <div className="space-y-6">
         {tiers.map(tier => {
@@ -130,11 +156,13 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
                   >
                     <Checkbox
                       checked={habit.log?.status === 'COMPLETED'}
+                      disabled={togglingId === habit.id}
                       onCheckedChange={() =>
                         toggleHabit(habit.id, habit.log?.status || null)
                       }
+                      aria-label={`Mark ${habit.name} ${habit.log?.status === 'COMPLETED' ? 'not done' : 'done'}`}
                     />
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         {habit.icon && <span>{habit.icon}</span>}
                         <span
@@ -164,11 +192,19 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
       {habits.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           <p>No habits scheduled for today</p>
-          <Button className="mt-4" variant="outline">
+          <Button className="mt-4" variant="outline" onClick={() => setModalOpen(true)}>
             Add Habits
           </Button>
         </div>
       )}
+
+      <AddHabitModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          fetchTodayHabits();
+        }}
+      />
     </Card>
   );
 }

@@ -1,5 +1,5 @@
 export type ConflictResolution = 'local' | 'server' | 'merge';
-export function resolveConflict(localData: any, serverData: any, type: string): ConflictResolution {
+export function resolveConflict(localData: any, serverData: any, _type: string): ConflictResolution {
   if (!localData) return 'server'; if (!serverData) return 'local';
   if (localData.updatedAt && serverData.updatedAt) return new Date(localData.updatedAt) > new Date(serverData.updatedAt) ? 'local' : 'server';
   return 'merge';

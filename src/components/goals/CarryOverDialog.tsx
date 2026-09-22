@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 export interface CarryOverDialogProps { goal: { id: string; title: string; targetValue?: number; currentValue?: number }; open: boolean; onConfirm: (newDeadline: string) => void; onCancel: () => void; }
 export default function CarryOverDialog({ goal, open, onConfirm, onCancel }: CarryOverDialogProps) {
   const [deadline, setDeadline] = useState('');

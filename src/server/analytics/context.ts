@@ -221,7 +221,7 @@ export async function contextInsights(userId: string, range: DateRange): Promise
       .slice(0, 3);
 
     return {
-      weekday: WEEKDAY_NAMES[weekdayIndex],
+      weekday: WEEKDAY_NAMES[weekdayIndex] ?? '',
       count: daysInBucket.length,
       averageScore: scores.length > 0 ? round(mean(scores)) : 0,
       averageCompletionRate: completions.length > 0 ? round(mean(completions)) : 0,

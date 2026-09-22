@@ -8,8 +8,10 @@ import { getTodayString } from '@/lib/dates';
 interface AddGoalModalProps {
   open: boolean;
   onClose: () => void;
-  defaultType?: 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+  defaultType?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 }
+
+type GoalType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM';
 
 export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: AddGoalModalProps) {
   const { addGoal } = useApp();
@@ -17,48 +19,62 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<'WEEKLY' | 'MONTHLY' | 'YEARLY'>(defaultType);
+  const [type, setType] = useState<GoalType>(defaultType);
   const [priority, setPriority] = useState<'HIGH' | 'MEDIUM' | 'LOW'>('MEDIUM');
   const [targetValue, setTargetValue] = useState('');
   const [unit, setUnit] = useState('');
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!title.trim()) e.title = 'Title is required';
-    if (!targetValue || isNaN(Number(targetValue)) || Number(targetValue) <= 0)
-      e.targetValue = 'Target must be a positive number';
-    if (!endDate) e.endDate = 'End date is required';
-    if (endDate && startDate >= endDate) e.endDate = 'End date must be after start date';
+    if (type !== 'DAILY') {
+      if (!targetValue || isNaN(Number(targetValue)) || Number(targetValue) <= 0)
+        e.targetValue = 'Target must be a positive number';
+      if (!endDate) e.endDate = 'End date is required';
+      if (endDate && startDate >= endDate) e.endDate = 'End date must be after start date';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!validate()) return;
 
-    addGoal({
-      type,
-      priority,
-      status: 'ACTIVE',
-      title: title.trim(),
-      description: description.trim() || undefined,
-      targetValue: parseFloat(targetValue),
-      currentValue: 0,
-      unit: unit.trim() || undefined,
-      startDate,
-      endDate,
-    });
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await addGoal({
+        type,
+        priority,
+        status: 'ACTIVE',
+        title: title.trim(),
+        description: description.trim() || undefined,
+        // Daily goals are a per-day check-off: target 1.
+        targetValue: type === 'DAILY' ? 1 : parseFloat(targetValue),
+        currentValue: 0,
+        unit: unit.trim() || undefined,
+        startDate,
+        endDate: endDate || (type === 'DAILY' ? startDate : today),
+      });
 
-    setTitle(''); setDescription(''); setTargetValue(''); setUnit(''); setErrors({});
-    onClose();
+      setTitle(''); setDescription(''); setTargetValue(''); setUnit(''); setErrors({});
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to create goal');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Goal">
+    <Modal isOpen={open} onClose={onClose} title="Add Goal">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Goal Title"
@@ -80,8 +96,9 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           <Select
             label="Type"
             value={type}
-            onChange={e => setType(e.target.value as any)}
+            onChange={e => setType(e.target.value as GoalType)}
             options={[
+              { value: 'DAILY', label: 'Daily (repeats every day)' },
               { value: 'WEEKLY', label: 'Weekly' },
               { value: 'MONTHLY', label: 'Monthly' },
               { value: 'YEARLY', label: 'Yearly' },
@@ -90,7 +107,7 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           <Select
             label="Priority"
             value={priority}
-            onChange={e => setPriority(e.target.value as any)}
+            onChange={e => setPriority(e.target.value as 'HIGH' | 'MEDIUM' | 'LOW')}
             options={[
               { value: 'HIGH', label: 'High' },
               { value: 'MEDIUM', label: 'Medium' },
@@ -99,24 +116,26 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Target Value"
-            type="number"
-            min="0"
-            step="0.5"
-            value={targetValue}
-            onChange={e => setTargetValue(e.target.value)}
-            placeholder="e.g. 5"
-            error={errors.targetValue}
-          />
-          <Input
-            label="Unit (optional)"
-            value={unit}
-            onChange={e => setUnit(e.target.value)}
-            placeholder="e.g. problems, pages, km"
-          />
-        </div>
+        {type !== 'DAILY' && (
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Target Value"
+              type="number"
+              min="0"
+              step="0.5"
+              value={targetValue}
+              onChange={e => setTargetValue(e.target.value)}
+              placeholder="e.g. 5"
+              error={errors.targetValue}
+            />
+            <Input
+              label="Unit (optional)"
+              value={unit}
+              onChange={e => setUnit(e.target.value)}
+              placeholder="e.g. problems, pages, km"
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -126,7 +145,7 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
             onChange={e => setStartDate(e.target.value)}
           />
           <Input
-            label="End Date"
+            label={type === 'DAILY' ? 'End Date (optional)' : 'End Date'}
             type="date"
             value={endDate}
             onChange={e => setEndDate(e.target.value)}
@@ -134,9 +153,15 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           />
         </div>
 
+        {submitError && (
+          <p role="alert" className="text-sm text-red-400">{submitError}</p>
+        )}
+
         <div className="flex gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button type="submit" variant="primary" className="flex-1">Add Goal</Button>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
+          <Button type="submit" variant="primary" disabled={submitting} className="flex-1">
+            {submitting ? 'Adding...' : 'Add Goal'}
+          </Button>
         </div>
       </form>
     </Modal>

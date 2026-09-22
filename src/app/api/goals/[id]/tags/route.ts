@@ -10,7 +10,7 @@ interface RouteContext {
 }
 
 const updateGoalTagsSchema = z.object({
-  tagIds: z.array(z.string().uuid()).max(50),
+  tagIds: z.array(z.string().cuid()).max(50),
 });
 
 /**

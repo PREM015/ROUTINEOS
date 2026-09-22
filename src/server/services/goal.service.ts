@@ -1,4 +1,4 @@
-import type { GoalStatus, GoalType, Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import type { CreateGoalInput, UpdateGoalInput } from '@/types/goal';
 
@@ -24,10 +24,6 @@ export class GoalService {
     }
 
     // Calculate initial progress percentage
-    const progressPercentage = input.currentValue
-      ? (input.currentValue / input.targetValue) * 100
-      : 0;
-
     const goal = await this.goalRepository.create({
       user: { connect: { id: userId } },
       title: input.title,

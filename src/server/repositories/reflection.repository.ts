@@ -45,12 +45,14 @@ export class ReflectionRepository extends BaseRepository {
   }
 
   /**
-   * Create or update reflection
+   * Create or update reflection.
+   * Uses the unchecked input style (scalar `userId`) — never combine the
+   * scalar FK with a `user: { connect }` relation in the same input.
    */
   async upsertReflection(
     userId: string,
     date: string,
-    data: Omit<Prisma.DailyReflectionCreateInput, 'userId' | 'date'>
+    data: Omit<Prisma.DailyReflectionUncheckedCreateInput, 'userId' | 'date'>
   ): Promise<DailyReflection> {
     try {
       return await this.prisma.dailyReflection.upsert({
@@ -59,7 +61,7 @@ export class ReflectionRepository extends BaseRepository {
           userId,
           date,
           ...data,
-        } as Prisma.DailyReflectionCreateInput,
+        },
         update: data,
       });
     } catch (error) {

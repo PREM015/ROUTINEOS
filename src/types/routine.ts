@@ -8,6 +8,16 @@ import type {
   Category,
 } from '@prisma/client';
 
+export type {
+  RoutineTemplate,
+  RoutineBlock,
+  RoutineException,
+  RoutineLog,
+  DayType,
+  RoutineLogStatus,
+  Category,
+};
+
 /**
  * Routine Management Types
  * Complete type system for daily routine management
@@ -28,286 +38,213 @@ export interface RoutineTemplateWithBlocks extends RoutineTemplate {
 
 export interface RoutineBlockWithCategory extends RoutineBlock {
   category: Category | null;
-  logs: RoutineLog[];
+}
+
+export interface RoutineLogWithDetails extends RoutineLog {
+  template: RoutineTemplate | null;
+  block: RoutineBlock | null;
 }
 
 // ============================================================================
-// Routine Template Management
+// Routine State & Query Types
 // ============================================================================
 
-export interface CreateRoutineTemplateInput {
-  name: string;
+export interface RoutineFilterOptions {
+  dayType?: DayType;
+  isActive?: boolean;
+  isDefault?: boolean;
+  search?: string;
+  sortBy?: 'name' | 'dayType' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface RoutineBlockCreateInput {
+  title: string;
   description?: string;
+  startTime: string;
+  endTime: string;
+  type: string;
+  isFlex?: boolean;
+  categoryId?: string;
+}
+
+export interface RoutineBlockUpdateInput {
+  title?: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  type?: string;
+  isFlex?: boolean;
+  categoryId?: string;
+}
+
+export interface RoutineTemplateCreateInput {
+  name: string;
   dayType: DayType;
   isDefault?: boolean;
-  color?: string;
-  icon?: string;
+  blocks?: RoutineBlockCreateInput[];
 }
 
-export interface UpdateRoutineTemplateInput {
+export interface RoutineTemplateUpdateInput {
   name?: string;
-  description?: string;
   dayType?: DayType;
   isDefault?: boolean;
-  color?: string;
-  icon?: string;
   isActive?: boolean;
 }
 
-export interface CreateRoutineTemplateResponse {
-  success: boolean;
-  template?: RoutineTemplateWithBlocks;
-  message?: string;
-}
-
-export interface UpdateRoutineTemplateResponse {
-  success: boolean;
-  template?: RoutineTemplateWithBlocks;
-  message?: string;
-}
-
 // ============================================================================
-// Routine Block Management
+// Routine Resolution & Conflict Types
 // ============================================================================
 
-export interface CreateRoutineBlockInput {
-  templateId: string;
-  startTime: string; // HH:mm format
-  endTime: string; // HH:mm format
-  title: string;
-  description?: string;
-  notes?: string;
-  color?: string;
-  icon?: string;
-  categoryId?: string;
-  energyLevel?: 'HIGH' | 'MEDIUM' | 'LOW';
-  trackCompletion?: boolean;
-  isRecurring?: boolean;
-  sortOrder?: number;
-}
-
-export interface UpdateRoutineBlockInput {
-  startTime?: string;
-  endTime?: string;
-  title?: string;
-  description?: string;
-  notes?: string;
-  color?: string;
-  icon?: string;
-  categoryId?: string | null;
-  energyLevel?: 'HIGH' | 'MEDIUM' | 'LOW' | null;
-  trackCompletion?: boolean;
-  isRecurring?: boolean;
-  sortOrder?: number;
-}
-
-export interface CreateRoutineBlockResponse {
-  success: boolean;
-  block?: RoutineBlockWithCategory;
-  conflicts?: RoutineConflict[];
-  message?: string;
-}
-
-export interface UpdateRoutineBlockResponse {
-  success: boolean;
-  block?: RoutineBlockWithCategory;
-  conflicts?: RoutineConflict[];
-  message?: string;
-}
-
-// ============================================================================
-// Routine Conflicts
-// ============================================================================
-
-export interface RoutineConflict {
-  type: 'TIME_OVERLAP' | 'DURATION_INVALID' | 'OVERNIGHT_CONFLICT';
-  blockId: string;
-  conflictingBlockId?: string;
-  message: string;
-  severity: 'ERROR' | 'WARNING';
-}
-
-export interface ConflictCheckResult {
-  hasConflicts: boolean;
-  conflicts: RoutineConflict[];
-}
-
-// ============================================================================
-// Routine Exceptions
-// ============================================================================
-
-export interface CreateRoutineExceptionInput {
-  date: string; // YYYY-MM-DD
-  dayType: DayType;
-  templateId?: string;
-  note?: string;
-  reason?: string;
-}
-
-export interface CreateRoutineExceptionResponse {
-  success: boolean;
-  exception?: RoutineException;
-  message?: string;
-}
-
-// ============================================================================
-// Routine for Specific Day
-// ============================================================================
-
-export interface DayRoutine {
-  date: string;
-  dayType: DayType;
-  isException: boolean;
-  template: RoutineTemplateWithBlocks | null;
-  blocks: DayRoutineBlock[];
-}
-
-export interface DayRoutineBlock {
+export interface ResolvedRoutineBlock {
   id: string;
-  startTime: string;
-  endTime: string;
+  templateId: string;
   title: string;
   description: string | null;
-  notes: string | null;
-  color: string | null;
-  icon: string | null;
+  startTime: string;
+  endTime: string;
+  type: string;
+  isFlex: boolean;
   category: {
     id: string;
     name: string;
     color: string | null;
   } | null;
-  energyLevel: string | null;
-  trackCompletion: boolean;
-  durationMinutes: number;
-  isOvernight: boolean;
-  log: {
-    id: string;
-    status: RoutineLogStatus;
-    actualStartTime: string | null;
-    actualEndTime: string | null;
-    durationMinutes: number | null;
-    focusRating: number | null;
-    productivityRating: number | null;
-    note: string | null;
-  } | null;
+  status?: RoutineLogStatus;
+  completedAt?: string | null;
+}
+
+export interface ResolvedDailyRoutine {
+  date: string;
+  dayType: DayType;
+  template: RoutineTemplate | null;
+  exception: RoutineException | null;
+  blocks: ResolvedRoutineBlock[];
+  totalBlocks: number;
+  completedBlocks: number;
+  completionRate: number;
+}
+
+export interface RoutineConflict {
+  type: 'OVERLAP' | 'INVALID_TIME' | 'DUPLICATE';
+  message: string;
+  blockId1?: string;
+  blockId2?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface RoutineValidationResult {
+  isValid: boolean;
+  conflicts: RoutineConflict[];
+  warnings: string[];
 }
 
 // ============================================================================
-// Current Routine Block
+// Routine Log & Tracking Types
 // ============================================================================
 
-export interface CurrentRoutineBlock {
-  block: DayRoutineBlock;
-  isActive: boolean;
-  startedAt: Date;
-  endsAt: Date;
-  minutesElapsed: number;
-  minutesRemaining: number;
-  progressPercentage: number;
-  nextBlock: DayRoutineBlock | null;
-}
-
-// ============================================================================
-// Routine Logging
-// ============================================================================
-
-export interface LogRoutineBlockInput {
-  routineBlockId: string;
+export interface RoutineLogInput {
+  templateId?: string;
+  blockId?: string;
   date: string;
   status: RoutineLogStatus;
-  actualStartTime?: string;
-  actualEndTime?: string;
-  focusRating?: number; // 1-5
-  productivityRating?: number; // 1-5
-  energyLevel?: number; // 1-5
-  note?: string;
+  notes?: string;
 }
 
-export interface LogRoutineBlockResponse {
-  success: boolean;
-  log?: RoutineLog;
-  message?: string;
-}
-
-// ============================================================================
-// Routine Analytics
-// ============================================================================
-
-export interface RoutineAnalytics {
-  templateId: string;
+export interface RoutineLogSummary {
+  date: string;
   totalBlocks: number;
-  trackedBlocks: number;
-  totalLogs: number;
-  completedLogs: number;
-  missedLogs: number;
-  partialLogs: number;
+  completedBlocks: number;
+  skippedBlocks: number;
+  missedBlocks: number;
   completionRate: number;
-  averageFocusRating: number | null;
-  averageProductivityRating: number | null;
-  totalDuration: number; // planned minutes
-  actualDuration: number; // logged minutes
-  adherenceRate: number; // actual/planned
+  logs: RoutineLog[];
 }
 
-export interface RoutineBlockAnalytics {
+export interface RoutineStats {
+  period: 'week' | 'month' | 'year';
+  totalScheduled: number;
+  totalCompleted: number;
+  totalSkipped: number;
+  totalMissed: number;
+  averageCompletionRate: number;
+  mostConsistentDayType: DayType | null;
+  completionByDayType: Record<DayType, number>;
+}
+
+// ============================================================================
+// Routine Progress (dashboard widget)
+// ============================================================================
+
+export type RoutineProgressPeriod = 'day' | 'week' | 'month' | 'year';
+
+export interface RoutineProgressBlock {
   blockId: string;
-  blockTitle: string;
-  totalLogs: number;
-  completedLogs: number;
-  completionRate: number;
-  averageFocusRating: number | null;
-  averageProductivityRating: number | null;
-  averageDelay: number; // minutes difference from planned start
-  bestTime: string | null; // time of day with best focus
-}
-
-// ============================================================================
-// Routine Calculations
-// ============================================================================
-
-export interface RoutineDuration {
-  totalMinutes: number;
-  hours: number;
-  minutes: number;
-  formattedDuration: string; // "2h 30m"
-}
-
-export interface TimeRange {
+  title: string;
   startTime: string;
   endTime: string;
-  isOvernight: boolean;
+  status: RoutineLogStatus | null;
 }
 
-export interface TimeOverlap {
-  overlaps: boolean;
-  overlapMinutes: number;
+export interface RoutineProgressDay {
+  date: string;
+  dayType: DayType;
+  scheduled: boolean;
+  total: number;
+  completed: number;
+  completionRate: number;
+  blocks: RoutineProgressBlock[];
+}
+
+export interface RoutineProgressMonth {
+  month: string; // YYYY-MM
+  scheduledDays: number;
+  averageCompletionRate: number;
+}
+
+export interface RoutineProgressResponse {
+  period: RoutineProgressPeriod;
+  anchorDate: string;
+  startDate: string;
+  endDate: string;
+  label: string;
+  days: RoutineProgressDay[];
+  months: RoutineProgressMonth[];
 }
 
 // ============================================================================
-// Routine Queries
+// Component Props Types
 // ============================================================================
 
-export interface RoutineQueryParams {
-  dayType?: DayType;
-  isActive?: boolean;
-  sortBy?: 'name' | 'createdAt' | 'dayType';
-  sortOrder?: 'asc' | 'desc';
+export interface RoutineListProps {
+  date?: string;
+  editable?: boolean;
+  onBlockComplete?: (blockId: string) => void;
+}
+
+export interface RoutineBlockProps {
+  block: ResolvedRoutineBlock;
+  editable?: boolean;
+  onComplete?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+}
+
+export interface RoutineTimelineProps {
+  routine: ResolvedDailyRoutine;
+  currentTime?: string;
+  onBlockClick?: (block: ResolvedRoutineBlock) => void;
+}
+
+export interface RoutineEditorProps {
+  template?: RoutineTemplateWithBlocks;
+  onSave: (data: RoutineTemplateCreateInput | RoutineTemplateUpdateInput) => Promise<void>;
+  onCancel: () => void;
 }
 
 // ============================================================================
-// Routine Suggestions
-// ============================================================================
-
-export interface RoutineSuggestion {
-  type: 'ADD_BLOCK' | 'ADJUST_TIME' | 'ENERGY_MISMATCH' | 'DURATION_WARNING';
-  blockId?: string;
-  message: string;
-  suggestion: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-}
-
-// ============================================================================
-// Type Guards
+// Helper Functions / Guards
 // ============================================================================
 
 export function isRoutineTemplateWithBlocks(
@@ -316,7 +253,6 @@ export function isRoutineTemplateWithBlocks(
   return (
     typeof template === 'object' &&
     template !== null &&
-    'id' in template &&
     'blocks' in template &&
     Array.isArray((template as RoutineTemplateWithBlocks).blocks)
   );
@@ -327,8 +263,8 @@ export function isValidTimeFormat(time: string): boolean {
 }
 
 export function isOvernightBlock(startTime: string, endTime: string): boolean {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
+  const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
+  const [endHour = 0, endMin = 0] = endTime.split(':').map(Number);
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
   return endMinutes <= startMinutes;
@@ -341,3 +277,8 @@ export function isOvernightBlock(startTime: string, endTime: string): boolean {
 export type RoutineTemplatesByDayType = Record<DayType, RoutineTemplateWithBlocks[]>;
 
 export type DayTypeLabels = Record<DayType, string>;
+
+export type DayRoutine = ResolvedDailyRoutine;
+export type DayRoutineBlock = ResolvedRoutineBlock;
+export type CreateRoutineTemplateInput = RoutineTemplateCreateInput;
+export type CreateRoutineBlockInput = RoutineBlockCreateInput;

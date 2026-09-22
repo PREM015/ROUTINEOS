@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
       const sunday = new Date(monday);
       sunday.setDate(sunday.getDate() + 6);
 
-      weekStart = monday.toISOString().split('T')[0];
-      weekEnd = sunday.toISOString().split('T')[0];
+      weekStart = monday.toISOString().slice(0, 10);
+      weekEnd = sunday.toISOString().slice(0, 10);
     }
 
     const recap = await generateWeeklyRecap(session.user.id, weekStart, weekEnd);

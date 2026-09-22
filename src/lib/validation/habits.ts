@@ -63,7 +63,7 @@ export const habitBatchSchema = z.object({
   logs: z
     .array(
       z.object({
-        id: z.string().uuid().optional(),
+        id: z.string().cuid().optional(),
         habitId: habitIdSchema,
         date: dateSchema,
         status: z.enum(['COMPLETED', 'MISSED', 'SKIPPED', 'NOT_APPLICABLE', 'PARTIAL']),

@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { HabitRepository } from '@/server/repositories/habit.repository';
-import { GoalRepository } from '@/server/repositories/goal.repository';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -53,7 +52,6 @@ export async function POST(request: NextRequest) {
     }
 
     const habitRepository = new HabitRepository();
-    const goalRepository = new GoalRepository();
 
     // Archive habits marked for removal
     if (validated.data.habitsToRemove) {

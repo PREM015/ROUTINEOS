@@ -1,22 +1,7 @@
 import { auth } from '@/lib/auth';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
+import { reflectionSchema } from '@/schemas/reflection.schema';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-
-const reflectionSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  energy: z.number().int().min(1).max(5).optional(),
-  mood: z.number().int().min(1).max(5).optional(),
-  stress: z.number().int().min(1).max(5).optional(),
-  focus: z.number().int().min(1).max(5).optional(),
-  reflectionText: z.string().optional(),
-  biggestWin: z.string().optional(),
-  biggestDifficulty: z.string().optional(),
-  lessonsLearned: z.string().optional(),
-  gratitude: z.string().optional(),
-  improvements: z.string().optional(),
-  tomorrowFocus: z.string().optional(),
-});
 
 /**
  * GET /api/reflections
@@ -79,13 +64,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, ...reflectionData } = validated.data;
+    const { date, gratitude, tomorrowPriorities, ...reflectionData } = validated.data;
 
     const reflectionRepository = new ReflectionRepository();
     const reflection = await reflectionRepository.upsertReflection(
       session.user.id,
       date,
-      reflectionData
+      {
+        ...reflectionData,
+        // DB columns are String (JSON arrays) — serialize, never store raw arrays.
+        gratitude: Array.isArray(gratitude)
+          ? JSON.stringify(gratitude)
+          : (gratitude ?? undefined),
+        tomorrowPriorities: Array.isArray(tomorrowPriorities)
+          ? JSON.stringify(tomorrowPriorities)
+          : undefined,
+      }
     );
 
     return NextResponse.json({

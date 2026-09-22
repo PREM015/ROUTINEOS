@@ -8,7 +8,7 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-const createProjectMilestoneSchema = z.object({ goalId: z.string().uuid() }).merge(
+const createProjectMilestoneSchema = z.object({ goalId: z.string().cuid() }).merge(
   milestoneSchema
 );
 

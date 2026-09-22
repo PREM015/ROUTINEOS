@@ -1,5 +1,4 @@
 import { StreakRepository } from '@/server/repositories/streak.repository';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import type { HabitTier } from '@prisma/client';
 
@@ -9,7 +8,6 @@ import type { HabitTier } from '@prisma/client';
  */
 
 const streakRepository = new StreakRepository();
-const habitRepository = new HabitRepository();
 const scoreRepository = new ScoreRepository();
 
 export interface StreakCalculationResult {
@@ -26,7 +24,7 @@ export interface StreakCalculationResult {
 export async function calculateStreak(
   userId: string,
   date: string,
-  habitTier?: HabitTier
+  _habitTier?: HabitTier
 ): Promise<StreakCalculationResult> {
   // Get user's current streak
   let streak = await streakRepository.findByUserId(userId);
@@ -37,7 +35,7 @@ export async function calculateStreak(
   const dateObj = new Date(date);
   const yesterday = new Date(dateObj);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
   // Get today's score
   const todayScore = await scoreRepository.findByDate(userId, date);
@@ -96,7 +94,7 @@ export async function calculateStreak(
       }
     } else {
       // Start new streak
-      const updated = await streakRepository.update(userId, {
+      await streakRepository.update(userId, {
         currentStreak: 1,
         streakStartDate: date,
         lastCompletedDate: date,
@@ -143,7 +141,7 @@ export async function recordStreakMilestone(
   milestoneDays: number,
   streakType: string = 'current'
 ): Promise<void> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().slice(0, 10);
 
   // Check if already recorded
   const existing = await streakRepository.findMilestone(userId, milestoneDays, streakType);

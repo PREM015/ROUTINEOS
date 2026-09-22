@@ -121,7 +121,7 @@ export function withLogging(
     const startedAt = performance.now();
     const response = await handler(req);
     const durationMs = performance.now() - startedAt;
-    logger.info('request', describeRequest(req, response, durationMs));
+    logger.info('request', { ...describeRequest(req, response, durationMs) });
     return response;
   };
 }

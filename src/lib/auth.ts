@@ -1,12 +1,36 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
+import type { User } from 'next-auth';
+import type { AdapterUser } from 'next-auth/adapters';
+import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import GitHub from 'next-auth/providers/github';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { loginSchema } from '@/schemas/auth.schema';
-import type { User } from '@prisma/client';
+
+/**
+ * Throwing Auth.js `CredentialsSignin` (instead of a plain `Error`) is what
+ * lets the client receive `error=CredentialsSignin&code=<Code>` — a plain
+ * `Error` is treated as a server misconfiguration and surfaces as
+ * `error=Configuration`, which blocks login for every failed attempt.
+ */
+class InvalidCredentialsError extends CredentialsSignin {
+  code = 'InvalidCredentials';
+}
+
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = 'EmailNotVerified';
+}
+
+class AccountLockedError extends CredentialsSignin {
+  code = 'AccountLocked';
+}
+
+class AccountDeletedError extends CredentialsSignin {
+  code = 'AccountDeleted';
+}
 
 /**
  * Authentication Configuration
@@ -29,7 +53,7 @@ export const authOptions = {
         // Validate input
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) {
-          throw new Error('Invalid credentials');
+          throw new InvalidCredentialsError();
         }
 
         const { email, password } = parsed.data;
@@ -40,17 +64,17 @@ export const authOptions = {
         });
 
         if (!user) {
-          throw new Error('Invalid email or password');
+          throw new InvalidCredentialsError();
         }
 
         // Check if account is deleted
         if (user.isDeleted) {
-          throw new Error('Account has been deleted');
+          throw new AccountDeletedError();
         }
 
         // Check if account is locked
         if (user.lockedUntil && user.lockedUntil > new Date()) {
-          throw new Error('Account is locked. Try again later.');
+          throw new AccountLockedError();
         }
 
         // Verify password
@@ -64,12 +88,12 @@ export const authOptions = {
             },
           });
 
-          throw new Error('Invalid email or password');
+          throw new InvalidCredentialsError();
         }
 
         // Check if email is verified
         if (!user.emailVerified) {
-          throw new Error('Please verify your email first');
+          throw new EmailNotVerifiedError();
         }
 
         // Reset failed login attempts
@@ -88,6 +112,7 @@ export const authOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
+          image: user.avatarUrl,
         };
       },
     }),
@@ -118,7 +143,17 @@ export const authOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async jwt({
+      token,
+      user,
+      trigger,
+      session,
+    }: {
+      token: JWT;
+      user?: User | AdapterUser;
+      trigger?: 'update' | 'signIn' | 'signUp';
+      session?: any;
+    }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || 'USER';
@@ -132,7 +167,7 @@ export const authOptions = {
       return token;
     },
 
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: JWT }) {
       if (session.user) {
         session.user.id = token.id as string;
         (session.user as any).role = token.role as string;
@@ -140,7 +175,7 @@ export const authOptions = {
       return session;
     },
 
-    async redirect({ url, baseUrl }) {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       // Redirect to same origin URL
       if (url.startsWith('/')) return `${baseUrl}${url}`;
       if (new URL(url).origin === baseUrl) return url;
@@ -149,13 +184,13 @@ export const authOptions = {
   },
 
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
     updateAge: 24 * 60 * 60, // 1 day
   },
 
   events: {
-    async signIn({ user }) {
+    async signIn({ user }: { user: User }) {
       // Log sign in
       if (user.id) {
         await prisma.auditLog.create({
@@ -168,16 +203,16 @@ export const authOptions = {
       }
     },
 
-    async signOut({ token }) {
-      // Log sign out if we can identify user
-      if (token.id) {
-        await prisma.auditLog.create({
-          data: {
-            userId: token.id as string,
-            action: 'LOGOUT_ALL_SESSIONS',
-          },
-        });
+    async signOut(message: { session?: unknown } | { token?: JWT | null }) {
+      if (!('token' in message) || !message.token?.id) {
+        return;
       }
+      await prisma.auditLog.create({
+        data: {
+          userId: message.token.id as string,
+          action: 'LOGOUT_ALL_SESSIONS',
+        },
+      });
     },
   },
 

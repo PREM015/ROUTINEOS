@@ -7,9 +7,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Moon, ShieldAlert } from 'lucide-react';
+import { Bell, CheckCircle2, Moon, ShieldAlert } from 'lucide-react';
 import { apiRequest, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { registerServiceWorker, ensurePushSubscription } from '@/lib/pwa/push-client';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -21,7 +22,8 @@ interface SleepSettingsRow {
   targetWakeTime: string | null;
   minSleepDuration: number | null;
   sleepReminder: boolean;
-  sleepReminderTime: string | null;
+  sleepAutoStartEnabled: boolean;
+  sleepAutoStartAfterMinutes: number;
 }
 
 export default function SleepSettingsPage() {
@@ -32,13 +34,32 @@ export default function SleepSettingsPage() {
     targetWakeTime: '07:00',
     minSleepDuration: 420,
     sleepReminder: false,
-    sleepReminderTime: '22:30',
+    sleepAutoStartEnabled: true,
+    sleepAutoStartAfterMinutes: 15,
   });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  // Register the service worker so prompt pushes can be delivered.
+  useEffect(() => {
+    void registerServiceWorker();
+  }, []);
+
+  const handleReminderToggle = (checked: boolean) => {
+    setSettings({ ...settings, sleepReminder: checked });
+    if (checked) {
+      setPushBusy(true);
+      void ensurePushSubscription().then((ok) => {
+        setPushEnabled(ok);
+        setPushBusy(false);
+      });
+    }
+  };
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -51,7 +72,8 @@ export default function SleepSettingsPage() {
         targetWakeTime: data.targetWakeTime ?? '07:00',
         minSleepDuration: data.minSleepDuration ?? 420,
         sleepReminder: data.sleepReminder ?? false,
-        sleepReminderTime: data.sleepReminderTime ?? '22:30',
+        sleepAutoStartEnabled: data.sleepAutoStartEnabled ?? true,
+        sleepAutoStartAfterMinutes: data.sleepAutoStartAfterMinutes ?? 15,
       });
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load sleep settings.');
@@ -75,7 +97,8 @@ export default function SleepSettingsPage() {
           targetWakeTime: settings.targetWakeTime,
           minSleepDuration: settings.minSleepDuration,
           sleepReminder: settings.sleepReminder,
-          sleepReminderTime: settings.sleepReminderTime,
+          sleepAutoStartEnabled: settings.sleepAutoStartEnabled,
+          sleepAutoStartAfterMinutes: settings.sleepAutoStartAfterMinutes,
         },
       });
       setSaved(true);
@@ -171,16 +194,46 @@ export default function SleepSettingsPage() {
               </div>
               <Switch
                 checked={settings.sleepReminder}
-                onChange={(checked) => setSettings({ ...settings, sleepReminder: checked })}
+                onChange={handleReminderToggle}
                 label="Sleep reminder"
               />
+              {pushEnabled === true && settings.sleepReminder && (
+                <p className="-mt-2 text-xs text-green-600">
+                  Reminder notifications are enabled on this device.
+                </p>
+              )}
+              {pushEnabled === false && settings.sleepReminder && !pushBusy && (
+                <p className="-mt-2 text-xs text-gray-500">
+                  Push notifications aren&apos;t available on this device.
+                </p>
+              )}
+              {pushBusy && (
+                <p className="-mt-2 flex items-center gap-1.5 text-xs text-gray-500">
+                  <Bell className="h-3.5 w-3.5" />
+                  Setting up device notifications&hellip;
+                </p>
+              )}
               {settings.sleepReminder && (
-                <Input
-                  label="Sleep reminder time"
-                  type="time"
-                  value={settings.sleepReminderTime ?? ''}
-                  onChange={(event) => setSettings({ ...settings, sleepReminderTime: event.target.value })}
-                />
+                <>
+                  <Switch
+                    checked={settings.sleepAutoStartEnabled}
+                    onChange={(checked) => setSettings({ ...settings, sleepAutoStartEnabled: checked })}
+                    label="Start sleep automatically"
+                  />
+                  {settings.sleepAutoStartEnabled && (
+                    <Input
+                      label="Auto-start sleep after (minutes)"
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={settings.sleepAutoStartAfterMinutes}
+                      onChange={(event) =>
+                        setSettings({ ...settings, sleepAutoStartAfterMinutes: Number(event.target.value) })
+                      }
+                      helperText="If you ignore the reminder, a sleep session starts automatically after this time. Say “Not yet” to dismiss it."
+                    />
+                  )}
+                </>
               )}
             </div>
           )}

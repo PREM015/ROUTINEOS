@@ -1,4 +1,4 @@
-import type { User } from '@prisma/client';
+import type { User, UserSettings } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { UserRepository } from '@/server/repositories/user.repository';
@@ -8,7 +8,8 @@ import { StreakRepository } from '@/server/repositories/streak.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { updateProfileSchema } from '@/lib/validation/user';
-import { UpdateSettingsSchema } from '@/schemas/settings.schema';
+import { updateSettingsSchema } from '@/lib/validation/settings.schema';
+import { DEFAULT_TZ } from '@/lib/dates';
 import type { UserStats } from '@/types/auth';
 import type { DeviceSessionInfo } from '@/types/auth';
 
@@ -64,6 +65,14 @@ export class UserService {
   }
 
   /**
+   * Resolve the user's timezone (falling back to the app default).
+   */
+  async getTimezone(userId: string): Promise<string> {
+    const settings = await this.userRepository.getSettings(userId);
+    return settings?.timezone || DEFAULT_TZ;
+  }
+
+  /**
    * Update profile fields (name, displayName, bio, avatarUrl, timezone, preferredLanguage)
    */
   async updateProfile(
@@ -100,32 +109,42 @@ export class UserService {
   }
 
   /**
-   * Update user settings. Maps the 'SYSTEM' theme option to Prisma's
-   * 'AUTO' value because the DB enum has no SYSTEM variant.
+   * Get (and create-on-first-access) the user's settings.
+   */
+  async getSettings(userId: string): Promise<UserSettings> {
+    let settings = await this.userRepository.getSettings(userId);
+    if (!settings) {
+      settings = await this.userRepository.createSettings(userId);
+    }
+    return settings;
+  }
+
+  /**
+   * Update user settings. Validates the full settings shape before persisting.
    */
   async updateSettings(
     userId: string,
     input: Record<string, unknown>
   ) {
-    const parsed = UpdateSettingsSchema.safeParse(input);
+    const parsed = updateSettingsSchema.safeParse(input);
     if (!parsed.success) {
       throw new Error(firstZodIssue(parsed.error));
     }
 
-    const settings = await this.userRepository.getSettings(userId);
-    if (!settings) {
+    const existing = await this.userRepository.getSettings(userId);
+    if (!existing) {
       await this.userRepository.createSettings(userId);
     }
 
     const data: Record<string, unknown> = {};
-    const d = parsed.data;
-    if (d.theme !== undefined) {
-      data.theme = d.theme === 'SYSTEM' ? 'AUTO' : d.theme;
-    }
-    if (d.timezone !== undefined) data.timezone = d.timezone;
-    if (d.weekStartsOn !== undefined) data.weekStartsOn = d.weekStartsOn;
-    if (d.dailyReminderTime !== undefined) {
-      data.dailyReminderTime = d.dailyReminderTime;
+    const entries = Object.entries(parsed.data) as Array<[string, unknown]>;
+    for (const [key, value] of entries) {
+      if (value === undefined) continue;
+      if (key === 'theme' && value === 'SYSTEM') {
+        data.theme = 'AUTO';
+      } else {
+        data[key] = value;
+      }
     }
 
     const updated = await this.userRepository.updateSettings(userId, data);

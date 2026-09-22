@@ -300,7 +300,7 @@ export interface ScoreHistoryRange {
     averageScore: number;
     highestScore: number;
     lowestScore: number;
-    mostCommonGrade: ScoreGrade;
+    mostCommonGrade: ScoreGrade | null;
   };
 }
 

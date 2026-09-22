@@ -46,11 +46,13 @@ export class ScoreRepository extends BaseRepository {
 
   /**
    * Create or update score
+   * Uses the unchecked input so `userId` (scalar FK) is never mixed with a
+   * `user: { connect }` relation in the same write.
    */
   async upsertScore(
     userId: string,
     date: string,
-    data: Omit<Prisma.DailyScoreCreateInput, 'userId' | 'date'>
+    data: Omit<Prisma.DailyScoreUncheckedCreateInput, 'userId' | 'date'>
   ): Promise<DailyScore> {
     try {
       return await this.prisma.dailyScore.upsert({
@@ -59,7 +61,7 @@ export class ScoreRepository extends BaseRepository {
           userId,
           date,
           ...data,
-        } as Prisma.DailyScoreCreateInput,
+        },
         update: data,
       });
     } catch (error) {
@@ -151,7 +153,7 @@ export class ScoreRepository extends BaseRepository {
 
       for (const { overallGrade } of scores) {
         if (overallGrade && overallGrade in distribution) {
-          distribution[overallGrade]++;
+          distribution[overallGrade] = (distribution[overallGrade] ?? 0) + 1;
         }
       }
 

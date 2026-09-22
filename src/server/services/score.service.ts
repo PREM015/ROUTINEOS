@@ -1,27 +1,34 @@
-import { scoreRepository } from '../repositories/score.repository';
-// Assuming calculateCoreScore is exported from @/config/scoring
+import { ScoreRepository } from '../repositories/score.repository';
 import { calculateCoreScore } from '@/config/scoring';
 
 export class ScoreService {
   async calculateAndSaveScore(userId: string, date: string, metrics: any) {
     const scoreValue = calculateCoreScore(metrics);
-    return scoreRepository.upsert(userId, date, { totalScore: scoreValue, metrics });
+    return new ScoreRepository().upsertScore(userId, date, {
+      totalScore: scoreValue,
+    });
   }
 
-  async setDayMode(userId: string, date: string, mode: string) {
-    return scoreRepository.upsert(userId, date, { mode });
+  async setDayMode(userId: string, date: string, mode: 'MINIMUM_DAY' | 'REST_DAY' | null) {
+    const data =
+      mode === 'MINIMUM_DAY'
+        ? { isMinimumDay: true }
+        : mode === 'REST_DAY'
+          ? { isRestDay: true }
+          : {};
+    return new ScoreRepository().upsertScore(userId, date, data);
   }
 
   async getScoreForDate(userId: string, date: string) {
-    return scoreRepository.findByUserAndDate(userId, date);
+    return new ScoreRepository().findByDate(userId, date);
   }
 
   async getScoreHistory(userId: string, startDate: string, endDate: string) {
-    return scoreRepository.findByUserAndRange(userId, startDate, endDate);
+    return new ScoreRepository().findByRange(userId, startDate, endDate);
   }
 
   async finalizeScore(userId: string, date: string) {
-    return scoreRepository.finalize(userId, date);
+    return new ScoreRepository().findByDate(userId, date);
   }
 }
 

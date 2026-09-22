@@ -12,10 +12,11 @@ import { BarChart } from '@/components/charts/BarChart';
 interface DashboardData {
   date: string;
   weekStart: string;
-  month: string;
   today: DailyBreakdown;
   week: WeeklySummary;
   month: MonthlySummary;
+  // Older API shape used `monthly`; accept both.
+  monthly?: MonthlySummary;
 }
 
 function StatCard({
@@ -48,11 +49,13 @@ function StatCard({
 export default function AnalyticsPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
+        setError(null);
         const result = await apiRequest<DashboardData>('/api/analytics/dashboard');
         if (!cancelled) setData(result);
       } catch (err) {
@@ -63,11 +66,15 @@ export default function AnalyticsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retryKey]);
+
+  // Accept both `month` (current) and legacy `monthly` shapes; default every
+  // nested field so new users with no data never crash.
+  const month: MonthlySummary | undefined = data?.month ?? data?.monthly;
 
   const habitChartData = useMemo(
     () =>
-      (data?.week.habits.perHabit ?? []).map((habit) => ({
+      (data?.week?.habits?.perHabit ?? []).map((habit) => ({
         name: habit.habitName,
         completionRate: habit.completionRate,
       })),
@@ -76,11 +83,11 @@ export default function AnalyticsPage() {
 
   const tierChartData = useMemo(
     () =>
-      (data?.month.scores.byTier ?? []).map((tier) => ({
+      (month?.scores?.byTier ?? []).map((tier) => ({
         name: tier.tier,
         completionRate: tier.completionRate,
       })),
-    [data],
+    [month],
   );
 
   if (error) {
@@ -89,6 +96,12 @@ export default function AnalyticsPage() {
         <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </p>
+        <button
+          onClick={() => setRetryKey((k) => k + 1)}
+          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -101,7 +114,21 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { today, week, month } = data;
+  const { today, week } = data;
+  if (!month) {    return (
+      <div className="container mx-auto max-w-6xl px-4 py-8">
+        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+          Analytics data was incomplete. Please try again.
+        </p>
+        <button
+          onClick={() => setRetryKey((k) => k + 1)}
+          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
@@ -118,26 +145,26 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Today"
-          value={today.score.total !== null ? String(Math.round(today.score.total)) : '—'}
-          hint={today.score.grade ?? 'No score yet'}
+          value={today?.score?.total != null ? String(Math.round(today.score.total)) : '—'}
+          hint={today?.score?.grade ?? 'No score yet'}
           icon={<Target className="h-3.5 w-3.5" />}
         />
         <StatCard
           label="Week average"
-          value={String(Math.round(week.scores.average))}
-          hint={`${week.scores.excellentDays} excellent days`}
+          value={week?.scores ? String(Math.round(week.scores.average ?? 0)) : '—'}
+          hint={`${week?.scores?.excellentDays ?? 0} excellent days`}
           icon={<CalendarRange className="h-3.5 w-3.5" />}
         />
         <StatCard
           label="Month average"
-          value={String(Math.round(month.scores.average))}
-          hint={`${month.scores.perfectDays} perfect days`}
+          value={month?.scores ? String(Math.round(month.scores.average ?? 0)) : '—'}
+          hint={`${month?.scores?.perfectDays ?? 0} perfect days`}
           icon={<CalendarRange className="h-3.5 w-3.5" />}
         />
         <StatCard
           label="Current streak"
-          value={String(week.streaks.current)}
-          hint={`Longest ${week.streaks.longest}`}
+          value={String(week?.streaks?.current ?? 0)}
+          hint={`Longest ${week?.streaks?.longest ?? 0}`}
           icon={<Flame className="h-3.5 w-3.5" />}
         />
       </div>
@@ -146,10 +173,10 @@ export default function AnalyticsPage() {
         <h2 className="mb-4 text-lg font-semibold text-gray-900">Today&apos;s breakdown</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: 'Core', value: today.score.core },
-            { label: 'Growth', value: today.score.growth },
-            { label: 'Bonus', value: today.score.bonus },
-            { label: 'Habit reliability', value: today.habitReliability },
+            { label: 'Core', value: today?.score?.core },
+            { label: 'Growth', value: today?.score?.growth },
+            { label: 'Bonus', value: today?.score?.bonus },
+            { label: 'Habit reliability', value: today?.habitReliability },
           ].map((item) => (
             <div key={item.label} className="rounded-lg bg-gray-50 p-3">
               <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
@@ -164,26 +191,26 @@ export default function AnalyticsPage() {
         <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div>
             <dt className="text-gray-500">Routine</dt>
-            <dd className="font-semibold text-gray-900">{today.routine.completionRate}%</dd>
+            <dd className="font-semibold text-gray-900">{today?.routine?.completionRate ?? 0}%</dd>
           </div>
           <div>
             <dt className="text-gray-500">Habits completed</dt>
             <dd className="font-semibold text-gray-900">
-              {today.habits.filter((habit) => habit.status === 'COMPLETED').length}/
-              {today.habits.length}
+              {(today?.habits ?? []).filter((habit) => habit.status === 'COMPLETED').length}/
+              {(today?.habits ?? []).length}
             </dd>
           </div>
           <div>
             <dt className="text-gray-500">Sleep</dt>
             <dd className="font-semibold text-gray-900">
-              {today.sleep.durationMinutes !== null
+              {today?.sleep?.durationMinutes != null
                 ? `${Math.round(today.sleep.durationMinutes / 60)}h`
                 : '—'}
             </dd>
           </div>
           <div>
             <dt className="text-gray-500">Mood</dt>
-            <dd className="font-semibold text-gray-900">{today.reflection.mood ?? '—'}/5</dd>
+            <dd className="font-semibold text-gray-900">{today?.reflection?.mood ?? '—'}/5</dd>
           </div>
         </dl>
       </Card>

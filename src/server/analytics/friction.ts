@@ -98,13 +98,13 @@ function analyzeFriction(logs: { date: string; status: HabitLog['status'] }[]): 
 
   const missedDays = missed.map(log => new Date(`${log.date}T00:00:00Z`).getUTCDay());
   const dayCounts = new Array(7).fill(0) as number[];
-  for (const day of missedDays) dayCounts[day] += 1;
+  for (const day of missedDays) dayCounts[day] = (dayCounts[day] ?? 0) + 1;
   const strugglingDays = dayCounts
     .map((count, index) => ({ count, index }))
     .filter(entry => entry.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 2)
-    .map(entry => WEEKDAY_NAMES[entry.index]);
+    .map(entry => WEEKDAY_NAMES[entry.index] ?? '');
 
   return {
     missRate,
@@ -132,7 +132,7 @@ function frictionScore(metrics: HabitFrictionMetrics): number {
     metrics.skipRate * FRICTION_WEIGHTS.skipRate +
     Math.min(1, metrics.longestBreak / 14) * FRICTION_WEIGHTS.longestBreak +
     metrics.inconsistency * FRICTION_WEIGHTS.inconsistency +
-    metrics.declining * FRICTION_WEIGHTS.declining
+    metrics.declining * FRICTION_WEIGHTS.decliningTrend
   ) * 100;
 }
 

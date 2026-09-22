@@ -11,7 +11,7 @@ interface RouteContext {
  * GET /api/focus/[id]
  * Fetch a single focus session owned by the user
  */
-export async function GET(request: NextRequest, context: RouteContext) {
+export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -94,7 +94,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
  * DELETE /api/focus/[id]
  * Delete a focus session owned by the user
  */
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

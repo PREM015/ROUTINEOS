@@ -69,7 +69,7 @@ export const useGoalsStore = create<GoalsState>()((set, get) => ({
     try {
       const next = filters ?? get().filters;
       const goals = await apiRequest<GoalWithRelations[]>('/api/goals', {
-        query: next,
+        query: { ...next },
       });
       set({ goals, filters: next, loading: false });
       return goals;

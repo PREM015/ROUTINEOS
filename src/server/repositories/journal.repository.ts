@@ -1,4 +1,4 @@
-import type { JournalEntry, Prisma } from '@prisma/client';
+import type { JournalEntry, JournalRevision, Prisma } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -23,6 +23,11 @@ interface JournalQueryParams {
   search?: string;
   mood?: number;
   tagIds?: string[];
+  limit?: number;
+  offset?: number;
+}
+
+interface JournalTrashQueryParams {
   limit?: number;
   offset?: number;
 }
@@ -57,12 +62,17 @@ export class JournalRepository extends BaseRepository {
   }
 
   /**
-   * Find a journal entry by ID with tags
+   * Find a journal entry by ID with tags.
+   * Soft-deleted entries are hidden unless `includeDeleted` is set.
    */
-  async findById(userId: string, entryId: string) {
+  async findById(userId: string, entryId: string, includeDeleted = false) {
     try {
       return await this.prisma.journalEntry.findFirst({
-        where: { id: entryId, userId },
+        where: {
+          id: entryId,
+          userId,
+          ...(includeDeleted ? {} : { deletedAt: null }),
+        },
         include: {
           tags: {
             include: { tag: true },
@@ -75,16 +85,19 @@ export class JournalRepository extends BaseRepository {
   }
 
   /**
-   * Find a journal entry by date for a user
+   * Find a journal entry by date for a user.
+   * Soft-deleted entries are excluded.
    */
   async findByDate(
     userId: string,
     date: string
   ): Promise<JournalEntry | null> {
     try {
-      return await this.prisma.journalEntry.findUnique({
+      const entry = await this.prisma.journalEntry.findUnique({
         where: { userId_date: { userId, date } },
       });
+      if (!entry || entry.deletedAt !== null) return null;
+      return entry;
     } catch (error) {
       this.handleError(error, 'findByDate');
     }
@@ -95,7 +108,10 @@ export class JournalRepository extends BaseRepository {
    */
   async findAll(userId: string, query: JournalQueryParams = {}) {
     try {
-      const where: Prisma.JournalEntryWhereInput = { userId };
+      const where: Prisma.JournalEntryWhereInput = {
+        userId,
+        deletedAt: null,
+      };
 
       if (query.from || query.to) {
         where.date = {};
@@ -165,7 +181,8 @@ export class JournalRepository extends BaseRepository {
   }
 
   /**
-   * Delete a journal entry owned by the user
+   * Delete a journal entry owned by the user (hard delete).
+   * Prefer `softDelete` unless the user explicitly purges the entry.
    */
   async delete(userId: string, entryId: string): Promise<JournalEntry> {
     try {
@@ -174,6 +191,177 @@ export class JournalRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'delete');
+    }
+  }
+
+  /**
+   * List soft-deleted journal entries (the trash), newest deletion first.
+   */
+  async findDeleted(userId: string, query: JournalTrashQueryParams = {}) {
+    try {
+      return await this.prisma.journalEntry.findMany({
+        where: { userId, deletedAt: { not: null } },
+        include: {
+          tags: {
+            include: { tag: true },
+          },
+        },
+        orderBy: { deletedAt: 'desc' },
+        ...this.buildPaginationQuery(query.limit, query.offset),
+      });
+    } catch (error) {
+      this.handleError(error, 'findDeleted');
+    }
+  }
+
+  /**
+   * Soft delete a journal entry owned by the user (sets `deletedAt`).
+   * The row and its revision history are preserved for restore.
+   */
+  async softDelete(userId: string, entryId: string): Promise<JournalEntry> {
+    try {
+      const existing = await this.prisma.journalEntry.findFirst({
+        where: { id: entryId, userId },
+      });
+      if (!existing) {
+        throw new Error('Journal entry not found');
+      }
+      return await this.prisma.journalEntry.update({
+        where: { id: entryId },
+        data: { deletedAt: new Date() },
+      });
+    } catch (error) {
+      this.handleError(error, 'softDelete');
+    }
+  }
+
+  /**
+   * Restore a soft-deleted journal entry (clears `deletedAt`).
+   */
+  async restore(userId: string, entryId: string): Promise<JournalEntry> {
+    try {
+      const existing = await this.prisma.journalEntry.findFirst({
+        where: { id: entryId, userId },
+      });
+      if (!existing) {
+        throw new Error('Journal entry not found');
+      }
+      return await this.prisma.journalEntry.update({
+        where: { id: entryId },
+        data: { deletedAt: null },
+      });
+    } catch (error) {
+      this.handleError(error, 'restore');
+    }
+  }
+
+  /**
+   * Permanently delete a journal entry owned by the user.
+   * Revisions are removed via the `onDelete: Cascade` relation.
+   */
+  async permanentDelete(userId: string, entryId: string): Promise<JournalEntry> {
+    try {
+      const existing = await this.prisma.journalEntry.findFirst({
+        where: { id: entryId, userId },
+      });
+      if (!existing) {
+        throw new Error('Journal entry not found');
+      }
+      return await this.prisma.journalEntry.delete({
+        where: { id: entryId },
+      });
+    } catch (error) {
+      this.handleError(error, 'permanentDelete');
+    }
+  }
+
+  /**
+   * Snapshot the current title/content of an entry into a revision.
+   * Call this BEFORE overwriting so history is never lost.
+   */
+  async createRevision(
+    userId: string,
+    entryId: string,
+    title: string | null,
+    content: string
+  ): Promise<JournalRevision> {
+    try {
+      const existing = await this.prisma.journalEntry.findFirst({
+        where: { id: entryId, userId },
+      });
+      if (!existing) {
+        throw new Error('Journal entry not found');
+      }
+      return await this.prisma.journalRevision.create({
+        data: { entryId, userId, title, content },
+      });
+    } catch (error) {
+      this.handleError(error, 'createRevision');
+    }
+  }
+
+  /**
+   * List revisions of an entry owned by the user, newest first.
+   */
+  async listRevisions(
+    userId: string,
+    entryId: string
+  ): Promise<JournalRevision[]> {
+    try {
+      const existing = await this.prisma.journalEntry.findFirst({
+        where: { id: entryId, userId },
+      });
+      if (!existing) {
+        throw new Error('Journal entry not found');
+      }
+      return await this.prisma.journalRevision.findMany({
+        where: { entryId, userId },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'listRevisions');
+    }
+  }
+
+  /**
+   * Restore a revision's title/content onto its entry.
+   * The pre-restore content is snapshotted into a new revision first,
+   * so restoring never destroys history.
+   */
+  async restoreRevision(
+    userId: string,
+    entryId: string,
+    revisionId: string
+  ): Promise<JournalEntry> {
+    try {
+      return await this.transaction(async (tx) => {
+        const entry = await tx.journalEntry.findFirst({
+          where: { id: entryId, userId },
+        });
+        if (!entry) {
+          throw new Error('Journal entry not found');
+        }
+        const revision = await tx.journalRevision.findFirst({
+          where: { id: revisionId, entryId, userId },
+        });
+        if (!revision) {
+          throw new Error('Journal revision not found');
+        }
+        await tx.journalRevision.create({
+          data: {
+            entryId,
+            userId,
+            title: entry.title,
+            content: entry.content,
+          },
+        });
+        return await tx.journalEntry.update({
+          where: { id: entryId },
+          data: { title: revision.title, content: revision.content },
+        });
+      });
+    } catch (error) {
+      this.handleError(error, 'restoreRevision');
     }
   }
 
@@ -216,6 +404,7 @@ export class JournalRepository extends BaseRepository {
       return await this.prisma.journalEntry.count({
         where: {
           userId,
+          deletedAt: null,
           date: { startsWith: monthPrefix },
         },
       });
@@ -230,7 +419,7 @@ export class JournalRepository extends BaseRepository {
   async getStreakData(userId: string): Promise<string[]> {
     try {
       const dates = await this.prisma.journalEntry.findMany({
-        where: { userId },
+        where: { userId, deletedAt: null },
         select: { date: true },
         orderBy: { date: 'asc' },
         distinct: ['date'],
@@ -254,6 +443,7 @@ export class JournalRepository extends BaseRepository {
       return await this.prisma.journalEntry.findMany({
         where: {
           userId,
+          deletedAt: null,
           OR: [
             {
               title: {

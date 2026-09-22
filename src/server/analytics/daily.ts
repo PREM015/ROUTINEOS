@@ -96,7 +96,7 @@ function round(value: number, decimals = 2): number {
  * Per-tier habit completion counts for a single day.
  */
 function buildTierBreakdowns(
-  activeHabits: Array<{ tier: HabitTier }>,
+  activeHabits: Array<{ id: string; tier: HabitTier }>,
   statusByHabit: Map<string, HabitLogStatus | undefined>
 ): DailyTierBreakdown[] {
   const byTier = new Map<HabitTier, DailyTierBreakdown>();
@@ -152,7 +152,7 @@ export async function dailyBreakdown(userId: string, date: string): Promise<Dail
   }
 
   const tiers = buildTierBreakdowns(
-    habits.map(habit => ({ tier: habit.tier })),
+    habits.map(habit => ({ id: habit.id, tier: habit.tier })),
     loggedStatuses
   );
 

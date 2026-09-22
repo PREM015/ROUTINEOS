@@ -1,4 +1,5 @@
-import type { Goal, GoalProgress, Milestone, Prisma, GoalStatus, GoalType, GoalPriority } from '@prisma/client';
+import { GoalStatus } from '@prisma/client';
+import type { Goal, GoalProgress, Milestone, Prisma, GoalType, GoalPriority } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
 /**

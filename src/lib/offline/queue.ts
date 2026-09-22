@@ -3,12 +3,14 @@
  * Queue actions when offline
  */
 
-interface QueuedAction {
+export interface QueuedAction {
   id: string;
   type: 'HABIT_LOG' | 'GOAL_PROGRESS' | 'REFLECTION';
   data: any;
   timestamp: number;
 }
+
+export type OfflineAction = QueuedAction;
 
 const QUEUE_KEY = 'routineos_offline_queue';
 

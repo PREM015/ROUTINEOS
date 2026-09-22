@@ -112,6 +112,30 @@ export class NotificationService {
   }
 
   /**
+   * Dismiss a single notification (ownership-checked; idempotent).
+   */
+  async dismiss(
+    userId: string,
+    notificationId: string
+  ): Promise<NotificationLog> {
+    const existing = await this.notificationRepository.findById(
+      userId,
+      notificationId
+    );
+    if (!existing) {
+      throw new Error('Notification not found');
+    }
+    const dismissed = await this.notificationRepository.markDismissed(
+      userId,
+      notificationId
+    );
+    if (dismissed === 0) {
+      return existing;
+    }
+    return { ...existing, status: NotificationStatus.DISMISSED };
+  }
+
+  /**
    * Delete a notification (ownership-checked)
    */
   async delete(

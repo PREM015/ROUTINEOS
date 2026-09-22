@@ -9,10 +9,24 @@ export const createJournalEntrySchema = z.object({
   gratitude: z.array(z.string().max(500, 'Each gratitude item must be 500 characters or less')).optional(),
   isFavorite: z.boolean().optional(),
   isArchived: z.boolean().optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
+  tagIds: z.array(z.string().cuid()).optional(),
 });
 
 export const updateJournalEntrySchema = createJournalEntrySchema.partial();
+
+export const journalEntryIdSchema = z.object({
+  id: z.string().min(1, 'Entry id is required'),
+});
+
+export const journalRevisionIdSchema = z.object({
+  id: z.string().min(1, 'Entry id is required'),
+  revisionId: z.string().min(1, 'Revision id is required'),
+});
+
+export const deletedJournalQuerySchema = z.object({
+  limit: z.number().int().min(1).max(100).optional(),
+  offset: z.number().int().min(0).optional(),
+});
 
 export const journalEntryQuerySchema = z.object({
   search: z.string().optional(),
@@ -25,7 +39,7 @@ export const journalEntryQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
   limit: z.number().int().min(1).max(100).optional(),
   offset: z.number().int().min(0).optional(),
-  tagId: z.string().uuid().optional(),
+  tagId: z.string().cuid().optional(),
 });
 
 export type CreateJournalEntryInput = z.infer<typeof createJournalEntrySchema>;

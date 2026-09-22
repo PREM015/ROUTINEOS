@@ -54,6 +54,8 @@ export function isHabitDueByFrequency(
     }
     case 'ONE_TIME':
       return date === toDateOnly(habit.startDate);
+    default:
+      return false;
   }
 }
 
@@ -64,5 +66,6 @@ export function frequencyLabel(habit: Pick<FrequencyHabit, 'frequencyType' | 'fr
     case 'WEEKLY_TARGET': return `${habit.frequencyValue ?? 1}× per week`;
     case 'MONTHLY_TARGET': return `${habit.frequencyValue ?? 1}× per month`;
     case 'ONE_TIME': return 'One time';
+    default: return habit.frequencyType;
   }
 }

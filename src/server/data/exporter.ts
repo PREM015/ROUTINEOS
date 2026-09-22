@@ -42,11 +42,11 @@ export async function exportUserData(
   const reflectionRepository = new ReflectionRepository();
 
   // Determine date range
-  const endDate = options?.endDate || new Date().toISOString().split('T')[0];
-  const startDate = options?.startDate || (() => {
+  const endDate = options?.endDate ?? new Date().toISOString().slice(0, 10);
+  const startDate = options?.startDate ?? (() => {
     const d = new Date();
     d.setFullYear(d.getFullYear() - 1);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().slice(0, 10);
   })();
 
   const [
@@ -113,6 +113,8 @@ export async function exportUserData(
 
   return exportData;
 }
+
+export type ExportData = Awaited<ReturnType<typeof exportUserData>>;
 
 /**
  * Export to JSON file

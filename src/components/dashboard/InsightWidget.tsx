@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
@@ -17,12 +17,9 @@ export function InsightWidget() {
   const [insight, setInsight] = useState<Insight | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchLatestInsight();
-  }, []);
-
-  async function fetchLatestInsight() {
+  const fetchLatestInsight = useCallback(async () => {
     try {
       const res = await fetch('/api/insights/latest?period=WEEKLY');
       const data = await res.json();
@@ -34,10 +31,17 @@ export function InsightWidget() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  // Initial fetch on mount.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    fetchLatestInsight().catch(() => undefined);
+  }, [fetchLatestInsight]);
 
   async function generateNewInsight() {
     setGenerating(true);
+    setNotice(null);
     try {
       const endDate = new Date();
       const startDate = new Date();
@@ -56,9 +60,18 @@ export function InsightWidget() {
       const data = await res.json();
       if (data.success) {
         setInsight(data.data);
+      } else if (res.status === 503) {
+        setNotice(
+          data?.error === 'AI insights not configured'
+            ? 'AI insights are not configured (missing API key). Your dashboard works fine without them.'
+            : 'The AI service is temporarily unavailable. Please try again later.'
+        );
+      } else {
+        setNotice(data?.error || 'Could not generate an insight right now.');
       }
     } catch (error) {
       console.error('Error generating insight:', error);
+      setNotice('Could not reach the insights service. Please try again later.');
     } finally {
       setGenerating(false);
     }
@@ -83,9 +96,14 @@ export function InsightWidget() {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600 dark:text-gray-300 mb-4">
           Get personalized insights powered by AI
         </p>
+        {notice && (
+          <p role="status" className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+            {notice}
+          </p>
+        )}
         <Button onClick={generateNewInsight} disabled={generating}>
           {generating ? 'Generating...' : 'Generate Insight'}
         </Button>
@@ -111,18 +129,23 @@ export function InsightWidget() {
       </div>
 
       <div className="space-y-4">
+        {notice && (
+          <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+            {notice}
+          </p>
+        )}
         {/* Summary */}
         <div>
-          <p className="text-sm text-gray-900">{insight.summary}</p>
+          <p className="text-sm text-gray-900 dark:text-gray-100">{insight.summary}</p>
         </div>
 
         {/* Wins */}
         {wins.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold mb-2 text-green-700">✨ Wins</h4>
+            <h4 className="text-sm font-semibold mb-2 text-green-700 dark:text-green-400">✨ Wins</h4>
             <ul className="space-y-1">
               {wins.slice(0, 2).map((win, i) => (
-                <li key={i} className="text-sm text-gray-700">
+                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
                   • {win}
                 </li>
               ))}
@@ -133,12 +156,12 @@ export function InsightWidget() {
         {/* Suggestions */}
         {suggestions.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold mb-2 text-blue-700">
+            <h4 className="text-sm font-semibold mb-2 text-blue-700 dark:text-blue-400">
               💡 Suggestions
             </h4>
             <ul className="space-y-1">
               {suggestions.slice(0, 3).map((suggestion, i) => (
-                <li key={i} className="text-sm text-gray-700">
+                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
                   • {suggestion}
                 </li>
               ))}
@@ -146,10 +169,12 @@ export function InsightWidget() {
           </div>
         )}
 
-        <div className="text-xs text-gray-500 pt-2 border-t">
+        <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-border">
           Generated {new Date(insight.generatedAt).toLocaleDateString()}
         </div>
       </div>
     </Card>
   );
 }
+
+export default InsightWidget;

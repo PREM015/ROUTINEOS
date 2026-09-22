@@ -42,6 +42,9 @@ export const ReviewQuestions: React.FC<ReviewQuestionsProps> = ({ onSubmit }) =>
   };
 
   const question = QUESTIONS[currentStep];
+  if (!question) {
+    return null;
+  }
   const progress = Math.round(((currentStep + 1) / QUESTIONS.length) * 100);
 
   return (

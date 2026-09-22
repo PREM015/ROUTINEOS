@@ -5,7 +5,7 @@ export interface SleepConflict {
 }
 
 function timeToMinutes(timeStr: string): number {
-  const [h, m] = timeStr.split(':').map(Number);
+  const [h = 0, m = 0] = timeStr.split(':').map(Number);
   return h * 60 + m;
 }
 

@@ -4,13 +4,13 @@ export class ReviewRepository {
   async findByUserId(userId: string) {
     return prisma.weeklyReview.findMany({
       where: { userId },
-      orderBy: { weekStartDate: 'desc' },
+      orderBy: { weekStart: 'desc' },
     });
   }
 
   async findByWeek(userId: string, weekStartDate: string) {
     return prisma.weeklyReview.findUnique({
-      where: { userId_weekStartDate: { userId, weekStartDate } },
+      where: { userId_weekStart: { userId, weekStart: weekStartDate } },
     });
   }
 

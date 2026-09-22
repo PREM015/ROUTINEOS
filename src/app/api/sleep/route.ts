@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth';
-import { SleepRepository } from '@/server/repositories/sleep.repository';
-import { calculateSleepDuration, calculateSleepDeficit } from '@/lib/sleep/calculate-duration';
-import { LogSleepSchema } from '@/schemas/sleep.schema';
+import { sleepService } from '@/server/services/sleep.service';
+import { logSleepSchema } from '@/schemas/sleep.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -9,6 +8,8 @@ import { z } from 'zod';
  * Sleep Route
  * GET  /api/sleep  – list sleep logs for a date range (optionally paginated)
  * POST /api/sleep  – log sleep for a date (upsert per user+date)
+ *
+ * Thin handlers: all logic lives in SleepService.
  */
 
 const sleepQuerySchema = z.object({
@@ -19,21 +20,11 @@ const sleepQuerySchema = z.object({
   offset: z.number().int().min(0).optional(),
 });
 
-function toDateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function defaultRange(): { startDate: string; endDate: string } {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 29);
-  return { startDate: toDateString(start), endDate: toDateString(end) };
-}
-
 /**
  * GET /api/sleep
  * Fetch sleep logs for the authenticated user. Pass `date` to fetch a single
- * day, otherwise `startDate`/`endDate` (defaults to the last 30 days).
+ * day, otherwise `startDate`/`endDate` (defaults to the last 30 days in the
+ * user's timezone).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -59,34 +50,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sleepRepository = new SleepRepository();
-
-    if (validated.data.date) {
-      const sleepLog = await sleepRepository.findByDate(session.user.id, validated.data.date);
-      return NextResponse.json({
-        success: true,
-        data: sleepLog ? [sleepLog] : [],
-        meta: { total: sleepLog ? 1 : 0 },
-      });
-    }
-
-    const range = defaultRange();
-    const startDate = validated.data.startDate ?? range.startDate;
-    const endDate = validated.data.endDate ?? range.endDate;
-    const logs = await sleepRepository.findByRange(session.user.id, startDate, endDate);
-
-    const total = logs.length;
-    const offset = validated.data.offset ?? 0;
-    const limit = validated.data.limit ?? 100;
-    const paginated = logs.slice(offset, offset + limit);
+    const { logs, total, startDate, endDate } = await sleepService.listLogs(
+      session.user.id,
+      validated.data
+    );
 
     return NextResponse.json({
       success: true,
-      data: paginated,
+      data: logs,
       meta: {
         total,
-        limit,
-        offset,
+        limit: validated.data.limit ?? 100,
+        offset: validated.data.offset ?? 0,
         startDate,
         endDate,
       },
@@ -109,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validated = LogSleepSchema.safeParse(body);
+    const validated = logSleepSchema.safeParse(body);
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validated.error.flatten() },
@@ -117,20 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, bedtime, wakeTime, quality, notes } = validated.data;
-
-    const actualDurationMinutes = calculateSleepDuration(bedtime, wakeTime);
-    const deficitMinutes = calculateSleepDeficit(actualDurationMinutes, 480);
-
-    const sleepRepository = new SleepRepository();
-    const sleepLog = await sleepRepository.upsertLog(session.user.id, date, {
-      actualBedtime: bedtime,
-      actualWakeTime: wakeTime,
-      actualDurationMinutes,
-      deficitMinutes,
-      quality,
-      notes,
-    });
+    const sleepLog = await sleepService.logSleep(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: sleepLog });
   } catch (error) {

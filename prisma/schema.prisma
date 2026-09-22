@@ -67,6 +67,7 @@ enum RoutineLogStatus {
 
 // Habit Enums
 enum HabitTier {
+  NON_NEGOTIABLE
   GROWTH
   BONUS
   OPTIONAL
@@ -261,6 +262,13 @@ enum NotificationType {
 
   REMINDER_SNOOZED
 
+  // Sleep tracker
+  SLEEP_REMINDER
+  SLEEP_STARTED
+  SLEEP_ENDED
+  SLEEP_PROMPT
+  SLEEP_TRACKING_STARTED
+
   MOTIVATIONAL
   PRODUCTIVITY_INSIGHT
 
@@ -438,6 +446,7 @@ model User {
 
   // Wellness & Health
   sleepLogs        SleepLog[]
+  sleepSessions    SleepSession[]
   moodLogs         MoodLog[]
   energyLogs       EnergyLog[]
   weatherLogs      WeatherLog[]
@@ -446,6 +455,7 @@ model User {
 
   // Journaling & Reflection
   journalEntries   JournalEntry[]
+  journalRevisions JournalRevision[]
   dailyReflections DailyReflection[]
 
   // Productivity & Focus
@@ -568,11 +578,14 @@ model UserSettings {
   showCompletedTasks Boolean @default(false)
 
   // Sleep
-  targetBedtime     String?
-  targetWakeTime    String?
-  minSleepDuration  Int?
-  sleepReminder     Boolean @default(false)
-  sleepReminderTime String?
+  targetBedtime             String?
+  targetWakeTime            String?
+  minSleepDuration          Int?
+  sleepReminder             Boolean @default(false)
+  sleepReminderTime         String?
+  autoStartSleepAfterMinutes Int    @default(15)
+  sleepAutoStartEnabled     Boolean @default(true)
+  sleepAutoStartAfterMinutes Int    @default(15)
 
   // Scoring weights
   weightNonNeg Float @default(1.0)
@@ -743,6 +756,21 @@ model JournalEntryTag {
 
   @@unique([entryId, tagId])
   @@index([tagId])
+}
+
+model JournalRevision {
+  id      String       @id @default(cuid())
+  entryId String
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title   String?
+  content String  @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([entryId, createdAt])
 }
 
 // ==========================================================================
@@ -1254,6 +1282,41 @@ model SleepLog {
   @@index([date, userId])
 }
 
+model SleepSession {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+
+  status    SleepSessionStatus @default(ACTIVE)
+  source    SleepStartSource   @default(MANUAL)
+  promptKey String?
+
+  durationMinutes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, promptKey])
+  @@index([userId, status])
+  @@index([userId, startedAt])
+  @@index([userId, updatedAt])
+}
+
+enum SleepSessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum SleepStartSource {
+  USER_CONFIRMED
+  MANUAL
+  AUTO_NO_RESPONSE
+}
+
 model MoodLog {
   id     String @id @default(cuid())
   userId String
@@ -1470,6 +1533,10 @@ model JournalEntry {
 
   tags JournalEntryTag[]
 
+  revisions JournalRevision[]
+
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1477,6 +1544,7 @@ model JournalEntry {
   @@index([userId, isFavorite])
   @@index([isArchived])
   @@index([date, userId])
+  @@index([userId, deletedAt])
 }
 
 // ==========================================================================

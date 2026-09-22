@@ -1,13 +1,12 @@
 import { Habit } from "@/types/habit";
-import { parseISO, getDay, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
+import { parseISO } from "date-fns";
+import { format as formatTz } from "date-fns-tz";
 import { parseFrequencyConfig } from "./frequency";
 
-export function isHabitScheduledForDate(habit: Habit, date: string, timezone: string): boolean {
+export function isHabitScheduledForDate(habit: Habit, date: string, timezone: string = 'UTC'): boolean {
   if (habit.status === 'ARCHIVED') return false;
 
-  const dateObj = new Date(date);
-  const config = parseFrequencyConfig(habit.frequencyConfig as string | null);
+  const config = parseFrequencyConfig(habit.frequencyValue);
   
   if (!config) return true; // Default to daily if no config
 
@@ -16,7 +15,9 @@ export function isHabitScheduledForDate(habit: Habit, date: string, timezone: st
       return true;
     case 'SPECIFIC_WEEKDAYS':
       if (config.daysOfWeek) {
-        const dayOfWeek = getDay(dateObj); // 0 = Sunday, 1 = Monday
+        // Resolve the weekday in the user's timezone: ISO day (1=Mon..7=Sun) -> 0=Sun..6=Sat
+        const isoDay = Number(formatTz(parseISO(date), 'i', { timeZone: timezone }));
+        const dayOfWeek = isoDay % 7;
         return config.daysOfWeek.includes(dayOfWeek);
       }
       return false;
@@ -31,4 +32,8 @@ export function isHabitScheduledForDate(habit: Habit, date: string, timezone: st
     default:
       return false;
   }
+}
+
+export function isHabitScheduled(habit: Habit, date: string, timezone: string = 'UTC'): boolean {
+  return isHabitScheduledForDate(habit, date, timezone);
 }

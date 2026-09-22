@@ -34,12 +34,12 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get('date') || todayIso();
 
     const weekMonday = mondayIso();
-    const month = currentMonth();
+    const monthKey = currentMonth();
 
     const [today, week, monthSummary, habitCounts, goalCounts] = await Promise.all([
       dailyBreakdown(session.user.id, date),
       weeklySummary(session.user.id, weekMonday),
-      monthlySummary(session.user.id, month),
+      monthlySummary(session.user.id, monthKey),
       new HabitRepository().countByStatus(session.user.id),
       new GoalRepository().countByStatus(session.user.id),
     ]);
@@ -49,10 +49,12 @@ export async function GET(request: NextRequest) {
       data: {
         date,
         weekStart: weekMonday,
-        month,
+        monthKey,
         today,
         week,
         month: monthSummary,
+        // Alias for backwards compatibility with older clients.
+        monthly: monthSummary,
         counts: {
           habits: habitCounts,
           goals: goalCounts,

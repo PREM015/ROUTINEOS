@@ -311,13 +311,29 @@ export function normalizeTokenResult(
 }
 
 /**
+ * Read the `scopes` array out of an integration's JSON `settings` blob.
+ */
+function parseSettingsScopes(settings: string | null): string[] {
+  if (!settings) return [];
+  try {
+    const parsed = JSON.parse(settings) as { scopes?: unknown };
+    if (Array.isArray(parsed.scopes)) {
+      return parsed.scopes.filter((scope): scope is string => typeof scope === 'string');
+    }
+  } catch {
+    // Ignore malformed settings blobs.
+  }
+  return [];
+}
+
+/**
  * Normalize a persisted `Integration` row into the safe client-facing view,
  * deriving `needsReauth` from token expiry.
  */
 export function normalizeConnection(
   integration: Pick<
     Integration,
-    'id' | 'provider' | 'isActive' | 'scopes' | 'lastSyncedAt' | 'syncError' | 'createdAt' | 'expiresAt'
+    'id' | 'provider' | 'isActive' | 'settings' | 'lastSyncedAt' | 'syncError' | 'createdAt' | 'expiresAt'
   >,
   now: Date = new Date()
 ): IntegrationSafeView {
@@ -330,7 +346,7 @@ export function normalizeConnection(
     id: integration.id,
     provider: integration.provider,
     isActive: integration.isActive,
-    scopes: integration.scopes,
+    scopes: parseSettingsScopes(integration.settings),
     lastSyncedAt: integration.lastSyncedAt,
     syncError: integration.syncError,
     connectedAt: integration.createdAt,

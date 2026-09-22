@@ -36,12 +36,12 @@ function buildDateRange(
   to?: DateFilter
 ): Prisma.DateTimeFilter | undefined {
   const fromDate = toDate(from);
-  const toDate = toDate(to);
-  if (!fromDate && !toDate) return undefined;
+  const toDateResult = toDate(to);
+  if (!fromDate && !toDateResult) return undefined;
 
   const filter: Prisma.DateTimeFilter = {};
   if (fromDate) filter.gte = fromDate;
-  if (toDate) filter.lte = toDate;
+  if (toDateResult) filter.lte = toDateResult;
   return filter;
 }
 

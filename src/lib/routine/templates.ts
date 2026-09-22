@@ -1,7 +1,7 @@
 import { RoutineTemplate, RoutineException, DayType } from "@/types/routine";
-import { parseISO, getDay, isSameDay } from "date-fns";
+import { getDay } from "date-fns";
 
-export function getDayTypeForDate(date: string, exceptions: RoutineException[], userTimezone: string): DayType {
+export function getDayTypeForDate(date: string, exceptions: RoutineException[], _userTimezone: string): DayType {
   const dateObj = new Date(date);
   
   // Check for exceptions first

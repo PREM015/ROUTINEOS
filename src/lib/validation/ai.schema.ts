@@ -10,7 +10,7 @@ export const generateInsightSchema = z.object({
 });
 
 export const aiInsightSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().cuid(),
   period: insightPeriodSchema,
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -38,7 +38,7 @@ export const aiInsightQuerySchema = z.object({
 });
 
 export const insightFeedbackSchema = z.object({
-  insightId: z.string().uuid(),
+  insightId: z.string().cuid(),
   wasHelpful: z.boolean(),
   userRating: z.number().int().min(1).max(5).optional(),
   userFeedback: z.string().max(2000).optional(),

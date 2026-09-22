@@ -4,7 +4,7 @@ import { ProjectService } from '@/server/services/project.service';
 import { createProjectSchema, projectQuerySchema } from '@/schemas/project.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
-const goalIdsSchema = z.array(z.string().uuid()).max(50);
+const goalIdsSchema = z.array(z.string().cuid()).max(50);
 
 /**
  * GET /api/projects

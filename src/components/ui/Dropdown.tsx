@@ -15,6 +15,8 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { cn } from '@/lib/utils';
 
 export interface DropdownItem {
+  /** Discriminator; `'item'` for action rows. */
+  kind?: 'item';
   label: React.ReactNode;
   /** Lucide-style icon component (receives `className`). */
   icon?: React.ComponentType<{ className?: string }>;
@@ -29,6 +31,7 @@ export interface DropdownItem {
 }
 
 export interface DropdownMenuLabel {
+  kind: 'label';
   label: React.ReactNode;
   disabled?: boolean;
 }
@@ -43,7 +46,7 @@ export interface DropdownProps {
 }
 
 function isLabelItem(item: DropdownItem | DropdownMenuLabel): item is DropdownMenuLabel {
-  return !('onSelect' in item);
+  return item.kind === 'label';
 }
 
 export function Dropdown({

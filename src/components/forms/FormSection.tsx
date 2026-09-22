@@ -25,12 +25,12 @@ export interface FormSectionProps {
 
 export function FormSection({ heading, description, action, children, className }: FormSectionProps) {
   return (
-    <section className={cn('space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5', className)}>
+    <section className={cn('space-y-4 rounded-xl border border-border bg-card p-5', className)}>
       {(heading !== undefined || action !== undefined) && (
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             {heading !== undefined && (
-              <h3 className="text-base font-semibold text-white">{heading}</h3>
+              <h3 className="text-base font-semibold text-foreground">{heading}</h3>
             )}
             {description !== undefined && <p className="text-sm text-zinc-400">{description}</p>}
           </div>

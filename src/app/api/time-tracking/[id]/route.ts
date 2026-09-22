@@ -11,7 +11,7 @@ interface RouteContext {
  * GET /api/time-tracking/[id]
  * Fetch a single time entry owned by the user
  */
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -103,7 +103,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * DELETE /api/time-tracking/[id]
  * Delete a time entry owned by the user
  */
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+export async function DELETE(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

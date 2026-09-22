@@ -7,10 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const bulkHabitsSchema = z.object({
   create: z.array(createHabitSchema).max(100).optional(),
   update: z
-    .array(z.object({ id: z.string().uuid(), data: updateHabitSchema }))
+    .array(z.object({ id: z.string().cuid(), data: updateHabitSchema }))
     .max(100)
     .optional(),
-  delete: z.array(z.string().uuid()).max(100).optional(),
+  delete: z.array(z.string().cuid()).max(100).optional(),
 });
 
 interface BulkOutput {

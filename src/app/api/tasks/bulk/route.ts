@@ -7,10 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const bulkTasksSchema = z.object({
   create: z.array(createTaskSchema).max(100).optional(),
   update: z
-    .array(z.object({ id: z.string().uuid(), data: updateTaskSchema }))
+    .array(z.object({ id: z.string().cuid(), data: updateTaskSchema }))
     .max(100)
     .optional(),
-  delete: z.array(z.string().uuid()).max(100).optional(),
+  delete: z.array(z.string().cuid()).max(100).optional(),
 });
 
 interface BulkOutput {

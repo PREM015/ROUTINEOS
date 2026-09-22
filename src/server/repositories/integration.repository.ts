@@ -1,4 +1,4 @@
-import type { Integration, Prisma, IntegrationProvider } from '@prisma/client';
+import type { Integration, IntegrationProvider } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
 /**

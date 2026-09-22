@@ -116,7 +116,7 @@ export function ImportData() {
           </div>
         )}
 
-        {parsed && (
+        {Boolean(parsed) && (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <Badge variant="primary">

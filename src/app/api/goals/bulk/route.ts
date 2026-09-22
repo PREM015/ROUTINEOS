@@ -7,10 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 const bulkGoalsSchema = z.object({
   create: z.array(createGoalSchema).max(100).optional(),
   update: z
-    .array(z.object({ id: z.string().uuid(), data: updateGoalSchema }))
+    .array(z.object({ id: z.string().cuid(), data: updateGoalSchema }))
     .max(100)
     .optional(),
-  delete: z.array(z.string().uuid()).max(100).optional(),
+  delete: z.array(z.string().cuid()).max(100).optional(),
 });
 
 interface BulkOutput {
@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
     for (const input of validated.data.create ?? []) {
       try {
         const goal = await goalService.createGoal(userId, input);
+        if (!goal) {
+          throw new Error('Failed to create goal');
+        }
         created.push({ id: goal.id, success: true, data: goal });
       } catch (error) {
         created.push({

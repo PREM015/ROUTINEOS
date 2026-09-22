@@ -8,7 +8,7 @@ export type RoutineTimeBlock = {
 type Interval = [number, number];
 
 function minutes(value: string): number {
-  const [hours, minutesPart] = value.split(':').map(Number);
+  const [hours = 0, minutesPart = 0] = value.split(':').map(Number);
   if (!Number.isInteger(hours) || !Number.isInteger(minutesPart) || hours < 0 || hours > 23 || minutesPart < 0 || minutesPart > 59) {
     throw new Error('Times must use HH:mm format.');
   }

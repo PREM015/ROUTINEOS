@@ -120,7 +120,7 @@ export async function trendAnalysis(
   return {
     metric,
     period: range,
-    direction: line.direction,
+    direction: line.direction === 'FLAT' ? 'STABLE' : line.direction,
     strength,
     current,
     previous: first,

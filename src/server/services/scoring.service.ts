@@ -1,4 +1,4 @@
-import type { DailyScore, HabitDayLog, HabitTier } from '@prisma/client';
+import type { DailyScore, HabitLog, HabitTier } from '@prisma/client';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
@@ -152,11 +152,11 @@ export class ScoringService {
       totalScore: result.totalScore,
       overallGrade: result.band.grade,
       isMinimumDay: parsed.isMinimumDay ?? false,
-      minimumDayTemplateId: parsed.minimumDayTemplateId,
-      minimumDayReason: parsed.minimumDayReason,
+      minimumDayTemplateId: parsed.minimumDayTemplateId ?? null,
+      minimumDayReason: parsed.minimumDayReason ?? null,
       isRestDay: parsed.isRestDay ?? false,
-      restDayReason: parsed.restDayReason,
-      contextTags: parsed.contextTags ? JSON.stringify(parsed.contextTags) : undefined,
+      restDayReason: parsed.restDayReason ?? null,
+      contextTags: parsed.contextTags ? JSON.stringify(parsed.contextTags) : null,
       habitCompletionRate:
         scoredHabits.length > 0
           ? Math.round((completedCount / scoredHabits.length) * 100)
@@ -219,7 +219,7 @@ export class ScoringService {
     } = {}
   ): Promise<ScoreHistoryRange> {
     const parsed = scoreQuerySchema.parse(query);
-    const endDate = parsed.endDate ?? new Date().toISOString().split('T')[0];
+    const endDate = parsed.endDate ?? new Date().toISOString().slice(0, 10);
     const startDate = parsed.startDate ?? endDate;
 
     const scores = await this.scoreRepository.findByRange(userId, startDate, endDate);
@@ -303,7 +303,7 @@ export class ScoringService {
   private buildBucket(
     tiers: HabitTier[],
     habits: HabitForScoring[],
-    logMap: Map<string, HabitDayLog>,
+    logMap: Map<string, HabitLog>,
     weights: TierWeights
   ): {
     score: number;

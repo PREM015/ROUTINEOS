@@ -10,15 +10,15 @@ interface SleepEditorProps {
 }
 
 export function SleepEditor({ sleepLog, onSave, onCancel }: SleepEditorProps) {
-  const [bedtime, setBedtime] = useState(sleepLog?.bedtime || '23:00');
-  const [wakeTime, setWakeTime] = useState(sleepLog?.wakeTime || '07:00');
+  const [bedtime, setBedtime] = useState(sleepLog?.actualBedtime || '23:00');
+  const [wakeTime, setWakeTime] = useState(sleepLog?.actualWakeTime || '07:00');
   const [notes, setNotes] = useState(sleepLog?.notes || '');
   const [durationStr, setDurationStr] = useState('');
 
   useEffect(() => {
     if (bedtime && wakeTime) {
-      const { totalMinutes } = calculateSleepDuration(bedtime, wakeTime);
-      setDurationStr(formatSleepDuration(totalMinutes));
+      const duration = calculateSleepDuration(bedtime, wakeTime);
+      setDurationStr(formatSleepDuration(duration));
     } else {
       setDurationStr('');
     }

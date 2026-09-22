@@ -99,3 +99,5 @@ export function Pagination({ page, pageCount, onPageChange, compact = false, cla
     </nav>
   );
 }
+
+export default Pagination;

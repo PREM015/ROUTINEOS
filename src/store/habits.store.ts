@@ -16,7 +16,7 @@ import type {
   HabitQueryParams,
   LogHabitInput,
   UpdateHabitInput,
-} from '@/schemas/habit';
+} from '@/schemas/habit.schema';
 
 export type HabitFilters = HabitQueryParams;
 export type LogHabitData = Omit<LogHabitInput, 'habitId'>;

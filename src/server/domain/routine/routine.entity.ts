@@ -14,7 +14,7 @@ import {
   getNextBlock,
 } from '@/lib/routine/duration';
 
-import type { DayRoutineBlock } from '@/types/routine';
+import type { DayRoutineBlock, ResolvedRoutineBlock } from '@/types/routine';
 
 // ============================================================================
 // Types
@@ -201,6 +201,7 @@ export function completionStatusFor(
  * });
  */
 export function toRoutineBlockEntity(block: DayRoutineBlock): RoutineBlockEntity {
+  const tracking = block as RoutineBlockWithTracking;
   return new RoutineBlockEntity({
     id: block.id,
     startTime: block.startTime,
@@ -208,10 +209,15 @@ export function toRoutineBlockEntity(block: DayRoutineBlock): RoutineBlockEntity
     title: block.title,
     description: block.description,
     categoryName: block.category?.name ?? null,
-    energyLevel: block.energyLevel,
-    trackCompletion: block.trackCompletion,
+    energyLevel: tracking.energyLevel,
+    trackCompletion: tracking.trackCompletion,
   });
 }
+
+type RoutineBlockWithTracking = ResolvedRoutineBlock & {
+  energyLevel?: string | null;
+  trackCompletion?: boolean;
+};
 
 // ============================================================================
 // Helpers

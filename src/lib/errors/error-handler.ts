@@ -7,6 +7,10 @@ import { ZodError } from 'zod';
  * Global Error Handler
  */
 
+export function handleApiError(error: unknown): NextResponse {
+  return handleError(error);
+}
+
 export function handleError(error: unknown): NextResponse {
   console.error('Error occurred:', error);
 

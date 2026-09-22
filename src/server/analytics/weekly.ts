@@ -105,14 +105,14 @@ function toSleepLogLike(log: SleepLog): SleepLogLike {
 /**
  * Given an ISO date string, return the seven days of the week it falls in.
  */
-function weekRange(dateStr: string): { start: string; end: string } {
+function weekRange(dateStr: string): DateRange {
   const parsed = new Date(`${dateStr}T00:00:00Z`);
   const isoDay = parsed.getUTCDay() === 0 ? 7 : parsed.getUTCDay();
   const mondayOffset = isoDay - 1;
   const monday = new Date(parsed.getTime() - mondayOffset * 86400000);
   return {
-    start: formatDate(monday),
-    end: formatDate(new Date(monday.getTime() + 6 * 86400000)),
+    startDate: formatDate(monday),
+    endDate: formatDate(new Date(monday.getTime() + 6 * 86400000)),
   };
 }
 
@@ -141,8 +141,8 @@ async function goalProgressDelta(goalId: string, range: DateRange): Promise<numb
  */
 export async function weeklySummary(userId: string, monday: string): Promise<WeeklySummary> {
   const range = weekRange(monday);
-  const previousStart = formatDate(addDays(range.start, -7));
-  const previousEnd = formatDate(addDays(range.end, -7));
+  const previousStart = formatDate(addDays(range.startDate, -7));
+  const previousEnd = formatDate(addDays(range.endDate, -7));
   const previousRange: DateRange = { startDate: previousStart, endDate: previousEnd };
 
   const [scores, previousScores, habits, sleepLogs, streak] = await Promise.all([

@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const calculateScoreSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
   isMinimumDay: z.boolean().optional(),
-  minimumDayTemplateId: z.string().uuid().optional(),
+  minimumDayTemplateId: z.string().cuid().optional(),
   minimumDayReason: z.string().max(1000).optional(),
   isRestDay: z.boolean().optional(),
   restDayReason: z.string().max(1000).optional(),
@@ -12,7 +12,7 @@ export const calculateScoreSchema = z.object({
 
 export const activateMinimumDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  templateId: z.string().uuid().optional(),
+  templateId: z.string().cuid().optional(),
   reason: z.string().max(1000).optional(),
 });
 

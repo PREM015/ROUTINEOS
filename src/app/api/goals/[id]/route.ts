@@ -5,8 +5,8 @@ import { updateGoalSchema } from '@/schemas/goal.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -14,8 +14,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const goalRepository = new GoalRepository();
-    const goal = await goalRepository.findWithRelations(params.id, session.user.id);
+    const goal = await goalRepository.findWithRelations(id, session.user.id);
 
     if (!goal) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
@@ -30,7 +31,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -38,6 +39,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
     const validated = updateGoalSchema.safeParse(body);
 
@@ -51,7 +53,7 @@ export async function PUT(
     const goalService = new GoalService();
     const goal = await goalService.updateGoal(
       session.user.id,
-      params.id,
+      id,
       validated.data
     );
 
@@ -68,8 +70,8 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -77,8 +79,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const goalService = new GoalService();
-    await goalService.deleteGoal(session.user.id, params.id);
+    await goalService.deleteGoal(session.user.id, id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -90,4 +93,16 @@ export async function DELETE(
 
     return NextResponse.json({ error: 'Failed to delete goal' }, { status: 500 });
   }
+}
+
+/**
+ * PATCH /api/goals/[id]
+ * Partial update alias (progress updates, status changes).
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  return PUT(request, { params: Promise.resolve({ id }) });
 }

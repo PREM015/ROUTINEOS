@@ -10,8 +10,8 @@ interface ReflectionFormProps {
 }
 
 export function ReflectionForm({ reflection, onSave }: ReflectionFormProps) {
-  const [energyLevel, setEnergyLevel] = useState(reflection?.energyLevel || 3);
-  const [moodLevel, setMoodLevel] = useState(reflection?.moodLevel || 3);
+  const [energyLevel, setEnergyLevel] = useState(reflection?.energy || 3);
+  const [moodLevel, setMoodLevel] = useState(reflection?.mood || 3);
   const [biggestWin, setBiggestWin] = useState(reflection?.biggestWin || '');
   const [biggestDifficulty, setBiggestDifficulty] = useState(reflection?.biggestDifficulty || '');
   const [lessonsLearned, setLessonsLearned] = useState(reflection?.lessonsLearned || '');

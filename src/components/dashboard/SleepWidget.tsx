@@ -7,10 +7,10 @@ interface SleepWidgetProps {
     bedtime: string;
     wakeTime: string;
   } | null;
-  targetMinutes: number;
+  targetMinutes?: number;
 }
 
-export const SleepWidget: React.FC<SleepWidgetProps> = ({ sleepLog, targetMinutes }) => {
+export const SleepWidget: React.FC<SleepWidgetProps> = ({ sleepLog, targetMinutes = 480 }) => {
   if (!sleepLog) {
     return (
       <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow h-full min-h-[160px]">
@@ -56,3 +56,5 @@ export const SleepWidget: React.FC<SleepWidgetProps> = ({ sleepLog, targetMinute
     </div>
   );
 };
+
+export default SleepWidget;

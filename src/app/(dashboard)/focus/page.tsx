@@ -1,104 +1,39 @@
 'use client';
 
-import { useState } from 'react';
-import { Timer, CheckCircle2 } from 'lucide-react';
-import { POMODORO_DEFAULTS, type FocusPhase } from '@/lib/focus/pomodoro';
+import { Timer } from 'lucide-react';
+import { FlipClock } from '@/components/focus/FlipClock';
 import { FocusTimer } from '@/components/focus/FocusTimer';
-import { PomodoroSettings, type PomodoroSettingsValue } from '@/components/focus/PomodoroSettings';
-import { BreakNotification } from '@/components/focus/BreakNotification';
-import { FocusStats } from '@/components/focus/FocusStats';
+import { useSleepSession } from '@/hooks/useSleepSession';
 
 /**
- * Focus Page
- * Pomodoro timer plus a focus dashboard. Timer preferences live on this device
- * and drive both the timer and the break reminder.
+ * Focus Page (spec P1-7).
+ *
+ * Composition only: the wall clock (FlipClock) plus the self-contained
+ * FocusTimer, which owns the timer state, settings, session POSTs, and the
+ * single `GET /api/focus?limit=100` history fetch. History is deliberately
+ * not fetched anywhere else on this page (e.g. FocusStats is not embedded)
+ * so the endpoint is requested exactly once.
  */
 export default function FocusPage() {
-  const [settings, setSettings] = useState<PomodoroSettingsValue>({
-    workMinutes: POMODORO_DEFAULTS.workMinutes,
-    shortBreak: POMODORO_DEFAULTS.shortBreak,
-    longBreak: POMODORO_DEFAULTS.longBreak,
-    cyclesBeforeLongBreak: POMODORO_DEFAULTS.cyclesBeforeLongBreak,
-    autoStartFocus: false,
-    autoStartBreak: false,
-  });
-  const [phase, setPhase] = useState<FocusPhase>('WORK');
-  const [showBreak, setShowBreak] = useState(false);
-  const [lastCompleted, setLastCompleted] = useState<number | null>(null);
-
-  const handlePhaseChange = (next: FocusPhase) => {
-    setPhase(next);
-    setShowBreak(next === 'SHORT_BREAK' || next === 'LONG_BREAK');
-  };
-
-  const handleComplete = (completedCycles: number) => {
-    setLastCompleted(completedCycles);
-  };
-
-  const phaseLabel =
-    phase === 'WORK' ? 'Deep focus' : phase === 'SHORT_BREAK' ? 'Short break' : 'Long break';
+  const { state } = useSleepSession();
+  const sleepActive = Boolean(state?.active);
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <Timer className="h-7 w-7 text-blue-600" />
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
+      <div className="mb-6">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900 sm:text-3xl dark:text-zinc-50">
+          <Timer className="h-7 w-7 text-sky-600 dark:text-sky-400" aria-hidden="true" />
           Focus
         </h1>
-        <p className="mt-2 text-gray-600">
-          Run a pomodoro session, take planned breaks, and watch your focus minutes add up.
+        <p className="mt-2 text-sm text-zinc-600 sm:text-base dark:text-zinc-300">
+          Run a focus session, take planned breaks, and watch your focus minutes add up.
         </p>
       </div>
 
-      {showBreak && (
-        <div className="mb-6">
-          <BreakNotification
-            onDismiss={() => setShowBreak(false)}
-            onTakeBreak={() => setShowBreak(false)}
-          />
-        </div>
-      )}
+      <FlipClock />
 
-      {lastCompleted !== null && (
-        <p
-          aria-live="polite"
-          className="mb-6 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700"
-        >
-          <CheckCircle2 className="h-4 w-4" />
-          Nice work — {lastCompleted} {lastCompleted === 1 ? 'pomodoro' : 'pomodoros'} completed this
-          session.
-        </p>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Pomodoro timer</h2>
-              <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
-                {phaseLabel}
-              </span>
-            </div>
-            <FocusTimer
-              workMinutes={settings.workMinutes}
-              shortBreak={settings.shortBreak}
-              longBreak={settings.longBreak}
-              cyclesBeforeLongBreak={settings.cyclesBeforeLongBreak}
-              autoStartBreak={settings.autoStartBreak}
-              onComplete={handleComplete}
-              onPhaseChange={handlePhaseChange}
-            />
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
-          <PomodoroSettings onChange={setSettings} />
-        </div>
-      </div>
-
-      <div className="mt-10">
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">Your focus activity</h2>
-        <FocusStats />
+      <div className="mt-6">
+        <FocusTimer sleepActive={sleepActive} />
       </div>
     </div>
   );

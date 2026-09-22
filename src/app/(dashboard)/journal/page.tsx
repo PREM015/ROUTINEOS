@@ -3,38 +3,73 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tag } from '@prisma/client';
-import { BookOpen, Plus, X } from 'lucide-react';
+import {
+  BookOpen,
+  History,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import type { JournalEntryWithRelations } from '@/types/journal';
-import { Button, Card, Spinner } from '@/components/ui';
+import { Button, Card, Dialog, Input, Select, Spinner } from '@/components/ui';
 import JournalCalendar from '@/components/journal/JournalCalendar';
 import JournalList from '@/components/journal/JournalList';
 import JournalEditor from '@/components/journal/JournalEditor';
+import JournalVersionHistory from '@/components/journal/JournalVersionHistory';
+import { formatDate } from '@/lib/utils';
 
 function toDateKey(date: Date | string): string {
   return new Date(date).toISOString().slice(0, 10);
 }
 
+const PAGE_SIZE = 6;
+
+interface PendingDelete {
+  id: string;
+  title: string;
+  permanent: boolean;
+}
+
 /**
  * Journal Page
- * Calendar of journal activity, recent entries, and an inline editor.
+ * Calendar of journal activity, filterable + paginated entries with inline
+ * editing, trash (soft delete / restore / permanent delete) and per-entry
+ * version history.
  */
 export default function JournalPage() {
   const router = useRouter();
   const [entries, setEntries] = useState<JournalEntryWithRelations[] | null>(null);
+  const [deletedEntries, setDeletedEntries] = useState<JournalEntryWithRelations[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [showTrash, setShowTrash] = useState(false);
+  const [tagFilter, setTagFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     try {
-      const [entryData, tagData] = await Promise.all([
-        apiRequest<JournalEntryWithRelations[]>('/api/journal'),
+      const [entryData, tagData, trashData] = await Promise.all([
+        apiRequest<JournalEntryWithRelations[]>('/api/journal', {
+          query: { limit: 100 },
+        }),
         apiRequest<Tag[]>('/api/tags'),
+        apiRequest<JournalEntryWithRelations[]>('/api/journal/deleted', {
+          query: { limit: 50 },
+        }),
       ]);
       setEntries(entryData);
       setTags(tagData);
+      setDeletedEntries(trashData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load journal');
     }
@@ -52,9 +87,39 @@ export default function JournalPage() {
     return map;
   }, [entries]);
 
+  const filtered = useMemo(() => {
+    const list = [...(entries ?? [])].sort((a, b) =>
+      b.date.localeCompare(a.date),
+    );
+    return list.filter((entry) => {
+      if (tagFilter && !entry.tags.some((relation) => relation.tag.id === tagFilter)) {
+        return false;
+      }
+      if (dateFilter && toDateKey(entry.date) !== dateFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [entries, tagFilter, dateFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const paged = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage],
+  );
+
   const editing = useMemo(
     () => (entries ?? []).find((entry) => entry.id === editingId) ?? null,
     [entries, editingId],
+  );
+
+  const historyEntry = useMemo(
+    () =>
+      (entries ?? []).find((entry) => entry.id === historyId) ??
+      deletedEntries.find((entry) => entry.id === historyId) ??
+      null,
+    [entries, deletedEntries, historyId],
   );
 
   const closeEditor = () => {
@@ -66,6 +131,47 @@ export default function JournalPage() {
     closeEditor();
     void load();
   };
+
+  const runDelete = async () => {
+    if (!pendingDelete || busyId !== null) return;
+    setBusyId(pendingDelete.id);
+    setActionError(null);
+    try {
+      if (pendingDelete.permanent) {
+        await apiRequest(`/api/journal/${pendingDelete.id}/permanent`, {
+          method: 'DELETE',
+        });
+      } else {
+        await apiRequest(`/api/journal/${pendingDelete.id}`, {
+          method: 'DELETE',
+        });
+      }
+      if (editingId === pendingDelete.id) closeEditor();
+      setPendingDelete(null);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to delete entry');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const runRestore = async (id: string) => {
+    if (busyId !== null) return;
+    setBusyId(id);
+    setActionError(null);
+    try {
+      await apiRequest(`/api/journal/${id}/restore`, { method: 'POST' });
+      await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to restore entry');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const entryLabel = (entry: JournalEntryWithRelations): string =>
+    entry.title && entry.title.length > 0 ? entry.title : 'Untitled entry';
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
@@ -98,6 +204,12 @@ export default function JournalPage() {
         </p>
       )}
 
+      {actionError && (
+        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
+
       {(creating || editing) && (
         <div className="mb-8">
           <div className="mb-2 flex justify-end">
@@ -107,6 +219,7 @@ export default function JournalPage() {
             </Button>
           </div>
           <JournalEditor
+            key={editing?.id ?? 'new'}
             entry={editing ?? undefined}
             availableTags={tags}
             onSaved={handleSaved}
@@ -121,18 +234,242 @@ export default function JournalPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
-          <Card className="h-fit p-5">
-            <JournalCalendar
-              moodByDate={moodByDate}
-              onSelectDate={(date) => router.push(`/journal/${date}`)}
-            />
-          </Card>
+          <div className="space-y-6">
+            <Card className="h-fit p-5">
+              <JournalCalendar
+                moodByDate={moodByDate}
+                onSelectDate={(date) => router.push(`/journal/${date}`)}
+              />
+            </Card>
+
+            <Card className="h-fit p-5">
+              <h2 className="mb-3 text-sm font-semibold text-gray-900">Filters</h2>
+              <div className="space-y-3">
+                <Select
+                  label="Tag"
+                  value={tagFilter}
+                  onChange={(e) => {
+                    setTagFilter(e.target.value);
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: '', label: 'All tags' },
+                    ...tags.map((tag) => ({ value: tag.id, label: tag.name })),
+                  ]}
+                />
+                <Input
+                  label="Date"
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => {
+                    setDateFilter(e.target.value);
+                    setPage(1);
+                  }}
+                />
+                {(tagFilter || dateFilter) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setTagFilter('');
+                      setDateFilter('');
+                      setPage(1);
+                    }}
+                  >
+                    <X className="mr-1.5 h-4 w-4" />
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            </Card>
+
+            <Card className="h-fit p-5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  Recently deleted ({deletedEntries.length})
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTrash((value) => !value)}
+                >
+                  {showTrash ? 'Hide' : 'Show'}
+                </Button>
+              </div>
+              {showTrash && (
+                <div className="mt-3">
+                  {deletedEntries.length === 0 ? (
+                    <p className="text-sm text-gray-500">Trash is empty.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {deletedEntries.map((entry) => {
+                        const busy = busyId === entry.id;
+                        return (
+                          <li
+                            key={entry.id}
+                            className="rounded-lg border border-gray-200 bg-gray-50 p-3"
+                          >
+                            <p className="truncate text-sm font-medium text-gray-900">
+                              {entryLabel(entry)}
+                            </p>
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              {formatDate(entry.date)}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => void runRestore(entry.id)}
+                              >
+                                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                                Restore
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() =>
+                                  setPendingDelete({
+                                    id: entry.id,
+                                    title: entryLabel(entry),
+                                    permanent: true,
+                                  })
+                                }
+                              >
+                                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                Delete forever
+                              </Button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </Card>
+          </div>
+
           <div>
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Recent entries</h2>
-            <JournalList entries={entries} onSelect={(id) => setEditingId(id)} />
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Recent entries
+              {filtered.length !== (entries?.length ?? 0) && (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({filtered.length} of {entries?.length ?? 0})
+                </span>
+              )}
+            </h2>
+            {filtered.length === 0 && (tagFilter || dateFilter) ? (
+              <Card className="p-8 text-center text-sm text-gray-500">
+                No entries match these filters.
+              </Card>
+            ) : (
+              <JournalList
+                entries={paged}
+                onSelect={(id) => {
+                  setCreating(false);
+                  setEditingId(id);
+                }}
+                page={safePage}
+                pageCount={pageCount}
+                onPageChange={setPage}
+                renderActions={(entry) => (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setCreating(false);
+                        setEditingId(entry.id);
+                      }}
+                    >
+                      <Pencil className="mr-1 h-3.5 w-3.5" />
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setHistoryId(entry.id)}
+                    >
+                      <History className="mr-1 h-3.5 w-3.5" />
+                      History
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        setPendingDelete({
+                          id: entry.id,
+                          title: entryLabel(entry),
+                          permanent: false,
+                        })
+                      }
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </>
+                )}
+              />
+            )}
           </div>
         </div>
       )}
+
+      <Dialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={pendingDelete?.permanent ? 'Delete forever?' : 'Move to trash?'}
+        description={
+          pendingDelete?.permanent
+            ? `"${pendingDelete?.title}" and its entire version history will be permanently deleted. This cannot be undone.`
+            : `"${pendingDelete?.title}" will be moved to Recently deleted. You can restore it later — its version history is kept.`
+        }
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void runDelete()}
+              isLoading={busyId !== null}
+            >
+              {pendingDelete?.permanent ? 'Delete forever' : 'Move to trash'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-gray-600">
+          {pendingDelete?.permanent
+            ? 'Use permanent delete only when you are sure the entry is no longer needed.'
+            : 'Deleted entries stay in the trash until you restore or permanently delete them.'}
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={historyId !== null}
+        onOpenChange={(open) => {
+          if (!open) setHistoryId(null);
+        }}
+        title={
+          historyEntry
+            ? `History — ${entryLabel(historyEntry)}`
+            : 'Version history'
+        }
+        size="lg"
+      >
+        {historyId && (
+          <JournalVersionHistory
+            entryId={historyId}
+            onRestored={() => {
+              void load();
+            }}
+          />
+        )}
+      </Dialog>
     </div>
   );
 }

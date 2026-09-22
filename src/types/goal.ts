@@ -9,6 +9,17 @@ import type {
   Tag,
 } from '@prisma/client';
 
+export type {
+  Goal,
+  Milestone,
+  GoalProgress,
+  GoalType,
+  GoalPriority,
+  GoalStatus,
+  Project,
+  Tag,
+} from '@prisma/client';
+
 /**
  * Goal Management Types
  * Complete type system for goal tracking and progress management

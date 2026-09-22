@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { HabitTier, HabitFrequencyType, HabitStatus } from '@prisma/client';
 
 /**
  * Habit Validation Schemas
@@ -15,7 +14,7 @@ export const createHabitSchema = z.object({
     .max(500, 'Description must be 500 characters or less')
     .optional(),
   tier: z.enum(['GROWTH', 'BONUS', 'LIFESTYLE', 'FLEXIBLE', 'ALTERNATIVE', 'OPTIONAL', 'EXPERIMENTAL', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'] as const),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().cuid().optional(),
   color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
   icon: z.string().optional(),
   frequencyType: z.enum(['DAILY', 'SPECIFIC_WEEKDAYS', 'WEEKLY_TARGET', 'MONTHLY_TARGET', 'YEARLY_TARGET', 'RANDOM', 'ONE_TIME', 'CUSTOM'] as const),
@@ -29,13 +28,13 @@ export const createHabitSchema = z.object({
   estimatedDuration: z.number().int().positive().optional(),
   difficulty: z.number().int().min(1).max(5).optional(),
   isPublic: z.boolean().optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
+  tagIds: z.array(z.string().cuid()).optional(),
 });
 
 export const updateHabitSchema = createHabitSchema.partial();
 
 export const logHabitSchema = z.object({
-  habitId: z.string().uuid(),
+  habitId: z.string().cuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   status: z.enum(['COMPLETED', 'MISSED', 'SKIPPED', 'NOT_APPLICABLE', 'PARTIAL'] as const),
   completedAt: z.coerce.date().optional(),
@@ -51,7 +50,7 @@ export const logHabitSchema = z.object({
 export const habitQuerySchema = z.object({
   status: z.array(z.enum(['ACTIVE', 'PAUSED', 'ARCHIVED', 'COMPLETED', 'DRAFT'] as const)).optional(),
   tier: z.array(z.enum(['GROWTH', 'BONUS', 'LIFESTYLE', 'FLEXIBLE', 'ALTERNATIVE', 'OPTIONAL', 'EXPERIMENTAL', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'] as const)).optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().cuid().optional(),
   search: z.string().optional(),
   sortBy: z.enum(['name', 'createdAt', 'streak', 'completionRate']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),

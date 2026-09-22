@@ -9,7 +9,7 @@ export const goalProgressSchema = z.object({
 
 export const goalCarryOverSchema = z.object({
   goalIds: z
-    .array(z.string().uuid())
+    .array(z.string().cuid())
     .min(1, 'At least one goal must be selected to carry over'),
   reTarget: z
     .object({
@@ -20,14 +20,14 @@ export const goalCarryOverSchema = z.object({
 });
 
 export const goalVelocityQuerySchema = z.object({
-  goalId: z.string().uuid().optional(),
+  goalId: z.string().cuid().optional(),
   days: z.number().int().min(7, 'Velocity window must be at least 7 days').max(365, 'Velocity window must be at most 365 days').optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 export const goalStatusSchema = z.object({
-  goalId: z.string().uuid(),
+  goalId: z.string().cuid(),
   status: z.enum(['ACTIVE', 'COMPLETED', 'MISSED', 'CARRIED_OVER', 'ON_HOLD', 'CANCELLED']),
 });
 

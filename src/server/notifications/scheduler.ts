@@ -113,6 +113,7 @@ export async function scheduleHabitReminders(userId: string, date: string) {
     if (!habit.reminderTime) continue;
 
     const [hours, minutes] = habit.reminderTime.split(':').map(Number);
+    if (hours === undefined || minutes === undefined) continue;
     const scheduledDate = new Date(date);
     scheduledDate.setHours(hours, minutes, 0, 0);
 

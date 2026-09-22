@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
-import { SCORE_BANDS } from '@/config/scoring';
-import type { ScoreGrade } from '@/types/score';
+import { SCORE_GRADES, type ScoreGrade } from '@/types/score';
 
 interface TodayScoreProps {
   date: string;
@@ -48,7 +47,7 @@ export function TodayScore({ date }: TodayScoreProps) {
   }
 
   const scoreValue = score || 0;
-  const gradeInfo = grade ? SCORE_BANDS[grade] : SCORE_BANDS.incomplete;
+  const gradeInfo = grade ? SCORE_GRADES[grade] : SCORE_GRADES['F'];
 
   return (
     <Card className="p-6">
@@ -77,7 +76,6 @@ export function TodayScore({ date }: TodayScoreProps) {
           <Progress
             value={scoreValue}
             className="h-4 mb-2"
-            indicatorColor={gradeInfo.color}
           />
           <p className="text-sm text-gray-600">{gradeInfo.description}</p>
         </div>

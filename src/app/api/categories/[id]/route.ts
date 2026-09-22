@@ -4,7 +4,7 @@ import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-resp
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

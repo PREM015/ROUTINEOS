@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 interface Props {
   weekStart: string;
   weekEnd: string;

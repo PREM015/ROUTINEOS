@@ -1,5 +1,4 @@
 import { auditService } from './audit.service';
-import type { AuditAction } from '@prisma/client';
 
 /**
  * Audit Event Helpers

@@ -9,8 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * Fetch single habit with details
  */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -18,8 +18,9 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const habitRepository = new HabitRepository();
-    const habit = await habitRepository.findWithRelations(params.id, session.user.id);
+    const habit = await habitRepository.findWithRelations(id, session.user.id);
 
     if (!habit) {
       return NextResponse.json({ error: 'Habit not found' }, { status: 404 });
@@ -41,7 +42,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -49,6 +50,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const body = await request.json();
 
     // Validate input
@@ -63,7 +65,7 @@ export async function PUT(
     const habitService = new HabitService();
     const habit = await habitService.updateHabit(
       session.user.id,
-      params.id,
+      id,
       validated.data
     );
 
@@ -86,12 +88,24 @@ export async function PUT(
 }
 
 /**
+ * PATCH /api/habits/[id]
+ * Partial update alias (same validation as PUT).
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  return PUT(request, { params: Promise.resolve({ id }) });
+}
+
+/**
  * DELETE /api/habits/[id]
  * Delete habit
  */
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -99,8 +113,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     const habitService = new HabitService();
-    await habitService.deleteHabit(session.user.id, params.id);
+    await habitService.deleteHabit(session.user.id, id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

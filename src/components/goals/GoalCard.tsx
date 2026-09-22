@@ -26,12 +26,12 @@ export default function GoalCard({ goal, onClick }: { goal: Goal, onClick?: () =
         {goal.description || 'No description provided.'}
       </p>
 
-      <GoalProgressBar percentage={percentage} current={goal.currentValue || 0} target={goal.targetValue || 0} unit={goal.unit} />
+      <GoalProgressBar percentage={percentage} current={goal.currentValue || 0} target={goal.targetValue || 0} unit={goal.unit || undefined} />
 
       <div className="mt-4 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
         <div className="flex items-center gap-1">
           <Calendar size={14} />
-          <span>Due {format(new Date(goal.dueDate), 'MMM d, yyyy')}</span>
+          <span>Due {format(new Date(goal.endDate), 'MMM d, yyyy')}</span>
         </div>
         <div className="flex items-center gap-1">
           <Target size={14} />

@@ -1,10 +1,13 @@
 import { auth } from '@/lib/auth';
 import {
-  deleteJournalEntry,
   getJournalEntry,
+  softDeleteJournalEntry,
   updateJournalEntry,
 } from '@/lib/journal/crud';
-import { updateJournalEntrySchema } from '@/schemas/journal.schema';
+import {
+  journalEntryIdSchema,
+  updateJournalEntrySchema,
+} from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -12,16 +15,25 @@ import { NextRequest, NextResponse } from 'next/server';
  * Fetch a single journal entry owned by the user
  */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rawParams = await params;
+    const parsedParams = journalEntryIdSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        { error: 'Invalid entry id', details: parsedParams.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await getJournalEntry(session.user.id, params.id);
+    const entry = await getJournalEntry(session.user.id, id);
     if (!entry) {
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
@@ -38,13 +50,24 @@ export async function GET(
 
 /**
  * PATCH /api/journal/[id]
- * Update a journal entry (mood/energy/title/content/favorite/archive/tags)
+ * Update a journal entry (mood/energy/title/content/favorite/archive/tags).
+ * When the title or content changes, the previous version is snapshotted
+ * into a revision BEFORE overwriting so history is never lost.
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rawParams = await params;
+    const parsedParams = journalEntryIdSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        { error: 'Invalid entry id', details: parsedParams.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -59,12 +82,12 @@ export async function PATCH(
       );
     }
 
-    const existing = await getJournalEntry(session.user.id, params.id);
+    const existing = await getJournalEntry(session.user.id, id);
     if (!existing) {
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
 
-    const result = await updateJournalEntry(session.user.id, params.id, validated.data);
+    const result = await updateJournalEntry(session.user.id, id, validated.data);
 
     return NextResponse.json({ success: true, data: result.entry });
   } catch (error) {
@@ -86,26 +109,36 @@ export async function PATCH(
 
 /**
  * DELETE /api/journal/[id]
- * Delete a journal entry owned by the user
+ * Soft delete a journal entry owned by the user. The entry moves to the
+ * trash (Recently deleted) and can be restored; its revision history is kept.
  */
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const rawParams = await params;
+    const parsedParams = journalEntryIdSchema.safeParse(rawParams);
+    if (!parsedParams.success) {
+      return NextResponse.json(
+        { error: 'Invalid entry id', details: parsedParams.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { id } = parsedParams.data;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const existing = await getJournalEntry(session.user.id, params.id);
+    const existing = await getJournalEntry(session.user.id, id);
     if (!existing) {
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
 
-    await deleteJournalEntry(session.user.id, params.id);
+    const entry = await softDeleteJournalEntry(session.user.id, id);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, data: entry });
   } catch (error) {
     console.error('Error deleting journal entry:', error);
 

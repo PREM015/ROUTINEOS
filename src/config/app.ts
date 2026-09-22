@@ -129,6 +129,10 @@ export const APP_CONFIG = {
   session: {
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
     updateAge: 24 * 60 * 60, // Update session every 24 hours
+    autoLogoutIdleMinutes: parseInt(
+      process.env.NEXT_PUBLIC_AUTO_LOGOUT_IDLE_MINUTES || '30',
+      10
+    ), // signed out after this many minutes without activity
   },
   
   pagination: {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -13,36 +12,41 @@ const createBlockSchema = z.object({
   isFlex: z.boolean().optional()
 });
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const blocks = await db.routineBlock.findMany({
-    where: { templateId: params.id, template: { userId: session.user.id } },
+    where: { templateId: id, template: { userId: session.user.id } },
     orderBy: { startTime: 'asc' }
   });
 
   return NextResponse.json(blocks);
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   try {
     const body = await req.json();
     const data = createBlockSchema.parse(body);
 
     const template = await db.routineTemplate.findUnique({
-      where: { id: params.id, userId: session.user.id }
+      where: { id, userId: session.user.id }
     });
 
     if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
+    const { type: _type, isFlex: _isFlex, ...blockData } = data;
+
     const block = await db.routineBlock.create({
       data: {
-        ...data,
-        templateId: params.id
+        ...blockData,
+        user: { connect: { id: session.user.id } },
+        template: { connect: { id } }
       }
     });
 

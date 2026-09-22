@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { AuthenticationError, AuthorizationError } from '@/lib/errors/app-error';
 
@@ -7,7 +8,7 @@ import { AuthenticationError, AuthorizationError } from '@/lib/errors/app-error'
  * Wraps Next.js route handlers with session enforcement.
  */
 
-export type AuthSession = NonNullable<Awaited<ReturnType<typeof auth>>>;
+export type AuthSession = Session;
 
 type AuthenticatedHandler = (
   req: NextRequest,

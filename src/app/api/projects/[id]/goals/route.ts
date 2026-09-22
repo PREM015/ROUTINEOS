@@ -10,7 +10,7 @@ interface RouteContext {
 }
 
 const attachGoalSchema = z.object({
-  goalId: z.string().uuid(),
+  goalId: z.string().cuid(),
 });
 
 /**

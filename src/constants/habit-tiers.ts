@@ -19,6 +19,22 @@ export interface HabitTierConfig {
 }
 
 export const HABIT_TIER_CONFIG: Record<HabitTier, HabitTierConfig> = {
+  NON_NEGOTIABLE: {
+    tier: 'NON_NEGOTIABLE',
+    label: 'Non-Negotiable',
+    description: 'Non-negotiable core habits',
+    longDescription: 'Your daily non-negotiables — the habits that keep the whole system running.',
+    defaultPoints: 20,
+    defaultWeight: 1.0,
+    color: '#ef4444',
+    icon: '🔒',
+    examples: [
+      'Morning workout',
+      'Deep work block',
+      'Minimum day checklist',
+    ],
+    recommendedFrequency: ['DAILY'],
+  },
   GROWTH: {
     tier: 'GROWTH',
     label: 'Growth',
@@ -195,6 +211,7 @@ export const HABIT_TIER_CONFIG: Record<HabitTier, HabitTierConfig> = {
 } as const;
 
 export const HABIT_TIERS_ORDERED: HabitTier[] = [
+  'NON_NEGOTIABLE',
   'GROWTH',
   'BONUS',
   'LIFESTYLE',

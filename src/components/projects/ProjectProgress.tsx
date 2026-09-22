@@ -34,7 +34,7 @@ export default function ProjectProgress({
   const completedMilestones = milestones.filter((milestone) => milestone.completedAt !== null).length;
   const derivedProgress = milestones.length > 0 ? Math.round((completedMilestones / milestones.length) * 100) : 0;
   const progress = Math.min(100, Math.max(0, project.progress ?? derivedProgress));
-  const goalCount = goals.length || project._count?.goals ?? 0;
+  const goalCount = goals.length || (project._count?.goals ?? 0);
   const completedGoals = goals.filter((goal) => goal.status === 'COMPLETED').length;
 
   return (

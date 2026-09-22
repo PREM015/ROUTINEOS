@@ -10,7 +10,7 @@ import type {
   TodayHabitItem,
 } from '@/store/habits.store';
 import type { HabitLog } from '@prisma/client';
-import type { CreateHabitInput, UpdateHabitInput } from '@/schemas/habit';
+import type { CreateHabitInput, UpdateHabitInput } from '@/schemas/habit.schema';
 
 /**
  * Habits hook: subscribe to the habits store for the cached lists (habits +

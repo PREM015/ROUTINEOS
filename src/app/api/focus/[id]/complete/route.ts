@@ -6,7 +6,7 @@ import type { FocusTimerSnapshot } from '@/types/focus';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -16,6 +16,7 @@ interface RouteContext {
  */
 export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const repository = new FocusRepository();
-    const focusSession = await repository.findById(session.user.id, params.id);
+    const focusSession = await repository.findById(session.user.id, id);
 
     if (!focusSession) {
       return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const completion = completeSession(snapshot);
     const actualDuration = Math.max(1, Math.round(completion.durationSeconds / 60));
 
-    const completed = await repository.completeSession(session.user.id, params.id, {
+    const completed = await repository.completeSession(session.user.id, id, {
       actualDuration,
       focusRating: validated.data.focusRating,
       productivityRating: validated.data.productivityRating,

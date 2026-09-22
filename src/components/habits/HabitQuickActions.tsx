@@ -2,7 +2,7 @@
 
 import { Habit } from "@/types/habit";
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, FastForward, PauseCircle, Edit2, Archive, CheckCircle } from "lucide-react";
+import { MoreVertical, FastForward, PauseCircle, Edit2, Archive } from "lucide-react";
 
 interface HabitQuickActionsProps {
   habit: Habit;

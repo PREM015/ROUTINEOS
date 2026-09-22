@@ -4,6 +4,7 @@ export default function SettingsHubPage() {
   const settingsLinks = [
     { name: 'Profile', href: '/settings/profile', desc: 'Manage your personal details' },
     { name: 'Appearance', href: '/settings/appearance', desc: 'Customize the look and feel' },
+    { name: 'Quotes', href: '/settings/quotes', desc: 'Manage your quotes and widget pool' },
     { name: 'Scoring Weights', href: '/settings/scoring', desc: 'Adjust how habits are scored' },
     { name: 'Notifications', href: '/settings/notifications', desc: 'Configure reminders' },
     { name: 'Data', href: '/settings/data', desc: 'Export or import your data' },

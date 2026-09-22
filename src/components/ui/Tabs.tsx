@@ -7,7 +7,7 @@ export interface TabsProps {
 }
 
 export function Tabs({ tabs }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
+  const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? '');
 
   return (
     <div>

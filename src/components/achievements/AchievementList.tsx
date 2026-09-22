@@ -16,7 +16,6 @@ import { useMemo, useState } from 'react';
 import { Trophy } from 'lucide-react';
 import { ACHIEVEMENT_RARITIES, type AchievementRarity } from '@/lib/constants/achievements';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
   AchievementBadge,

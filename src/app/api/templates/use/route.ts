@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       const persisted = await templateRepository.createTemplate(session.user.id, {
         type: createInput.type,
         name: createInput.name,
-        description: createInput.description,
+        description: createInput.description ?? undefined,
         category: createInput.category,
         isPublic: false,
         isFeatured: createInput.isFeatured,

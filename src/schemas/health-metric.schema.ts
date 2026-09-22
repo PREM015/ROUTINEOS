@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const healthMetricSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   metricType: z.enum(['WEIGHT', 'BODY_FAT', 'STEPS', 'HEART_RATE', 'BLOOD_PRESSURE']),
-  value: z.number('Value must be numeric'),
+  value: z.number({ message: 'Value must be numeric' }),
   unit: z.string().min(1, 'Unit is required').max(50, 'Unit must be 50 characters or less'),
   timeOfDay: z.string().max(50, 'timeOfDay must be 50 characters or less').optional(),
   notes: z.string().max(2000, 'Notes must be 2000 characters or less').optional(),

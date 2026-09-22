@@ -143,9 +143,9 @@ export function mapKeys<T>(
   fn: (value: T, key: string) => string
 ): Record<string, T> {
   const result: Record<string, T> = {};
-  for (const key of Object.keys(obj)) {
-    const mapped = fn(obj[key], key);
-    result[mapped] = obj[key];
+  for (const [key, value] of Object.entries(obj)) {
+    const mapped = fn(value, key);
+    result[mapped] = value;
   }
   return result;
 }
@@ -159,8 +159,8 @@ export function mapValues<T, U>(
   fn: (value: T, key: string) => U
 ): Record<string, U> {
   const result: Record<string, U> = {};
-  for (const key of Object.keys(obj)) {
-    result[key] = fn(obj[key], key);
+  for (const [key, value] of Object.entries(obj)) {
+    result[key] = fn(value, key);
   }
   return result;
 }

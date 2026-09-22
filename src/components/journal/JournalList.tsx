@@ -8,6 +8,7 @@
  *   <JournalList entries={entries} onSelect={open} page={p} pageCount={n} onPageChange={setP} />
  */
 import { BookOpen } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { JournalEntryWithRelations } from '@/types/journal';
 import { EmptyState } from '@/components/ui';
 import Pagination from '@/components/ui/Pagination';
@@ -16,6 +17,8 @@ import JournalEntry from './JournalEntry';
 export interface JournalListProps {
   entries: JournalEntryWithRelations[];
   onSelect?: (id: string) => void;
+  /** Optional action buttons rendered under each entry card. */
+  renderActions?: (entry: JournalEntryWithRelations) => ReactNode;
   /** One-based current page; omit to hide pagination. */
   page?: number;
   pageCount?: number;
@@ -26,6 +29,7 @@ export interface JournalListProps {
 export default function JournalList({
   entries,
   onSelect,
+  renderActions,
   page,
   pageCount,
   onPageChange,
@@ -48,7 +52,14 @@ export default function JournalList({
     <div className={className}>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {entries.map((entry) => (
-          <JournalEntry key={entry.id} entry={entry} onSelect={onSelect} />
+          <div key={entry.id} className="flex min-w-0 flex-col gap-2">
+            <JournalEntry entry={entry} onSelect={onSelect} className="flex-1" />
+            {renderActions && (
+              <div className="flex flex-wrap items-center gap-1.5 px-1">
+                {renderActions(entry)}
+              </div>
+            )}
+          </div>
         ))}
       </div>
       {showPagination && page !== undefined && pageCount !== undefined && onPageChange && (

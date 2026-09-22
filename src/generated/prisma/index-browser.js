@@ -197,6 +197,9 @@ exports.Prisma.UserSettingsScalarFieldEnum = {
   minSleepDuration: 'minSleepDuration',
   sleepReminder: 'sleepReminder',
   sleepReminderTime: 'sleepReminderTime',
+  autoStartSleepAfterMinutes: 'autoStartSleepAfterMinutes',
+  sleepAutoStartEnabled: 'sleepAutoStartEnabled',
+  sleepAutoStartAfterMinutes: 'sleepAutoStartAfterMinutes',
   weightNonNeg: 'weightNonNeg',
   weightGrowth: 'weightGrowth',
   weightBonus: 'weightBonus',
@@ -290,6 +293,15 @@ exports.Prisma.JournalEntryTagScalarFieldEnum = {
   id: 'id',
   entryId: 'entryId',
   tagId: 'tagId'
+};
+
+exports.Prisma.JournalRevisionScalarFieldEnum = {
+  id: 'id',
+  entryId: 'entryId',
+  userId: 'userId',
+  title: 'title',
+  content: 'content',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.RoutineTemplateScalarFieldEnum = {
@@ -546,6 +558,19 @@ exports.Prisma.SleepLogScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SleepSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  status: 'status',
+  source: 'source',
+  promptKey: 'promptKey',
+  durationMinutes: 'durationMinutes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.MoodLogScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -671,6 +696,7 @@ exports.Prisma.JournalEntryScalarFieldEnum = {
   gratitude: 'gratitude',
   isFavorite: 'isFavorite',
   isArchived: 'isArchived',
+  deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1163,6 +1189,7 @@ exports.RoutineLogStatus = exports.$Enums.RoutineLogStatus = {
 };
 
 exports.HabitTier = exports.$Enums.HabitTier = {
+  NON_NEGOTIABLE: 'NON_NEGOTIABLE',
   GROWTH: 'GROWTH',
   BONUS: 'BONUS',
   OPTIONAL: 'OPTIONAL',
@@ -1268,6 +1295,18 @@ exports.TaskPriority = exports.$Enums.TaskPriority = {
   PROFESSIONAL: 'PROFESSIONAL'
 };
 
+exports.SleepSessionStatus = exports.$Enums.SleepSessionStatus = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.SleepStartSource = exports.$Enums.SleepStartSource = {
+  USER_CONFIRMED: 'USER_CONFIRMED',
+  MANUAL: 'MANUAL',
+  AUTO_NO_RESPONSE: 'AUTO_NO_RESPONSE'
+};
+
 exports.WeatherCondition = exports.$Enums.WeatherCondition = {
   SUNNY: 'SUNNY',
   PARTLY_CLOUDY: 'PARTLY_CLOUDY',
@@ -1346,6 +1385,11 @@ exports.NotificationType = exports.$Enums.NotificationType = {
   STREAK_BROKEN: 'STREAK_BROKEN',
   FOCUS_SESSION_END: 'FOCUS_SESSION_END',
   REMINDER_SNOOZED: 'REMINDER_SNOOZED',
+  SLEEP_REMINDER: 'SLEEP_REMINDER',
+  SLEEP_STARTED: 'SLEEP_STARTED',
+  SLEEP_ENDED: 'SLEEP_ENDED',
+  SLEEP_PROMPT: 'SLEEP_PROMPT',
+  SLEEP_TRACKING_STARTED: 'SLEEP_TRACKING_STARTED',
   MOTIVATIONAL: 'MOTIVATIONAL',
   PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
   SYSTEM_UPDATE: 'SYSTEM_UPDATE'
@@ -1458,6 +1502,7 @@ exports.Prisma.ModelName = {
   GoalTag: 'GoalTag',
   TaskTag: 'TaskTag',
   JournalEntryTag: 'JournalEntryTag',
+  JournalRevision: 'JournalRevision',
   RoutineTemplate: 'RoutineTemplate',
   RoutineBlock: 'RoutineBlock',
   RoutineException: 'RoutineException',
@@ -1474,6 +1519,7 @@ exports.Prisma.ModelName = {
   Task: 'Task',
   TaskDependency: 'TaskDependency',
   SleepLog: 'SleepLog',
+  SleepSession: 'SleepSession',
   MoodLog: 'MoodLog',
   EnergyLog: 'EnergyLog',
   WeatherLog: 'WeatherLog',

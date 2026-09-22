@@ -61,6 +61,9 @@ function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
 }
 
+// Module-level guard: never run concurrent session restores.
+let initInflight: Promise<void> | null = null;
+
 export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
   status: 'idle',
@@ -72,13 +75,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
    * missing session) simply mark the user as unauthenticated.
    */
   init: async () => {
-    set({ status: 'loading', error: null });
-    try {
-      const user = await apiRequest<AuthUser>('/api/auth/me');
-      set({ user, status: 'authenticated', sessionChecked: true });
-    } catch {
-      set({ user: null, status: 'unauthenticated', sessionChecked: true });
+    if (initInflight) {
+      await initInflight;
+      return;
     }
+    set({ status: 'loading', error: null });
+    initInflight = (async () => {
+      try {
+        const user = await apiRequest<AuthUser>('/api/auth/me');
+        set({ user, status: 'authenticated', sessionChecked: true });
+      } catch {
+        set({ user: null, status: 'unauthenticated', sessionChecked: true });
+      } finally {
+        initInflight = null;
+      }
+    })();
+    await initInflight;
   },
 
   /**

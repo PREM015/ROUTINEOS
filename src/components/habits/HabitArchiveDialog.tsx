@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 // ── Props for the default export (legacy interface) ───────────────────────────
 export interface HabitArchiveDialogProps {
@@ -18,7 +18,7 @@ export default function HabitArchiveDialogDefault({ habit, open, onConfirm, onCa
   const [reason, setReason] = useState('');
   if (!open) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
         <h2 className="text-xl font-bold mb-2 text-gray-900">Archive Habit</h2>
         <p className="text-gray-600 mb-4">Are you sure you want to archive <strong>{habit.name}</strong>?</p>
@@ -76,12 +76,12 @@ export function HabitArchiveDialog({ habitId, habitName, onClose, onArchived }: 
       onClick={onClose}
     >
       <div
-        className="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-md p-6"
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-bold text-zinc-100 mb-2">Archive Habit</h2>
+        <h2 className="text-lg font-bold text-foreground mb-2">Archive Habit</h2>
         <p className="text-sm text-zinc-400 mb-4">
-          Archive <strong className="text-zinc-200">{habitName}</strong>? Your history will be preserved.
+          Archive <strong className="text-foreground">{habitName}</strong>? Your history will be preserved.
         </p>
 
         {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
@@ -95,7 +95,7 @@ export function HabitArchiveDialog({ habitId, habitName, onClose, onArchived }: 
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             placeholder="Why are you archiving this habit?"
-            className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+            className="w-full rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
           />
         </label>
 

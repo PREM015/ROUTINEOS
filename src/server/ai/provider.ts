@@ -86,7 +86,8 @@ export function estimateCost(tokensUsed: number, model: string): number {
     'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 },
   };
 
-  const modelPricing = pricing[model] || pricing['gpt-3.5-turbo'];
+  const defaultPricing = { input: 0.0005, output: 0.0015 };
+  const modelPricing = pricing[model] ?? defaultPricing;
   
   // Assume 50/50 split for simplicity
   const inputTokens = tokensUsed / 2;

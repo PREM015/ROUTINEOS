@@ -63,9 +63,6 @@ export async function updateProject(
   if (data.categoryId !== undefined) {
     updateData.category = { connect: { id: data.categoryId } };
   }
-  if (data.tagIds !== undefined) {
-    updateData.tags = { set: data.tagIds.map(tagId => ({ id: tagId })) };
-  }
 
   await projectRepository.update(userId, projectId, updateData);
   return (await projectRepository.findById(userId, projectId)) as ProjectWithRelations;

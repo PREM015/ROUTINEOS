@@ -2,19 +2,40 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { Logo } from '@/components/layout/Logo';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ email: '', password: '' });
 
+  const getErrorMessage = (err: string | undefined, code: string | undefined): string => {
+    switch (code ?? err) {
+      case 'InvalidCredentials':
+      case 'CredentialsSignin':
+        return 'Invalid email or password.';
+      case 'EmailNotVerified':
+        return 'Please verify your email address before signing in.';
+      case 'AccountLocked':
+        return 'This account is temporarily locked. Try again later.';
+      case 'AccountDeleted':
+        return 'This account has been deleted.';
+      case 'Configuration':
+        return 'We couldn\u2019t sign you in right now. Please try again.';
+      default:
+        return err || 'Unable to sign in. Please try again.';
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError('');
 
@@ -26,15 +47,12 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        const message = result.error === 'CredentialsSignin'
-          ? 'Invalid email or password.'
-          : result.error;
-        setError(message);
+        setError(getErrorMessage(result.error, result.code));
         return;
       }
 
-      router.push('/dashboard');
-      router.refresh();
+      // Single client navigation; proxy.ts already guards protected routes.
+      router.replace(callbackUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
     } finally {
@@ -43,58 +61,68 @@ export default function LoginPage() {
   };
 
   return (
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="login-email" className="block text-sm font-medium text-foreground/80 mb-1">Email</label>
+        <input
+          id="login-email"
+          type="email"
+          required
+          autoComplete="email"
+          value={form.email}
+          onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
+          className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+          placeholder="you@example.com"
+        />
+      </div>
+      <div>
+        <label htmlFor="login-password" className="block text-sm font-medium text-foreground/80 mb-1">Password</label>
+        <input
+          id="login-password"
+          type="password"
+          required
+          autoComplete="current-password"
+          value={form.password}
+          onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
+          className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+          placeholder="••••••••"
+        />
+      </div>
+
+      {error ? (
+        <p role="alert" className="text-sm text-red-500 dark:text-red-400">{error}</p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={loading}
+        className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4"
+      >
+        {loading ? 'Signing in...' : 'Sign In'}
+      </button>
+    </form>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
+      className="w-full max-w-md p-8 bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-2xl"
     >
       <div className="flex justify-center mb-6">
-        <div className="p-3 bg-primary/20 rounded-full">
-          <Sparkles className="w-8 h-8 text-primary" />
-        </div>
+        <Logo variant="icon" size="lg" />
       </div>
-      <h1 className="text-2xl font-bold text-center text-white mb-2">Welcome Back</h1>
-      <p className="text-center text-white/60 mb-8">Sign in to continue to RoutineOS</p>
+      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Welcome Back</h1>
+      <p className="text-center text-muted-foreground mb-8">Sign in to continue to RoutineOS</p>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-sm font-medium text-white/80 mb-1">Email</label>
-          <input
-            type="email"
-            required
-            value={form.email}
-            onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
-            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            placeholder="you@example.com"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-white/80 mb-1">Password</label>
-          <input
-            type="password"
-            required
-            value={form.password}
-            onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
-            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            placeholder="••••••••"
-          />
-        </div>
+      <Suspense fallback={<p className="text-sm text-muted-foreground text-center">Loading...</p>}>
+        <LoginForm />
+      </Suspense>
 
-        {error ? (
-          <p className="text-sm text-red-400">{error}</p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4"
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
-
-      <p className="mt-6 text-center text-sm text-white/60">
-        Don't have an account? <Link href="/register" className="text-primary hover:underline">Register</Link>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Don&apos;t have an account? <Link href="/register" className="text-primary hover:underline">Register</Link>
       </p>
     </motion.div>
   );

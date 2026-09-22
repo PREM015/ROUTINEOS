@@ -15,7 +15,7 @@ import type {
   CreateProjectInput,
   ProjectQueryParams,
   UpdateProjectInput,
-} from '@/schemas/project';
+} from '@/schemas/project.schema';
 import type { ProjectWithRelations } from '@/types/projects';
 
 export type ProjectFilters = ProjectQueryParams;

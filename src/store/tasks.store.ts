@@ -16,7 +16,7 @@ import type {
   CreateTaskInput,
   TaskQueryParams,
   UpdateTaskInput,
-} from '@/schemas/task';
+} from '@/schemas/task.schema';
 
 export type TaskFilters = TaskQueryParams;
 

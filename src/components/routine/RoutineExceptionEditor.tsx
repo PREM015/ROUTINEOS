@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 export interface RoutineExceptionEditorProps { exceptions: Array<{ date: string; templateId: string; reason?: string }>; templates: Array<{ id: string; name: string }>; onAdd: (date: string, templateId: string, reason?: string) => void; onDelete: (date: string) => void; }
 export default function RoutineExceptionEditor({ exceptions, templates, onAdd, onDelete }: RoutineExceptionEditorProps) {
   const [date, setDate] = useState(''); const [templateId, setTemplateId] = useState(templates[0]?.id || ''); const [reason, setReason] = useState('');

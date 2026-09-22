@@ -1,11 +1,13 @@
 import { scoreService } from './score.service';
-import { habitRepository } from '../repositories/habit.repository';
+import { HabitRepository } from '../repositories/habit.repository';
 import { streakService } from './streak.service';
+
+const habitRepository = new HabitRepository();
 
 export class AnalyticsService {
   async getDailyAnalytics(userId: string, date: string) {
     const score = await scoreService.getScoreForDate(userId, date);
-    const habits = await habitRepository.findByUserAndDate(userId, date);
+    const habits = await habitRepository.findLogsByDate(userId, date);
     return { score, habitsCount: habits.length };
   }
 
@@ -21,7 +23,7 @@ export class AnalyticsService {
   }
 
   async getHabitStats(userId: string) {
-    return { active: await habitRepository.findActiveByUserId(userId) };
+    return { active: await habitRepository.findAll(userId) };
   }
 
   async getStreakAnalytics(userId: string) {

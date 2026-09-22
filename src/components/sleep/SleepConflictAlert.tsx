@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 import { SleepConflict } from '@/lib/sleep/detect-conflict';
 
 interface SleepConflictAlertProps {

@@ -13,9 +13,11 @@ interface CreateFocusSessionData {
   description?: string;
   categoryId?: string;
   plannedDuration: number;
+  actualDuration?: number;
   techniques?: string[];
   energyBefore?: number;
   startedAt?: Date;
+  completedAt?: Date;
 }
 
 interface CompleteFocusSessionData {
@@ -80,7 +82,9 @@ export class FocusRepository extends BaseRepository {
           title: data.title,
           description: data.description,
           plannedDuration: data.plannedDuration,
+          actualDuration: data.actualDuration,
           startedAt: data.startedAt || new Date(),
+          completedAt: data.completedAt,
           energyBefore: data.energyBefore,
           techniques: data.techniques
             ? JSON.stringify(data.techniques)
@@ -236,7 +240,7 @@ export class FocusRepository extends BaseRepository {
             data.categoryId === undefined
               ? undefined
               : data.categoryId === null
-                ? null
+                ? { disconnect: true }
                 : { connect: { id: data.categoryId } },
         },
       });

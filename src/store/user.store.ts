@@ -55,7 +55,7 @@ function errorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
 }
 
-export const useUserStore = create<UserState>()((set, get) => ({
+export const useUserStore = create<UserState>()((set, _get) => ({
   profile: null,
   settings: null,
   stats: null,

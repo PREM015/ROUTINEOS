@@ -10,6 +10,7 @@ import {
   IntegrationError,
 } from '@/lib/integrations/manager';
 import { NextRequest, NextResponse } from 'next/server';
+import type { IntegrationProvider } from '@prisma/client';
 
 /**
  * Integrations Route
@@ -117,11 +118,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const integration = await integrationRepository.connect(provider, session.user.id, {
-      accessToken: tokenResult.accessToken,
-      refreshToken: tokenResult.refreshToken,
-      expiresAt: tokenResult.expiresAt,
-    });
+    const integration = await integrationRepository.connect(
+      session.user.id,
+      provider as IntegrationProvider,
+      {
+        accessToken: tokenResult.accessToken,
+        refreshToken: tokenResult.refreshToken,
+        expiresAt: tokenResult.expiresAt,
+      }
+    );
 
     return NextResponse.json(
       { success: true, data: normalizeConnection(integration) },

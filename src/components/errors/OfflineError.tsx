@@ -1,5 +1,4 @@
 "use client";
-import React from 'react';
 import { CloudOff } from 'lucide-react';
 
 export function OfflineError() {

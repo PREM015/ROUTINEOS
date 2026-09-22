@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useProjectsStore } from '@/store/projects.store';
 import type { ProjectFilters, ProjectItem } from '@/store/projects.store';
 import type { ProjectWithRelations } from '@/types/projects';
-import type { CreateProjectInput, UpdateProjectInput } from '@/schemas/project';
+import type { CreateProjectInput, UpdateProjectInput } from '@/schemas/project.schema';
 
 /**
  * Projects hook: subscribe to the projects store for the cached list,

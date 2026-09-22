@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export interface ReminderEditorProps { reminder: { type: string; time: string; enabled: boolean }; onSave: (data: any) => void; onDelete: () => void; }
 

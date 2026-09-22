@@ -21,12 +21,12 @@ export const createMonthlyResetSchema = z.object({
   month: monthSchema,
   monthHighlights: z.string().max(2000).optional(),
   monthChallenges: z.string().max(2000).optional(),
-  habitsToKeep: z.array(z.string().uuid()).optional(),
-  habitsToRemove: z.array(z.string().uuid()).optional(),
+  habitsToKeep: z.array(z.string().cuid()).optional(),
+  habitsToRemove: z.array(z.string().cuid()).optional(),
   habitsToModify: z
     .array(
       z.object({
-        habitId: z.string().uuid(),
+        habitId: z.string().cuid(),
         changes: z.record(z.unknown()),
       })
     )
@@ -40,8 +40,8 @@ export const createMonthlyResetSchema = z.object({
       })
     )
     .optional(),
-  goalsCompleted: z.array(z.string().uuid()).optional(),
-  goalsInProgress: z.array(z.string().uuid()).optional(),
+  goalsCompleted: z.array(z.string().cuid()).optional(),
+  goalsInProgress: z.array(z.string().cuid()).optional(),
   goalsReviewNotes: z.string().max(2000).optional(),
   nextMonthPriorities: z.array(z.string().max(300)).optional(),
   nextMonthGoals: z

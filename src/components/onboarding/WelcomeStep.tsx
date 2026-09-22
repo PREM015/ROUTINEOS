@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Logo } from '@/components/layout/Logo';
 
 export function WelcomeStep({ onNext }: { onNext: () => void }) {
   return (
@@ -11,12 +11,12 @@ export function WelcomeStep({ onNext }: { onNext: () => void }) {
       exit={{ opacity: 0, y: -20 }}
       className="flex flex-col items-center justify-center p-8 space-y-6 text-center"
     >
-      <div className="bg-primary/10 p-4 rounded-full">
-        <Sparkles className="w-12 h-12 text-primary" />
+      <div className="flex justify-center">
+        <Logo variant="icon" size="lg" />
       </div>
       <h1 className="text-3xl font-bold">Welcome to RoutineOS</h1>
       <p className="text-muted-foreground max-w-md">
-        Your ultimate productivity platform. Let's get you set up so you can start achieving your goals and building better habits.
+        Your ultimate productivity platform. Let&rsquo;s get you set up so you can start achieving your goals and building better habits.
       </p>
       <button
         onClick={onNext}

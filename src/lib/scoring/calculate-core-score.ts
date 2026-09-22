@@ -1,5 +1,3 @@
-import { SCORING_CONFIG } from "@/config/scoring";
-
 export function calculateCoreScore(params: {
   nonNegCompleted: number;
   nonNegTotal: number;

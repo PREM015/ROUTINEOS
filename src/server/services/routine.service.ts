@@ -1,9 +1,14 @@
 import type { DayType, Prisma, RoutineLog } from '@prisma/client';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { format, parseISO, eachDayOfInterval } from 'date-fns';
 import type {
   DayRoutine,
+  RoutineTemplateWithBlocks,
   CreateRoutineTemplateInput,
   CreateRoutineBlockInput,
+  RoutineProgressPeriod,
+  RoutineProgressResponse,
+  RoutineProgressDay,
 } from '@/types/routine';
 import { getDayTypeForDate } from '@/constants/routine';
 import {
@@ -11,6 +16,9 @@ import {
   isTimeOverlap,
   calculateBlockDuration,
 } from '@/lib/routine/duration';
+import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { getPeriodRange } from '@/lib/period-range';
+import { UserRepository } from '@/server/repositories/user.repository';
 
 /**
  * Routine Service
@@ -19,9 +27,11 @@ import {
 
 export class RoutineService {
   private routineRepository: RoutineRepository;
+  private userRepository: UserRepository;
 
   constructor() {
     this.routineRepository = new RoutineRepository();
+    this.userRepository = new UserRepository();
   }
 
   /**
@@ -31,7 +41,7 @@ export class RoutineService {
     userId: string,
     date: Date | string
   ): Promise<DayRoutine> {
-    const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+    const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
     const dateObj = new Date(dateStr);
 
     // Check for exception
@@ -46,20 +56,27 @@ export class RoutineService {
     }
 
     // Get template
-    let template;
+    let template: RoutineTemplateWithBlocks | null = null;
     if (templateId) {
-      template = await this.routineRepository.findTemplateWithBlocks(templateId, userId);
+      template = (await this.routineRepository.findTemplateWithBlocks(templateId, userId)) as
+        | RoutineTemplateWithBlocks
+        | null;
     } else {
-      template = await this.routineRepository.findTemplateByDayType(userId, dayType);
+      template = (await this.routineRepository.findTemplateByDayType(userId, dayType)) as
+        | RoutineTemplateWithBlocks
+        | null;
     }
 
     if (!template) {
       return {
         date: dateStr,
         dayType,
-        isException: !!exception,
         template: null,
+        exception,
         blocks: [],
+        totalBlocks: 0,
+        completedBlocks: 0,
+        completionRate: 0,
       };
     }
 
@@ -91,17 +108,153 @@ export class RoutineService {
       log: logMap.get(block.id) || null,
     }));
 
+    const completedBlocks = logs.filter(log => log.status === 'COMPLETED').length;
+
     return {
       date: dateStr,
       dayType,
-      isException: !!exception,
-      template: {
-        id: template.id,
-        name: template.name,
-        dayType: template.dayType,
-        blocks: blocks as any,
-      },
+      template,
+      exception,
       blocks: blocks as any,
+      totalBlocks: blocks.length,
+      completedBlocks,
+      completionRate:
+        blocks.length > 0 ? Math.round((completedBlocks / blocks.length) * 100) : 0,
+    };
+  }
+
+  /**
+   * Routine progress across a day / week / month / year, built from the
+   * user's own templates, exceptions, and logs. One block per (block, date),
+   * so rows can never duplicate even if toggled repeatedly.
+   */
+  async getRoutineProgress(
+    userId: string,
+    period: RoutineProgressPeriod,
+    anchorDate?: string
+  ): Promise<RoutineProgressResponse> {
+    const settings = await this.userRepository.getSettings(userId);
+    const timezone = settings?.timezone || DEFAULT_TZ;
+    const anchor = anchorDate && /^\d{4}-\d{2}-\d{2}$/.test(anchorDate)
+      ? anchorDate
+      : getTodayString(timezone);
+    const range = getPeriodRange(period, anchor, timezone);
+    const startDate = range.start;
+    const endDate = range.end;
+    const label = range.label;
+    const [anchorYear] = anchor.split('-').map(Number);
+
+    const [templates, exceptions, logs] = await Promise.all([
+      this.routineRepository.findAllTemplates(userId, true),
+      this.routineRepository.findExceptionsByRange(userId, startDate, endDate),
+      this.routineRepository.findLogsByRange(userId, startDate, endDate),
+    ]);
+
+    const templatesByDayType = new Map<DayType, RoutineTemplateWithBlocks>();
+    for (const template of templates as RoutineTemplateWithBlocks[]) {
+      if (!templatesByDayType.has(template.dayType)) {
+        templatesByDayType.set(template.dayType, template);
+      }
+    }
+    const templatesById = new Map<string, RoutineTemplateWithBlocks>();
+    for (const template of templates as RoutineTemplateWithBlocks[]) {
+      templatesById.set(template.id, template);
+    }
+
+    const exceptionsByDate = new Map<string, { dayType: DayType; templateId: string | null }>();
+    for (const exception of exceptions) {
+      exceptionsByDate.set(exception.date, {
+        dayType: exception.dayType,
+        templateId: exception.templateId,
+      });
+    }
+
+    const statusByKey = new Map<string, string>();
+    for (const log of logs) {
+      statusByKey.set(`${log.date}::${log.routineBlockId}`, log.status);
+    }
+
+    const allDays = eachDayOfInterval({
+      start: parseISO(startDate),
+      end: parseISO(endDate),
+    }).map((day) => format(day, 'yyyy-MM-dd'));
+
+    const days: RoutineProgressDay[] = allDays.map((date) => {
+      const exception = exceptionsByDate.get(date);
+      let dayType: DayType | null = null;
+      let template: RoutineTemplateWithBlocks | undefined;
+
+      if (exception) {
+        dayType = exception.dayType;
+        template = exception.templateId
+          ? templatesById.get(exception.templateId)
+          : templatesByDayType.get(dayType);
+      } else {
+        dayType = getDayTypeForDate(parseISO(date));
+        template = templatesByDayType.get(dayType);
+      }
+
+      if (!dayType || !template) {
+        return {
+          date,
+          dayType: dayType ?? 'CUSTOM' as DayType,
+          scheduled: false,
+          total: 0,
+          completed: 0,
+          completionRate: 0,
+          blocks: [],
+        };
+      }
+
+      const blocks = template.blocks.map((block) => ({
+        blockId: block.id,
+        title: block.title,
+        startTime: block.startTime,
+        endTime: block.endTime,
+        status: (statusByKey.get(`${date}::${block.id}`) ?? null) as RoutineLog['status'],
+      }));
+
+      const completed = blocks.filter((block) => block.status === 'COMPLETED').length;
+
+      return {
+        date,
+        dayType,
+        scheduled: blocks.length > 0,
+        total: blocks.length,
+        completed,
+        completionRate: blocks.length > 0
+          ? Math.round((completed / blocks.length) * 100)
+          : 0,
+        blocks,
+      };
+    });
+
+    const months: RoutineProgressResponse['months'] = [];
+    if (period === 'year') {
+      for (let monthIndex = 1; monthIndex <= 12; monthIndex++) {
+        const month = `${anchorYear}-${String(monthIndex).padStart(2, '0')}`;
+        const monthDays = days.filter((day) => day.date.startsWith(month));
+        const scheduled = monthDays.filter((day) => day.scheduled);
+        months.push({
+          month,
+          scheduledDays: scheduled.length,
+          averageCompletionRate: scheduled.length > 0
+            ? Math.round(
+                scheduled.reduce((sum, day) => sum + day.completionRate, 0) / scheduled.length
+              )
+            : 0,
+        });
+      }
+    }
+
+    return {
+      period,
+      anchorDate: anchor,
+      startDate,
+      endDate,
+      label,
+      days,
+      months,
     };
   }
 
@@ -110,7 +263,11 @@ export class RoutineService {
    */
   async createTemplate(
     userId: string,
-    input: CreateRoutineTemplateInput
+    input: CreateRoutineTemplateInput & {
+      description?: string;
+      color?: string;
+      icon?: string;
+    }
   ): Promise<any> {
     if (!input.name?.trim()) {
       throw new Error('Template name is required');
@@ -136,7 +293,15 @@ export class RoutineService {
   async addBlock(
     userId: string,
     templateId: string,
-    input: CreateRoutineBlockInput
+    input: CreateRoutineBlockInput & {
+      notes?: string;
+      color?: string;
+      icon?: string;
+      energyLevel?: string;
+      trackCompletion?: boolean;
+      isRecurring?: boolean;
+      sortOrder?: number;
+    }
   ): Promise<any> {
     // Verify template ownership
     const template = await this.routineRepository.findTemplateById(templateId, userId);
@@ -210,8 +375,8 @@ export class RoutineService {
     // Calculate actual duration if times provided
     let durationMinutes: number | null = null;
     if (data?.actualStartTime && data?.actualEndTime) {
-      const [startHour, startMin] = data.actualStartTime.split(':').map(Number);
-      const [endHour, endMin] = data.actualEndTime.split(':').map(Number);
+      const [startHour = 0, startMin = 0] = data.actualStartTime.split(':').map(Number);
+      const [endHour = 0, endMin = 0] = data.actualEndTime.split(':').map(Number);
       const startTotalMin = startHour * 60 + startMin;
       const endTotalMin = endHour * 60 + endMin;
       durationMinutes = endTotalMin - startTotalMin;
@@ -317,7 +482,7 @@ export class RoutineService {
 
     const current = new Date(start);
     while (current.getTime() <= end.getTime()) {
-      const dateStr = current.toISOString().split('T')[0];
+      const dateStr = current.toISOString().slice(0, 10);
       logs.push(...(await this.routineRepository.findLogsByDate(userId, dateStr)));
       current.setDate(current.getDate() + 1);
     }

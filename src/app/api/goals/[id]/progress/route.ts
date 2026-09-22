@@ -11,9 +11,10 @@ const progressSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,7 +33,7 @@ export async function POST(
     const goalService = new GoalService();
     const result = await goalService.updateProgress(
       session.user.id,
-      params.id,
+      id,
       validated.data.value,
       validated.data.note,
       validated.data.autoComplete

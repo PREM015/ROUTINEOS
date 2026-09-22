@@ -18,7 +18,7 @@ interface HabitSectionProps {
   date: string;
 }
 
-export default function HabitSection({ title, habits, tier, onToggle, onSkip, date }: HabitSectionProps) {
+export default function HabitSection({ title, habits, onToggle, onSkip, date }: HabitSectionProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (habits.length === 0) return null;

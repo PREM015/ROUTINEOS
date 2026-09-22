@@ -34,7 +34,7 @@ const variantIcons = {
 } as const;
 
 export interface AlertProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'>,
     VariantProps<typeof alertVariants> {
   /** Short headline shown above the description. */
   title?: React.ReactNode;

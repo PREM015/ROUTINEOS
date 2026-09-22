@@ -2,38 +2,37 @@ import prisma from '@/lib/prisma';
 
 export class InsightRepository {
   async findLatestByUser(userId: string, limit = 5) {
-    return prisma.insight.findMany({
+    return prisma.aIInsight.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { generatedAt: 'desc' },
       take: limit,
     });
   }
 
   async findByPeriod(userId: string, startDate: Date, endDate: Date) {
-    return prisma.insight.findMany({
+    return prisma.aIInsight.findMany({
       where: {
         userId,
-        createdAt: { gte: startDate, lte: endDate },
+        generatedAt: { gte: startDate, lte: endDate },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { generatedAt: 'desc' },
     });
   }
 
   async create(data: any) {
-    return prisma.insight.create({ data });
+    return prisma.aIInsight.create({ data });
   }
 
   async markRead(id: string) {
-    return prisma.insight.update({
+    return prisma.aIInsight.update({
       where: { id },
-      data: { isRead: true },
+      data: { wasHelpful: true },
     });
   }
 
   async dismiss(id: string) {
-    return prisma.insight.update({
+    return prisma.aIInsight.delete({
       where: { id },
-      data: { isDismissed: true },
     });
   }
 }

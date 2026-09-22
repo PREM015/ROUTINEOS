@@ -24,8 +24,16 @@ export function getScoreBand(score: number): ScoreBand {
   return 'F';
 }
 
+const DEFAULT_BAND: ScoreBandConfig = {
+  band: 'F',
+  label: 'Missed',
+  color: 'text-red-500',
+  emoji: '❌',
+  minScore: 0,
+};
+
 export function getScoreBandConfig(band: ScoreBand): ScoreBandConfig {
-  return SCORE_BANDS.find(b => b.band === band) || SCORE_BANDS[5];
+  return SCORE_BANDS.find(b => b.band === band) || DEFAULT_BAND;
 }
 
 export function getScoreBandLabel(score: number): string {

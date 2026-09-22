@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { formatInTimeZone } from 'date-fns-tz';
 import { TodayHabitChecklist } from '@/components/today/TodayHabitChecklist';
 import { CurrentRoutineBlock } from '@/components/today/CurrentRoutineBlock';
 import { TodayScore } from '@/components/today/TodayScore';
@@ -8,6 +9,8 @@ import { TodaySleep } from '@/components/today/TodaySleep';
 import { DailyReflection } from '@/components/today/DailyReflection';
 import { QuickActions } from '@/components/today/QuickActions';
 import { StreakCard } from '@/components/streak/StreakCard';
+import { getTodayString } from '@/lib/dates';
+import { userService } from '@/server/services/user.service';
 
 export default async function TodayPage() {
   const session = await auth();
@@ -16,19 +19,15 @@ export default async function TodayPage() {
     redirect('/login');
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const timezone = await userService.getTimezone(session.user.id);
+  const today = getTodayString(timezone);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Today</h1>
         <p className="text-gray-600">
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
+          {formatInTimeZone(new Date(), timezone, 'EEEE, MMMM d, yyyy')}
         </p>
       </div>
 

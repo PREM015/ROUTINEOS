@@ -9,7 +9,6 @@
  * Usage:
  *   <TemplateCard template={card} onUse={(t) => useTemplate(t)} onPreview={openPreview} />
  */
-import * as React from 'react';
 import type { Template, TemplateType } from '@prisma/client';
 import { Clock, Eye, LayoutTemplate, Star } from 'lucide-react';
 import type { DefaultTemplate } from '@/lib/constants/templates';
@@ -42,11 +41,6 @@ function parseTags(source: string | null): string[] {
   }
 }
 
-function minutesFromContent(content: string): number | null {
-  const parsed = parseTemplateContent(content);
-  return parsed?.estimatedDuration ?? null;
-}
-
 /**
  * Normalize either a database Template or a DefaultTemplate into the shared
  * card shape UI components can consume.
@@ -61,8 +55,8 @@ export function toTemplateCardData(source: Template | DefaultTemplate): Template
       name: source.name,
       description: source.description,
       category: source.category,
-      color: source.color,
-      icon: source.icon,
+      color: parsed?.color ?? null,
+      icon: parsed?.icon ?? null,
       tags: parseTags(source.tags),
       isFeatured: source.isFeatured,
       estimatedDurationMinutes: duration,

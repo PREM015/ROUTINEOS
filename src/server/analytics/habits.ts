@@ -74,11 +74,11 @@ export async function getHabitAnalytics(
     const rate = stats.total > 0 ? (stats.completed / stats.total) * 100 : 0;
     if (rate > bestRate) {
       bestRate = rate;
-      bestDay = dayNames[parseInt(day)];
+      bestDay = dayNames[parseInt(day)] ?? null;
     }
     if (rate < worstRate && stats.total > 0) {
       worstRate = rate;
-      worstDay = dayNames[parseInt(day)];
+      worstDay = dayNames[parseInt(day)] ?? null;
     }
   });
 

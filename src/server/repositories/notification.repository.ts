@@ -185,4 +185,115 @@ export class NotificationRepository extends BaseRepository {
       this.handleError(error, 'createMany');
     }
   }
+
+  /**
+   * Count notifications of a type for a user scoped to a related entity
+   * (used to dedupe per-day reminders).
+   */
+  async countByTypeAndRelatedId(
+    userId: string,
+    type: NotificationType,
+    relatedEntityId: string
+  ): Promise<number> {
+    try {
+      return await this.prisma.notificationLog.count({
+        where: { userId, type, relatedEntityId },
+      });
+    } catch (error) {
+      this.handleError(error, 'countByTypeAndRelatedId');
+    }
+  }
+
+  /**
+   * Find pending (scheduled, not yet sent) notifications of given types.
+   */
+  async findPendingByType(
+    userId: string,
+    types: NotificationType[]
+  ): Promise<NotificationLog[]> {
+    try {
+      return await this.prisma.notificationLog.findMany({
+        where: {
+          userId,
+          type: { in: types },
+          status: NotificationStatus.PENDING,
+        },
+        orderBy: { scheduledFor: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findPendingByType');
+    }
+  }
+
+  /**
+   * Mark all pending notifications of a type as sent.
+   */
+  async markPendingByTypeSent(
+    userId: string,
+    type: NotificationType
+  ): Promise<number> {
+    try {
+      const result = await this.prisma.notificationLog.updateMany({
+        where: { userId, type, status: NotificationStatus.PENDING },
+        data: { status: NotificationStatus.SENT, sentAt: new Date() },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'markPendingByTypeSent');
+    }
+  }
+
+  /**
+   * Mark a single pending notification as sent.
+   */
+  async markSent(
+    userId: string,
+    notificationId: string
+  ): Promise<number> {
+    try {
+      const result = await this.prisma.notificationLog.updateMany({
+        where: { id: notificationId, userId, status: NotificationStatus.PENDING },
+        data: { status: NotificationStatus.SENT, sentAt: new Date() },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'markSent');
+    }
+  }
+
+  /**
+   * Dismiss a single pending notification (idempotent no-op if not pending).
+   */
+  async markDismissed(
+    userId: string,
+    notificationId: string
+  ): Promise<number> {
+    try {
+      const result = await this.prisma.notificationLog.updateMany({
+        where: { id: notificationId, userId },
+        data: { status: NotificationStatus.DISMISSED, dismissedAt: new Date() },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'markDismissed');
+    }
+  }
+
+  /**
+   * Dismiss all pending notifications of a type.
+   */
+  async dismissPendingByType(
+    userId: string,
+    type: NotificationType
+  ): Promise<number> {
+    try {
+      const result = await this.prisma.notificationLog.updateMany({
+        where: { userId, type, status: NotificationStatus.PENDING },
+        data: { status: NotificationStatus.DISMISSED, dismissedAt: new Date() },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'dismissPendingByType');
+    }
+  }
 }

@@ -21,8 +21,19 @@ export default function RoutineTimeline({ blocks, logs, onToggleCompletion }: Ro
     return () => clearInterval(timer);
   }, []);
 
-  const conflicts = detectConflicts(blocks);
-  const currentBlock = getCurrentBlock(blocks, now, Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const conflicts = blocks
+    .flatMap((block) => detectConflicts(block, blocks))
+    .filter(
+      (conflict, index, all) =>
+        all.findIndex(
+          (c) =>
+            c.message === conflict.message &&
+            c.blockId1 === conflict.blockId1 &&
+            c.blockId2 === conflict.blockId2
+        ) === index
+    );
+  const currentTime = now.toTimeString().slice(0, 5);
+  const currentBlock = getCurrentBlock(blocks, currentTime);
 
   return (
     <div className="space-y-6">
@@ -32,7 +43,7 @@ export default function RoutineTimeline({ blocks, logs, onToggleCompletion }: Ro
       
       <div className="relative border-l-2 border-gray-200 dark:border-gray-700 ml-4 space-y-6 pb-4">
         {blocks.map(block => {
-          const log = logs.find(l => l.blockId === block.id);
+          const log = logs.find(l => l.routineBlockId === block.id);
           const isCompleted = log?.status === 'COMPLETED';
           const isCurrent = currentBlock?.id === block.id;
 

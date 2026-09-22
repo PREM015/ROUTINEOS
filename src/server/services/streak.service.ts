@@ -1,11 +1,13 @@
-import { streakRepository } from '../repositories/streak.repository';
+import { StreakRepository } from '../repositories/streak.repository';
+
+const streakRepository = new StreakRepository();
 
 export class StreakService {
   async updateStreak(userId: string, isActive: boolean) {
     if (isActive) {
-      return streakRepository.incrementStreak(userId);
+      return streakRepository.incrementCurrentStreak(userId);
     } else {
-      return streakRepository.resetStreak(userId);
+      return streakRepository.resetCurrentStreak(userId);
     }
   }
 
@@ -16,20 +18,23 @@ export class StreakService {
     const milestones = [7, 30, 100, 365];
     for (const m of milestones) {
       if (streak.currentStreak === m) {
-        await streakRepository.createMilestone(userId, { type: 'STREAK', value: m });
+        await streakRepository.createMilestone({
+          user: { connect: { id: userId } },
+          milestoneDays: m,
+          streakType: 'STREAK',
+          reachedDate: new Date().toISOString(),
+        });
       }
     }
   }
 
   async getStreakStats(userId: string) {
     const streak = await streakRepository.findByUserId(userId);
-    const milestones = await streakRepository.findMilestones(userId);
-    return { ...streak, milestones };
-  }
-
-  async recalculateStreak(userId: string) {
-    // Recompute streak logic based on history (placeholder)
-    return streakRepository.findByUserId(userId);
+    return {
+      currentStreak: streak?.currentStreak || 0,
+      longestStreak: streak?.longestStreak || 0,
+      lastCompletedDate: streak?.lastCompletedDate || null,
+    };
   }
 }
 

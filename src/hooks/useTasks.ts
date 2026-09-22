@@ -8,7 +8,7 @@ import type {
   TaskFilters,
   TaskItem,
 } from '@/store/tasks.store';
-import type { CreateTaskInput, UpdateTaskInput } from '@/schemas/task';
+import type { CreateTaskInput, UpdateTaskInput } from '@/schemas/task.schema';
 
 /**
  * Tasks hook: subscribe to the tasks store for the cached list, current

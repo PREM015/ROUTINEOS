@@ -13,7 +13,6 @@ import { CloudOff, WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 export const PENDING_CHANGES_KEY = 'routineos:pending-changes';
-const BACK_ONLINE_KEY = 'routineos:back-online';
 
 function readPendingCount(): number {
   if (typeof window === 'undefined') return 0;

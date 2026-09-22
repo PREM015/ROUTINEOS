@@ -18,3 +18,8 @@ export * from './PageSkeleton';
 export * from './CardSkeleton';
 export * from './ListSkeleton';
 export * from './ChartSkeleton';
+export * from './Dialog';
+export * from './Tooltip';
+export * from './RichTextEditor';
+export * from './Pagination';
+export * from './ColorPicker';

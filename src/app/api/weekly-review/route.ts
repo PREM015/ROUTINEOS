@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       const recap = await generateWeeklyRecap(
         session.user.id,
         weekStart,
-        weekEnd.toISOString().split('T')[0]
+        weekEnd.toISOString().slice(0, 10)
       );
 
       return NextResponse.json({

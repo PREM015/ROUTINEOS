@@ -5,6 +5,7 @@ import {
   createProjectSchema,
   updateProjectSchema,
   milestoneSchema,
+  projectQuerySchema,
 } from '@/schemas/project.schema';
 import type {
   CreateProjectInput,
@@ -200,7 +201,6 @@ export class ProjectService {
       title: parsed.title,
       description: parsed.description,
       dueDate: parsed.dueDate,
-      sortOrder: parsed.sortOrder,
     });
   }
 

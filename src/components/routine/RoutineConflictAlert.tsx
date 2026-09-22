@@ -2,7 +2,6 @@
 
 import { RoutineBlock, RoutineConflict } from "@/types/routine";
 import { AlertCircle } from "lucide-react";
-import { formatDuration } from "@/lib/routine/duration";
 
 interface RoutineConflictAlertProps {
   conflicts: RoutineConflict[];
@@ -24,15 +23,14 @@ export default function RoutineConflictAlert({ conflicts, blocks }: RoutineConfl
           </h4>
           <div className="mt-2 space-y-2">
             {conflicts.map((conflict, i) => {
-              const b1 = blocks.find(b => b.id === conflict.blockIds[0]);
-              const b2 = blocks.find(b => b.id === conflict.blockIds[1]);
+              const b1 = blocks.find(b => b.id === conflict.blockId1);
+              const b2 = blocks.find(b => b.id === conflict.blockId2);
               if (!b1 || !b2) return null;
 
               return (
                 <div key={i} className="text-sm text-red-700 dark:text-red-400 bg-white/50 dark:bg-gray-900/50 p-2 rounded">
                   <span className="font-semibold">{b1.title}</span> ({b1.startTime}-{b1.endTime}) overlaps with{' '}
-                  <span className="font-semibold">{b2.title}</span> ({b2.startTime}-{b2.endTime}) by{' '}
-                  <span className="font-bold">{formatDuration(conflict.overlapMinutes)}</span>
+                  <span className="font-semibold">{b2.title}</span> ({b2.startTime}-{b2.endTime})
                 </div>
               );
             })}

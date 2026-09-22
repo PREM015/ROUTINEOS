@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextRequest } from 'next/server';
+import { auth } from '@/lib/auth';
 import { ZodSchema } from 'zod';
 import { handleApiError } from '@/lib/errors/error-handler';
 import { apiSuccess } from '@/lib/api-response';
@@ -36,7 +35,7 @@ export function createApiHandler<T = any>(
     try {
       // Authentication
       const session = options.requireAuth || options.requireAdmin 
-        ? await getServerSession(authOptions)
+        ? await auth()
         : null;
 
       if (options.requireAuth && !session?.user?.id) {
@@ -55,7 +54,8 @@ export function createApiHandler<T = any>(
       }
 
       // Execute handler
-      const result = await handler(req, { session, body, params });
+      const resolvedParams = params ? await params : undefined;
+      const result = await handler(req, { session, body, params: resolvedParams });
 
       // Wrap success response
       return apiSuccess(result);

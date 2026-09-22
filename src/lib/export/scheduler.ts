@@ -115,7 +115,7 @@ export function getNextExportRun(
     coversStart: window.start,
     coversEnd: window.end,
     dueNow: now.getTime() >= nextRun.getTime(),
-    lastRunAt,
+    lastRunAt: lastRunAt ?? null,
   };
 }
 
@@ -128,7 +128,6 @@ export async function retainRecentExports(
   retention: number,
   directory?: string
 ): Promise<{ removed: number; remaining: BackupFileInfo[] }> {
-  const before = await listBackups(directory);
   const removedCount = await cleanupOldBackups(Math.max(0, retention), directory);
   const remaining = await listBackups(directory);
   return { removed: removedCount, remaining };

@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 export async function getUpcomingBlocks(
   userId: string,
   db: PrismaClient,
-  withinMinutes: number = 30
+  _withinMinutes: number = 30
 ): Promise<Array<{ blockId: string; name: string; startTime: string }>> {
   const blocks = (await (db as any).routineBlock.findMany({ where: { template: { userId } } })) || [];
   return blocks.map((b: any) => ({

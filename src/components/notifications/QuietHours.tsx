@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export interface QuietHoursProps { enabled: boolean; start: string; end: string; onChange: (data: { enabled: boolean; start: string; end: string }) => void; }
 

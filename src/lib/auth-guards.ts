@@ -1,9 +1,7 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth"; // Assume this exists based on NextAuth setup
-import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
 
 export async function getAuthSession() {
-  return await getServerSession(authOptions as any);
+  return await auth();
 }
 
 export async function requireAuth() {

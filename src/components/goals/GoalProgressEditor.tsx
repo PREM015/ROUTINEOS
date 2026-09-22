@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 export interface GoalProgressEditorProps { goal: { id: string; title: string; targetValue: number; currentValue: number; unit?: string }; onSave: (value: number, note?: string) => void; onCancel: () => void; }
 export default function GoalProgressEditor({ goal, onSave, onCancel }: GoalProgressEditorProps) {
   const [val, setVal] = useState(goal.currentValue.toString());

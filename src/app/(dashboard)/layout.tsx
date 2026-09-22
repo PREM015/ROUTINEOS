@@ -1,5 +1,10 @@
 import { SkipLink } from '@/components/ui/SkipLink';
 import { OfflineBanner } from '@/components/offline/OfflineBanner';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { MobileNav } from '@/components/layout/MobileNav';
+import { SleepPromptHost } from '@/components/shared/SleepPromptHost';
 
 export default function DashboardLayout({
   children,
@@ -7,13 +12,25 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className="min-h-screen flex bg-background text-foreground">
       <SkipLink />
       <OfflineBanner />
-      {/* Navigation */}
-      <main id="main-content" className="min-h-screen">
-        {children}
-      </main>
+
+      {/* Desktop Sidebar Navigation */}
+      <Sidebar />
+
+      {/* Content Area with Header, Main, and Footer */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header />
+
+        <main id="main-content" className="flex-1 pb-20 md:pb-8">
+          {children}
+        </main>
+
+        <Footer />
+        <MobileNav />
+        <SleepPromptHost />
+      </div>
     </div>
   );
 }

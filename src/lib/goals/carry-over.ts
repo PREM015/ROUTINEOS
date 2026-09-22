@@ -4,7 +4,7 @@ export function canCarryOver(goal: Goal): boolean {
   if (goal.status === 'COMPLETED') return false;
   const now = new Date();
   const dueDate = new Date(goal.endDate);
-  return now >= dueDate || goal.status === 'FAILED';
+  return now >= dueDate || goal.status === 'MISSED';
 }
 
 export function createCarryOverGoal(goal: Goal, newDueDate: string): Omit<Goal, 'id' | 'createdAt' | 'updatedAt'> {
@@ -15,8 +15,7 @@ export function createCarryOverGoal(goal: Goal, newDueDate: string): Omit<Goal, 
     endDate: newDueDate,
     status: 'ACTIVE',
     currentValue: 0,
-    carryOverCount: (goal.carryOverCount || 0) + 1,
-    originalGoalId: goal.id
+    carriedOverFrom: goal.carriedOverFrom || goal.id
   } as any;
 }
 
@@ -31,5 +30,5 @@ export function getSuggestedCarryOverDate(goal: Goal): string {
   } else {
     now.setDate(now.getDate() + 7); // Default
   }
-  return now.toISOString().split('T')[0];
+  return now.toISOString().slice(0, 10);
 }

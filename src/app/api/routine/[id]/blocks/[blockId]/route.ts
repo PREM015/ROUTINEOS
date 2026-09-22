@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -13,25 +12,26 @@ const updateBlockSchema = z.object({
   isFlex: z.boolean().optional()
 });
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string, blockId: string } }) {
-  const session = await getServerSession(authOptions);
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string, blockId: string }> }) {
+  const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id, blockId } = await params;
   try {
     const body = await req.json();
     const data = updateBlockSchema.parse(body);
 
     const block = await db.routineBlock.findUnique({
-      where: { id: params.blockId },
+      where: { id: blockId },
       include: { template: true }
     });
 
-    if (!block || block.template.userId !== session.user.id || block.templateId !== params.id) {
+    if (!block || block.template.userId !== session.user.id || block.templateId !== id) {
       return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
     }
 
     const updatedBlock = await db.routineBlock.update({
-      where: { id: params.blockId },
+      where: { id: blockId },
       data
     });
 
@@ -41,22 +41,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string, 
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string, blockId: string } }) {
-  const session = await getServerSession(authOptions);
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string, blockId: string }> }) {
+  const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id, blockId } = await params;
   try {
     const block = await db.routineBlock.findUnique({
-      where: { id: params.blockId },
+      where: { id: blockId },
       include: { template: true }
     });
 
-    if (!block || block.template.userId !== session.user.id || block.templateId !== params.id) {
+    if (!block || block.template.userId !== session.user.id || block.templateId !== id) {
       return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
     }
 
     await db.routineBlock.delete({
-      where: { id: params.blockId }
+      where: { id: blockId }
     });
 
     return NextResponse.json({ success: true });

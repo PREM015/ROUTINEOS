@@ -12,16 +12,17 @@ const setTagsSchema = z.object({
  * Fetch the tags attached to a journal entry
  */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await getJournalEntry(session.user.id, params.id);
+    const entry = await getJournalEntry(session.user.id, id);
     if (!entry) {
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
@@ -44,9 +45,10 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -61,13 +63,13 @@ export async function PUT(
       );
     }
 
-    const existing = await getJournalEntry(session.user.id, params.id);
+    const existing = await getJournalEntry(session.user.id, id);
     if (!existing) {
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
 
-    const count = await setJournalTags(session.user.id, params.id, validated.data.tagIds);
-    const updated = await getJournalEntry(session.user.id, params.id);
+    const count = await setJournalTags(session.user.id, id, validated.data.tagIds);
+    const updated = await getJournalEntry(session.user.id, id);
     const tags = (updated?.tags ?? []).map(relation => relation.tag);
 
     return NextResponse.json({

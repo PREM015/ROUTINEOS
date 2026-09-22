@@ -339,7 +339,7 @@ export class EmailService {
       ['Current streak', data.streak],
     ];
     const list = rows
-      .filter(([label, value]) => value !== undefined)
+      .filter(([, value]) => value !== undefined)
       .map(
         ([label, value]) =>
           `<li style="margin:4px 0;"><span style="color:#6b7280;">${escapeHtml(label as string)}:</span> <strong style="color:#111827;">${escapeHtml(String(value))}</strong></li>`

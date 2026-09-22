@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 interface Props {
   title: string;
   stats: Array<{ label: string; value: string }>;

@@ -10,7 +10,7 @@ export function canArchiveHabit(habit: Habit): { canArchive: boolean; reason?: s
   return { canArchive: true };
 }
 
-export function canDeleteHabit(habit: Habit, hasLogs: boolean): { canDelete: boolean; reason?: string } {
+export function canDeleteHabit(_habit: Habit, hasLogs: boolean): { canDelete: boolean; reason?: string } {
   if (hasLogs) {
     return { canDelete: false, reason: 'Cannot delete habit with existing logs. Archive it instead.' };
   }
@@ -24,7 +24,7 @@ export function getHabitHealthScore(completionRate: number, streak: number): num
 }
 
 export function getHabitStatus(habit: Habit, date: string, overrides: HabitOverride[]): 'scheduled' | 'skipped' | 'paused' | 'not-scheduled' | 'completed' | 'missed' {
-  if (isHabitPaused(habit, date)) return 'paused';
+  if (isHabitPaused(overrides, date)) return 'paused';
   if (isHabitSkippedOnDate(overrides, date)) return 'skipped';
   if (!isHabitScheduledForDate(habit, date, 'UTC')) return 'not-scheduled';
   

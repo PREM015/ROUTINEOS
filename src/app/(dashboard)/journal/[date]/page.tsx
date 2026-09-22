@@ -7,7 +7,7 @@ import type { Tag } from '@prisma/client';
 import { ArrowLeft, BookOpen, PenLine } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import type { JournalEntryWithRelations } from '@/types/journal';
-import { Button, EmptyState, Spinner } from '@/components/ui';
+import { EmptyState, Spinner } from '@/components/ui';
 import JournalEditor from '@/components/journal/JournalEditor';
 
 function formatHeading(date: string): string {

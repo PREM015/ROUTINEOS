@@ -1,66 +1,70 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 import { Button } from '@/components/ui/Button';
-import type { GoalPriority } from '@prisma/client';
+import type { GoalPriority, GoalType } from '@prisma/client';
 
 interface TodayGoal {
   id: string;
   title: string;
+  type: GoalType;
   priority: GoalPriority;
   currentValue: number;
   targetValue: number;
   unit: string | null;
-  endDate: Date;
-  daysRemaining: number;
-  progressPercentage: number;
-  requiredTodayProgress: number;
+  endDate: string;
 }
 
 interface TodayGoalsProps {
   date: string;
 }
 
+function daysRemaining(endDate: string): number {
+  const diff = new Date(endDate).getTime() - new Date(dateStr()).getTime();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
+
+function dateStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function TodayGoals({ date }: TodayGoalsProps) {
   const [goals, setGoals] = useState<TodayGoal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchGoals();
-  }, [date]);
-
-  async function fetchGoals() {
+  const fetchGoals = useCallback(async () => {
     try {
-      const res = await fetch('/api/goals?status=ACTIVE&limit=5');
+      setLoading(true);
+      setError(null);
+      const res = await fetch('/api/goals?status=ACTIVE&limit=50');
       const data = await res.json();
-      
+      if (!res.ok) throw new Error(data?.error || 'Failed to load goals');
+
       if (data.success) {
-        setGoals(data.data.slice(0, 5)); // Top 5 active goals
+        // Daily goals first (today's check-off), then the rest. Top 5.
+        const list: TodayGoal[] = Array.isArray(data.data) ? data.data : [];
+        const sorted = [...list].sort((a, b) =>
+          a.type === 'DAILY' && b.type !== 'DAILY' ? -1 : b.type === 'DAILY' && a.type !== 'DAILY' ? 1 : 0
+        );
+        setGoals(sorted.slice(0, 5));
       }
-    } catch (error) {
-      console.error('Error fetching goals:', error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load goals');
     } finally {
       setLoading(false);
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
 
-  async function updateProgress(goalId: string, value: number) {
-    try {
-      const res = await fetch(`/api/goals/${goalId}/progress`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value, date }),
-      });
-
-      if (res.ok) {
-        fetchGoals(); // Refresh
-      }
-    } catch (error) {
-      console.error('Error updating goal progress:', error);
-    }
-  }
+  // Initial data fetch when the date changes.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- date-driven data fetch
+    fetchGoals();
+  }, [fetchGoals]);
 
   if (loading) {
     return (
@@ -77,15 +81,25 @@ export function TodayGoals({ date }: TodayGoalsProps) {
     );
   }
 
+  if (error) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4">Active Goals</h3>
+        <p role="alert" className="text-sm text-red-500 mb-3">{error}</p>
+        <Button variant="outline" size="sm" onClick={fetchGoals}>Retry</Button>
+      </Card>
+    );
+  }
+
   if (goals.length === 0) {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Active Goals</h3>
         <div className="text-center py-8 text-gray-500">
           <p>No active goals</p>
-          <Button className="mt-4" variant="outline">
-            Create Goal
-          </Button>
+          <Link href="/goals" className="mt-4 inline-block">
+            <Button variant="outline">Create Goal</Button>
+          </Link>
         </div>
       </Card>
     );
@@ -95,42 +109,47 @@ export function TodayGoals({ date }: TodayGoalsProps) {
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Active Goals</h3>
-        <Button variant="ghost" size="sm">
-          View All
-        </Button>
+        <Link href="/goals">
+          <Button variant="ghost" size="sm">View All</Button>
+        </Link>
       </div>
 
       <div className="space-y-4">
-        {goals.map(goal => (
-          <div key={goal.id} className="border rounded-lg p-4">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex-1">
-                <h4 className="font-medium">{goal.title}</h4>
-                <p className="text-sm text-gray-600">
-                  {goal.currentValue} / {goal.targetValue} {goal.unit}
-                </p>
+        {goals.map(goal => {
+          const pct = goal.targetValue > 0
+            ? Math.min(100, (Number(goal.currentValue) / Number(goal.targetValue)) * 100)
+            : 0;
+          const remaining = daysRemaining(goal.endDate);
+          const isDaily = goal.type === 'DAILY';
+          return (
+            <div key={goal.id} className="border rounded-lg p-4">
+              <div className="flex items-start justify-between mb-2 gap-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium truncate">{goal.title}</h4>
+                  <p className="text-sm text-gray-600">
+                    {isDaily
+                      ? (Number(goal.currentValue) >= 1 ? 'Done today' : 'Not done today')
+                      : `${goal.currentValue} / ${goal.targetValue} ${goal.unit ?? ''}`}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(goal.priority)}`}>
+                    {goal.priority}
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className={`text-xs px-2 py-1 rounded-full ${getPriorityColor(goal.priority)}`}>
-                  {goal.priority}
+
+              <Progress value={pct} className="h-2 mb-2" />
+
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">
+                  {isDaily ? 'Repeats daily' : `${remaining} days left`}
                 </span>
+                <span className="text-gray-600 font-medium">{Math.round(pct)}%</span>
               </div>
             </div>
-
-            <Progress value={goal.progressPercentage} className="h-2 mb-2" />
-
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">
-                {goal.daysRemaining} days left
-              </span>
-              {goal.requiredTodayProgress > 0 && (
-                <span className="text-blue-600 font-medium">
-                  +{goal.requiredTodayProgress.toFixed(1)} needed today
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Card>
   );

@@ -24,6 +24,15 @@ export async function upsertReflection(
   input: ReflectionInput
 ): Promise<DailyReflection> {
   const data = reflectionSchema.parse(input);
+  const gratitude = Array.isArray(data.gratitude)
+    ? JSON.stringify(data.gratitude)
+    : data.gratitude;
+  const tomorrowPriorities =
+    data.tomorrowPriorities !== undefined
+      ? Array.isArray(data.tomorrowPriorities)
+        ? JSON.stringify(data.tomorrowPriorities)
+        : data.tomorrowPriorities
+      : undefined;
   return reflectionRepository.upsertReflection(userId, data.date, {
     energy: data.energy,
     mood: data.mood,
@@ -33,13 +42,10 @@ export async function upsertReflection(
     biggestWin: data.biggestWin,
     biggestDifficulty: data.biggestDifficulty,
     lessonsLearned: data.lessonsLearned,
-    gratitude: data.gratitude,
+    gratitude,
     improvements: data.improvements,
     tomorrowFocus: data.tomorrowFocus,
-    tomorrowPriorities:
-      data.tomorrowPriorities !== undefined
-        ? JSON.stringify(data.tomorrowPriorities)
-        : undefined,
+    tomorrowPriorities,
   });
 }
 

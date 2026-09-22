@@ -30,20 +30,26 @@ export async function GET(_request: NextRequest) {
       }
     }
 
-    const data = Array.from(byId.values()).map((challenge) => ({
-      id: challenge.id,
-      title: challenge.title,
-      description: challenge.description,
-      startDate: challenge.startDate,
-      endDate: challenge.endDate,
-      isPublic: challenge.isPublic,
-      maxMembers: challenge.maxMembers,
-      rules: challenge.rules,
-      rewards: challenge.rewards,
-      creator: challenge.creator,
-      memberCount: challenge._count?.members ?? 0,
-      isJoined: joinedIds.has(challenge.id),
-    }));
+    const data = Array.from(byId.values()).map((challenge) => {
+      const withMeta = challenge as typeof challenge & {
+        creator?: { id: string; name: string | null; displayName: string | null; avatarUrl: string | null };
+        _count?: { members: number };
+      };
+      return {
+        id: challenge.id,
+        title: challenge.title,
+        description: challenge.description,
+        startDate: challenge.startDate,
+        endDate: challenge.endDate,
+        isPublic: challenge.isPublic,
+        maxMembers: challenge.maxMembers,
+        rules: challenge.rules,
+        rewards: challenge.rewards,
+        creator: withMeta.creator,
+        memberCount: withMeta._count?.members ?? 0,
+        isJoined: joinedIds.has(challenge.id),
+      };
+    });
 
     return NextResponse.json({
       success: true,

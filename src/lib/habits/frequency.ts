@@ -3,6 +3,33 @@
  * Calculate habit frequency patterns and metadata
  */
 
+export interface FrequencyConfig {
+  daysOfWeek?: number[];
+  exactDates?: string[];
+  [key: string]: unknown;
+}
+
+export function parseFrequencyConfig(configStr?: string | null): FrequencyConfig | null {
+  if (!configStr) return null;
+  try {
+    if (typeof configStr === 'object') return configStr as FrequencyConfig;
+    const parsed = JSON.parse(configStr);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as FrequencyConfig;
+    }
+  } catch {
+    // fall through to the legacy comma-separated / plain-number format
+  }
+  if (configStr.includes(',') || /^\d+$/.test(configStr.trim())) {
+    const days = configStr
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n));
+    return { daysOfWeek: days };
+  }
+  return null;
+}
+
 export function getFrequencyLabel(frequencyType: string, frequencyValue?: string | null): string {
   switch (frequencyType) {
     case 'DAILY':

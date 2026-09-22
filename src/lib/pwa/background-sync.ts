@@ -25,6 +25,16 @@ export function isBackgroundSyncSupported(): boolean {
   );
 }
 
+type SyncManagerShim = {
+  register: (tag: string) => Promise<void>;
+  getTags: () => Promise<string[]>;
+  unregister: (tag: string) => Promise<void>;
+};
+
+function getSync(registration: ServiceWorkerRegistration): SyncManagerShim | undefined {
+  return (registration as ServiceWorkerRegistration & { sync?: SyncManagerShim }).sync;
+}
+
 /**
  * Register a one-off background sync tag. Resolves `false` when unsupported.
  * @example
@@ -33,9 +43,10 @@ export function isBackgroundSyncSupported(): boolean {
 export async function registerSync(tag: string): Promise<boolean> {
   if (!isBackgroundSyncSupported()) return false;
   const registration = await getRegistration();
-  if (!registration || !registration.sync) return false;
+  const sync = registration ? getSync(registration) : undefined;
+  if (!registration || !sync) return false;
   try {
-    await registration.sync.register(tag);
+    await sync.register(tag);
     return true;
   } catch {
     return false;
@@ -48,9 +59,10 @@ export async function registerSync(tag: string): Promise<boolean> {
 export async function getPendingTags(): Promise<string[]> {
   if (!isBackgroundSyncSupported()) return [];
   const registration = await getRegistration();
-  if (!registration || !registration.sync) return [];
+  const sync = registration ? getSync(registration) : undefined;
+  if (!registration || !sync) return [];
   try {
-    const tags = await registration.sync.getTags();
+    const tags = await sync.getTags();
     return [...tags];
   } catch {
     return [];
@@ -71,9 +83,10 @@ export async function hasPendingSync(tag: string): Promise<boolean> {
 export async function cancelSync(tag: string): Promise<boolean> {
   if (!isBackgroundSyncSupported()) return false;
   const registration = await getRegistration();
-  if (!registration?.sync) return false;
+  const sync = registration ? getSync(registration) : undefined;
+  if (!registration || !sync) return false;
   try {
-    await registration.sync.unregister(tag);
+    await sync.unregister(tag);
     return true;
   } catch {
     return false;

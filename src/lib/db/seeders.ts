@@ -251,6 +251,11 @@ export async function seedDefaultQuotes(
   quotes: readonly SeedQuoteInput[] = DEFAULT_PUBLIC_QUOTES
 ) {
   const created = [];
+  const systemUser = await prisma.user.upsert({
+    where: { email: 'system@routineos.com' },
+    update: {},
+    create: { email: 'system@routineos.com', name: 'System' },
+  });
   for (const quote of quotes) {
     const existing = await prisma.quote.findFirst({
       where: { text: quote.text, isPublic: true },
@@ -261,7 +266,12 @@ export async function seedDefaultQuotes(
     }
     created.push(
       await prisma.quote.create({
-        data: { text: quote.text, author: quote.author, isPublic: true },
+        data: {
+          text: quote.text,
+          author: quote.author,
+          isPublic: true,
+          user: { connect: { id: systemUser.id } },
+        },
       })
     );
   }

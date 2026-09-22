@@ -73,7 +73,7 @@ export function ContributionHeatmap() {
   for (let i = 0; i < 365; i++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = date.toISOString().slice(0, 10);
 
     const dayData = data.find(d => d.date === dateStr) || {
       date: dateStr,
@@ -139,3 +139,5 @@ function getLevelColor(level: 0 | 1 | 2 | 3 | 4): string {
   };
   return colors[level];
 }
+
+export default ContributionHeatmap;

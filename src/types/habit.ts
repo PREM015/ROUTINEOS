@@ -11,6 +11,19 @@ import type {
   Tag,
 } from '@prisma/client';
 
+export type {
+  Habit,
+  HabitLog,
+  HabitOverride,
+  HabitTier,
+  HabitStatus,
+  HabitLogStatus,
+  HabitFrequencyType,
+  HabitOverrideType,
+  Category,
+  Tag,
+} from '@prisma/client';
+
 /**
  * Habit Management Types
  * Complete type system for habit tracking and management

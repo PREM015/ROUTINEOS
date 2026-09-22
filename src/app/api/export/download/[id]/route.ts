@@ -84,7 +84,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       );
     }
 
-    return new NextResponse(bytes, {
+    return new NextResponse(new Uint8Array(bytes), {
       status: 200,
       headers: {
         'Content-Type': contentTypeFor(exportRow.format),

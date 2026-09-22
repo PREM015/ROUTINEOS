@@ -12,8 +12,8 @@ export interface TimeRange {
  * Check if block is overnight (crosses midnight)
  */
 export function isOvernightBlock(startTime: string, endTime: string): boolean {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
+  const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
+  const [endHour = 0, endMin = 0] = endTime.split(':').map(Number);
   
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
@@ -25,8 +25,8 @@ export function isOvernightBlock(startTime: string, endTime: string): boolean {
  * Calculate block duration in minutes
  */
 export function calculateBlockDuration(startTime: string, endTime: string): number {
-  const [startHour, startMin] = startTime.split(':').map(Number);
-  const [endHour, endMin] = endTime.split(':').map(Number);
+  const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
+  const [endHour = 0, endMin = 0] = endTime.split(':').map(Number);
   
   let startMinutes = startHour * 60 + startMin;
   let endMinutes = endHour * 60 + endMin;
@@ -66,10 +66,10 @@ export function isTimeOverlap(
   start2: string,
   end2: string
 ): boolean {
-  const [start1Hour, start1Min] = start1.split(':').map(Number);
-  const [end1Hour, end1Min] = end1.split(':').map(Number);
-  const [start2Hour, start2Min] = start2.split(':').map(Number);
-  const [end2Hour, end2Min] = end2.split(':').map(Number);
+  const [start1Hour = 0, start1Min = 0] = start1.split(':').map(Number);
+  const [end1Hour = 0, end1Min = 0] = end1.split(':').map(Number);
+  const [start2Hour = 0, start2Min = 0] = start2.split(':').map(Number);
+  const [end2Hour = 0, end2Min = 0] = end2.split(':').map(Number);
   
   let start1Minutes = start1Hour * 60 + start1Min;
   let end1Minutes = end1Hour * 60 + end1Min;
@@ -98,12 +98,12 @@ export function getCurrentBlock(
   blocks: Array<{ startTime: string; endTime: string; id: string }>,
   currentTime: string = new Date().toTimeString().slice(0, 5)
 ): typeof blocks[number] | null {
-  const [currentHour, currentMin] = currentTime.split(':').map(Number);
+  const [currentHour = 0, currentMin = 0] = currentTime.split(':').map(Number);
   const currentMinutes = currentHour * 60 + currentMin;
   
   for (const block of blocks) {
-    const [startHour, startMin] = block.startTime.split(':').map(Number);
-    const [endHour, endMin] = block.endTime.split(':').map(Number);
+    const [startHour = 0, startMin = 0] = block.startTime.split(':').map(Number);
+    const [endHour = 0, endMin = 0] = block.endTime.split(':').map(Number);
     
     let startMinutes = startHour * 60 + startMin;
     let endMinutes = endHour * 60 + endMin;
@@ -136,18 +136,18 @@ export function getNextBlock(
   blocks: Array<{ startTime: string; endTime: string; id: string }>,
   currentTime: string = new Date().toTimeString().slice(0, 5)
 ): typeof blocks[number] | null {
-  const [currentHour, currentMin] = currentTime.split(':').map(Number);
+  const [currentHour = 0, currentMin = 0] = currentTime.split(':').map(Number);
   const currentMinutes = currentHour * 60 + currentMin;
   
   // Sort blocks by start time
   const sortedBlocks = [...blocks].sort((a, b) => {
-    const [aHour, aMin] = a.startTime.split(':').map(Number);
-    const [bHour, bMin] = b.startTime.split(':').map(Number);
+    const [aHour = 0, aMin = 0] = a.startTime.split(':').map(Number);
+    const [bHour = 0, bMin = 0] = b.startTime.split(':').map(Number);
     return aHour * 60 + aMin - (bHour * 60 + bMin);
   });
   
   for (const block of sortedBlocks) {
-    const [startHour, startMin] = block.startTime.split(':').map(Number);
+    const [startHour = 0, startMin = 0] = block.startTime.split(':').map(Number);
     const startMinutes = startHour * 60 + startMin;
     
     if (startMinutes > currentMinutes) {
@@ -166,8 +166,8 @@ export function minutesUntilBlock(
   blockStartTime: string,
   currentTime: string = new Date().toTimeString().slice(0, 5)
 ): number {
-  const [currentHour, currentMin] = currentTime.split(':').map(Number);
-  const [blockHour, blockMin] = blockStartTime.split(':').map(Number);
+  const [currentHour = 0, currentMin = 0] = currentTime.split(':').map(Number);
+  const [blockHour = 0, blockMin = 0] = blockStartTime.split(':').map(Number);
   
   const currentMinutes = currentHour * 60 + currentMin;
   const blockMinutes = blockHour * 60 + blockMin;
@@ -192,8 +192,8 @@ export function calculateBlockProgress(
 ): { percentage: number; minutesElapsed: number; minutesRemaining: number } {
   const duration = calculateBlockDuration(startTime, endTime);
   
-  const [currentHour, currentMin] = currentTime.split(':').map(Number);
-  const [startHour, startMin] = startTime.split(':').map(Number);
+  const [currentHour = 0, currentMin = 0] = currentTime.split(':').map(Number);
+  const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
   
   let currentMinutes = currentHour * 60 + currentMin;
   let startMinutes = startHour * 60 + startMin;

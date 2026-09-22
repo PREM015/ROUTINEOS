@@ -8,9 +8,10 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -20,7 +21,7 @@ export async function POST(
     const { reason, resumeDate } = body;
 
     const habitService = new HabitService();
-    await habitService.pauseHabit(session.user.id, params.id, reason, resumeDate);
+    await habitService.pauseHabit(session.user.id, id, reason, resumeDate);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -13,7 +13,7 @@ import { HeartPulse, Save } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import { apiRequest } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
-import { SlimSmile, Meh, Frown } from 'lucide-react';
+import { Smile, Meh, Frown } from 'lucide-react';
 
 export interface MoodTrackerProps {
   onLogged?: () => void;
@@ -87,8 +87,8 @@ export default function MoodTracker({ onLogged, className }: MoodTrackerProps) {
     { value: 1, icon: Frown },
     { value: 2, icon: Frown },
     { value: 3, icon: Meh },
-    { value: 4, icon: SlimSmile },
-    { value: 5, icon: SlimSmile },
+    { value: 4, icon: Smile },
+    { value: 5, icon: Smile },
   ];
 
   return (

@@ -1,12 +1,10 @@
-import React from 'react';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
 import { UserTable } from '@/components/admin/UserTable';
 
 export default async function AdminUsersPage() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') redirect('/dashboard');
+  const session = await auth();
+  if ((session?.user as any)?.role !== 'ADMIN') redirect('/dashboard');
 
   return (
     <div className="p-8">

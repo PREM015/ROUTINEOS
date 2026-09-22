@@ -16,14 +16,6 @@ export interface SessionCompletion {
   truncated: boolean;
 }
 
-const VALID_STATES: readonly FocusTimerState[] = [
-  'IDLE',
-  'RUNNING',
-  'PAUSED',
-  'COMPLETED',
-  'CANCELLED',
-];
-
 /**
  * Coerce a loosely-typed value into a `Date` or `null`. Accepts `Date`
  * instances, numeric timestamps, and ISO-8601 strings. Returns `null` for

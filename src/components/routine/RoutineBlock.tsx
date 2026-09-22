@@ -3,7 +3,7 @@
 import { RoutineBlock } from "@/types/routine";
 import { calculateBlockDuration, formatDuration } from "@/lib/routine/duration";
 import RoutineCompletionToggle from "./RoutineCompletionToggle";
-import { Clock, Briefcase, Coffee, BookOpen, Activity, Repeat, Map } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface RoutineBlockCardProps {
   block: RoutineBlock;
@@ -13,18 +13,11 @@ interface RoutineBlockCardProps {
 }
 
 export default function RoutineBlockCard({ block, isCompleted, isCurrent, onToggle }: RoutineBlockCardProps) {
-  const duration = formatDuration(calculateBlockDuration(block));
+  const duration = formatDuration(calculateBlockDuration(block.startTime, block.endTime));
 
   const getIcon = () => {
-    switch (block.type) {
-      case 'WORK': return <Briefcase size={18} />;
-      case 'REST': return <Coffee size={18} />;
-      case 'LEARNING': return <BookOpen size={18} />;
-      case 'EXERCISE': return <Activity size={18} />;
-      case 'ROUTINE': return <Repeat size={18} />;
-      case 'FLEX': return <Map size={18} />;
-      default: return <Clock size={18} />;
-    }
+    if (block.icon) return <span className="text-base leading-none">{block.icon}</span>;
+    return <Clock size={18} />;
   };
 
   const getColorClass = () => {
@@ -51,12 +44,6 @@ export default function RoutineBlockCard({ block, isCompleted, isCurrent, onTogg
               </span>
               <span>•</span>
               <span>{duration}</span>
-              {block.isFlex && (
-                <>
-                  <span>•</span>
-                  <span className="text-purple-500 font-medium bg-purple-50 dark:bg-purple-900/20 px-2 rounded-full text-xs">FLEX</span>
-                </>
-              )}
             </div>
             {block.description && (
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{block.description}</p>

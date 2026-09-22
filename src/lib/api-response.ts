@@ -23,6 +23,10 @@ export function successResponse<T>(data: T, meta?: APIResponse['meta']): APIResp
   };
 }
 
+export function apiSuccess<T>(data: T, meta?: APIResponse['meta']): APIResponse<T> {
+  return successResponse(data, meta);
+}
+
 export function errorResponse(error: string, details?: any): APIResponse {
   return {
     success: false,

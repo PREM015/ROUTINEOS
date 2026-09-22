@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
 
     const templateRepository = new TemplateRepository();
     const templates = await templateRepository.findAll(session.user.id, {
-      type: validated.data.type,
       category: validated.data.category,
       search: validated.data.search,
       limit: validated.data.limit,

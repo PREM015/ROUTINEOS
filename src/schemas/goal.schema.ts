@@ -21,10 +21,10 @@ export const createGoalSchema = z.object({
   unit: z.string().optional(),
   startDate: z.coerce.date(),
   endDate: z.coerce.date(),
-  projectId: z.string().uuid().optional(),
-  parentGoalId: z.string().uuid().optional(),
+  projectId: z.string().cuid().optional(),
+  parentGoalId: z.string().cuid().optional(),
   isPublic: z.boolean().optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
+  tagIds: z.array(z.string().cuid()).optional(),
   milestones: z
     .array(
       z.object({

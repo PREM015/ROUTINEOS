@@ -1,11 +1,12 @@
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { notificationService } from '@/server/services/notification.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/notifications
- * Get user's recent notifications
+ * Get the user's recent notifications plus the unread badge count.
  */
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -14,21 +15,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get('limit') || '20', 10) || 20)
+    );
 
-    const notifications = await prisma.notificationLog.findMany({
-      where: { userId: session.user.id },
-      orderBy: { scheduledFor: 'desc' },
-      take: limit,
-    });
-
-    const unreadCount = await prisma.notificationLog.count({
-      where: {
-        userId: session.user.id,
-        readAt: null,
-        status: 'SENT',
-      },
-    });
+    const [notifications, unreadCount] = await Promise.all([
+      notificationService.getNotifications(session.user.id, { limit }),
+      notificationService.getUnreadCount(session.user.id),
+    ]);
 
     return NextResponse.json({
       success: true,

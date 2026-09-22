@@ -1,7 +1,6 @@
 'use client';
-import React from 'react';
 import { SleepLog } from '@/types/sleep';
-import { formatSleepDuration } from '@/lib/sleep/calculate-duration';
+import { formatSleepDuration, calculateSleepScore, calculateSleepDuration } from '@/lib/sleep/calculate-duration';
 import { getSleepScoreBand } from '@/lib/sleep/sleep-score';
 
 interface SleepCardProps {
@@ -11,7 +10,7 @@ interface SleepCardProps {
   onEdit: () => void;
 }
 
-export function SleepCard({ sleepLog, targetBedtime, targetWakeTime, onEdit }: SleepCardProps) {
+export function SleepCard({ sleepLog, onEdit }: SleepCardProps) {
   if (!sleepLog) {
     return (
       <div className="p-4 border rounded-lg bg-white shadow flex flex-col items-center justify-center space-y-4">
@@ -29,7 +28,18 @@ export function SleepCard({ sleepLog, targetBedtime, targetWakeTime, onEdit }: S
     );
   }
 
-  const band = sleepLog.score !== undefined ? getSleepScoreBand(sleepLog.score) : null;
+  const plannedDuration = sleepLog.targetBedtime && sleepLog.targetWakeTime
+    ? calculateSleepDuration(sleepLog.targetBedtime, sleepLog.targetWakeTime)
+    : null;
+  const score = sleepLog.actualDurationMinutes !== null && plannedDuration !== null
+    ? calculateSleepScore(sleepLog.actualDurationMinutes, plannedDuration, sleepLog.quality, sleepLog.feltRested)
+    : null;
+  const band = score !== null ? getSleepScoreBand(score) : null;
+  const durationLabel = sleepLog.actualDurationMinutes !== null
+    ? formatSleepDuration(sleepLog.actualDurationMinutes)
+    : '—';
+  const bedtimeLabel = sleepLog.actualBedtime ?? '—';
+  const wakeTimeLabel = sleepLog.actualWakeTime ?? '—';
 
   return (
     <div className="p-4 border rounded-lg bg-white shadow">
@@ -39,7 +49,7 @@ export function SleepCard({ sleepLog, targetBedtime, targetWakeTime, onEdit }: S
         </h3>
         {band && (
           <span className={`px-2 py-1 rounded text-sm font-medium ${band.color}`}>
-            {band.label} {sleepLog.score}
+            {band.label} {score}
           </span>
         )}
       </div>
@@ -48,16 +58,16 @@ export function SleepCard({ sleepLog, targetBedtime, targetWakeTime, onEdit }: S
         <div>
           <p className="text-sm text-gray-500">Duration</p>
           <p className="text-3xl font-bold text-gray-900">
-            {formatSleepDuration(sleepLog.totalMinutes)}
+            {durationLabel}
           </p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Bedtime</p>
-          <p className="font-medium">{sleepLog.bedtime}</p>
+          <p className="font-medium">{bedtimeLabel}</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Wake Time</p>
-          <p className="font-medium">{sleepLog.wakeTime}</p>
+          <p className="font-medium">{wakeTimeLabel}</p>
         </div>
       </div>
 

@@ -3,8 +3,8 @@
  * All functions are timezone-aware. Default: Asia/Kolkata.
  */
 
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, subDays, isSameDay } from 'date-fns';
-import { toZonedTime, fromZonedTime } from 'date-fns-tz';
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, subDays } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 
 export const DEFAULT_TZ = 'Asia/Kolkata';
 
@@ -46,7 +46,7 @@ export function formatDisplayDate(dateStr: string): string {
 export function getWeekRange(
   dateStr: string,
   weekStartsOn: 0 | 1 = 1,
-  tz = DEFAULT_TZ
+  _tz = DEFAULT_TZ
 ): { start: string; end: string } {
   const d = parseISO(dateStr);
   const start = startOfWeek(d, { weekStartsOn });
@@ -94,7 +94,7 @@ export function getDaysRemaining(endDateStr: string, tz = DEFAULT_TZ): number {
  * Parse HH:mm time string and return total minutes from midnight.
  */
 export function timeToMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number);
+  const [h = 0, m = 0] = time.split(':').map(Number);
   return h * 60 + m;
 }
 

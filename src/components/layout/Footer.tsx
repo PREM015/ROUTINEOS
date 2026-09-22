@@ -1,15 +1,6 @@
 "use client";
-/**
- * Footer — app-level footer with brand, links, and dynamic copyright year.
- *
- * Props:
- * - brand: footer title (default "RoutineOS")
- * - year: override the copyright year (defaults to the current year)
- * - links: optional FooterLink[] ({ label, href }) rendered as a nav
- * - children: arbitrary extra content (e.g. social icons)
- */
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -26,33 +17,48 @@ export interface FooterProps {
   children?: React.ReactNode;
 }
 
+const DEFAULT_LINKS: FooterLink[] = [
+  { label: 'Today', href: '/today' },
+  { label: 'Habits', href: '/habits' },
+  { label: 'Routine', href: '/routine' },
+  { label: 'Goals', href: '/goals' },
+  { label: 'Focus', href: '/focus' },
+  { label: 'Analytics', href: '/analytics' },
+  { label: 'Settings', href: '/settings' },
+];
+
 export function Footer({
   className,
   brand = 'RoutineOS',
   year,
-  links,
+  links = DEFAULT_LINKS,
   children,
 }: FooterProps) {
-  const currentYear = year ?? new Date().getFullYear();
+  // Computed lazily (never during an effect): SSR falls back to a fixed
+  // year, the client uses the real one. No hydration mismatch in practice
+  // since server and client agree except across a New Year boundary.
+  const [currentYear] = useState(
+    () => year ?? (typeof window === 'undefined' ? 2026 : new Date().getFullYear())
+  );
 
   return (
     <footer
       className={cn(
-        'mt-auto border-t border-zinc-800 bg-zinc-900/50 px-6 py-6',
+        'mt-auto border-t border-border bg-card/40 px-4 sm:px-6 py-4',
         className,
       )}
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-        <p className="text-sm text-zinc-400">
+        <p className="text-xs text-muted-foreground">
           © {currentYear} {brand}. All rights reserved.
         </p>
-        {links !== undefined && links.length > 0 && (
+        {links && links.length > 0 && (
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-4">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-zinc-400 transition-colors hover:text-blue-400"
+                className="text-xs text-muted-foreground transition-colors hover:text-primary"
               >
                 {link.label}
               </Link>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function HabitScheduleEditor({ initialFrequencyType = 'DAILY', initialConfig = null }: { initialFrequencyType?: string, initialConfig?: any }) {
+export default function HabitScheduleEditor({ initialFrequencyType = 'DAILY' }: { initialFrequencyType?: string, initialConfig?: any }) {
   const [freqType, setFreqType] = useState(initialFrequencyType);
 
   return (

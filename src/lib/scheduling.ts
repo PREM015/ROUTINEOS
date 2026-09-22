@@ -3,16 +3,20 @@
  * Determines if a habit is scheduled for a given date.
  */
 
-import { parseISO, getDay, format } from 'date-fns';
+import { parseISO, getDay } from 'date-fns';
 
 export type FrequencyType =
   | 'DAILY'
   | 'WEEKDAYS'        // Mon–Fri only
   | 'WEEKENDS'        // Sat–Sun only
   | 'SPECIFIC_DAYS'   // frequencyValue: "1,3,5" (0=Sun,1=Mon,...,6=Sat)
+  | 'SPECIFIC_WEEKDAYS' // Prisma enum alias for SPECIFIC_DAYS
   | 'WEEKLY_TARGET'   // frequencyValue: "4" (4 times per week — no specific days)
   | 'MONTHLY_TARGET'  // frequencyValue: "20" (20 times per month)
-  | 'ONE_TIME';       // Only on startDate
+  | 'YEARLY_TARGET'
+  | 'RANDOM'
+  | 'ONE_TIME'        // Only on startDate
+  | 'CUSTOM';
 
 export interface HabitSchedule {
   id: string;
@@ -46,7 +50,8 @@ export function isHabitScheduledForDate(habit: HabitSchedule, dateStr: string): 
     case 'WEEKENDS':
       return dayOfWeek === 0 || dayOfWeek === 6;
 
-    case 'SPECIFIC_DAYS': {
+    case 'SPECIFIC_DAYS':
+    case 'SPECIFIC_WEEKDAYS': {
       if (!habit.frequencyValue) return false;
       const days = habit.frequencyValue.split(',').map(Number);
       return days.includes(dayOfWeek);
@@ -54,6 +59,9 @@ export function isHabitScheduledForDate(habit: HabitSchedule, dateStr: string): 
 
     case 'WEEKLY_TARGET':
     case 'MONTHLY_TARGET':
+    case 'YEARLY_TARGET':
+    case 'RANDOM':
+    case 'CUSTOM':
       // These are always considered "available" every day.
       // Scoring should check if the weekly/monthly count is already met.
       return true;
@@ -74,13 +82,17 @@ export function getFrequencyLabel(habit: HabitSchedule): string {
     case 'DAILY': return 'Daily';
     case 'WEEKDAYS': return 'Weekdays';
     case 'WEEKENDS': return 'Weekends';
-    case 'SPECIFIC_DAYS': {
+    case 'SPECIFIC_DAYS':
+    case 'SPECIFIC_WEEKDAYS': {
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const days = (habit.frequencyValue || '').split(',').map(Number);
       return days.map(d => dayNames[d]).join(', ');
     }
     case 'WEEKLY_TARGET': return `${habit.frequencyValue}×/week`;
     case 'MONTHLY_TARGET': return `${habit.frequencyValue}×/month`;
+    case 'YEARLY_TARGET': return `${habit.frequencyValue}×/year`;
+    case 'RANDOM': return 'Random';
+    case 'CUSTOM': return 'Custom';
     case 'ONE_TIME': return 'One time';
     default: return 'Custom';
   }

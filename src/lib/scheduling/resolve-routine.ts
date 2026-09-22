@@ -11,7 +11,7 @@ function assertDate(date: string): void {
 export function resolveNaturalDayType(date: string, _timezone: string): DayType {
   assertDate(date);
   const weekday = new Date(`${date}T12:00:00.000Z`).getUTCDay();
-  return weekday === 0 || weekday === 6 ? 'WEEKEND' : 'WEEKDAY';
+  return weekday === 0 || weekday === 6 ? 'WEEKEND' : 'WORKDAY';
 }
 
 /**

@@ -51,7 +51,7 @@ export const templateQuerySchema = z.object({
 });
 
 export const templateUseSchema = z.object({
-  templateId: z.string().uuid(),
+  templateId: z.string().cuid(),
 });
 
 export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;

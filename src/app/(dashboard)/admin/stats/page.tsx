@@ -1,12 +1,10 @@
-import React from 'react';
-import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
 import { SystemStats } from '@/components/admin/SystemStats';
 
 export default async function AdminStatsPage() {
-  const session = await getServerSession(authOptions);
-  if (session?.user?.role !== 'ADMIN') redirect('/dashboard');
+  const session = await auth();
+  if ((session?.user as any)?.role !== 'ADMIN') redirect('/dashboard');
 
   return (
     <div className="p-8">

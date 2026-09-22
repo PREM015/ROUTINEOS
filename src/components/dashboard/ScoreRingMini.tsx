@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { motion } from 'framer-motion';
 
 interface ScoreRingMiniProps {
@@ -21,13 +20,13 @@ export default function ScoreRingMini({ score, color, label, size = 64 }: ScoreR
     <div className="flex flex-col items-center">
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
-          <circle 
-            cx={center} 
-            cy={center} 
-            r={radius} 
-            fill="none" 
-            strokeWidth={strokeWidth} 
-            className="stroke-zinc-800" 
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            strokeWidth={strokeWidth}
+            className="stroke-muted"
           />
           <motion.circle
             cx={center}
@@ -44,12 +43,12 @@ export default function ScoreRingMini({ score, color, label, size = 64 }: ScoreR
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-zinc-100 font-bold" style={{ fontSize: size * 0.25 }}>
+          <span className="text-foreground font-bold" style={{ fontSize: size * 0.25 }}>
             {score}
           </span>
         </div>
       </div>
-      <span className="text-zinc-400 text-xs font-medium mt-2">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium mt-2">{label}</span>
     </div>
   );
 }

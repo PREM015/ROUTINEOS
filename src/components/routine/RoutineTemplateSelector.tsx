@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 export interface RoutineTemplateSelectorProps { templates: Array<{ id: string; name: string; dayType: string }>; selectedId: string | null; onSelect: (id: string) => void; }
 export default function RoutineTemplateSelector({ templates, selectedId, onSelect }: RoutineTemplateSelectorProps) {
   return (

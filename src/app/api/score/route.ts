@@ -1,26 +1,23 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { calculateDailyScore } from '@/lib/scoring/calculate-daily-score';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const { searchParams } = new URL(_req.url);
+    const date = searchParams.get('date') || new Date().toISOString().slice(0, 10);
 
-    let score = await db.dailyScore.findUnique({
+    const existing = await db.dailyScore.findUnique({
       where: { userId_date: { userId: session.user.id, date } }
     });
 
-    if (!score) {
-      score = await calculateDailyScore(session.user.id, date, db);
-    }
+    const score = existing ?? (await calculateDailyScore(session.user.id, date));
 
     return NextResponse.json(score);
   } catch (error) {
@@ -29,16 +26,16 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Force recalculate today's score
-    const date = new Date().toISOString().split('T')[0];
-    const score = await calculateDailyScore(session.user.id, date, db);
+    const date = new Date().toISOString().slice(0, 10);
+    const score = await calculateDailyScore(session.user.id, date);
 
     return NextResponse.json(score);
   } catch (error) {

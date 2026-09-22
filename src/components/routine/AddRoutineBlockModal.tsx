@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Modal, Input, Select, Button } from '@/components/ui';
-import { getTodayString } from '@/lib/dates';
 
 interface AddRoutineBlockModalProps {
   open: boolean;
@@ -31,52 +30,68 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
   const [endTime, setEndTime] = useState('07:00');
   const [category, setCategory] = useState('Personal');
   const [dayType, setDayType] = useState(defaultDayType);
-  const [trackCompletion, setTrackCompletion] = useState(false);
+  const [trackCompletion, setTrackCompletion] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validate = () => {
     const e: Record<string, string> = {};
+    const HH_MM = /^([01]\d|2[0-3]):([0-5]\d)$/;
     if (!title.trim()) e.title = 'Title is required';
-    if (!startTime) e.startTime = 'Start time is required';
-    if (!endTime) e.endTime = 'End time is required';
-    if (startTime >= endTime) e.endTime = 'End time must be after start time';
+    if (!startTime || !HH_MM.test(startTime)) e.startTime = 'Start time must be HH:mm';
+    if (!endTime || !HH_MM.test(endTime)) e.endTime = 'End time must be HH:mm';
 
-    // Conflict check
+    // Overlap is a warning, not a blocker. Overnight blocks (end <= start)
+    // are allowed and flagged by the server.
     const sameDayBlocks = routineBlocks.filter(b => b.dayType === dayType);
     const hasConflict = sameDayBlocks.some(b => {
       return startTime < b.endTime && endTime > b.startTime;
     });
-    if (hasConflict) e.conflict = 'This block overlaps with an existing block';
+    if (hasConflict) e.conflict = 'This block overlaps with an existing block — it will be flagged.';
 
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return !e.title && !e.startTime && !e.endTime;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     if (!validate()) return;
 
-    addRoutineBlock({
-      dayType,
-      startTime,
-      endTime,
-      title: title.trim(),
-      category,
-      sortOrder: routineBlocks.length,
-      trackCompletion,
-    });
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const saved = await addRoutineBlock({
+        dayType,
+        startTime,
+        endTime,
+        title: title.trim(),
+        category,
+        sortOrder: routineBlocks.length,
+        trackCompletion,
+      });
+      if (saved.overlapWarning) {
+        setErrors(prev => ({ ...prev, conflict: 'Saved with an overlap warning.' }));
+      }
 
-    // Reset
-    setTitle('');
-    setStartTime('06:00');
-    setEndTime('07:00');
-    setCategory('Personal');
-    setErrors({});
-    onClose();
+      // Reset
+      setTitle('');
+      setStartTime('06:00');
+      setEndTime('07:00');
+      setCategory('Personal');
+      setErrors({});
+      setSubmitError(null);
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to create block');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Routine Block">
+    <Modal isOpen={open} onClose={onClose} title="Add Routine Block">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Title"
@@ -134,9 +149,17 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
           </p>
         )}
 
+        {submitError && (
+          <p role="alert" className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            {submitError}
+          </p>
+        )}
+
         <div className="flex gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button type="submit" variant="primary" className="flex-1">Add Block</Button>
+          <Button type="button" variant="outline" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
+          <Button type="submit" variant="default" disabled={submitting} className="flex-1">
+            {submitting ? 'Adding...' : 'Add Block'}
+          </Button>
         </div>
       </form>
     </Modal>

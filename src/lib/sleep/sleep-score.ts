@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
     const sleepRepository = new SleepRepository();
     const sleepLog = await sleepRepository.upsertLog(session.user.id, date, {
       user: { connect: { id: session.user.id } },
-      date,
       ...logData,
       actualDurationMinutes,
       deficitMinutes,
@@ -119,4 +118,16 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export interface SleepScoreBand {
+  color: string;
+  label: string;
+}
+
+export function getSleepScoreBand(score: number): SleepScoreBand {
+  if (score >= 85) return { color: 'bg-green-100 text-green-800', label: 'Excellent' };
+  if (score >= 70) return { color: 'bg-blue-100 text-blue-800', label: 'Good' };
+  if (score >= 50) return { color: 'bg-yellow-100 text-yellow-800', label: 'Fair' };
+  return { color: 'bg-red-100 text-red-800', label: 'Poor' };
 }

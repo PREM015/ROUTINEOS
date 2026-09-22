@@ -114,6 +114,8 @@ export function ColorPicker({
   );
 }
 
+export default ColorPicker;
+
 function expandShortHex(value: string): string {
   return (
     '#' +

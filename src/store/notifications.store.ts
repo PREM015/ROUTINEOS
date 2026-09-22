@@ -68,7 +68,7 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
    * against the server once a mark-all route exists.
    */
   markAllRead: () => {
-    const now = new Date().toISOString();
+    const now = new Date();
     set((state) => ({
       notifications: state.notifications.map((notification) =>
         notification.readAt ? notification : { ...notification, readAt: now }
@@ -87,7 +87,7 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
     set((state) => ({
       notifications: state.notifications.map((notification) =>
         notification.id === id
-          ? { ...notification, readAt: notification.readAt ?? new Date().toISOString() }
+          ? { ...notification, readAt: notification.readAt ?? new Date() }
           : notification
       ),
       unreadCount: get().unreadCount,

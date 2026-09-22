@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       const scoreRepository = new ScoreRepository();
       await scoreRepository.upsertScore(session.user.id, date, {
         isRestDay: true,
-        restDayReason: reason,
+        restDayReason: reason ?? null,
         totalScore: null,
         coreScore: null,
         growthScore: null,

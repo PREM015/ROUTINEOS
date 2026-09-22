@@ -40,8 +40,8 @@ export default function HabitNotes({ habitId }: HabitNotesProps) {
           json.data?.logs ?? [];
 
         const noteEntries: NoteEntry[] = logs
-          .filter((l) => l.note)
-          .map((l) => ({ date: l.date, note: l.note! }))
+          .filter((l): l is { date: string; note: string; status: string } => l.note !== null)
+          .map((l) => ({ date: l.date, note: l.note }))
           .sort((a, b) => b.date.localeCompare(a.date))
           .slice(0, 20); // most recent 20 notes
 
@@ -116,7 +116,7 @@ export default function HabitNotes({ habitId }: HabitNotesProps) {
           onChange={(e) => setTodayNote(e.target.value)}
           rows={3}
           placeholder="What do you want to remember about today's session?"
-          className="w-full rounded-xl bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none placeholder:text-zinc-600"
+          className="w-full rounded-xl bg-muted border border-border px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none placeholder:text-muted-foreground"
         />
 
         {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
@@ -152,7 +152,7 @@ export default function HabitNotes({ habitId }: HabitNotesProps) {
         ) : (
           <ul className="space-y-3">
             {notes.map((entry) => (
-              <li key={entry.date} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+              <li key={entry.date} className="rounded-xl border border-border bg-card p-4">
                 <p className="text-xs text-zinc-500 mb-1.5">
                   {format(new Date(entry.date + 'T12:00:00'), 'EEEE, MMM d, yyyy')}
                 </p>

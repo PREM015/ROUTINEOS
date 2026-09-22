@@ -4,6 +4,23 @@
  */
 
 // ============================================================================
+// Reflection Types
+// ============================================================================
+
+import type { DailyReflection as PrismaDailyReflection } from '@prisma/client';
+
+export type DailyReflection = PrismaDailyReflection;
+
+export interface ReflectionFormData {
+  energyLevel?: number;
+  moodLevel?: number;
+  biggestWin?: string;
+  biggestDifficulty?: string;
+  lessonsLearned?: string;
+  gratitude?: string;
+}
+
+// ============================================================================
 // Period Types
 // ============================================================================
 

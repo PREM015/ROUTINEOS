@@ -2,35 +2,28 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 
 /**
  * Logout confirmation page.
  *
- * Client component that asks the user to confirm sign-out, terminates the
- * session via the auth store (`POST /api/auth/logout`) and redirects to the
- * login page.
+ * Single NextAuth `signOut` call with `callbackUrl: '/login'` — no custom
+ * logout endpoint, no extra router navigation (the cause of the / ↔ /login
+ * loop). NextAuth performs the one redirect itself.
  */
 
 export default function LogoutPage() {
-  const { logout, init } = useAuth();
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void init();
-  }, [init]);
-
   const handleLogout = async () => {
+    if (loading) return;
     setError(null);
     setLoading(true);
     try {
-      await logout();
-      router.push('/login');
+      await signOut({ callbackUrl: '/login' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign out');
       setLoading(false);

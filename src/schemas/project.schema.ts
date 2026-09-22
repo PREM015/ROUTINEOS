@@ -12,14 +12,14 @@ export const createProjectSchema = z.object({
   description: z.string().max(5000, 'Description must be 5000 characters or less').optional(),
   status: z.enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'PERSONAL', 'ACADEMIC', 'NON_PROFIT', 'PROFESSIONAL']).optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().cuid().optional(),
   color: z.string().regex(/^#[0-9A-F]{6}$/i, 'Color must be a hex value like #FF00AA').optional(),
   icon: z.string().optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   progress: z.number().min(0, 'Progress must be between 0 and 100').max(100, 'Progress must be between 0 and 100').optional(),
   milestones: z.array(milestoneSchema).optional(),
-  tagIds: z.array(z.string().uuid()).optional(),
+  tagIds: z.array(z.string().cuid()).optional(),
 });
 
 export const updateProjectSchema = createProjectSchema.partial();
@@ -27,7 +27,7 @@ export const updateProjectSchema = createProjectSchema.partial();
 export const projectQuerySchema = z.object({
   search: z.string().optional(),
   status: z.array(z.enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARCHIVED', 'CANCELLED'])).optional(),
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.string().cuid().optional(),
   sortBy: z.enum(['name', 'createdAt', 'progress', 'priority', 'endDate']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   limit: z.number().int().min(1).max(100).optional(),

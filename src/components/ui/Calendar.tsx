@@ -33,7 +33,6 @@ const LAYOUT_CLASSNAMES: NonNullable<CalendarProps['classNames']> = {
   row: 'mt-2 flex w-full',
   cell: 'p-0 text-center text-sm',
   day: 'inline-flex h-9 w-9 items-center justify-center rounded-md font-normal text-gray-900 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:pointer-events-none',
-  footer: 'border-t border-gray-200 mt-2 pt-2 text-sm text-gray-500',
 };
 
 const DAY_MODIFIER_CLASSNAMES: NonNullable<CalendarProps['modifiersClassNames']> = {

@@ -16,7 +16,7 @@ export function MobileNav() {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t bg-background flex items-center justify-around px-2 z-50">
+    <nav aria-label="Mobile" className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background flex items-center justify-around px-2 z-50">
       {links.map(link => {
         const Icon = link.icon;
         const isActive = pathname.startsWith(link.href);
@@ -37,3 +37,5 @@ export function MobileNav() {
     </nav>
   );
 }
+
+export default MobileNav;

@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth';
 import { calculateDailyScore } from '@/lib/scoring/calculate-daily-score';
-import { ScoreRepository } from '@/server/repositories/score.repository';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 

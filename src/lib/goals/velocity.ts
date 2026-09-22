@@ -8,13 +8,14 @@ export interface GoalProgress {
   recordedAt: string;
 }
 
-export function calculateVelocity(goal: Goal, progressEntries: GoalProgress[]): number | null {
+export function calculateVelocity(_goal: Goal, progressEntries: GoalProgress[]): number | null {
   if (progressEntries.length < 2) return null;
   
   const sorted = [...progressEntries].sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime());
   
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
+  if (!first || !last) return null;
   
   const daysDiff = (new Date(last.recordedAt).getTime() - new Date(first.recordedAt).getTime()) / (1000 * 60 * 60 * 24);
   if (daysDiff === 0) return null;

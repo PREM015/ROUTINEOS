@@ -8,7 +8,6 @@
  * Usage:
  *   <IconPicker value={icon} onChange={setIcon} />
  */
-import * as React from 'react';
 import {
   Activity,
   Award,

@@ -1,7 +1,7 @@
 import { RoutineBlock, RoutineLog, RoutineLogStatus } from "@/types/routine";
 
 export function getBlockStatus(blockId: string, logs: RoutineLog[]): RoutineLogStatus | null {
-  const log = logs.find(l => l.blockId === blockId);
+  const log = logs.find(l => l.routineBlockId === blockId);
   return log?.status || null;
 }
 

@@ -2,7 +2,7 @@ import type { HabitTier } from '@prisma/client';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import type { ScoreBreakdown, HabitScoreContribution } from '@/types/score';
-import { SCORING_WEIGHTS, SCORE_BANDS } from '@/config/scoring';
+import { SCORING_WEIGHTS } from '@/config/scoring';
 import { getGradeFromPercentage } from '@/types/score';
 
 /**
@@ -57,7 +57,7 @@ export async function calculateDailyScore(
   let coreScore = 0;
   let coreMaxScore = 0;
 
-  for (const habit of habitsByTier.GROWTH) {
+  for (const habit of habitsByTier.GROWTH ?? []) {
     const log = logMap.get(habit.id);
     const points = habit.points || 10;
     const weight = SCORING_WEIGHTS.tiers.GROWTH;
@@ -89,7 +89,7 @@ export async function calculateDailyScore(
 
   const growthTiers: HabitTier[] = ['BONUS', 'LIFESTYLE', 'FLEXIBLE'];
   for (const tier of growthTiers) {
-    for (const habit of habitsByTier[tier]) {
+    for (const habit of habitsByTier[tier] ?? []) {
       const log = logMap.get(habit.id);
       const points = habit.points || SCORING_WEIGHTS.tiers[tier] * 10;
       const weight = SCORING_WEIGHTS.tiers[tier];
@@ -122,7 +122,7 @@ export async function calculateDailyScore(
 
   const bonusTiers: HabitTier[] = ['OPTIONAL', 'EXPERIMENTAL', 'SPECIAL', 'JUST_FOR_FUN'];
   for (const tier of bonusTiers) {
-    for (const habit of habitsByTier[tier]) {
+    for (const habit of habitsByTier[tier] ?? []) {
       const log = logMap.get(habit.id);
       const points = habit.points || SCORING_WEIGHTS.tiers[tier] * 10;
       const weight = SCORING_WEIGHTS.tiers[tier];

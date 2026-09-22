@@ -14,9 +14,10 @@ const skipHabitSchema = z.object({
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,7 +37,7 @@ export async function POST(
     const habitService = new HabitService();
     await habitService.skipHabit(
       session.user.id,
-      params.id,
+      id,
       validated.data.date,
       validated.data.reason
     );

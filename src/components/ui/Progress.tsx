@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 
 export function Progress({ value, max = 100, className = '' }: { value: number; max?: number; className?: string }) {

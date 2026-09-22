@@ -1,4 +1,5 @@
-import type { Habit, HabitLog, HabitOverride, Prisma, HabitStatus, HabitTier } from '@prisma/client';
+import { HabitStatus } from '@prisma/client';
+import type { Habit, HabitLog, HabitOverride, Prisma, HabitTier } from '@prisma/client';
 import { BaseRepository } from './base.repository';
 
 /**

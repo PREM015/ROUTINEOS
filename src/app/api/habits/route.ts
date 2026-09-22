@@ -15,18 +15,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Parse query parameters
+    // Parse query parameters. Every param is optional: a plain GET with no
+    // params must validate. Convert null -> undefined so Zod never sees null.
     const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get('status');
+    const tierParam = searchParams.get('tier');
+    const categoryParam = searchParams.get('categoryId');
+    const searchParam = searchParams.get('search');
+    const sortByParam = searchParams.get('sortBy');
+    const sortOrderParam = searchParams.get('sortOrder');
+    const limitParam = searchParams.get('limit');
+    const offsetParam = searchParams.get('offset');
     const queryData = {
-      status: searchParams.get('status')?.split(','),
-      tier: searchParams.get('tier')?.split(','),
-      categoryId: searchParams.get('categoryId'),
-      search: searchParams.get('search'),
-      sortBy: searchParams.get('sortBy') || 'createdAt',
-      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 20,
-      offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
-      includeArchived: searchParams.get('includeArchived') === 'true',
+      status: statusParam ? statusParam.split(',').filter(Boolean) : undefined,
+      tier: tierParam ? tierParam.split(',').filter(Boolean) : undefined,
+      categoryId: categoryParam || undefined,
+      search: searchParam || undefined,
+      sortBy: (sortByParam || 'createdAt') as 'name' | 'createdAt' | 'streak' | 'completionRate',
+      sortOrder: (sortOrderParam || 'desc') as 'asc' | 'desc',
+      limit: limitParam ? parseInt(limitParam, 10) : 20,
+      offset: offsetParam ? parseInt(offsetParam, 10) : 0,
+      includeArchived: searchParams.get('includeArchived') === 'true' ? true : undefined,
     };
 
     // Validate query

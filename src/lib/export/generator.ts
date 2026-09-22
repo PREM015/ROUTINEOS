@@ -64,7 +64,7 @@ export async function generateFullExport(
   userId: string,
   options?: { includeArchived?: boolean; startDate?: string; endDate?: string }
 ): Promise<FullExportResult> {
-  const data = await exportUserData(userId, options);
+  const data = (await exportUserData(userId, options)) as unknown as JsonRecord;
   const exportedAt = new Date().toISOString();
 
   const bundle: ExportBundle = {
@@ -73,11 +73,16 @@ export async function generateFullExport(
     data,
   };
 
-  const json = toJSON(bundle);
+  const json = toJSON(bundle as unknown as JsonRecord);
   const dateStamp = exportedAt.split('T')[0] ?? 'export';
   const fileName = `routineos-export-${dateStamp}.json`;
 
-  return { payload: bundle, json, fileName, exportedAt };
+  return {
+    payload: bundle as unknown as JsonRecord,
+    json,
+    fileName,
+    exportedAt,
+  };
 }
 
 export interface DomainExportResult {

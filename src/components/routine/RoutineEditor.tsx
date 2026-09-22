@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 export interface RoutineEditorProps { template: { id: string; name: string; dayType: string; blocks: Array<{ id: string; name: string; startTime: string; endTime: string; icon?: string; color?: string }> }; onSave: (data: any) => void; onAddBlock: () => void; onDeleteBlock: (id: string) => void; }
 export default function RoutineEditor({ template, onSave, onAddBlock, onDeleteBlock }: RoutineEditorProps) {
   const [name, setName] = useState(template.name);

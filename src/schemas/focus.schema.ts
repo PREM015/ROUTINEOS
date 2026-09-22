@@ -15,7 +15,7 @@ const dateSchema = z.preprocess(
 
 export const optionalDateSchema = dateSchema.optional();
 
-export const createFocusSessionSchema = z.object({
+export const legacyCreateFocusSessionSchema = z.object({
   title: z
     .string()
     .min(1, 'Title is required')
@@ -33,6 +33,45 @@ export const createFocusSessionSchema = z.object({
   energyBefore: z.number().int().min(1).max(5).optional(),
   startedAt: optionalDateSchema,
 });
+
+/**
+ * Timer payload posted by the focus timer UI on complete/stop.
+ * Seconds-based (1–180 minutes) so the client never has to convert to the
+ * legacy minutes shape; the route normalizes it onto the FocusSession model.
+ */
+export const focusTimerTypeSchema = z.enum([
+  'focus',
+  'short-break',
+  'long-break',
+  'stopwatch',
+]);
+
+export const focusTimerPayloadSchema = z.object({
+  type: focusTimerTypeSchema,
+  plannedSeconds: z
+    .number()
+    .int()
+    .positive('plannedSeconds must be a positive number of seconds')
+    .max(180 * 60, 'plannedSeconds must not exceed 180 minutes'),
+  actualSeconds: z
+    .number()
+    .int()
+    .min(0, 'actualSeconds must not be negative')
+    .max(180 * 60, 'actualSeconds must not exceed 180 minutes'),
+  startedAt: optionalDateSchema,
+  endedAt: optionalDateSchema,
+  completed: z.boolean().optional(),
+});
+
+/**
+ * Accepts either the legacy form shape or the timer payload shape, so a
+ * well-formed client request can never 400. Failures still return `details`
+ * via `error.flatten()` in the route.
+ */
+export const createFocusSessionSchema = z.union([
+  legacyCreateFocusSessionSchema,
+  focusTimerPayloadSchema,
+]);
 
 export const updateFocusSessionSchema = z.object({
   title: z.string().min(1).max(200).optional(),

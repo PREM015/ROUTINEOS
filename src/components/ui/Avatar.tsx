@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function Avatar({ src, alt, initials, size = 'md' }: { src?: string | null; alt?: string; initials?: string; size?: 'sm' | 'md' | 'lg' }) {
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',

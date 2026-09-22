@@ -36,6 +36,12 @@ export class AuthenticationError extends AppError {
   }
 }
 
+export class AuthError extends AppError {
+  constructor(message: string = 'Authentication required') {
+    super(message, 'AUTH_ERROR', 401);
+  }
+}
+
 export class AuthorizationError extends AppError {
   constructor(message: string = 'Insufficient permissions') {
     super(message, 'AUTHORIZATION_ERROR', 403);

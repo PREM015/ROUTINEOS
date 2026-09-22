@@ -6,12 +6,6 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   turbopack: {},
 
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb',
-    },
-  },
-
   images: {
     remotePatterns: [
       {

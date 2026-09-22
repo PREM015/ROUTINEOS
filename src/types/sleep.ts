@@ -1,5 +1,7 @@
 import type { SleepLog } from '@prisma/client';
 
+export type { SleepLog } from '@prisma/client';
+
 /**
  * Sleep Tracking Types
  * Complete type system for sleep tracking and analysis
@@ -28,6 +30,12 @@ export interface CreateSleepLogInput {
   feltRested?: boolean;
   moodOnWaking?: number; // 1-5
   energyOnWaking?: number; // 1-5
+  notes?: string;
+}
+
+export interface SleepFormData {
+  bedtime: string;
+  wakeTime: string;
   notes?: string;
 }
 
@@ -300,8 +308,8 @@ export function calculateSleepDuration(
   bedtime: string,
   wakeTime: string
 ): number {
-  const [bedHour, bedMin] = bedtime.split(':').map(Number);
-  const [wakeHour, wakeMin] = wakeTime.split(':').map(Number);
+  const [bedHour = 0, bedMin = 0] = bedtime.split(':').map(Number);
+  const [wakeHour = 0, wakeMin = 0] = wakeTime.split(':').map(Number);
   
   let bedMinutes = bedHour * 60 + bedMin;
   let wakeMinutes = wakeHour * 60 + wakeMin;
@@ -330,7 +338,7 @@ export function isSleepConsistent(
   const bedtimes = logs
     .filter(log => log.actualBedtime)
     .map(log => {
-      const [hour, min] = log.actualBedtime!.split(':').map(Number);
+      const [hour = 0, min = 0] = log.actualBedtime!.split(':').map(Number);
       return hour * 60 + min;
     });
   

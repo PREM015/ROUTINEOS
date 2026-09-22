@@ -31,7 +31,7 @@ export function CurrentRoutineBlock() {
       const data = await res.json();
       
       if (data.success && data.data.blocks) {
-        const current = getCurrentBlock(data.data.blocks);
+        const current = getCurrentBlock(data.data.blocks) as Block | null;
         setCurrentBlock(current);
 
         if (current) {

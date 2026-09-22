@@ -13,7 +13,7 @@ RoutineOS ("daily-plan" repo): Next.js 16 (App Router) + React 19 + TypeScript +
 - Type check: `npm run type-check` (`tsc --noEmit`). tsconfig is strict with `noUnusedLocals`, `noUnusedParameters`, and `noUncheckedIndexedAccess` — unused vars and unchecked index access will fail.
 - Lint: broken as configured. `npm run lint` / `lint:fix` run `next lint`, which was removed in Next 16. Use `npx eslint .` / `npx eslint --fix .` (flat config `eslint.config.mjs`; extends `next/core-web-vitals`, `next/typescript`, `prettier`). `next build` no longer lints.
 - Tests: `npm test` (Vitest; config `vitest.config.ts` runs `tests/**/*.test.ts` in `node` env, no setup files, no DB). Run a single file with `npx vitest run tests/<file>.test.ts`.
-  - Gotcha: `tests/feature-routes.test.ts` imports via the `@/` alias, but `vitest.config.ts` never wires up `vite-tsconfig-paths` (it's installed but unused), so that one test fails to resolve. Either fix the vitest config or use relative imports when touching it.
+  - Config now wires `resolve.alias` for `@/*` and `@prisma/client` (→ `src/generated/prisma`), so both aliases work in tests. `@/lib/prisma` throws without `DATABASE_URL` — service-level tests must `vi.mock` the repository/service modules (see `tests/services/sleep-session-service.test.ts`).
   - Many `tests/**` files (integration/, utils/, e2e/) are `expect(true).toBe(true)` stubs — don't rely on them as coverage. `npm run test:e2e` (Playwright) has no `playwright.config.*` and its specs are vitest stubs; not runnable as-is.
 
 ## Database (Prisma 7)
@@ -22,7 +22,7 @@ RoutineOS ("daily-plan" repo): Next.js 16 (App Router) + React 19 + TypeScript +
 - `DATABASE_URL` comes from env (see `.env.example`); the schema datasource block deliberately has no `url` (it is supplied via `prisma.config.ts`). Local Postgres: `docker compose up postgres` (postgres:15, port 5432). Push schema: `npm run db:push`; seed: `npm run db:seed`.
 
 ## Known repo issues (expected; don't be surprised)
-- Tailwind is v4 (`@import "tailwindcss"` + `@theme` in `src/app/globals.css`, `@tailwindcss/postcss` in package.json), but `postcss.config.mjs` still registers the v3 `tailwindcss` plugin — PostCSS will break `next dev`/`next build` until that is corrected.
+- Tailwind is v4 (`@import "tailwindcss"` + `@theme` in `src/app/globals.css`, `@tailwindcss/postcss` in package.json and `postcss.config.mjs`) — `next build` compiles and generates statically without errors.
 - `.husky/*` hooks, `lint-staged.config.js`, `commitlint.config.js`, and `.github/workflows/*` are `// TODO` stub files. Hook files contain JS-comment text, so any active hook fails — commit with `--no-verify` if hooks are installed. `prepare: husky install` is deprecated on husky v9 (prints a warning but runs).
 
 ## Architecture map

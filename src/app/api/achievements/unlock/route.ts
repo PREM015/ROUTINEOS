@@ -120,7 +120,7 @@ async function buildWorldState(userId: string): Promise<AchievementWorldState> {
  * POST /api/achievements/unlock
  * Evaluate which achievements newly qualify for the user and unlock them.
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {

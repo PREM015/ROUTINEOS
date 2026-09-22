@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 /**
@@ -7,7 +7,7 @@ import prisma from '@/lib/prisma';
  */
 
 export abstract class BaseRepository {
-  protected prisma: PrismaClient;
+  public prisma: PrismaClient;
 
   constructor() {
     this.prisma = prisma;
@@ -17,9 +17,9 @@ export abstract class BaseRepository {
    * Execute operation in transaction
    */
   protected async transaction<T>(
-    callback: (tx: PrismaClient) => Promise<T>
+    callback: (tx: Prisma.TransactionClient) => Promise<T>
   ): Promise<T> {
-    return this.prisma.$transaction(callback);
+    return this.prisma.$transaction(callback) as Promise<T>;
   }
 
   /**
@@ -79,6 +79,24 @@ export abstract class BaseRepository {
     if (!sortBy) return undefined;
 
     return { [sortBy]: sortOrder };
+  }
+
+  /**
+   * True when a Prisma error came from a violated (unique) constraint.
+   */
+  protected isUniqueConstraintError(error: unknown): boolean {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: unknown }).code === 'P2002'
+    ) {
+      return true;
+    }
+    return (
+      error instanceof Error &&
+      error.message.includes('Unique constraint failed')
+    );
   }
 
   /**

@@ -1,5 +1,10 @@
 'use client';
-import React from 'react';
+
+import Link from 'next/link';
+import { CheckCircle2, Circle, Flame } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
+import { getTodayString } from '@/lib/dates';
+import { ScrollableCard } from '@/components/dashboard/ScrollableCard';
 
 interface Habit {
   name: string;
@@ -9,53 +14,112 @@ interface Habit {
 }
 
 interface HabitHealthWidgetProps {
-  habits: Habit[];
+  habits?: Habit[];
 }
 
-export const HabitHealthWidget: React.FC<HabitHealthWidgetProps> = ({ habits }) => {
-  const topHabits = habits.slice(0, 3);
-  
-  const getTierColor = (tier: string) => {
-    switch(tier.toLowerCase()) {
-      case 'gold': return 'bg-yellow-400';
-      case 'silver': return 'bg-gray-300';
-      case 'bronze': return 'bg-amber-600';
-      default: return 'bg-blue-400';
-    }
+const TIER_DOT: Record<string, string> = {
+  GROWTH: 'bg-emerald-500',
+  BONUS: 'bg-sky-500',
+  LIFESTYLE: 'bg-amber-500',
+  FLEXIBLE: 'bg-violet-500',
+  EXPERIMENTAL: 'bg-pink-500',
+  OPTIONAL: 'bg-zinc-400',
+};
+
+/**
+ * Compact Habit Health card: header + 3-row scrollable list of live habits
+ * with today's toggle, streak and tier dot. Falls back to the static
+ * `habits` prop (stories/tests) when provided.
+ */
+export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps) {
+  const { habits, getLogForDate, logHabit, selectedDate } = useApp();
+  const today = selectedDate || getTodayString();
+
+  if (habitsProp) {
+    return (
+      <ScrollableCard
+        title="Habit Health"
+        isEmpty={habitsProp.length === 0}
+        emptyMessage="No habits to display"
+        action={
+          <Link href="/habits" className="shrink-0 text-xs font-semibold text-primary hover:underline">
+            Manage
+          </Link>
+        }
+      >
+        {habitsProp.map((habit, idx) => (
+          <div key={idx} className="h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5 py-1.5 flex flex-col justify-center">
+            <div className="flex justify-between items-center gap-2 mb-1">
+              <span className="truncate text-[13px] font-semibold text-foreground">{habit.name}</span>
+              <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                {habit.completionRate}% · 🔥 {habit.streak}
+              </span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+              <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${habit.completionRate}%` }} />
+            </div>
+          </div>
+        ))}
+      </ScrollableCard>
+    );
+  }
+
+  const active = habits.filter((h) => h.status === 'ACTIVE');
+  const doneCount = active.filter((h) => getLogForDate(h.id, today)?.status === 'COMPLETED').length;
+
+  const toggle = (habitId: string) => {
+    const log = getLogForDate(habitId, today);
+    logHabit(habitId, today, log?.status === 'COMPLETED' ? 'MISSED' : 'COMPLETED').catch(() => undefined);
   };
 
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow h-full">
-      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Habit Health</h3>
-      
-      {topHabits.length > 0 ? (
-        <div className="space-y-4">
-          {topHabits.map((habit, idx) => (
-            <div key={idx} className="flex flex-col">
-              <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center space-x-2">
-                  <span className={`w-3 h-3 rounded-full ${getTierColor(habit.tier)}`} title={`Tier: ${habit.tier}`} />
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{habit.name}</span>
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 flex space-x-2">
-                  <span>{habit.completionRate}%</span>
-                  <span>🔥 {habit.streak}</span>
-                </div>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-emerald-500 h-2 rounded-full"
-                  style={{ width: `${habit.completionRate}%` }}
-                />
-              </div>
+    <ScrollableCard
+      title="Habit Health"
+      isEmpty={active.length === 0}
+      emptyMessage="No active habits yet."
+      action={
+        <Link href="/habits" className="shrink-0 text-xs font-semibold text-primary hover:underline">
+          Manage
+        </Link>
+      }
+      summary={
+        <p className="mb-3 shrink-0 text-xs text-muted-foreground tabular-nums">
+          {doneCount} of {active.length} done today
+        </p>
+      }
+    >
+      {active.map((habit) => {
+        const done = getLogForDate(habit.id, today)?.status === 'COMPLETED';
+        const dot = TIER_DOT[habit.tier] ?? 'bg-sky-500';
+        return (
+          <div
+            key={habit.id}
+            className="flex items-center gap-2.5 h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5"
+          >
+            <button
+              onClick={() => toggle(habit.id)}
+              aria-label={done ? `Mark ${habit.name} not done` : `Mark ${habit.name} done`}
+              className={`shrink-0 transition-colors ${done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'}`}
+            >
+              {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+            </button>
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} title={`Tier: ${habit.tier}`} />
+            <div className="flex-1 min-w-0">
+              <p className={`truncate text-[13px] font-semibold ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                {habit.name}
+              </p>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-          No habits to display
-        </div>
-      )}
-    </div>
+            {(habit.streakCount ?? 0) > 0 && (
+              <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-amber-500 tabular-nums">
+                <Flame className="h-3 w-3" aria-hidden="true" />
+                {habit.streakCount}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </ScrollableCard>
   );
-};
+}
+
+export default HabitHealthWidget;

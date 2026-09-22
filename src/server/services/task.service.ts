@@ -1,4 +1,5 @@
-import type { Task, TaskPriority } from '@prisma/client';
+import type { Task } from '@prisma/client';
+import { TaskPriority } from '@prisma/client';
 import { TaskRepository } from '@/server/repositories/task.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { ProjectRepository } from '@/server/repositories/project.repository';
@@ -102,7 +103,7 @@ export class TaskService {
   async getTasks(userId: string, query: TaskQueryParams = {}) {
     const parsed = taskQuerySchema.parse(query);
 
-    let tasks = await this.taskRepository.findAll(userId, {
+    let tasks: Task[] = await this.taskRepository.findAll(userId, {
       status: parsed.status,
       priority: parsed.priority,
       projectId: parsed.projectId,
@@ -142,7 +143,7 @@ export class TaskService {
 
     const parsed = updateTaskSchema.parse(input);
 
-    const task = await this.taskRepository.update(userId, taskId, {
+    await this.taskRepository.update(userId, taskId, {
       ...(parsed.title && { title: parsed.title }),
       ...(parsed.description !== undefined && { description: parsed.description }),
       ...(parsed.status && { status: parsed.status }),
@@ -387,12 +388,12 @@ export class TaskService {
       }
       if (parsed.dueBefore) {
         if (!task.dueDate) return false;
-        const dueDateStr = new Date(task.dueDate).toISOString().split('T')[0];
+        const dueDateStr = new Date(task.dueDate).toISOString().slice(0, 10);
         if (dueDateStr > parsed.dueBefore) return false;
       }
       if (parsed.dueAfter) {
         if (!task.dueDate) return false;
-        const dueDateStr = new Date(task.dueDate).toISOString().split('T')[0];
+        const dueDateStr = new Date(task.dueDate).toISOString().slice(0, 10);
         if (dueDateStr < parsed.dueAfter) return false;
       }
       if (parsed.overdue !== undefined) {

@@ -26,12 +26,14 @@ export default function RoutinePage() {
         </Button>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label="Routine day type">
         {tabs.map((tab) => (
           <button
             key={tab}
+            role="tab"
+            aria-selected={selectedRoutineTab === tab}
             onClick={() => setSelectedRoutineTab(tab)}
-            className={`rounded-xl border px-3 py-2 text-sm transition ${
+            className={`rounded-xl border px-3 py-2 text-sm whitespace-nowrap shrink-0 transition ${
               selectedRoutineTab === tab
                 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
                 : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200'

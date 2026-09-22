@@ -51,7 +51,6 @@ export function summarizeTasks(
 
   for (const task of tasks) {
     if (task.status === 'COMPLETED') completed += 1;
-    else if (task.status === 'CANCELLED') continue;
     if (task.status === 'IN_PROGRESS') inProgress += 1;
     if (task.status === 'WAITING') waiting += 1;
     if (

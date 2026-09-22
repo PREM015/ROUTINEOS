@@ -1,20 +1,55 @@
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-:root {
-  --background: #000000;
-  --foreground: #ffffff;
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ffffff;
-  }
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --border: #e4e4e7;
+  --primary: #047857;
+  --primary-foreground: #ffffff;
+  --destructive: #b91c1c;
+  --destructive-foreground: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --card: #101014;
+  --card-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+  --border: #27272a;
+  --primary: #10b981;
+  --primary-foreground: #06281c;
+  --destructive: #f87171;
+  --destructive-foreground: #09090b;
 }
 
 body {
@@ -23,6 +58,114 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dropdown/menu entrance (replaces tailwindcss-animate classes). */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation: menu-in 0.1s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in {
+    animation: none;
+  }
+}
+
+/* Radar polygon draw-in (Today Progress). Runs once after mount. */
+@keyframes radar-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.radar-in {
+  animation: radar-in 0.6s ease;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-in {
+    animation: none;
+  }
+}
+
+/* FlipClock per-digit 3D flip. Re-triggered by React remounting the inner
+   span (keyed by digit) whenever the digit changes. */
+@keyframes flip-digit {
+  0% {
+    transform: rotateX(88deg);
+    opacity: 0.2;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotateX(0deg);
+    opacity: 1;
+  }
+}
+
+.flip-digit {
+  display: inline-block;
+  perspective: 240px;
+}
+
+.flip-digit-inner {
+  display: inline-block;
+  transform-origin: bottom center;
+  backface-visibility: hidden;
+  animation: flip-digit 0.45s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-digit-inner {
+    animation: none;
+  }
+}
+
+/* Slim scrollbars for compact scroll areas (P2-2 ScrollableCard). */
+.slim-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.slim-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.slim-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.slim-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.slim-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Bottom fade hint for scrollable card lists. */
+.scroll-fade {
+  mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);
 }
 
 /* Custom Scrollbar */
@@ -34,9 +177,9 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--border);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--muted-foreground);
 }

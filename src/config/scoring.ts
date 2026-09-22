@@ -256,3 +256,5 @@ export function isCompletionRateGood(rate: number): boolean {
 export function shouldWarnLowScore(score: number): boolean {
   return score < THRESHOLDS.warnings.lowScore;
 }
+
+export { calculateCoreScore } from '@/lib/scoring/calculate-core-score';

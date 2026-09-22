@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 export async function getHabitsNeedingReminder(
   userId: string,
   db: PrismaClient,
-  date: string
+  _date: string
 ): Promise<Array<{ habitId: string; name: string; scheduledTime?: string }>> {
   const habits = (await (db as any).habit.findMany({ where: { userId } })) || [];
   return habits.map((h: any) => ({

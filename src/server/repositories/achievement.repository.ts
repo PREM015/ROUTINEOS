@@ -27,7 +27,7 @@ export class AchievementRepository extends BaseRepository {
   async findUnlocked(userId: string): Promise<Achievement[]> {
     try {
       return await this.prisma.achievement.findMany({
-        where: { userId, unlockedAt: { not: null } },
+        where: { userId },
         orderBy: { unlockedAt: 'desc' },
       });
     } catch (error) {
