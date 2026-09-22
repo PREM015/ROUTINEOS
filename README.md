@@ -17,7 +17,9 @@ Daily Plan gives users a complete planning system for their day:
 This is designed for people who want a daily system that is practical, motivating, and easy to maintain over time.
 
 ## Core features
+ 
 
+ 
 ### Smart daily planning
 Users can define their routine for the day, organize blocks by type, and structure time around key activities like focus work, breaks, learning, and personal time.
 
