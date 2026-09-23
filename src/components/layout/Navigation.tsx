@@ -4,19 +4,23 @@
  *
  * Highlights the link matching the current pathname (prefix match, except the
  * exact root path). Links are rendered from `items` (or a default app set) using
- * lucide icons and next/link. `onNavigate` fires on any link click — handy for
- * closing a mobile drawer.
+ * lucide icons and next/link. The active link gets a shared-layout motion pill
+ * that glides between items (skipped under reduced motion). `onNavigate` fires
+ * on any link click — handy for closing a mobile drawer.
  *
  * Props:
  * - items: NavigationItem[] ({ label, href, icon }) — defaults to the app nav
  * - orientation: 'vertical' | 'horizontal' stack direction
+ * - ariaLabel: label for the nav landmark (default "Primary")
  * - onNavigate: optional click callback
  */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, Calendar, Target, CheckSquare, Settings, Activity } from 'lucide-react';
+import { EASE } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 export interface NavigationItem {
@@ -28,6 +32,7 @@ export interface NavigationItem {
 export interface NavigationProps {
   items?: NavigationItem[];
   orientation?: 'vertical' | 'horizontal';
+  ariaLabel?: string;
   className?: string;
   onNavigate?: () => void;
 }
@@ -44,10 +49,12 @@ const DEFAULT_ITEMS: NavigationItem[] = [
 export function Navigation({
   items = DEFAULT_ITEMS,
   orientation = 'vertical',
+  ariaLabel = 'Primary',
   className,
   onNavigate,
 }: NavigationProps) {
   const pathname = usePathname();
+  const reduce = useReducedMotion();
 
   const isActive = (href: string): boolean => {
     if (href === '/') {
@@ -58,7 +65,7 @@ export function Navigation({
 
   return (
     <nav
-      aria-label="Primary"
+      aria-label={ariaLabel}
       className={cn(
         orientation === 'vertical'
           ? 'flex flex-col space-y-1'
@@ -76,14 +83,25 @@ export function Navigation({
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+              'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-300 ease-out-expo',
               active
-                ? 'bg-blue-500/10 font-medium text-blue-400'
-                : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100',
+                ? 'font-medium text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
-            <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-            <span>{item.label}</span>
+            {active &&
+              (reduce ? (
+                <span aria-hidden="true" className="absolute inset-0 rounded-lg bg-primary/10" />
+              ) : (
+                <motion.span
+                  aria-hidden="true"
+                  layoutId="nav-active-pill"
+                  className="absolute inset-0 rounded-lg bg-primary/10"
+                  transition={{ duration: 0.35, ease: EASE }}
+                />
+              ))}
+            <Icon className="relative z-10 h-5 w-5 shrink-0" aria-hidden="true" />
+            <span className="relative z-10">{item.label}</span>
           </Link>
         );
       })}

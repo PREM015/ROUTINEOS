@@ -3,7 +3,8 @@
  * Breadcrumb — navigation trail of { label, href } entries.
  *
  * Renders items as links (all but the current one) separated by chevrons. The
- * last item is rendered as plain text with `aria-current="page"`.
+ * last item is rendered as plain text with `aria-current="page"`. Each entry
+ * fades/rises in with a tiny stagger (skipped under reduced motion).
  *
  * Props:
  * - items: BreadcrumbItem[] ({ label, href? })
@@ -12,7 +13,9 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { EASE } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 export interface BreadcrumbItem {
@@ -27,6 +30,8 @@ export interface BreadcrumbProps {
 }
 
 export function Breadcrumb({ items, className, separator }: BreadcrumbProps) {
+  const reduce = useReducedMotion();
+
   return (
     <nav aria-label="Breadcrumb" className={className}>
       <ol className="flex flex-wrap items-center gap-1.5 text-sm">
@@ -35,27 +40,38 @@ export function Breadcrumb({ items, className, separator }: BreadcrumbProps) {
           const showSeparator = !isCurrent;
 
           return (
-            <li key={`${item.label}-${index}`} className="flex items-center gap-1.5">
+            <motion.li
+              key={`${item.label}-${index}`}
+              initial={reduce ? false : { opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: EASE, delay: index * 0.04 }}
+              className="flex items-center gap-1.5"
+            >
               {item.href !== undefined && !isCurrent ? (
                 <Link
                   href={item.href}
-                  className="text-zinc-400 transition-colors hover:text-blue-400"
+                  className="text-muted-foreground transition-colors duration-300 ease-out-expo hover:text-primary"
                 >
                   {item.label}
                 </Link>
               ) : (
                 <span
                   aria-current={isCurrent ? 'page' : undefined}
-                  className={cn(isCurrent ? 'font-medium text-zinc-100' : 'text-zinc-400')}
+                  className={cn(
+                    isCurrent ? 'font-medium text-foreground' : 'text-muted-foreground',
+                  )}
                 >
                   {item.label}
                 </span>
               )}
               {showSeparator &&
                 (separator ?? (
-                  <ChevronRight className="h-4 w-4 text-zinc-600" aria-hidden="true" />
+                  <ChevronRight
+                    className="h-4 w-4 text-muted-foreground/50"
+                    aria-hidden="true"
+                  />
                 ))}
-            </li>
+            </motion.li>
           );
         })}
       </ol>

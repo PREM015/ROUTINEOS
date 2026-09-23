@@ -1,44 +1,38 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Calendar,
-  Target,
-  CheckSquare,
-  Settings,
-  Activity,
-  Timer,
-  BookOpen,
-  BarChart3,
-  Trophy,
-  RotateCcw,
-  LogOut,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { Logo } from '@/components/layout/Logo';
+import { Navigation } from '@/components/layout/Navigation';
+import type { LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Calendar, Target, CheckSquare, Activity, Timer, BookOpen, BarChart3, Trophy, RotateCcw, Settings } from 'lucide-react';
+
+interface SidebarLink {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const MAIN_LINKS: SidebarLink[] = [
+  { label: 'Today', href: '/today', icon: CheckSquare },
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Habits', href: '/habits', icon: Activity },
+  { label: 'Routine', href: '/routine', icon: Calendar },
+  { label: 'Goals', href: '/goals', icon: Target },
+];
+
+const FEATURE_LINKS: SidebarLink[] = [
+  { label: 'Focus Mode', href: '/focus', icon: Timer },
+  { label: 'Journal', href: '/journal', icon: BookOpen },
+  { label: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { label: 'Achievements', href: '/achievements', icon: Trophy },
+  { label: 'Weekly Recap', href: '/recap', icon: RotateCcw },
+  { label: 'Settings', href: '/settings', icon: Settings },
+];
 
 export function Sidebar() {
-  const pathname = usePathname();
   const { data: session } = useSession();
-
-  const mainLinks = [
-    { name: 'Today', href: '/today', icon: CheckSquare },
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Habits', href: '/habits', icon: Activity },
-    { name: 'Routine', href: '/routine', icon: Calendar },
-    { name: 'Goals', href: '/goals', icon: Target },
-  ];
-
-  const featureLinks = [
-    { name: 'Focus Mode', href: '/focus', icon: Timer },
-    { name: 'Journal', href: '/journal', icon: BookOpen },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Achievements', href: '/achievements', icon: Trophy },
-    { name: 'Weekly Recap', href: '/recap', icon: RotateCcw },
-    { name: 'Settings', href: '/settings', icon: Settings },
-  ];
 
   return (
     <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 border-r border-border bg-card p-4 overflow-y-auto z-40">
@@ -51,54 +45,14 @@ export function Sidebar() {
           <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             Core
           </p>
-          <nav className="space-y-1">
-            {mainLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(`${link.href}/`));
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    isActive
-                      ? 'bg-primary/15 text-primary font-medium'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {link.name}
-                </Link>
-              );
-            })}
-          </nav>
+          <Navigation items={MAIN_LINKS} ariaLabel="Core" />
         </div>
 
         <div>
           <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             Features & Insights
           </p>
-          <nav className="space-y-1">
-            {featureLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    isActive
-                      ? 'bg-primary/15 text-primary font-medium'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {link.name}
-                </Link>
-              );
-            })}
-          </nav>
+          <Navigation items={FEATURE_LINKS} ariaLabel="Features & Insights" />
         </div>
       </div>
 
@@ -121,7 +75,7 @@ export function Sidebar() {
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             title="Sign out"
-            className="p-1.5 text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
           >
             <LogOut className="w-4 h-4" />
           </button>

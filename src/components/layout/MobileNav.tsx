@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, useReducedMotion } from 'framer-motion';
 import { LayoutDashboard, Target, CheckSquare, Settings, Activity } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function MobileNav() {
   const pathname = usePathname();
+  const reduce = useReducedMotion();
 
   const links = [
     { name: 'Today', href: '/today', icon: CheckSquare },
@@ -16,21 +19,43 @@ export function MobileNav() {
   ];
 
   return (
-    <nav aria-label="Mobile" className="md:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border bg-background flex items-center justify-around px-2 z-50">
-      {links.map(link => {
+    <nav
+      aria-label="Mobile"
+      className="fixed bottom-0 left-0 right-0 z-50 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-stretch justify-around border-t border-border bg-background/90 px-2 backdrop-blur-lg md:hidden"
+    >
+      {links.map((link) => {
         const Icon = link.icon;
-        const isActive = pathname.startsWith(link.href);
-        
+        const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+
         return (
           <Link
             key={link.href}
             href={link.href}
-            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              isActive ? 'text-primary' : 'text-muted-foreground'
-            }`}
+            aria-current={isActive ? 'page' : undefined}
+            className={cn(
+              'relative flex w-full flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors duration-300 ease-out-expo active:scale-[0.94]',
+              isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+            )}
           >
-            <Icon className="w-5 h-5" />
-            <span className="text-[10px] font-medium">{link.name}</span>
+            {isActive
+              ? reduce
+                ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-1 rounded-xl bg-primary/10"
+                    />
+                  )
+                : (
+                    <motion.span
+                      aria-hidden="true"
+                      layoutId="mobile-nav-active"
+                      className="absolute inset-1 rounded-xl bg-primary/10"
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    />
+                  )
+              : null}
+            <Icon className="relative z-10 h-5 w-5" aria-hidden="true" />
+            <span className="relative z-10">{link.name}</span>
           </Link>
         );
       })}
