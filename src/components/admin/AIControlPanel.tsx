@@ -88,6 +88,7 @@ export function AIControlPanel() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void fetchLatest(period);
   }, [period, fetchLatest]);
 
@@ -122,12 +123,12 @@ export function AIControlPanel() {
           <Brain className="h-5 w-5 text-blue-600" />
           <h2 className="text-lg font-bold">AI Control Panel</h2>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Trigger AI insights generation and preview the latest stored insight for each period.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label="Insight period">
+          <div className="flex items-center gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Insight period">
             {(Object.keys(PERIOD_LABELS) as InsightPeriod[]).map((option) => (
               <button
                 key={option}
@@ -137,8 +138,8 @@ export function AIControlPanel() {
                 className={cn(
                   'rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600',
                   period === option
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
+                    ? 'bg-card text-foreground shadow-soft'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {PERIOD_LABELS[option]}
@@ -158,7 +159,7 @@ export function AIControlPanel() {
         )}
 
         <div className="mt-6">
-          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-700">
+          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
             <Sparkles className="h-4 w-4 text-blue-600" />
             Latest {PERIOD_LABELS[period]} insight
           </h3>
@@ -170,15 +171,15 @@ export function AIControlPanel() {
               <Skeleton className="h-4 w-2/3" />
             </div>
           ) : result ? (
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <div className="rounded-lg rounded-lg border border-border bg-card p-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge variant="primary">{result.period}</Badge>
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-muted-foreground">
                   {result.startDate} → {result.endDate}
                 </span>
               </div>
 
-              {result.summary && <p className="text-sm text-gray-800">{result.summary}</p>}
+              {result.summary && <p className="text-sm text-foreground">{result.summary}</p>}
 
               {splitLines(result.wins).length > 0 && (
                 <InsightSection title="Wins" lines={splitLines(result.wins)} tone="green" />
@@ -190,14 +191,14 @@ export function AIControlPanel() {
                 <InsightSection title="Suggestions" lines={splitLines(result.suggestions)} tone="purple" />
               )}
               {result.nextPeriodFocus && (
-                <p className="mt-3 border-t border-gray-200 pt-2 text-sm text-gray-600">
-                  <span className="font-medium text-gray-800">Next period focus:</span>{' '}
+                <p className="mt-3 border-t border-border pt-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Next period focus:</span>{' '}
                   {result.nextPeriodFocus}
                 </p>
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
               <RefreshCw className="h-4 w-4" />
               {period === 'DAILY' ? 'No insight for today yet.' : `No ${PERIOD_LABELS[period].toLowerCase()} insight yet. Click Generate to create one.`}
             </div>
@@ -225,7 +226,7 @@ function InsightSection({
 }) {
   return (
     <div className="mt-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
       <ul className={cn('mt-1 list-disc pl-5 text-sm', TONE_CLASSES[tone])}>
         {lines.map((line, index) => (
           <li key={`${title}-${index}`}>{line}</li>

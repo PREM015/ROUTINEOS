@@ -24,6 +24,7 @@ export function SystemStats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability -- hoisted helper called on mount
     fetchStats();
   }, []);
 
@@ -47,8 +48,8 @@ export function SystemStats() {
         {[1, 2, 3, 4].map(i => (
           <Card key={i} className="p-6">
             <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+              <div className="h-4 bg-muted rounded w-1/2 mb-2"></div>
+              <div className="h-8 bg-muted rounded w-1/3"></div>
             </div>
           </Card>
         ))}
@@ -97,9 +98,9 @@ function StatCard({
 }) {
   return (
     <Card className="p-6">
-      <h3 className="text-sm font-medium text-gray-600 mb-2">{title}</h3>
+      <h3 className="text-sm font-medium text-muted-foreground mb-2">{title}</h3>
       <p className="text-3xl font-bold mb-1">{value.toLocaleString()}</p>
-      <p className="text-sm text-gray-500">{subtitle}</p>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
     </Card>
   );
 }

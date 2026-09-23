@@ -64,6 +64,7 @@ export function SystemHealth() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void fetchHealth();
   }, [fetchHealth]);
 
@@ -88,7 +89,7 @@ export function SystemHealth() {
           </div>
           <div className="flex items-center gap-3">
             {lastChecked && (
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground/70">
                 Last checked {getRelativeTime(lastChecked)}
               </span>
             )}
@@ -108,7 +109,7 @@ export function SystemHealth() {
         {loading && (
           <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className="rounded-xl border border-gray-200 p-4">
+              <div key={index} className="rounded-xl border border-border p-4">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="mt-3 h-8 w-16" />
                 <Skeleton className="mt-2 h-3 w-32" />
@@ -129,7 +130,7 @@ export function SystemHealth() {
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-600">{card.label}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{card.label}</h3>
                     <span
                       className={cn(
                         'h-2.5 w-2.5 rounded-full',
@@ -138,23 +139,23 @@ export function SystemHealth() {
                       aria-hidden="true"
                     />
                   </div>
-                  <p className="mt-2 text-3xl font-bold tabular-nums text-gray-900">
+                  <p className="mt-2 text-3xl font-bold tabular-nums text-foreground">
                     {card.value.toLocaleString()}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">{card.sublabel}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{card.sublabel}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-gray-100 pt-4 text-xs text-gray-500">
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5 text-gray-400" />
+                <Users className="h-3.5 w-3.5 text-muted-foreground/70" />
                 {data.users.byRole.length > 0
                   ? data.users.byRole.map((row) => `${row.role}: ${row.count}`).join(' · ')
                   : 'No role data'}
               </span>
               <span className="flex items-center gap-1.5">
-                <Activity className="h-3.5 w-3.5 text-gray-400" />
+                <Activity className="h-3.5 w-3.5 text-muted-foreground/70" />
                 Feedback {data.feedback.resolved} / {data.feedback.total} resolved
               </span>
               {data.period.from && (
@@ -167,7 +168,7 @@ export function SystemHealth() {
         )}
 
         {!loading && !error && !data && (
-          <div className="mt-5 rounded-xl border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+          <div className="mt-5 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
             No health data available.
           </div>
         )}
