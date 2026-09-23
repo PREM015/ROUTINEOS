@@ -57,6 +57,7 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
   }, [date]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     fetchTodayHabits();
   }, [fetchTodayHabits]);
 
@@ -131,7 +132,7 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-500 mb-4">{error}</p>
+        <p role="alert" className="text-sm text-destructive mb-4">{error}</p>
       )}
 
       <div className="space-y-6">

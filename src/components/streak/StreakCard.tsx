@@ -39,8 +39,8 @@ export function StreakCard() {
     return (
       <Card className="p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
         </div>
       </Card>
     );
@@ -69,10 +69,10 @@ export function StreakCard() {
             <span className="text-4xl font-bold text-orange-600">
               {streak.currentStreak}
             </span>
-            <span className="text-gray-600">days</span>
+            <span className="text-muted-foreground">days</span>
           </div>
           {streak.currentStreak > 0 && (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Started {formatDate(streak.streakStartDate)}
             </p>
           )}
@@ -82,7 +82,7 @@ export function StreakCard() {
         {nextMilestone && (
           <div>
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-gray-600">
+              <span className="text-muted-foreground">
                 Next: {nextMilestone.label}
               </span>
               <span className="font-medium">
@@ -94,13 +94,13 @@ export function StreakCard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
           <div>
-            <p className="text-sm text-gray-600">Longest Streak</p>
+            <p className="text-sm text-muted-foreground">Longest Streak</p>
             <p className="text-2xl font-bold">{streak.longestStreak}</p>
           </div>
           <div>
-            <p className="text-sm text-gray-600">Total Days</p>
+            <p className="text-sm text-muted-foreground">Total Days</p>
             <p className="text-2xl font-bold">{streak.totalCompletedDays}</p>
           </div>
         </div>

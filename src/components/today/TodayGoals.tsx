@@ -86,7 +86,7 @@ export function TodayGoals({ date }: TodayGoalsProps) {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">Active Goals</h3>
-        <p role="alert" className="text-sm text-red-500 mb-3">{error}</p>
+        <p role="alert" className="text-sm text-destructive mb-3">{error}</p>
         <Button variant="outline" size="sm" onClick={fetchGoals}>Retry</Button>
       </Card>
     );

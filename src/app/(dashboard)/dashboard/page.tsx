@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
   const features = [
     { name: 'Today Checklist', href: '/today', icon: CheckSquare, desc: "Log today's habits & routine", color: 'text-emerald-400 bg-emerald-500/10' },
-    { name: 'Habits Tracker', href: '/habits', icon: Activity, desc: 'Manage tiered habits & schedules', color: 'text-blue-400 bg-blue-500/10' },
+    { name: 'Habits Tracker', href: '/habits', icon: Activity, desc: 'Manage tiered habits & schedules', color: 'text-primary bg-primary/10' },
     { name: 'Routine Schedule', href: '/routine', icon: Calendar, desc: 'Time-block your day', color: 'text-purple-400 bg-purple-500/10' },
     { name: 'Goals & Milestones', href: '/goals', icon: Target, desc: 'Set and track key goals', color: 'text-rose-400 bg-rose-500/10' },
     { name: 'Focus Mode', href: '/focus', icon: Timer, desc: 'Pomodoro & deep work timer', color: 'text-amber-400 bg-amber-500/10' },

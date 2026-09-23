@@ -129,7 +129,7 @@ export function TodaySleep({ date }: TodaySleepProps) {
       </div>
 
       {error && (
-        <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
+        <p className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
           {error}
         </p>
       )}
@@ -206,6 +206,7 @@ function ActiveTimer({
   busy: boolean;
 }) {
   const startedMs = Date.parse(startedAt);
+  // eslint-disable-next-line react-hooks/purity -- live timer
   const elapsedMs = Math.max(0, Date.now() - startedMs);
   const elapsed = formatClock(elapsedMs);
   const startedLocal = new Date(startedMs).toLocaleTimeString('en-US', {
@@ -259,6 +260,7 @@ function ReminderPanel({
     Date.parse(prompt.scheduledFor) + prompt.autoStartAfterMinutes * 60_000;
   const secondsLeft = Math.max(
     0,
+    // eslint-disable-next-line react-hooks/purity -- live countdown
     Math.round((deadlineMs - Date.now()) / 1000)
   );
   const countdown = formatCountdown(secondsLeft);

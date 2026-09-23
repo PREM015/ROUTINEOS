@@ -89,7 +89,7 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
   return (
     <div className="space-y-4">
       {error && (
-        <p role="alert" className="text-xs text-red-400">{error}</p>
+        <p role="alert" className="text-xs text-destructive">{error}</p>
       )}
       <AnimatePresence>
         {activeGoals.map((goal) => {
@@ -150,7 +150,7 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
                       animate={reduce ? {} : incrementingId === goal.id ? { scale: [1, 1.3, 1] } : {}}
                       whileTap={reduce ? undefined : { scale: 0.85 }}
                       onClick={() => handleIncrement(goal)}
-                      className="w-6 h-6 rounded-full bg-zinc-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-muted-foreground flex items-center justify-center transition"
+                      className="w-6 h-6 rounded-full bg-muted hover:bg-emerald-500/20 hover:text-emerald-400 text-muted-foreground flex items-center justify-center transition"
                       title="Increment progress by 1"
                       aria-label={`Increment ${goal.title} progress`}
                     >

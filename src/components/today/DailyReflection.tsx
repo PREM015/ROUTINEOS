@@ -122,6 +122,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
 
   // Load once per date. Saving happens ONLY via the Save button below.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     fetchReflection();
   }, [fetchReflection]);
 
@@ -187,7 +188,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Daily Reflection</h3>
         </div>
-        {error && <p role="alert" className="text-sm text-red-500 mb-3">{error}</p>}
+        {error && <p role="alert" className="text-sm text-destructive mb-3">{error}</p>}
         <div className="text-center py-8">
           <p className="text-muted-foreground mb-4">Take a moment to reflect on your day</p>
           <Button onClick={() => setIsEditing(true)}>
@@ -315,7 +316,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
             />
           </div>
 
-          {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
           <div className="flex gap-3">
             <Button onClick={saveReflection} disabled={saving} className="flex-1">
@@ -353,7 +354,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
       </div>
 
       {notice && <p role="status" className="text-sm text-emerald-600 mb-3">{notice}</p>}
-      {error && <p role="alert" className="text-sm text-red-500 mb-3">{error}</p>}
+      {error && <p role="alert" className="text-sm text-destructive mb-3">{error}</p>}
 
       <div className="space-y-4">
         <div className="grid grid-cols-4 gap-4 pb-4 border-b">

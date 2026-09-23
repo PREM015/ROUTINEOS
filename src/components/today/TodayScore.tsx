@@ -69,7 +69,7 @@ export function TodayScore({ date }: TodayScoreProps) {
               >
                 {Math.round(display)}
               </span>
-              <span className="text-gray-600">/ 100</span>
+              <span className="text-muted-foreground">/ 100</span>
             </div>
             <div
               className="inline-block px-3 py-1 rounded-full text-sm font-semibold transition-[background-color,color] duration-500"
@@ -84,7 +84,7 @@ export function TodayScore({ date }: TodayScoreProps) {
 
           <div className="flex-1">
             <Progress value={scoreValue} className="h-4 mb-2" />
-            <p className="text-sm text-gray-600">{gradeInfo.description}</p>
+            <p className="text-sm text-muted-foreground">{gradeInfo.description}</p>
           </div>
         </div>
       </Card>
