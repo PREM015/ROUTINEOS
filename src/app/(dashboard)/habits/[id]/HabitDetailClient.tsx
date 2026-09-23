@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import HabitScheduleEditor from '@/components/habits/HabitScheduleEditor';
 import HabitHistory from '@/components/habits/HabitHistory';
 import HabitFrictionCard from '@/components/habits/HabitFrictionCard';
@@ -151,7 +150,7 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
   const showFriction = completionRate !== null && completionRate < 60;
 
   return (
-    <DashboardLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       {/* ── Header ── */}
       <div className="mb-6">
         <button
@@ -272,7 +271,7 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
         <div className="mb-4">
           <HabitFrictionCard
             habitName={habit.name}
-            reliability={completionRate!}
+            reliability={completionRate ?? 0}
             suggestion="Try linking this habit to an existing one or reducing the required count."
           />
         </div>
@@ -404,6 +403,6 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
           onArchived={() => router.push('/habits')}
         />
       )}
-    </DashboardLayout>
+    </div>
   );
 }

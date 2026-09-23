@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { WeeklyReviewSummary } from '@/components/review/WeeklyReviewSummary';
 import { ReviewQuestions, ReviewFormData } from '@/components/review/ReviewQuestions';
 import { ReviewAnswers } from '@/components/review/ReviewAnswers';
@@ -15,9 +14,9 @@ type Step = 'history' | 'summary' | 'questions' | 'answers';
 interface WeeklyRecapData {
   averageScore: number;
   habitsCompleted: number;
+  habitsScheduled: number;
   goalsAchieved: number;
   biggestWin?: string;
-  weeklyFocus?: string;
 }
 
 interface ReviewRecord {
@@ -85,13 +84,36 @@ export default function WeeklyReviewPage() {
       const res = await fetch(`/api/weekly-review?weekStart=${weekStart}`);
       if (!res.ok) throw new Error('Failed to load review data');
       const json = await res.json();
+      if (!res.ok) throw new Error('Failed to load review data');
 
-      const recapData: WeeklyRecapData = json.data?.recap ?? {
-        averageScore: 0,
-        habitsCompleted: 0,
-        goalsAchieved: 0,
-      };
-      setRecap(recapData);
+      // `/api/weekly-review` returns `generateWeeklyRecap`'s shape. Map only
+      // real fields into the summary; when no recap exists show an empty state
+      // instead of inventing numbers.
+      const source = json.data?.recap;
+      const best = source?.habits?.mostConsistent as
+        | { habitName: string; completed: number; total: number }
+        | null
+        | undefined;
+
+      const hasStats =
+        Boolean(source) &&
+        ((source.scores?.average ?? 0) > 0 ||
+          (source.habits?.totalCompleted ?? 0) > 0 ||
+          (source.goals?.completed ?? 0) > 0);
+
+      setRecap(
+        hasStats && source
+          ? {
+              averageScore: Math.round(source.scores?.average ?? 0),
+              habitsCompleted: source.habits?.totalCompleted ?? 0,
+              habitsScheduled: source.habits?.totalScheduled ?? 0,
+              goalsAchieved: source.goals?.completed ?? 0,
+              biggestWin: best?.habitName
+                ? `Most consistent: ${best.habitName}`
+                : undefined,
+            }
+          : null
+      );
 
       if (json.data?.review?.answers) {
         try {
@@ -162,7 +184,7 @@ export default function WeeklyReviewPage() {
   };
 
   return (
-    <DashboardLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       {/* ── Page header ── */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -266,9 +288,9 @@ export default function WeeklyReviewPage() {
               weekEnd: format(new Date(selectedWeekEnd + 'T12:00:00'), 'MMM d, yyyy'),
               averageScore: Math.round(recap.averageScore),
               habitsCompleted: recap.habitsCompleted,
+              habitsScheduled: recap.habitsScheduled,
               goalsAchieved: recap.goalsAchieved,
               biggestWin: recap.biggestWin,
-              weeklyFocus: recap.weeklyFocus,
             }}
           />
           <div className="flex justify-end">
@@ -277,6 +299,25 @@ export default function WeeklyReviewPage() {
               className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               Write My Review →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══ STEP: SUMMARY — no data for this week ═════════════════════════════ */}
+
+      {!loading && step === 'summary' && !recap && (
+        <div className="glass-panel shadow-soft rounded-2xl p-10 text-center">
+          <p className="text-sm text-muted-foreground">
+            No recap data for this week yet. Complete a few habits and finish your
+            routine to build your weekly summary.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button
+              onClick={() => setStep('questions')}
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90"
+            >
+              Skip Straight to My Review
             </button>
           </div>
         </div>
@@ -312,6 +353,6 @@ export default function WeeklyReviewPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </div>
   );
 }

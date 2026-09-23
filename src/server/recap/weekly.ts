@@ -77,6 +77,8 @@ export async function generateWeeklyRecap(userId: string, weekStart: string, wee
     },
     habits: {
       total: habits.length,
+      totalCompleted: habitStats.reduce((sum, habit) => sum + habit.completed, 0),
+      totalScheduled: habitStats.reduce((sum, habit) => sum + habit.total, 0),
       mostConsistent,
       needsWork,
       averageCompletion: habitStats.length > 0

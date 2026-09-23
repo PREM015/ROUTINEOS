@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Target, Plus, Pencil, Trash2, CheckCircle2, Circle } from 'lucide-react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AddGoalModal from '@/components/goals/AddGoalModal';
 import EditGoalModal from '@/components/goals/EditGoalModal';
 import { useApp, type Goal } from '@/context/AppContext';
@@ -211,7 +210,7 @@ export default function GoalsPage() {
   };
 
   return (
-    <DashboardLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Goals</h1>
@@ -321,6 +320,6 @@ export default function GoalsPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </DashboardLayout>
+    </div>
   );
 }

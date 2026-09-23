@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { CalendarRange, Plus } from 'lucide-react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RoutineList from '@/components/routine/RoutineList';
 import AddRoutineBlockModal from '@/components/routine/AddRoutineBlockModal';
 import { useApp } from '@/context/AppContext';
@@ -15,7 +14,7 @@ export default function RoutinePage() {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
-    <DashboardLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Routine</h1>
@@ -55,6 +54,6 @@ export default function RoutinePage() {
       </div>
 
       <AddRoutineBlockModal open={modalOpen} onClose={() => setModalOpen(false)} defaultDayType={selectedRoutineTab} />
-    </DashboardLayout>
+    </div>
   );
 }

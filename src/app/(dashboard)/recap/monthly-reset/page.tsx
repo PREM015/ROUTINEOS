@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, subMonths } from 'date-fns';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { PreviousMonthSummary } from '@/components/monthly-reset/PreviousMonthSummary';
 import { HabitReview } from '@/components/monthly-reset/HabitReview';
 import { GoalReview } from '@/components/monthly-reset/GoalReview';
@@ -225,7 +224,7 @@ export default function MonthlyResetPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <DashboardLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -407,6 +406,6 @@ export default function MonthlyResetPage() {
           )}
         </div>
       )}
-    </DashboardLayout>
+    </div>
   );
 }
