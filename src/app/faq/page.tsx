@@ -116,8 +116,12 @@ export default function FaqPage() {
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-16 sm:px-6">
         {/* Hero */}
-        <div className="mb-14 text-center">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+        <div className="relative mb-14 text-center">
+          <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+            <div className="gradient-mesh-animated absolute inset-0" />
+            <div className="noise-overlay absolute inset-0" />
+          </div>
+          <span className="glow-primary mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
             <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
             FAQ
           </span>
@@ -142,21 +146,24 @@ export default function FaqPage() {
               </h2>
               <div className="space-y-3">
                 {category.items.map((item) => (
-                  <details
-                    key={item.question}
-                    className="group overflow-hidden rounded-xl border border-border bg-card"
-                  >
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold transition-colors hover:bg-muted/50 marker:content-none">
-                      {item.question}
-                      <ChevronDown
-                        className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
-                        aria-hidden="true"
-                      />
-                    </summary>
-                    <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
-                      {item.answer}
-                    </p>
-                  </details>
+                  <div key={item.question} className="group relative">
+                    <div
+                      aria-hidden="true"
+                      className="border-gradient-animated pointer-events-none absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300 group-open:opacity-100"
+                    />
+                    <details className="relative overflow-hidden rounded-xl border border-border bg-card transition-shadow duration-300 group-open:shadow-soft">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold transition-colors hover:bg-muted/50 marker:content-none">
+                        {item.question}
+                        <ChevronDown
+                          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                          aria-hidden="true"
+                        />
+                      </summary>
+                      <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
+                        {item.answer}
+                      </p>
+                    </details>
+                  </div>
                 ))}
               </div>
             </section>
@@ -164,14 +171,14 @@ export default function FaqPage() {
         </div>
 
         {/* Still curious CTA */}
-        <div className="mt-14 rounded-2xl border border-primary/20 bg-primary/5 p-6 text-center sm:p-8">
+        <div className="glass-panel glow-primary mt-14 p-6 text-center sm:p-8">
           <h2 className="mb-2 text-xl font-bold">Still curious?</h2>
           <p className="mx-auto mb-6 max-w-md text-sm text-muted-foreground">
             Read about the principles behind RoutineOS and why it works the way it does.
           </p>
           <Link
             href="/why"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+            className="light-sweep glow-neon inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-transform duration-300 ease-out-expo hover:scale-[1.03] active:scale-[0.98]"
           >
             Why RoutineOS
             <ArrowRight className="h-4 w-4" aria-hidden="true" />

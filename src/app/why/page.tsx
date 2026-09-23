@@ -80,6 +80,8 @@ export default function WhyPage() {
         {/* Hero */}
         <section className="relative overflow-hidden px-4 pt-16 pb-12 sm:px-6 sm:pt-24">
           <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="gradient-mesh-animated absolute inset-0" />
+            <div className="noise-overlay absolute inset-0" />
             <div className="absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[100px]" />
           </div>
           <div className="relative mx-auto max-w-3xl text-center">
@@ -89,9 +91,7 @@ export default function WhyPage() {
             </span>
             <h1 className="mb-6 text-4xl font-extrabold leading-[1.15] tracking-tight md:text-5xl">
               Consistency beats{' '}
-              <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 bg-clip-text text-transparent dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400">
-                intensity
-              </span>
+              <span className="animated-gradient-text">intensity</span>
             </h1>
             <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground">
               RoutineOS is built on one belief: a day you can repeat is worth more than one perfect
@@ -115,7 +115,7 @@ export default function WhyPage() {
               {PROBLEMS.map(({ icon: Icon, title, description }) => (
                 <div
                   key={title}
-                  className="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40"
+                  className="glass-panel p-6 transition-all duration-300 ease-out-expo hover:-translate-y-1 hover:border-primary/40"
                 >
                   <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-500">
                     <Icon className="h-5 w-5" aria-hidden="true" />
@@ -141,7 +141,7 @@ export default function WhyPage() {
               {PRINCIPLES.map(({ icon: Icon, title, description }) => (
                 <div
                   key={title}
-                  className="rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40"
+                  className="glass-panel p-6 transition-all duration-300 ease-out-expo hover:-translate-y-1 hover:border-primary/40"
                 >
                   <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" aria-hidden="true" />
@@ -157,7 +157,7 @@ export default function WhyPage() {
         {/* The result */}
         <section className="border-t border-border bg-muted/30 px-4 py-16 sm:px-6">
           <div className="mx-auto max-w-4xl">
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-6 sm:p-10">
+            <div className="glass-panel glow-primary p-6 sm:p-10">
               <div className="mb-8 flex items-center gap-4">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20">
                   <Timer className="h-6 w-6 text-white" aria-hidden="true" />
@@ -193,7 +193,7 @@ export default function WhyPage() {
               </p>
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-base font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                className="light-sweep glow-neon inline-flex items-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-base font-bold text-primary-foreground transition-transform duration-300 ease-out-expo hover:scale-[1.03] active:scale-[0.98]"
               >
                 Start For Free
                 <ArrowRight className="h-5 w-5" aria-hidden="true" />
