@@ -24,7 +24,7 @@ export function AuthCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: EASE }}
       className={cn(
-        'w-full max-w-md rounded-2xl border border-border bg-card/80 p-8 shadow-floating backdrop-blur-xl',
+        'glass-panel glow-primary w-full max-w-md rounded-2xl p-8 shadow-long backdrop-blur-xl',
         className,
       )}
     >

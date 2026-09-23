@@ -4,6 +4,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-background">
       {/* Background Gradient */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="gradient-mesh-animated absolute inset-0" />
+        <div className="noise-overlay absolute inset-0" />
+      </div>
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-teal-500/10 blur-[120px] pointer-events-none dark:bg-teal-500/20" />
 
