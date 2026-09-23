@@ -4,6 +4,7 @@ import { SystemStats } from '@/components/admin/SystemStats';
 
 export default async function AdminStatsPage() {
   const session = await auth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session role guard
   if ((session?.user as any)?.role !== 'ADMIN') redirect('/dashboard');
 
   return (

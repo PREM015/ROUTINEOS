@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { ArrowLeft, ShieldAlert, ShieldX, Trash2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
@@ -114,6 +115,7 @@ export default function AdminUserDetailPage() {
   }, [userId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -138,7 +140,7 @@ export default function AdminUserDetailPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -153,9 +155,9 @@ export default function AdminUserDetailPage() {
       <main className="container mx-auto max-w-2xl px-4 py-16">
         <Card>
           <div className="p-8 text-center">
-            <ShieldX className="mx-auto h-12 w-12 text-red-500" />
+            <ShieldX className="mx-auto h-12 w-12 text-destructive" />
             <h1 className="mt-4 text-xl font-bold">Access denied</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               You need administrator privileges to view this page.
             </p>
           </div>
@@ -167,7 +169,7 @@ export default function AdminUserDetailPage() {
   if (!userId) {
     return (
       <main className="container mx-auto max-w-6xl px-4 py-8">
-        <Card className="p-8 text-center text-sm text-gray-600">Invalid user id.</Card>
+        <Card className="p-8 text-center text-sm text-muted-foreground">Invalid user id.</Card>
       </main>
     );
   }
@@ -219,13 +221,13 @@ export default function AdminUserDetailPage() {
 
   return (
     <main className="container mx-auto max-w-6xl px-4 py-8">
-      <a href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900">
+      <Link href="/admin/users" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         Back to users
-      </a>
+      </Link>
 
       {error && (
-        <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           {error}
         </div>
       )}
@@ -251,13 +253,13 @@ export default function AdminUserDetailPage() {
                       className="h-14 w-14 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-xl font-bold text-blue-700">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
                       {(profile.displayName ?? profile.name ?? profile.id).slice(0, 1).toUpperCase()}
                     </div>
                   )}
                   <div>
                     <h1 className="text-2xl font-bold">{profile.displayName ?? profile.name ?? 'Unnamed user'}</h1>
-                    <p className="mt-1 text-sm text-gray-600">{profile.bio ?? 'No bio yet.'}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{profile.bio ?? 'No bio yet.'}</p>
                   </div>
                 </div>
                 <Badge variant={isActive ? 'success' : 'danger'}>
@@ -267,23 +269,23 @@ export default function AdminUserDetailPage() {
 
               <dl className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <dt className="text-xs font-medium uppercase text-gray-500">User id</dt>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">User id</dt>
                   <dd className="mt-1 font-mono text-sm">{profile.id}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase text-gray-500">Timezone</dt>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Timezone</dt>
                   <dd className="mt-1 text-sm">{profile.timezone}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase text-gray-500">Language</dt>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Language</dt>
                   <dd className="mt-1 text-sm">{profile.preferredLanguage}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase text-gray-500">Joined</dt>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Joined</dt>
                   <dd className="mt-1 text-sm">{new Date(profile.createdAt).toLocaleDateString()}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium uppercase text-gray-500">Onboarding</dt>
+                  <dt className="text-xs font-medium uppercase text-muted-foreground">Onboarding</dt>
                   <dd className="mt-1 text-sm">
                     {profile.onboardingCompletedAt ? 'Completed' : 'Pending'}
                   </dd>
@@ -291,12 +293,12 @@ export default function AdminUserDetailPage() {
               </dl>
 
               {notice && (
-                <div className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+                <div className="mt-4 rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400" role="status">
                   {notice}
                 </div>
               )}
 
-              <div className="mt-6 grid grid-cols-1 gap-4 border-t border-gray-100 pt-6 sm:grid-cols-2">
+              <div className="mt-6 grid grid-cols-1 gap-4 border-t border-border pt-6 sm:grid-cols-2">
                 <div>
                   <Select
                     label="Role"
@@ -319,7 +321,7 @@ export default function AdminUserDetailPage() {
                   Delete account
                 </Button>
                 {profile.id === me.id && (
-                  <span className="self-center text-xs text-gray-500">
+                  <span className="self-center text-xs text-muted-foreground">
                     You cannot delete your own account.
                   </span>
                 )}
@@ -331,23 +333,23 @@ export default function AdminUserDetailPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {statCards.map((stat) => (
                 <Card key={stat.label} className="p-4">
-                  <h3 className="text-xs font-medium uppercase text-gray-500">{stat.label}</h3>
-                  <p className="mt-2 text-base font-semibold text-gray-900">{stat.value}</p>
+                  <h3 className="text-xs font-medium uppercase text-muted-foreground">{stat.label}</h3>
+                  <p className="mt-2 text-base font-semibold text-foreground">{stat.value}</p>
                 </Card>
               ))}
             </div>
           )}
 
           <Card>
-            <div className="border-b border-gray-200 px-6 py-4">
+            <div className="border-b border-border px-6 py-4">
               <h2 className="text-lg font-bold">Activity</h2>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Audit trail for this user (GET /api/admin/audit-log?userId=...).
               </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-xs uppercase text-gray-500">
+                <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3">When</th>
                     <th className="px-6 py-3">Action</th>
@@ -358,13 +360,13 @@ export default function AdminUserDetailPage() {
                 <tbody>
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
                         No activity recorded.
                       </td>
                     </tr>
                   ) : (
                     logs.map((log) => (
-                      <tr key={log.id} className="border-b border-gray-100 last:border-0">
+                      <tr key={log.id} className="border-b border-border last:border-0">
                         <td className="px-6 py-3 whitespace-nowrap">
                           {getRelativeTime(log.createdAt)}
                         </td>
@@ -377,7 +379,7 @@ export default function AdminUserDetailPage() {
                             {log.entityId ? ` / ${log.entityId}` : ''}
                           </span>
                         </td>
-                        <td className="px-6 py-3 text-gray-500">
+                        <td className="px-6 py-3 text-muted-foreground">
                           {log.ipAddress ?? '-'}
                           {log.location ? ` · ${log.location}` : ''}
                         </td>

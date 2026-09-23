@@ -4,6 +4,7 @@ import { AuditLogTable } from '@/components/admin/AuditLogTable';
 
 export default async function AdminAuditLogPage() {
   const session = await auth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- session role guard
   if ((session?.user as any)?.role !== 'ADMIN') redirect('/dashboard');
 
   return (

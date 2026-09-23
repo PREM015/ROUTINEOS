@@ -56,6 +56,7 @@ export default function AdminSettingsPage() {
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync prefs on mount
     setPrefs(loadPrefs());
   }, []);
 
@@ -110,7 +111,7 @@ export default function AdminSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -125,9 +126,9 @@ export default function AdminSettingsPage() {
       <main className="container mx-auto max-w-2xl px-4 py-16">
         <Card>
           <div className="p-8 text-center">
-            <ShieldX className="mx-auto h-12 w-12 text-red-500" />
+            <ShieldX className="mx-auto h-12 w-12 text-destructive" />
             <h1 className="mt-4 text-xl font-bold">Access denied</h1>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-muted-foreground">
               You need administrator privileges to view this page.
             </p>
           </div>
@@ -143,7 +144,7 @@ export default function AdminSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Admin Settings</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Platform preferences. Toggles here mirror feature-flag lookups; flag
           creation/updates happen on the Feature Flags page.
         </p>
@@ -173,7 +174,7 @@ export default function AdminSettingsPage() {
             </div>
             <div className="mt-4 flex items-center gap-3">
               {saved && (
-                <span className="inline-flex items-center gap-1 text-sm text-green-600">
+                <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" />
                   Saved
                 </span>
@@ -184,7 +185,7 @@ export default function AdminSettingsPage() {
               </Button>
             </div>
             {refreshError && (
-              <div className="mt-3 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              <div className="mt-3 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                 {refreshError}
               </div>
             )}
@@ -194,7 +195,7 @@ export default function AdminSettingsPage() {
         <Card>
           <div className="p-6">
             <h2 className="text-lg font-bold">Current feature-flag state</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-muted-foreground">
               Values returned by GET /api/feature-flags/check for the known keys.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
