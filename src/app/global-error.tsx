@@ -23,12 +23,12 @@ export default function GlobalError({
   return (
     <html>
       <body>
-        <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-zinc-950 text-white">
+        <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-background text-foreground">
           <div className="max-w-md w-full space-y-6 text-center">
             {/* Error Icon */}
             <div className="flex justify-center">
               <svg 
-                className="w-20 h-20 text-red-500" 
+                className="w-20 h-20 text-destructive" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
@@ -44,19 +44,19 @@ export default function GlobalError({
 
             {/* Error Message */}
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-zinc-100">
+              <h2 className="text-2xl font-bold text-foreground">
                 Something went wrong!
               </h2>
-              <p className="text-zinc-400">
-                We've been notified and are working on a fix. Please try again.
+              <p className="text-muted-foreground">
+                We&apos;ve been notified and are working on a fix. Please try again.
               </p>
             </div>
 
             {/* Error ID */}
             {error.digest && (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-                <p className="text-xs text-zinc-500 mb-1">Error ID</p>
-                <p className="text-xs text-zinc-400 font-mono break-all">
+              <div className="bg-card border border-border rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Error ID</p>
+                <p className="text-xs text-muted-foreground font-mono break-all">
                   {error.digest}
                 </p>
               </div>
@@ -66,24 +66,24 @@ export default function GlobalError({
             <div className="flex flex-col gap-3">
               <button
                 onClick={reset}
-                className="w-full px-4 py-3 bg-white text-black font-medium rounded-lg hover:bg-zinc-200 transition"
+                className="w-full px-4 py-3 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition"
               >
                 Try again
               </button>
               <Link
                 href="/"
-                className="w-full px-4 py-3 border border-zinc-700 text-zinc-300 font-medium rounded-lg hover:border-zinc-500 hover:bg-zinc-900 transition text-center"
+                className="w-full px-4 py-3 border border-zinc-700 text-foreground font-medium rounded-lg hover:border-foreground/30 hover:bg-muted transition text-center"
               >
                 Go to Home
               </Link>
             </div>
 
             {/* Support Link */}
-            <p className="text-xs text-zinc-600">
+            <p className="text-xs text-muted-foreground/60">
               Need help?{' '}
               <a 
                 href="/feedback" 
-                className="text-zinc-400 hover:text-zinc-200 underline"
+                className="text-muted-foreground hover:text-foreground underline"
               >
                 Contact support
               </a>

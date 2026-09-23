@@ -31,19 +31,19 @@ export default function DashboardError({
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-6 text-center">
       {/* Error Icon */}
-      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10">
-        <AlertCircle className="w-8 h-8 text-red-500" />
+      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10">
+        <AlertCircle className="w-8 h-8 text-destructive" />
       </div>
 
       {/* Error Content */}
       <div className="space-y-2 max-w-md">
-        <p className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
+        <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
           Something went wrong
         </p>
-        <h1 className="text-2xl font-semibold text-zinc-100">
+        <h1 className="text-2xl font-semibold text-foreground">
           This page encountered an error
         </h1>
-        <p className="text-sm text-zinc-400 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           Your data is safe — this was just a rendering issue. Try refreshing the page,
           or head back to your dashboard.
         </p>
@@ -51,9 +51,9 @@ export default function DashboardError({
 
       {/* Error ID */}
       {error.digest && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2">
-          <p className="text-xs text-zinc-500 mb-1">Error ID</p>
-          <p className="text-xs text-zinc-400 font-mono">
+        <div className="bg-card border border-border rounded-lg px-4 py-2">
+          <p className="text-xs text-muted-foreground mb-1">Error ID</p>
+          <p className="text-xs text-muted-foreground font-mono">
             {error.digest}
           </p>
         </div>
@@ -63,14 +63,14 @@ export default function DashboardError({
       <div className="flex gap-3 mt-2">
         <button
           onClick={reset}
-          className="inline-flex items-center gap-2 rounded-lg bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-zinc-300"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
         >
           <RefreshCw className="w-4 h-4" />
           Try again
         </button>
         <button
           onClick={() => router.push('/dashboard')}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:bg-zinc-900"
+          className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 px-5 py-2.5 text-sm font-medium text-foreground transition hover:border-foreground/30 hover:bg-muted"
         >
           <Home className="w-4 h-4" />
           Go to Dashboard
@@ -80,11 +80,11 @@ export default function DashboardError({
       {/* Development Error Details */}
       {process.env.NODE_ENV === 'development' && (
         <details className="mt-8 w-full max-w-2xl">
-          <summary className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-400">
+          <summary className="cursor-pointer text-xs text-muted-foreground hover:text-muted-foreground">
             Show error details (dev only)
           </summary>
-          <div className="mt-4 rounded-lg bg-zinc-900 border border-zinc-800 p-4 text-left">
-            <pre className="text-xs text-red-400 overflow-auto">
+          <div className="mt-4 rounded-lg bg-card border border-border p-4 text-left">
+            <pre className="text-xs text-destructive overflow-auto">
               {error.message}
               {'\n\n'}
               {error.stack}
