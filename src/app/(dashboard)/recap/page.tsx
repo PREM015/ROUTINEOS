@@ -4,137 +4,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
-import {
-  CalendarDays,
-  TrendingUp,
-  Flame,
-  Moon,
-  Target,
-  FolderCheck,
-  Timer,
-  BookOpen,
-  Sparkles,
-} from 'lucide-react';
+import { CalendarDays, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getTodayString } from '@/lib/dates';
 import { shiftAnchor, type Period } from '@/lib/period-range';
 import { PeriodControl } from '@/components/shared/PeriodControl';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Cell,
-} from 'recharts';
+import DailyRecap from '@/components/recap/DailyRecap';
+import WeeklyRecap from '@/components/recap/WeeklyRecap';
+import MonthlyRecap from '@/components/recap/MonthlyRecap';
+import YearlyRecap from '@/components/recap/YearlyRecap';
+import BestDayCard from '@/components/recap/BestDayCard';
+import MilestoneCard, { type Milestone } from '@/components/recap/MilestoneCard';
+import ShareRecapCard, { type ShareStat } from '@/components/recap/ShareRecapCard';
+import TrendCard from '@/components/recap/TrendCard';
+import type { RecapReport } from '@/types/recap';
 
 /**
  * Recap page — real data only.
- * Day / Week / Month / Year periods fetched from /api/recap, rendered with a
- * score chart, stat cards, and period highlights. Period navigation is shared
+ * Day / Week / Month / Year periods fetched from /api/recap, rendered with per-period
+ * recap cards, a score trend, celebratory best-day and milestone cards, highlighted
+ * wins / focus areas, and a real share-summary card. Period navigation is shared
  * with the dashboard Routine Progress widget via PeriodControl.
  */
-
-interface ScorePoint {
-  date: string;
-  totalScore: number;
-  core: number;
-  growth: number;
-  bonus: number;
-}
-
-interface Report {
-  period: Period;
-  anchorDate: string;
-  startDate: string;
-  endDate: string;
-  label: string;
-  hasData: boolean;
-  points: ScorePoint[];
-  day?: {
-    score: {
-      total: number | null;
-      grade: string | null;
-      isMinimumDay: boolean;
-      isRestDay: boolean;
-    };
-    habitReliability: number;
-    routine: { completed: number; total: number; completionRate: number };
-    sleep: {
-      logged: boolean;
-      durationMinutes: number | null;
-      metTarget: boolean | null;
-    };
-    tiers: Array<{ tier: string; total: number; completed: number; completionRate: number }>;
-    topMoments: string[];
-    bottomMoments: string[];
-  };
-  week?: {
-    scores: {
-      average: number;
-      perfectDays: number;
-      excellentDays: number;
-      bestDay: { date: string; score: number } | null;
-      worstDay: { date: string; score: number } | null;
-    };
-    habits: {
-      averageCompletionRate: number;
-      mostCompleted: { habitName: string; completionRate: number } | null;
-    };
-    sleep: { averageDuration: number; loggedDays: number };
-    trend: { previousAverage: number; delta: number };
-    streaks: { current: number; longest: number };
-  };
-  month?: {
-    scores: {
-      average: number;
-      perfectDays: number;
-      excellentDays: number;
-      bestDay: { date: string; score: number } | null;
-      worstDay: { date: string; score: number } | null;
-      byTier: Array<{ tier: string; count: number; completionRate: number }>;
-    };
-    habits: {
-      averageCompletionRate: number;
-      totalCompleted: number;
-      totalMissed: number;
-      perHabit: Array<{ habitName: string; completionRate: number; weeklyRates: Array<number | null> }>;
-    };
-    focus: { totalSessions: number; totalFocusMinutes: number };
-    journal: { entryCount: number };
-    goals: { completed: number; milestonesHit: number };
-    sleep: { averageDuration: number; nightsMeetingTarget: number };
-  };
-  year?: {
-    totalDaysScored: number;
-    averageScore: number;
-    bestMonth: { month: string; averageScore: number } | null;
-    worstMonth: { month: string; averageScore: number } | null;
-    monthlyScoreTrend: Array<{ month: string; days: number; averageScore: number }>;
-    habits: {
-      averageCompletionRate: number;
-      totalCompleted: number;
-      totalMissed: number;
-      bestHabit: { habitName: string; completionRate: number } | null;
-    };
-    streaks: { current: number; longest: number };
-    goals: { completed: number; averageProgress: number };
-    focus: { totalSessions: number; totalFocusMinutes: number };
-    journal: { entryCount: number };
-  };
-}
-
-const CHART_TOOLTIP = {
-  backgroundColor: '#18181b',
-  border: '1px solid #27272a',
-  borderRadius: '8px',
-  color: '#ffffff',
-} as const;
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -151,7 +42,7 @@ function monthName(monthKey: string): string {
 export default function RecapPage() {
   const [period, setPeriod] = useState<Period>('week');
   const [anchorDate, setAnchorDate] = useState<string>(() => getTodayString());
-  const [report, setReport] = useState<Report | null>(null);
+  const [report, setReport] = useState<RecapReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const requestId = useRef(0);
@@ -167,7 +58,7 @@ export default function RecapPage() {
       const json = await res.json();
       if (!res.ok || !json?.success) throw new Error('Failed to load recap');
       if (requestId.current !== id) return;
-      setReport(json.data as Report);
+      setReport(json.data as RecapReport);
     } catch {
       if (requestId.current !== id) return;
       setError(true);
@@ -181,11 +72,10 @@ export default function RecapPage() {
     void load(period, anchorDate);
   }, [period, anchorDate, load]);
 
-  const navigate = (delta: number) =>
-    setAnchorDate(shiftAnchor(anchorDate, period, delta));
+  const navigate = (delta: number) => setAnchorDate(shiftAnchor(anchorDate, period, delta));
 
   return (
-    <DashboardLayout>
+    <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Recap</h1>
@@ -219,15 +109,257 @@ export default function RecapPage() {
           body="Log habits, complete your routine, and track sleep to build your recap."
         />
       ) : (
-        <div className="space-y-6">
-          <StatGrid period={period} report={report} />
-          <ScoreChart period={period} report={report} />
-          <Highlights period={period} report={report} />
-        </div>
+        <RecapDashboard period={period} report={report} />
       )}
-    </DashboardLayout>
+    </div>
   );
 }
+
+function RecapDashboard({ period, report }: { period: Period; report: RecapReport }) {
+  if (period === 'day' && report.day) {
+    return (
+      <div className="space-y-6">
+        <DailyRecap day={report.day} />
+        <Highlights period={period} report={report} />
+        <ShareRecapCard periodLabel="Today" stats={dayShareStats(report.day)} />
+      </div>
+    );
+  }
+
+  if (period === 'week' && report.week) {
+    const weekRows = report.points.map((point) => ({
+      label: format(parseISO(point.date), 'EEE'),
+      value: point.totalScore,
+    }));
+    const best = report.week.scores.bestDay;
+    return (
+      <div className="space-y-6">
+        <WeeklyRecap week={report.week} />
+        <TrendCard
+          title="Score trend"
+          rows={weekRows}
+          delta={report.week.trend.delta}
+          accent="#10b981"
+          className="w-full"
+        />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {best && (
+            <BestDayCard
+              date={format(parseISO(best.date), 'EEE, MMM d')}
+              score={Math.round(best.score)}
+              subtitle={
+                report.week.habits.mostCompleted
+                  ? `Most consistent: ${report.week.habits.mostCompleted.habitName}`
+                  : undefined
+              }
+            />
+          )}
+          <MilestoneCard milestones={weekMilestones(report.week)} />
+        </div>
+        <Highlights period={period} report={report} />
+        <ShareRecapCard periodLabel={report.label} stats={weekShareStats(report.week)} />
+      </div>
+    );
+  }
+
+  if (period === 'month' && report.month) {
+    const monthRows = report.points.map((point) => ({
+      label: String(Number(point.date.slice(8))),
+      value: point.totalScore,
+    }));
+    const best = report.month.scores.bestDay;
+    return (
+      <div className="space-y-6">
+        <MonthlyRecap month={report.month} />
+        <TrendCard
+          title="Daily scores"
+          rows={monthRows}
+          accent="#f59e0b"
+          className="w-full"
+        />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {best && (
+            <BestDayCard
+              date={format(parseISO(best.date), 'MMM d')}
+              score={Math.round(best.score)}
+              subtitle={
+                report.month.scores.perfectDays > 0
+                  ? `${report.month.scores.perfectDays} perfect day${report.month.scores.perfectDays === 1 ? '' : 's'}`
+                  : undefined
+              }
+            />
+          )}
+          <MilestoneCard milestones={monthMilestones(report.month)} />
+        </div>
+        <Highlights period={period} report={report} />
+        <ShareRecapCard periodLabel={report.label} stats={monthShareStats(report.month)} />
+      </div>
+    );
+  }
+
+  if (period === 'year' && report.year) {
+    const yearRows =
+      report.year.monthlyScoreTrend?.map((entry) => ({
+        label: monthName(entry.month),
+        value: entry.averageScore,
+      })) ?? [];
+    return (
+      <div className="space-y-6">
+        <YearlyRecap year={report.year} />
+        <TrendCard
+          title="Monthly average scores"
+          rows={yearRows}
+          accent="#6366f1"
+          headline={`${Math.round(report.year.averageScore)}`}
+          className="w-full"
+        />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {report.year.bestMonth && (
+            <BestDayCard
+              date={report.year.bestMonth.month}
+              score={Math.round(report.year.bestMonth.averageScore)}
+              subtitle={`${report.year.totalDaysScored} days scored all year`}
+            />
+          )}
+          <MilestoneCard milestones={yearMilestones(report.year)} />
+        </div>
+        <Highlights period={period} report={report} />
+        <ShareRecapCard periodLabel={report.label} stats={yearShareStats(report.year)} />
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/* ── Real share stats (never fabricated; 0 superseded by '—' markers) ─────── */
+
+function dayShareStats(day: NonNullable<RecapReport['day']>): ShareStat[] {
+  return [
+    { label: 'Score', value: day.score.total != null ? String(Math.round(day.score.total)) : '—' },
+    { label: 'Habit reliability', value: `${Math.round(day.habitReliability)}%` },
+    { label: 'Routine', value: day.routine.total > 0 ? `${Math.round(day.routine.completionRate)}%` : '—' },
+    {
+      label: 'Sleep',
+      value: day.sleep.durationMinutes != null ? formatDuration(day.sleep.durationMinutes) : '—',
+    },
+  ];
+}
+
+function weekShareStats(week: NonNullable<RecapReport['week']>): ShareStat[] {
+  return [
+    { label: 'Average score', value: String(Math.round(week.scores.average)) },
+    { label: 'Habit completion', value: `${Math.round(week.habits.averageCompletionRate)}%` },
+    { label: 'Streak', value: `${week.streaks.current} day${week.streaks.current === 1 ? '' : 's'}` },
+    {
+      label: 'Avg sleep',
+      value: week.sleep.loggedDays > 0 ? formatDuration(week.sleep.averageDuration) : '—',
+    },
+  ];
+}
+
+function monthShareStats(month: NonNullable<RecapReport['month']>): ShareStat[] {
+  return [
+    { label: 'Average score', value: String(Math.round(month.scores.average)) },
+    { label: 'Habits completed', value: String(month.habits.totalCompleted) },
+    { label: 'Goals completed', value: String(month.goals.completed) },
+    {
+      label: 'Focus',
+      value: `${Math.round(month.focus.totalFocusMinutes / 60)}h`,
+    },
+  ];
+}
+
+function yearShareStats(year: NonNullable<RecapReport['year']>): ShareStat[] {
+  return [
+    { label: 'Average score', value: String(Math.round(year.averageScore)) },
+    { label: 'Days scored', value: String(year.totalDaysScored) },
+    { label: 'Habits completed', value: String(year.habits.totalCompleted) },
+    { label: 'Longest streak', value: `${year.streaks.longest} days` },
+  ];
+}
+
+/* ── Real milestones per period ────────────────────────────────────────────── */
+
+function weekMilestones(week: NonNullable<RecapReport['week']>): Milestone[] {
+  const milestones: Milestone[] = [];
+  if (week.scores.perfectDays > 0) {
+    milestones.push({
+      label: 'Perfect days',
+      value: `${week.scores.perfectDays} day${week.scores.perfectDays === 1 ? '' : 's'} at 100 points`,
+      tone: 'score',
+    });
+  }
+  if (week.streaks.longest > 0) {
+    milestones.push({
+      label: 'Longest streak',
+      value: `${week.streaks.longest} days`,
+      tone: 'streak',
+    });
+  }
+  if (week.habits.mostCompleted) {
+    milestones.push({
+      label: 'Most consistent',
+      value: `${week.habits.mostCompleted.habitName} (${Math.round(week.habits.mostCompleted.completionRate)}%)`,
+      tone: 'habit',
+    });
+  }
+  return milestones;
+}
+
+function monthMilestones(month: NonNullable<RecapReport['month']>): Milestone[] {
+  const milestones: Milestone[] = [];
+  if (month.goals.completed > 0) {
+    milestones.push({
+      label: 'Goals completed',
+      value: String(month.goals.completed),
+      tone: 'goal',
+    });
+  }
+  if (month.scores.perfectDays > 0) {
+    milestones.push({
+      label: 'Perfect days',
+      value: `${month.scores.perfectDays} day${month.scores.perfectDays === 1 ? '' : 's'} at 100 points`,
+      tone: 'score',
+    });
+  }
+  if (month.habits.totalCompleted > 0) {
+    milestones.push({
+      label: 'Habit completions',
+      value: String(month.habits.totalCompleted),
+      tone: 'habit',
+    });
+  }
+  return milestones;
+}
+
+function yearMilestones(year: NonNullable<RecapReport['year']>): Milestone[] {
+  const milestones: Milestone[] = [];
+  if (year.streaks.longest > 0) {
+    milestones.push({
+      label: 'Longest streak',
+      value: `${year.streaks.longest} days`,
+      tone: 'streak',
+    });
+  }
+  if (year.goals.completed > 0) {
+    milestones.push({
+      label: 'Goals completed',
+      value: String(year.goals.completed),
+      tone: 'goal',
+    });
+  }
+  if (year.habits.totalCompleted > 0) {
+    milestones.push({
+      label: 'Habit completions',
+      value: String(year.habits.totalCompleted),
+      tone: 'habit',
+    });
+  }
+  return milestones;
+}
+
+/* ── Skeltons + empty states ──────────────────────────────────────────────── */
 
 function SkeletonGrid() {
   return (
@@ -250,7 +382,7 @@ function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; bod
       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
       <Link
         href="/today"
-        className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+        className="light-sweep glow-neon mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
       >
         Go to Today
       </Link>
@@ -258,257 +390,31 @@ function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; bod
   );
 }
 
-function Stat({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail: string }) {
-  return (
-    <div className="glass-panel shadow-soft rounded-2xl p-5">
-      <div className="mb-4 inline-flex rounded-xl p-2 bg-primary/10 text-primary">
-        {icon}
-      </div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-2 text-3xl font-semibold text-foreground tabular-nums">{value}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{detail}</p>
-    </div>
-  );
-}
+/* ── Period highlights (wins + watch out) ─────────────────────────────────── */
 
-function StatGrid({ period, report }: { period: Period; report: Report }) {
+function Highlights({ period, report }: { period: Period; report: RecapReport }) {
   const day = report.day;
   const week = report.week;
   const month = report.month;
   const year = report.year;
 
   if (period === 'day' && day) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Stat
-          icon={<TrendingUp size={18} />}
-          label="Daily score"
-          value={day.score.total != null ? String(Math.round(day.score.total)) : '--'}
-          detail={`Grade: ${day.score.grade ?? 'N/A'}${day.score.isMinimumDay ? ' \u00b7 Minimum day' : ''}${day.score.isRestDay ? ' \u00b7 Rest day' : ''}`}
-        />
-        <Stat
-          icon={<Sparkles size={18} />}
-          label="Habit reliability"
-          value={`${Math.round(day.habitReliability)}%`}
-          detail={`${day.routine.total} routine blocks, ${day.routine.completed} completed`}
-        />
-        <Stat
-          icon={<Moon size={18} />}
-          label="Sleep"
-          value={day.sleep.durationMinutes != null ? formatDuration(day.sleep.durationMinutes) : '--'}
-          detail={day.sleep.logged ? (day.sleep.metTarget ? 'Target met' : 'Below target') : 'Not logged'}
-        />
-        <Stat
-          icon={<Target size={18} />}
-          label="Routine"
-          value={day.routine.total > 0 ? `${Math.round(day.routine.completionRate)}%` : '--'}
-          detail={day.routine.total > 0 ? `${day.routine.completed} of ${day.routine.total} blocks` : 'Nothing scheduled'}
-        />
-      </div>
-    );
-  }
-
-  if (period === 'week' && week) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Stat icon={<TrendingUp size={18} />} label="Average score" value={String(Math.round(week.scores.average))} detail={`${week.scores.perfectDays} perfect, ${week.scores.excellentDays} excellent days`} />
-        <Stat icon={<Sparkles size={18} />} label="Habit completion" value={`${Math.round(week.habits.averageCompletionRate)}%`} detail={week.habits.mostCompleted ? `Best: ${week.habits.mostCompleted.habitName}` : 'No habit activity'} />
-        <Stat icon={<Moon size={18} />} label="Avg sleep" value={week.sleep.averageDuration > 0 ? formatDuration(week.sleep.averageDuration) : '--'} detail={`${week.sleep.loggedDays} nights logged`} />
-        <Stat icon={<Flame size={18} />} label="Streak" value={`${week.streaks.current} days`} detail={week.trend.delta !== 0 ? `vs last week: ${week.trend.delta > 0 ? '+' : ''}${Math.round(week.trend.delta)} pts` : 'Even with last week'} />
-      </div>
-    );
-  }
-
-  if (period === 'month' && month) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Stat icon={<TrendingUp size={18} />} label="Average score" value={String(Math.round(month.scores.average))} detail={`${month.scores.perfectDays} perfect, ${month.scores.excellentDays} excellent days`} />
-        <Stat icon={<Sparkles size={18} />} label="Habit completion" value={`${Math.round(month.habits.averageCompletionRate)}%`} detail={`${month.habits.totalCompleted} completed, ${month.habits.totalMissed} missed`} />
-        <Stat icon={<Timer size={18} />} label="Focus time" value={formatDuration(month.focus.totalFocusMinutes)} detail={`${month.focus.totalSessions} sessions`} />
-        <Stat icon={<FolderCheck size={18} />} label="Goals" value={String(month.goals.completed)} detail={`${month.goals.milestonesHit} milestones hit`} />
-      </div>
-    );
-  }
-
-  if (period === 'year' && year) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Stat icon={<TrendingUp size={18} />} label="Average score" value={String(Math.round(year.averageScore))} detail={`${year.totalDaysScored} days scored`} />
-        <Stat icon={<Sparkles size={18} />} label="Habit completion" value={`${Math.round(year.habits.averageCompletionRate)}%`} detail={`${year.habits.totalCompleted} completions`} />
-        <Stat icon={<Timer size={18} />} label="Focus time" value={formatDuration(year.focus.totalFocusMinutes)} detail={`${year.focus.totalSessions} sessions`} />
-        <Stat icon={<BookOpen size={18} />} label="Journal entries" value={String(year.journal.entryCount)} detail={`${year.goals.completed} goals completed`} />
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function ScoreChart({ period, report }: { period: Period; report: Report }) {
-  const rows = useMemo(() => {
-    if (period === 'year') {
-      return report.year?.monthlyScoreTrend?.map((entry) => ({
-        label: monthName(entry.month),
-        score: entry.averageScore,
-      }));
-    }
-    return report.points.map((point) => ({
-      label: period === 'month' ? String(Number(point.date.slice(8))) : format(parseISO(point.date), 'EEE'),
-      score: point.totalScore,
-    }));
-  }, [period, report]);
-
-  if (period === 'day') {
-    const day = report.day;
-    if (!day) return null;
-    const score = report.points[0] ?? { core: 0, growth: 0, bonus: 0 };
-    const segments = [
-      { key: 'core', name: 'Core', value: score.core, color: '#0ea5e9' },
-      { key: 'growth', name: 'Growth', value: score.growth, color: '#8b5cf6' },
-      { key: 'bonus', name: 'Bonus', value: score.bonus, color: '#f59e0b' },
-    ].filter((segment) => segment.value > 0);
-    const maxBar = Math.max(segments.reduce((sum, s) => sum + s.value, 0), 100);
-
-    return (
-      <div className="glass-panel shadow-soft rounded-2xl p-6">
-        <h2 className="mb-5 text-lg font-semibold text-foreground">Daily score breakdown</h2>
-        <div className="flex h-8 w-full overflow-hidden rounded-lg bg-muted">
-          {segments.map((segment) => (
-            <div
-              key={segment.key}
-              className="h-full transition-colors"
-              style={{
-                width: `${(segment.value / maxBar) * 100}%`,
-                backgroundColor: segment.color,
-              }}
-              title={`${segment.name}: ${Math.round(segment.value)}`}
-            />
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
-          {segments.length === 0 ? (
-            <span>No score data for this day.</span>
-          ) : (
-            segments.map((segment) => (
-              <span key={segment.key} className="inline-flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: segment.color }} />
-                {segment.name}: <span className="text-foreground tabular-nums">{Math.round(segment.value)}</span>
-              </span>
-            ))
-          )}
-        </div>
-        {day.tiers.length > 0 && (
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {day.tiers.map((tier) => (
-              <div key={tier.tier} className="rounded-xl border border-border bg-muted/30 p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-foreground capitalize">{tier.tier.toLowerCase()}</span>
-                  <span className="text-muted-foreground tabular-nums">{tier.completed}/{tier.total}</span>
-                </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${tier.completionRate}%` }} />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground tabular-nums">{Math.round(tier.completionRate)}% done</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (!rows || rows.length === 0) {
-    return (
-      <div className="glass-panel shadow-soft rounded-2xl p-6">
-        <h2 className="text-lg font-semibold text-foreground">Score trend</h2>
-        <p className="mt-4 text-center text-sm text-muted-foreground">No scores for this period.</p>
-      </div>
-    );
-  }
-
-  const isMonth = period === 'month';
-  const isYear = period === 'year';
-
-  return (
-    <div className="glass-panel shadow-soft rounded-2xl p-6">
-      <h2 className="mb-5 text-lg font-semibold text-foreground">
-        {period === 'year' ? 'Monthly average scores' : 'Score trend'}
-      </h2>
-      <div className="h-72 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {(() => {
-            if (isYear) {
-              return (
-                <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                  <defs>
-                    <linearGradient id="recapYearFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
-                  <XAxis dataKey="label" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={CHART_TOOLTIP} labelStyle={{ color: '#a1a1aa' }} itemStyle={{ color: '#fff' }} />
-                  <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#recapYearFill)" name="Avg score" />
-                </AreaChart>
-              );
-            }
-            if (isMonth) {
-              return (
-                <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
-                  <XAxis dataKey="label" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={CHART_TOOLTIP} labelStyle={{ color: '#a1a1aa' }} itemStyle={{ color: '#fff' }} />
-                  <Bar dataKey="score" name="Score" radius={[3, 3, 0, 0]}>
-                    {rows.map((entry, index) => (
-                      <Cell
-                        key={index}
-                        fill={entry.score >= 85 ? '#10b981' : entry.score >= 60 ? '#f59e0b' : '#f43f5e'}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              );
-            }
-            return (
-              <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                <defs>
-                  <linearGradient id="recapWeekFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" vertical={false} />
-                <XAxis dataKey="label" stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={CHART_TOOLTIP} labelStyle={{ color: '#a1a1aa' }} itemStyle={{ color: '#fff' }} />
-                <Area type="monotone" dataKey="score" stroke="#10b981" strokeWidth={2.5} fill="url(#recapWeekFill)" name="Score" />
-              </AreaChart>
-            );
-          })()}
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-function Highlights({ period, report }: { period: Period; report: Report }) {
-  const day = report.day;
-  const week = report.week;
-  const month = report.month;
-  const year = report.year;
-
-  if (period === 'day' && day) {
-    const wins = day.topMoments;
-    const focus = day.bottomMoments;
     return (
       <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Day at a glance</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <HighlightCard title="Wins" items={wins} empty="No completed highlights yet." tone="emerald" />
-          <HighlightCard title="Needs work" items={focus} empty="Nothing to fix. Nice work!" tone="rose" />
+          <HighlightCard
+            title="Wins"
+            items={day.topMoments}
+            empty="No completed highlights yet."
+            tone="emerald"
+          />
+          <HighlightCard
+            title="Needs work"
+            items={day.bottomMoments}
+            empty="Nothing to fix. Nice work!"
+            tone="rose"
+          />
         </div>
       </div>
     );
@@ -524,8 +430,12 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
           <HighlightCard
             title="Top moment"
             items={[
-              best ? `Best day: ${format(parseISO(best.date), 'EEE, MMM d')} (${Math.round(best.score)})` : null,
-              week.habits.mostCompleted ? `Most consistent: ${week.habits.mostCompleted.habitName}` : null,
+              best
+                ? `Best day: ${format(parseISO(best.date), 'EEE, MMM d')} (${Math.round(best.score)})`
+                : null,
+              week.habits.mostCompleted
+                ? `Most consistent: ${week.habits.mostCompleted.habitName}`
+                : null,
             ].filter((item): item is string => Boolean(item))}
             empty="No score data yet this week."
             tone="emerald"
@@ -533,10 +443,16 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
           <HighlightCard
             title="Watch out"
             items={[
-              worst ? `Toughest day: ${format(parseISO(worst.date), 'EEE, MMM d')} (${Math.round(worst.score)})` : null,
-              week.sleep.averageDuration > 0 ? `Avg sleep ${formatDuration(week.sleep.averageDuration)} / night` : null,
+              worst
+                ? `Toughest day: ${format(parseISO(worst.date), 'EEE, MMM d')} (${Math.round(worst.score)})`
+                : null,
+              week.sleep.averageDuration > 0
+                ? `Avg sleep ${formatDuration(week.sleep.averageDuration)} / night`
+                : null,
               week.trend.delta !== 0
-                ? `Score ${week.trend.delta > 0 ? 'up' : 'down'} ${Math.abs(Math.round(week.trend.delta))} pts vs last week`
+                ? `Score ${week.trend.delta > 0 ? 'up' : 'down'} ${Math.abs(
+                    Math.round(week.trend.delta)
+                  )} pts vs last week`
                 : null,
             ].filter((item): item is string => Boolean(item))}
             empty="No data to highlight this week."
@@ -559,9 +475,15 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
           <HighlightCard
             title="Highlights"
             items={[
-              best ? `Best day: ${format(parseISO(best.date), 'MMM d')} (${Math.round(best.score)})` : null,
-              reliable ? `Most reliable: ${reliable.habitName} (${Math.round(reliable.completionRate)}%)` : null,
-              month.journal.entryCount > 0 ? `${month.journal.entryCount} journal entries` : null,
+              best
+                ? `Best day: ${format(parseISO(best.date), 'MMM d')} (${Math.round(best.score)})`
+                : null,
+              reliable
+                ? `Most reliable: ${reliable.habitName} (${Math.round(reliable.completionRate)}%)`
+                : null,
+              month.journal.entryCount > 0
+                ? `${month.journal.entryCount} journal entries`
+                : null,
             ].filter((item): item is string => Boolean(item))}
             empty="Nothing notable recorded this month."
             tone="emerald"
@@ -593,8 +515,12 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
           <HighlightCard
             title="Highlights"
             items={[
-              year.bestMonth ? `Best month: ${monthName(year.bestMonth.month)} (${Math.round(year.bestMonth.averageScore)})` : null,
-              year.habits.bestHabit ? `Best habit: ${year.habits.bestHabit.habitName}` : null,
+              year.bestMonth
+                ? `Best month: ${monthName(year.bestMonth.month)} (${Math.round(year.bestMonth.averageScore)})`
+                : null,
+              year.habits.bestHabit
+                ? `Best habit: ${year.habits.bestHabit.habitName}`
+                : null,
               year.streaks.longest > 0 ? `Longest streak: ${year.streaks.longest} days` : null,
             ].filter((item): item is string => Boolean(item))}
             empty="No highlights recorded this year."
@@ -603,9 +529,13 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
           <HighlightCard
             title="Watch out"
             items={[
-              year.worstMonth ? `Toughest month: ${monthName(year.worstMonth.month)} (${Math.round(year.worstMonth.averageScore)})` : null,
+              year.worstMonth
+                ? `Toughest month: ${monthName(year.worstMonth.month)} (${Math.round(year.worstMonth.averageScore)})`
+                : null,
               year.habits.totalMissed > 0 ? `${year.habits.totalMissed} habit checks missed` : null,
-              year.focus.totalSessions > 0 ? `${formatDuration(year.focus.totalFocusMinutes)} focused this year` : null,
+              year.focus.totalSessions > 0
+                ? `${formatDuration(year.focus.totalFocusMinutes)} focused this year`
+                : null,
             ].filter((item): item is string => Boolean(item))}
             empty="No data for a summary yet."
             tone="rose"
@@ -618,9 +548,19 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
   return null;
 }
 
-function HighlightCard({ title, items, empty, tone }: { title: string; items: string[]; empty: string; tone: 'emerald' | 'rose' }) {
+function HighlightCard({
+  title,
+  items,
+  empty,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  empty: string;
+  tone: 'emerald' | 'rose';
+}) {
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4">
+    <div className="rounded-xl border border-border/60 bg-card/60 p-4">
       <p className="font-medium text-foreground">{title}</p>
       {items.length > 0 ? (
         <ul className="mt-2 space-y-1.5">
@@ -629,10 +569,19 @@ function HighlightCard({ title, items, empty, tone }: { title: string; items: st
               key={item}
               className={cn(
                 'flex items-start gap-2 text-sm',
-                tone === 'rose' ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-300'
+                tone === 'rose'
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-emerald-700 dark:text-emerald-300'
               )}
             >
-              <span className="mt-0.5">{tone === 'rose' ? '\u2022' : '\u2022'}</span>
+              <span
+                className={cn(
+                  'mt-0.5',
+                  tone === 'rose' ? 'text-rose-500' : 'text-emerald-500'
+                )}
+              >
+                {'\u2022'}
+              </span>
               <span className="text-muted-foreground">{item}</span>
             </li>
           ))}

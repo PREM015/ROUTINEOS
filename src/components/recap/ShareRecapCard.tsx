@@ -1,44 +1,85 @@
 'use client';
 
-interface Props {
-  title: string;
-  stats: Array<{ label: string; value: string }>;
+import { useState } from 'react';
+import { Check, Copy, Share2, Sparkles } from 'lucide-react';
+
+export interface ShareStat {
+  label: string;
+  value: string;
 }
 
-export default function ShareRecapCard({ title, stats }: Props) {
+interface ShareRecapCardProps {
+  periodLabel: string;
+  stats: ShareStat[];
+}
+
+function buildSummary(periodLabel: string, stats: ShareStat[]): string {
+  const lines = stats.map((stat) => `${stat.label}: ${stat.value}`);
+  return [`My RoutineOS ${periodLabel}`, ...lines, 'Made with daily-plan'].join('\n');
+}
+
+export default function ShareRecapCard({ periodLabel, stats }: ShareRecapCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildSummary(periodLabel, stats));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <div className="max-w-sm mx-auto">
-      <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1 rounded-2xl shadow-xl">
-        <div className="bg-white rounded-xl p-6 h-full flex flex-col">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-pink-600">
-              {title}
-            </h2>
-            <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest">My Daily Plan Recap</p>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4 flex-1">
-            {stats.map((stat, idx) => (
-              <div key={idx} className="bg-gray-50 rounded-lg p-3 text-center border border-gray-100">
-                <p className="text-xl font-bold text-gray-800">{stat.value}</p>
-                <p className="text-xs text-gray-500 mt-1">{stat.label}</p>
+    <section className="rounded-2xl py-1">
+      <div className="rounded-2xl bg-gradient-to-br from-primary/70 via-primary/30 to-transparent p-px">
+        <div className="glass-panel relative overflow-hidden rounded-2xl p-6">
+          <div
+            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl"
+            aria-hidden="true"
+          />
+
+          <p className="shimmer-active inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            Share your recap
+          </p>
+
+          <h2 className="mt-4 text-2xl font-black text-foreground">{periodLabel}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A quick, honest summary of your week. Share it with your circle.
+          </p>
+
+          <dl className="mt-5 grid grid-cols-2 gap-3">
+            {stats.map((stat) => (
+              <div key={stat.label} className="rounded-xl bg-card/70 p-3">
+                <dt className="text-xs text-muted-foreground">{stat.label}</dt>
+                <dd className="mt-0.5 text-lg font-bold tabular-nums text-foreground">
+                  {stat.value}
+                </dd>
               </div>
             ))}
-          </div>
-          
-          <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400 font-medium">dailyplan.app</p>
-          </div>
+          </dl>
+
+          <button
+            onClick={copy}
+            className="light-sweep glow-neon mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform duration-300 ease-out-expo hover:scale-[1.02] active:scale-[0.97]"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" /> Copied to clipboard
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" /> Copy summary to share
+              </>
+            )}
+          </button>
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
+            <Share2 className="h-3 w-3" /> Paste it anywhere — messages, notes, social
+          </p>
         </div>
       </div>
-      
-      <button 
-        className="w-full mt-4 bg-gray-900 text-white font-medium py-3 px-4 rounded-xl shadow hover:bg-gray-800 transition-colors flex items-center justify-center space-x-2"
-        onClick={() => alert('Sharing functionality placeholder')}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-        <span>Copy as Image</span>
-      </button>
-    </div>
+    </section>
   );
 }

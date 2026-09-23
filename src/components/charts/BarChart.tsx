@@ -40,6 +40,8 @@ export interface BarChartProps {
   showGrid?: boolean;
   barSize?: number;
   ariaLabel?: string;
+  /** When set, bars render with a vertical gradient fill instead of solid colors. */
+  gradient?: { id: string; from: string; to: string };
 }
 
 const DEFAULT_COLORS = [
@@ -79,6 +81,7 @@ export function BarChart({
   showGrid = false,
   barSize,
   ariaLabel = 'Bar chart',
+  gradient,
 }: BarChartProps) {
   if (data.length === 0) {
     return (
@@ -108,15 +111,35 @@ export function BarChart({
           <XAxis dataKey={xKey} stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
           <YAxis stroke="#52525b" fontSize={12} tickLine={false} axisLine={false} />
           <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: '#fff' }} labelStyle={{ color: '#a1a1aa' }} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
+          {gradient && (
+            <defs>
+              <linearGradient id={gradient.id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={gradient.from} stopOpacity={1} />
+                <stop offset="100%" stopColor={gradient.to} stopOpacity={0.45} />
+              </linearGradient>
+            </defs>
+          )}
           {isGrouped ? (
             keys.map((key, index) => (
-              <Bar key={key} dataKey={key} fill={resolveColor(index, colors)} radius={[4, 4, 0, 0]} />
+              <Bar
+                key={key}
+                dataKey={key}
+                fill={gradient ? `url(#${gradient.id})` : resolveColor(index, colors)}
+                radius={[4, 4, 0, 0]}
+                animationDuration={750}
+                animationEasing="ease-out"
+              />
             ))
           ) : (
-            <Bar dataKey={keys[0] ?? ''} fill={resolveColor(0, colors)} radius={[4, 4, 0, 0]}>
-              {data.map((_, index) => (
-                <Cell key={index} fill={resolveColor(index, colors)} />
-              ))}
+            <Bar
+              dataKey={keys[0] ?? ''}
+              fill={gradient ? `url(#${gradient.id})` : resolveColor(0, colors)}
+              radius={[4, 4, 0, 0]}
+              animationDuration={750}
+              animationEasing="ease-out"
+            >
+              {!gradient &&
+                data.map((_, index) => <Cell key={index} fill={resolveColor(index, colors)} />)}
             </Bar>
           )}
         </RechartsBarChart>

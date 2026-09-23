@@ -1,29 +1,37 @@
 'use client';
 
-interface Props {
+import { Crown, Star } from 'lucide-react';
+
+interface BestDayCardProps {
   date: string;
   score: number;
-  habitsCompleted: number;
+  subtitle?: string;
 }
 
-export default function BestDayCard({ date, score, habitsCompleted }: Props) {
+export default function BestDayCard({ date, score, subtitle }: BestDayCardProps) {
   return (
-    <div className="bg-gradient-to-r from-yellow-50 to-amber-50 p-5 rounded-xl border border-yellow-200 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-2 opacity-10 text-6xl">⭐</div>
-      <h3 className="text-sm font-semibold text-yellow-800 uppercase tracking-widest mb-1">Best Day</h3>
-      <p className="text-gray-900 font-medium mb-3">{new Date(date).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-      
-      <div className="flex items-center space-x-4">
-        <div className="text-center">
-          <p className="text-3xl font-black text-amber-600">{score}</p>
-          <p className="text-xs text-yellow-700 uppercase">Score</p>
-        </div>
-        <div className="h-8 w-px bg-yellow-300"></div>
-        <div className="text-center">
-          <p className="text-3xl font-black text-amber-600">{habitsCompleted}</p>
-          <p className="text-xs text-yellow-700 uppercase">Habits</p>
-        </div>
+    <div className="glass-panel relative overflow-hidden rounded-2xl glow-primary p-6 shadow-soft">
+      <div
+        className="pointer-events-none absolute -right-6 -top-6 text-[7rem] leading-none text-primary/10"
+        aria-hidden="true"
+      >
+        ★
       </div>
+
+      <p className="shimmer-active inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+        <Crown className="h-3.5 w-3.5" aria-hidden="true" />
+        Best day
+      </p>
+
+      <p className="mt-5 text-lg font-semibold text-foreground">{date}</p>
+
+      <div className="mt-1 flex items-center gap-2">
+        <span className="text-5xl font-black tabular-nums text-primary">{score}</span>
+        <span className="text-sm text-muted-foreground">points</span>
+        <Star className="h-5 w-5 fill-amber-400 text-amber-400" aria-hidden="true" />
+      </div>
+
+      {subtitle && <p className="mt-3 text-sm text-muted-foreground">{subtitle}</p>}
     </div>
   );
 }
