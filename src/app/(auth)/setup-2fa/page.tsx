@@ -1,11 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Check, Copy, ShieldCheck, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { AuthCard, AUTH_INPUT_CLASS } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 /**
  * Two-factor authentication setup page.
@@ -94,11 +95,7 @@ export default function SetupTwoFactorPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <div className="p-3 bg-primary/20 rounded-full">
           {confirmed ? (
@@ -111,47 +108,47 @@ export default function SetupTwoFactorPage() {
 
       {confirmed ? (
         <>
-          <h1 className="text-2xl font-bold text-center text-white mb-2">Two-Factor Enabled</h1>
-          <p className="text-center text-white/60 mb-8">
+          <h1 className="text-2xl font-bold text-center text-foreground mb-2">Two-Factor Enabled</h1>
+          <p className="text-center text-muted-foreground mb-8">
             Your account is now protected with two-factor authentication. Keep
             your backup codes somewhere safe.
           </p>
           <Link
             href="/settings/security"
-            className="block w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity text-center"
+            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
           >
             Go to Security Settings
           </Link>
         </>
       ) : (
         <>
-          <h1 className="text-2xl font-bold text-center text-white mb-2">Set Up Two-Factor Auth</h1>
-          <p className="text-center text-white/60 mb-8">
+          <h1 className="text-2xl font-bold text-center text-foreground mb-2">Set Up Two-Factor Auth</h1>
+          <p className="text-center text-muted-foreground mb-8">
             Scan or enter the secret below in your authenticator app, then verify a code
           </p>
 
           {setupError ? (
-            <p role="alert" className="text-sm text-red-400 text-center mb-4">
+            <p role="alert" className="text-sm text-destructive text-center mb-4">
               {setupError}
             </p>
           ) : setup ? (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   Authenticator URI
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 break-all">
+                  <code className="flex-1 p-2.5 rounded-lg bg-muted/50 border border-border text-xs text-foreground/80 break-all">
                     {setup.otpauthUrl}
                   </code>
                   <button
                     type="button"
                     onClick={() => void copyToClipboard(setup.otpauthUrl, 'url')}
-                    className="p-2.5 rounded-lg border border-white/10 text-white/80 hover:bg-white/5 transition-colors"
+                    className="p-2.5 rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     aria-label="Copy authenticator URI"
                   >
                     {copiedField === 'url' ? (
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-emerald-500" />
                     ) : (
                       <Copy className="w-4 h-4" />
                     )}
@@ -160,34 +157,34 @@ export default function SetupTwoFactorPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-1">
+                <label className="block text-sm font-medium text-foreground/80 mb-1">
                   Manual entry key
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/80 break-all">
+                  <code className="flex-1 p-2.5 rounded-lg bg-muted/50 border border-border text-xs text-foreground/80 break-all">
                     {setup.secret}
                   </code>
                   <button
                     type="button"
                     onClick={() => void copyToClipboard(setup.secret, 'secret')}
-                    className="p-2.5 rounded-lg border border-white/10 text-white/80 hover:bg-white/5 transition-colors"
+                    className="p-2.5 rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     aria-label="Copy manual entry key"
                   >
                     {copiedField === 'secret' ? (
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-emerald-500" />
                     ) : (
                       <Copy className="w-4 h-4" />
                     )}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-white/40">
+                <p className="mt-1 text-xs text-muted-foreground/60">
                   Open your authenticator app and add this key manually.
                 </p>
               </div>
 
               <form className="space-y-4" onSubmit={handleVerify} noValidate>
                 <div>
-                  <label className="block text-sm font-medium text-white/80 mb-1">
+                  <label className="block text-sm font-medium text-foreground/80 mb-1">
                     Verification Code
                   </label>
                   <input
@@ -200,39 +197,35 @@ export default function SetupTwoFactorPage() {
                     onChange={(event) =>
                       setCode(event.target.value.replace(/[^0-9]/g, ''))
                     }
-                    className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-center tracking-widest"
+                    className={`${AUTH_INPUT_CLASS} text-center tracking-widest`}
                     placeholder="••••••"
                   />
                 </div>
 
                 {verifyError && (
-                  <p role="alert" className="text-sm text-red-400 text-center">
+                  <p role="alert" className="text-sm text-destructive text-center">
                     {verifyError}
                   </p>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {loading ? 'Verifying...' : 'Enable Two-Factor Auth'}
-                </button>
+                <Button type="submit" size="lg" isLoading={loading} className="w-full">
+                  Enable Two-Factor Auth
+                </Button>
               </form>
             </div>
           ) : (
-            <p className="text-center text-white/60 animate-pulse">
+            <p className="text-center text-muted-foreground animate-pulse">
               Generating your authenticator secret...
             </p>
           )}
 
-          <p className="mt-6 text-center text-sm text-white/60">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             <Link href="/settings/security" className="text-primary hover:underline">
               Cancel
             </Link>
           </p>
         </>
       )}
-    </motion.div>
+    </AuthCard>
   );
 }

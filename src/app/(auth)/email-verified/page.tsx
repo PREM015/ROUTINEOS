@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
+import { AuthCard } from '@/components/auth/AuthCard';
 
 /**
  * Email verified landing page.
@@ -15,32 +16,32 @@ export const metadata = {
 
 export default function EmailVerifiedPage() {
   return (
-    <div className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-center">
+    <AuthCard className="text-center">
       <div className="flex justify-center mb-6">
-        <div className="p-3 bg-emerald-500/20 rounded-full">
-          <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+        <div className="p-3 bg-emerald-500/10 rounded-full">
+          <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold text-center text-white mb-2">Email Verified</h1>
-      <p className="text-center text-white/60 mb-8">
+      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Email Verified</h1>
+      <p className="text-center text-muted-foreground mb-8">
         Your email address has been verified successfully. You can now sign in
         and start building better routines.
       </p>
 
       <Link
         href="/login"
-        className="block w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity text-center"
+        className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
       >
         Sign In
       </Link>
 
-      <p className="mt-6 text-center text-sm text-white/60">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         New to RoutineOS?{' '}
         <Link href="/register" className="text-primary hover:underline">
           Create an account
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }

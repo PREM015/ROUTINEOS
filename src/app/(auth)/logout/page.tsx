@@ -1,10 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { signOut } from 'next-auth/react';
+import { AuthCard } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 /**
  * Logout confirmation page.
@@ -31,42 +32,39 @@ export default function LogoutPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <div className="p-3 bg-primary/20 rounded-full">
           <LogOut className="w-8 h-8 text-primary" />
         </div>
       </div>
-      <h1 className="text-2xl font-bold text-center text-white mb-2">Sign out</h1>
-      <p className="text-center text-white/60 mb-8">
+      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Sign out</h1>
+      <p className="text-center text-muted-foreground mb-8">
         Are you sure you want to sign out of RoutineOS?
       </p>
 
       {error && (
-        <p role="alert" className="text-sm text-red-400 text-center mb-4">
+        <p role="alert" className="text-sm text-destructive text-center mb-4">
           {error}
         </p>
       )}
 
-      <button
+      <Button
         type="button"
-        disabled={loading}
+        size="lg"
+        isLoading={loading}
         onClick={handleLogout}
-        className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+        className="w-full"
       >
-        {loading ? 'Signing out...' : 'Sign Out'}
-      </button>
+        Sign Out
+      </Button>
 
       <Link
         href="/dashboard"
-        className="mt-4 block w-full py-3 px-4 border border-white/10 text-white font-semibold rounded-lg hover:bg-white/5 transition-colors text-center"
+        className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-lg border border-border bg-card/60 px-4 text-sm font-medium text-foreground transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out-expo hover:bg-muted/60 hover:border-foreground/20 active:scale-[0.97]"
       >
         Cancel
       </Link>
-    </motion.div>
+    </AuthCard>
   );
 }

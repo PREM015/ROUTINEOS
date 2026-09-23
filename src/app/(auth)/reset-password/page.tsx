@@ -1,12 +1,13 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, KeyRound } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { AuthCard, AUTH_INPUT_CLASS } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 /**
  * Reset password page.
@@ -25,14 +26,11 @@ interface ResetPasswordResult {
   message: string;
 }
 
-const inputClasses =
-  'w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all';
-
 function LoadingCard() {
   return (
-    <div className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-center">
-      <p className="text-white/60 animate-pulse">Checking reset link...</p>
-    </div>
+    <AuthCard className="text-center">
+      <p className="text-muted-foreground animate-pulse">Checking reset link...</p>
+    </AuthCard>
   );
 }
 
@@ -121,11 +119,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <div className="p-3 bg-primary/20 rounded-full">
           {success ? (
@@ -138,40 +132,40 @@ function ResetPasswordForm() {
 
       {tokenState === 'invalid' ? (
         <>
-          <h1 className="text-2xl font-bold text-center text-white mb-2">Invalid Reset Link</h1>
-          <p className="text-center text-white/60 mb-8">
+          <h1 className="text-2xl font-bold text-center text-foreground mb-2">Invalid Reset Link</h1>
+          <p className="text-center text-muted-foreground mb-8">
             This password reset link is invalid or has expired. Request a new one to continue.
           </p>
           <Link
             href="/forgot-password"
-            className="block w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity text-center"
+            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
           >
             Request a New Link
           </Link>
         </>
       ) : success ? (
         <>
-          <h1 className="text-2xl font-bold text-center text-white mb-2">Password Reset</h1>
-          <p className="text-center text-white/60 mb-8">
+          <h1 className="text-2xl font-bold text-center text-foreground mb-2">Password Reset</h1>
+          <p className="text-center text-muted-foreground mb-8">
             {success}. You can now sign in with your new password.
           </p>
           <Link
             href="/login"
-            className="block w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity text-center"
+            className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
           >
             Go to Sign In
           </Link>
         </>
       ) : (
         <>
-          <h1 className="text-2xl font-bold text-center text-white mb-2">Reset Password</h1>
-          <p className="text-center text-white/60 mb-8">
+          <h1 className="text-2xl font-bold text-center text-foreground mb-2">Reset Password</h1>
+          <p className="text-center text-muted-foreground mb-8">
             Choose a new password for your account
           </p>
 
           <form className="space-y-4" onSubmit={handleSubmit} noValidate>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">New Password</label>
+              <label className="block text-sm font-medium text-foreground/80 mb-1">New Password</label>
               <input
                 type="password"
                 required
@@ -179,18 +173,18 @@ function ResetPasswordForm() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className={cn(
-                  inputClasses,
-                  fieldErrors.password && 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+                  AUTH_INPUT_CLASS,
+                  fieldErrors.password && 'border-destructive focus:border-destructive focus:ring-destructive'
                 )}
                 placeholder="At least 8 characters"
               />
               {fieldErrors.password && (
-                <p className="mt-1 text-sm text-red-400">{fieldErrors.password}</p>
+                <p className="mt-1 text-sm text-destructive">{fieldErrors.password}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">Confirm Password</label>
+              <label className="block text-sm font-medium text-foreground/80 mb-1">Confirm Password</label>
               <input
                 type="password"
                 required
@@ -198,39 +192,35 @@ function ResetPasswordForm() {
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 className={cn(
-                  inputClasses,
-                  fieldErrors.confirmPassword && 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+                  AUTH_INPUT_CLASS,
+                  fieldErrors.confirmPassword && 'border-destructive focus:border-destructive focus:ring-destructive'
                 )}
                 placeholder="Re-enter new password"
               />
               {fieldErrors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-400">{fieldErrors.confirmPassword}</p>
+                <p className="mt-1 text-sm text-destructive">{fieldErrors.confirmPassword}</p>
               )}
             </div>
 
             {error && (
-              <p role="alert" className="text-sm text-red-400 text-center">
+              <p role="alert" className="text-sm text-destructive text-center">
                 {error}
               </p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4"
-            >
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </button>
+            <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
+              Reset Password
+            </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-white/60">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             <Link href="/login" className="text-primary hover:underline">
               Back to Sign In
             </Link>
           </p>
         </>
       )}
-    </motion.div>
+    </AuthCard>
   );
 }
 

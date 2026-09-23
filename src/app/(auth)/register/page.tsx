@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { Logo } from '@/components/layout/Logo';
+import { AuthCard } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -53,11 +54,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <Logo variant="icon" size="lg" />
       </div>
@@ -100,21 +97,17 @@ export default function RegisterPage() {
         </div>
 
         {error ? (
-          <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4 cursor-pointer"
-        >
-          {loading ? 'Creating account...' : 'Create Account'}
-        </button>
+        <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
+          Create Account
+        </Button>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account? <Link href="/login" className="text-primary hover:underline">Sign In</Link>
       </p>
-    </motion.div>
+    </AuthCard>
   );
 }

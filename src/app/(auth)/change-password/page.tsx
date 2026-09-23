@@ -1,11 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { CheckCircle2, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 import { apiRequest } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { AuthCard, AUTH_INPUT_CLASS } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 /**
  * Change password page.
@@ -19,9 +20,6 @@ interface ChangePasswordResult {
   success: boolean;
   message: string;
 }
-
-const inputClasses =
-  'w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all';
 
 export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -90,22 +88,18 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <div className="p-3 bg-primary/20 rounded-full">
           <KeyRound className="w-8 h-8 text-primary" />
         </div>
       </div>
-      <h1 className="text-2xl font-bold text-center text-white mb-2">Change Password</h1>
-      <p className="text-center text-white/60 mb-8">Update your account password</p>
+      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Change Password</h1>
+      <p className="text-center text-muted-foreground mb-8">Update your account password</p>
 
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         <div>
-          <label className="block text-sm font-medium text-white/80 mb-1">Current Password</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1">Current Password</label>
           <input
             type="password"
             required
@@ -113,18 +107,18 @@ export default function ChangePasswordPage() {
             value={currentPassword}
             onChange={(event) => setCurrentPassword(event.target.value)}
             className={cn(
-              inputClasses,
-              fieldErrors.currentPassword && 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+              AUTH_INPUT_CLASS,
+              fieldErrors.currentPassword && 'border-destructive focus:border-destructive focus:ring-destructive'
             )}
             placeholder="••••••••"
           />
           {fieldErrors.currentPassword && (
-            <p className="mt-1 text-sm text-red-400">{fieldErrors.currentPassword}</p>
+            <p className="mt-1 text-sm text-destructive">{fieldErrors.currentPassword}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-white/80 mb-1">New Password</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1">New Password</label>
           <input
             type="password"
             required
@@ -132,18 +126,18 @@ export default function ChangePasswordPage() {
             value={newPassword}
             onChange={(event) => setNewPassword(event.target.value)}
             className={cn(
-              inputClasses,
-              fieldErrors.newPassword && 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+              AUTH_INPUT_CLASS,
+              fieldErrors.newPassword && 'border-destructive focus:border-destructive focus:ring-destructive'
             )}
             placeholder="At least 8 characters"
           />
           {fieldErrors.newPassword && (
-            <p className="mt-1 text-sm text-red-400">{fieldErrors.newPassword}</p>
+            <p className="mt-1 text-sm text-destructive">{fieldErrors.newPassword}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-white/80 mb-1">Confirm New Password</label>
+          <label className="block text-sm font-medium text-foreground/80 mb-1">Confirm New Password</label>
           <input
             type="password"
             required
@@ -151,23 +145,23 @@ export default function ChangePasswordPage() {
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             className={cn(
-              inputClasses,
-              fieldErrors.confirmPassword && 'border-red-500/60 focus:border-red-500 focus:ring-red-500'
+              AUTH_INPUT_CLASS,
+              fieldErrors.confirmPassword && 'border-destructive focus:border-destructive focus:ring-destructive'
             )}
             placeholder="Re-enter new password"
           />
           {fieldErrors.confirmPassword && (
-            <p className="mt-1 text-sm text-red-400">{fieldErrors.confirmPassword}</p>
+            <p className="mt-1 text-sm text-destructive">{fieldErrors.confirmPassword}</p>
           )}
         </div>
 
         {error && (
-          <p role="alert" className="text-sm text-red-400 text-center">
+          <p role="alert" className="text-sm text-destructive text-center">
             {error}
           </p>
         )}
         {success && (
-          <div className="flex items-start gap-2 text-sm text-emerald-400">
+          <div className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400">
             <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
             <span>
               {success}.{' '}
@@ -178,20 +172,16 @@ export default function ChangePasswordPage() {
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4"
-        >
-          {loading ? 'Changing password...' : 'Change Password'}
-        </button>
+        <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
+          Change Password
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-white/60">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         <Link href="/profile" className="text-primary hover:underline">
           Cancel and back to profile
         </Link>
       </p>
-    </motion.div>
+    </AuthCard>
   );
 }

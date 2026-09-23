@@ -1,11 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { apiRequest } from '@/lib/api-client';
+import { AuthCard } from '@/components/auth/AuthCard';
 
 /**
  * Email verification page.
@@ -61,44 +61,40 @@ function VerifyEmailForm() {
   }, [token]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-center"
-    >
+    <AuthCard className="text-center">
       <div className="flex justify-center mb-6">
         <div
           className={
             status === 'success'
-              ? 'p-3 bg-emerald-500/20 rounded-full'
+              ? 'p-3 bg-emerald-500/10 rounded-full'
               : status === 'error'
-                ? 'p-3 bg-red-500/20 rounded-full'
+                ? 'p-3 bg-destructive/10 rounded-full'
                 : 'p-3 bg-primary/20 rounded-full'
           }
         >
           {status === 'verifying' ? (
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
           ) : status === 'success' ? (
-            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
           ) : (
-            <AlertCircle className="w-8 h-8 text-red-400" />
+            <AlertCircle className="w-8 h-8 text-destructive" />
           )}
         </div>
       </div>
 
-      <h1 className="text-2xl font-bold text-center text-white mb-2">
+      <h1 className="text-2xl font-bold text-center text-foreground mb-2">
         {status === 'verifying'
           ? 'Verifying Email'
           : status === 'success'
             ? 'Email Verified'
             : 'Verification Failed'}
       </h1>
-      <p className="text-center text-white/60 mb-8">{message}</p>
+      <p className="text-center text-muted-foreground mb-8">{message}</p>
 
       {status === 'success' && (
         <Link
           href="/login"
-          className="block w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity text-center"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
         >
           Sign In
         </Link>
@@ -106,12 +102,12 @@ function VerifyEmailForm() {
       {status === 'error' && (
         <Link
           href="/resend-verification"
-          className="block w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity text-center"
+          className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
         >
           Resend Verification Email
         </Link>
       )}
-    </motion.div>
+    </AuthCard>
   );
 }
 
@@ -119,9 +115,9 @@ export default function VerifyEmailPage() {
   return (
     <Suspense
       fallback={
-        <div className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-center">
-          <p className="text-white/60 animate-pulse">Verifying your email address...</p>
-        </div>
+        <AuthCard className="text-center">
+          <p className="text-muted-foreground animate-pulse">Verifying your email address...</p>
+        </AuthCard>
       }
     >
       <VerifyEmailForm />

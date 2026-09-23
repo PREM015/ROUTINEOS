@@ -1,11 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { apiRequest } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { AuthCard, AUTH_INPUT_CLASS } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 /**
  * Verify two-factor code page.
@@ -52,18 +53,14 @@ export default function VerifyTwoFactorPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <div className="p-3 bg-primary/20 rounded-full">
           <ShieldCheck className="w-8 h-8 text-primary" />
         </div>
       </div>
-      <h1 className="text-2xl font-bold text-center text-white mb-2">Two-Factor Verification</h1>
-      <p className="text-center text-white/60 mb-8">
+      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Two-Factor Verification</h1>
+      <p className="text-center text-muted-foreground mb-8">
         Enter the 6-digit code from your authenticator app
       </p>
 
@@ -77,33 +74,29 @@ export default function VerifyTwoFactorPage() {
             required
             value={code}
             onChange={(event) => setCode(event.target.value.replace(/[^0-9]/g, ''))}
-            className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-white/40 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-center tracking-[0.5em] text-lg"
+            className={`${AUTH_INPUT_CLASS} text-center tracking-[0.5em] text-lg`}
             placeholder="••••••"
             aria-label="6-digit verification code"
           />
         </div>
 
         {error && (
-          <p role="alert" className="text-sm text-red-400 text-center">
+          <p role="alert" className="text-sm text-destructive text-center">
             {error}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4"
-        >
-          {loading ? 'Verifying...' : 'Verify & Continue'}
-        </button>
+        <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
+          Verify & Continue
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-white/60">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Can&apos;t sign in?{' '}
         <a href="mailto:support@routineos.com" className="text-primary hover:underline">
           Contact support
         </a>
       </p>
-    </motion.div>
+    </AuthCard>
   );
 }

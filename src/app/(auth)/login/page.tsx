@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Suspense, useState } from 'react';
 import { Logo } from '@/components/layout/Logo';
+import { AuthCard } from '@/components/auth/AuthCard';
+import { Button } from '@/components/ui/Button';
 
 function LoginForm() {
   const router = useRouter();
@@ -90,27 +91,19 @@ function LoginForm() {
       </div>
 
       {error ? (
-        <p role="alert" className="text-sm text-red-500 dark:text-red-400">{error}</p>
+        <p role="alert" className="text-sm text-destructive">{error}</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 mt-4"
-      >
-        {loading ? 'Signing in...' : 'Sign In'}
-      </button>
+      <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
+        Sign In
+      </Button>
     </form>
   );
 }
 
 export default function LoginPage() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-8 bg-card/80 backdrop-blur-xl border border-border rounded-2xl shadow-2xl"
-    >
+    <AuthCard>
       <div className="flex justify-center mb-6">
         <Logo variant="icon" size="lg" />
       </div>
@@ -124,6 +117,6 @@ export default function LoginPage() {
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account? <Link href="/register" className="text-primary hover:underline">Register</Link>
       </p>
-    </motion.div>
+    </AuthCard>
   );
 }
