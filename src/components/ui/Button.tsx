@@ -8,13 +8,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+        default: "light-sweep glow-neon bg-primary text-primary-foreground hover:bg-primary/90",
+        primary: "light-sweep glow-neon bg-primary text-primary-foreground hover:bg-primary/90",
         outline: "border border-border bg-card/60 text-foreground hover:bg-muted/60 hover:border-foreground/20",
-        secondary: "bg-muted text-foreground hover:bg-muted/70 border border-border/60",
+        secondary: "shadow-soft bg-muted text-foreground hover:bg-muted/80 border border-border/60",
         ghost: "text-foreground hover:bg-muted/70",
-        danger: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
-        success: "bg-emerald-600 text-white hover:bg-emerald-600/90 shadow-sm",
+        danger: "glow-primary bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        success: "light-sweep glow-primary bg-emerald-600 text-white hover:bg-emerald-600/90",
       },
       size: {
         sm: "h-9 px-3",

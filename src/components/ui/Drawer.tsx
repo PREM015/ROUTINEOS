@@ -58,10 +58,10 @@ export function Drawer({
         </DialogPrimitive.Trigger>
       )}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overlay-in" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 overlay-glass noise-overlay" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed z-50 flex flex-col border-border bg-card text-foreground shadow-modal outline-none',
+            'fixed z-50 flex flex-col border-border bg-card text-foreground shadow-long outline-none',
             SIDE_CLASSES[side],
             className,
           )}

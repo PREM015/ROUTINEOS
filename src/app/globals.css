@@ -395,6 +395,392 @@ body {
   mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   MASTER EFFECTS LIBRARY (Part A) — premium surfaces & motion primitives.
+   Every class below is theme-aware via `color-mix` on the design tokens,
+   so one class is safe in light and dark. Signature moments (.noise-overlay,
+   .scanline-overlay, .chromatic-edge, .cursor-glow, .parallax-layer) are
+   applied ONLY where the master plan names them.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Frosted panel — translucent card over any background. */
+.glass-panel {
+  position: relative;
+  background: color-mix(in srgb, var(--card) 58%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--foreground) 7%, transparent),
+    0 8px 24px -12px rgb(0 0 0 / 0.16);
+}
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--foreground) 18%, transparent), transparent);
+  pointer-events: none;
+}
+
+/* Gradient border via mask (white/10 → transparent) for dividers/avatars. */
+.glass-border {
+  position: relative;
+  border: none;
+}
+.glass-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--foreground) 22%, transparent), transparent 55%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Soft multi-blob mesh behind hero/section backgrounds. */
+.gradient-mesh-bg {
+  background-image:
+    radial-gradient(38% 55% at 18% 12%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 70%),
+    radial-gradient(42% 55% at 84% 16%, color-mix(in srgb, #0ea5e9 16%, transparent) 0%, transparent 70%),
+    radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 14%, transparent) 0%, transparent 72%);
+}
+
+/* Animated variant — blobs drift on a slow loop (hero only). */
+.gradient-mesh-animated {
+  background-image:
+    radial-gradient(38% 55% at 18% 12%, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 70%),
+    radial-gradient(42% 55% at 84% 16%, color-mix(in srgb, #0ea5e9 18%, transparent) 0%, transparent 70%),
+    radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 16%, transparent) 0%, transparent 72%);
+  background-size: 180% 180%, 160% 160%, 170% 170%;
+  background-position: 0% 0%, 100% 0%, 50% 100%;
+  animation: mesh-drift 26s ease-in-out infinite alternate;
+}
+@keyframes mesh-drift {
+  0% {
+    background-position: 0% 0%, 100% 0%, 50% 100%;
+  }
+  50% {
+    background-position: 42% 60%, 58% 38%, 22% 18%;
+  }
+  100% {
+    background-position: 100% 62%, 0% 100%, 82% 32%;
+  }
+}
+
+/* Film-grain overlay — sits on top, keeps gradients from banding. */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Conic fill ring — set --p (0-100) to draw the arc. */
+.conic-gradient-ring {
+  background: conic-gradient(
+    from -90deg,
+    color-mix(in srgb, var(--primary) 90%, white 10%) 0deg,
+    color-mix(in srgb, var(--primary) 90%, white 10%) calc(var(--p, 0) * 3.6deg),
+    color-mix(in srgb, var(--muted) 75%, transparent) calc(var(--p, 0) * 3.6deg),
+    color-mix(in srgb, var(--muted) 75%, transparent) 360deg
+  );
+}
+
+/* Glow — blurred shadows derived from the primary token. */
+.glow-primary {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent),
+    0 10px 30px -8px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.glow-neon {
+  box-shadow:
+    0 0 20px -4px color-mix(in srgb, var(--primary) 60%, transparent),
+    0 0 52px -8px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/* Soft shadow — large blur, low opacity (default resting surface). */
+.shadow-soft {
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.14), 0 4px 12px -6px rgb(0 0 0 / 0.08);
+}
+.dark .shadow-soft {
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6), 0 4px 12px -6px rgb(0 0 0 / 0.3);
+}
+
+/* Shadow long — offset directional depth for hero/floating elements. */
+.shadow-long {
+  box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.3), 0 10px 24px -12px rgb(0 0 0 / 0.18);
+}
+.dark .shadow-long {
+  box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.68), 0 10px 24px -12px rgb(0 0 0 / 0.38);
+}
+
+/* Cursor-tracking spotlight. Set --mouse-x/-y via the useSpotlight hook
+   (or JS); the vars default to center so hover still lights the card. */
+.spotlight-hover {
+  position: relative;
+  overflow: hidden;
+}
+.spotlight-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    var(--spotlight-size, 220px) circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    color-mix(in srgb, var(--primary) 15%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.spotlight-hover:hover::before {
+  opacity: 1;
+}
+.spotlight-hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  transition: border-color 0.3s ease;
+  pointer-events: none;
+}
+.spotlight-hover:hover::after {
+  border-color: color-mix(in srgb, var(--primary) 32%, transparent);
+}
+
+/* Hero cursor glow — bigger spotlight that follows the pointer across a
+   whole section (landing/hero only). */
+.cursor-glow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.cursor-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    520px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    color-mix(in srgb, var(--primary) 18%, transparent),
+    transparent 64%
+  );
+  transition: opacity 0.3s ease;
+}
+
+/* Magnetic / tilt transforms are applied inline by their hooks; this only
+   smooths the spring-back so leaving an element eases, not snaps. */
+.magnetic-hover,
+.tilt-3d {
+  transition: transform 0.18s ease-out;
+}
+
+/* One-shot shimmer reveal (badges, completions). Pair with .shimmer-active. */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-110%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--foreground) 14%, transparent), transparent);
+  pointer-events: none;
+}
+.shimmer-active::after {
+  animation: shimmer-sweep 0.9s var(--ease-out-expo) forwards;
+}
+@keyframes shimmer-sweep {
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+/* Diagional light band sweeping across on hover. */
+.light-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.light-sweep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -80%;
+  width: 50%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transition: transform 0.65s var(--ease-out-expo);
+  pointer-events: none;
+}
+.light-sweep:hover::after,
+.light-sweep:focus-visible::after {
+  transform: skewX(-20deg) translateX(340%);
+}
+
+/* Scanline overlay — repeating horizontal lines (FlipClock only). */
+.scanline-overlay {
+  position: relative;
+  overflow: hidden;
+}
+.scanline-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.32;
+  mix-blend-mode: overlay;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    color-mix(in srgb, var(--foreground) 10%, transparent) 2px 3px
+  );
+}
+
+/* Chromatic-edge — subtle RGB split on hover. Signature moment, logo/headline. */
+.chromatic-edge {
+  transition: text-shadow 0.2s ease;
+  will-change: text-shadow;
+}
+.chromatic-edge:hover {
+  text-shadow:
+    -1px 0 0 color-mix(in srgb, var(--primary) 60%, transparent),
+    1px 0 0 color-mix(in srgb, #ef4444 55%, transparent);
+}
+
+/* Animated gradient text — hero headline / key numbers. */
+.animated-gradient-text {
+  background-image: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--primary) 92%, white 8%),
+    #0ea5e9,
+    #8b5cf6,
+    color-mix(in srgb, var(--primary) 92%, white 8%)
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-text-shift 8s ease-in-out infinite;
+}
+@keyframes gradient-text-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Rotating conic border for featured/highlighted cards. */
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.border-gradient-animated {
+  position: relative;
+}
+.border-gradient-animated::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--angle, 0deg),
+    color-mix(in srgb, var(--primary) 80%, transparent),
+    #0ea5e9,
+    #8b5cf6,
+    color-mix(in srgb, var(--primary) 80%, transparent)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: border-spin 6s linear infinite;
+  pointer-events: none;
+}
+@keyframes border-spin {
+  to {
+    --angle: 360deg;
+  }
+}
+
+/* Scroll-driven background depth (marketing pages only). The hook sets the
+   inline transform; this only reserves the layer/compositing. */
+.parallax-layer {
+  will-change: transform;
+}
+
+/* Frosted overlay scrim for modals/drawers (dark in both themes so content
+   stays readable; pairs with .noise-overlay). */
+.overlay-glass {
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  backdrop-filter: blur(14px) saturate(120%);
+  background: color-mix(in srgb, #09090b 52%, transparent);
+}
+
+/* Toast panels — frosted colored surfaces with a matched glow ring. */
+.toast-success {
+  background: color-mix(in srgb, #059669 92%, var(--card));
+  border: 1px solid color-mix(in srgb, #34d399 40%, transparent);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, #10b981 55%, transparent), var(--shadow-modal);
+  color: #ffffff;
+}
+.toast-error {
+  background: color-mix(in srgb, #dc2626 92%, var(--card));
+  border: 1px solid color-mix(in srgb, #fca5a5 45%, transparent);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, #ef4444 55%, transparent), var(--shadow-modal);
+  color: #ffffff;
+}
+.toast-info {
+  background: color-mix(in srgb, #0284c7 92%, var(--card));
+  border: 1px solid color-mix(in srgb, #7dd3fc 45%, transparent);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, #0ea5e9 55%, transparent), var(--shadow-modal);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-mesh-animated,
+  .animated-gradient-text,
+  .border-gradient-animated::before,
+  .shimmer::after,
+  .light-sweep::after,
+  .magnetic-hover,
+  .tilt-3d,
+  .spotlight-hover::before,
+  .spotlight-hover::after,
+  .cursor-glow::before {
+    animation: none;
+    transition: none;
+  }
+  .gradient-mesh-animated {
+    animation-duration: 0.01ms;
+  }
+  .animated-gradient-text {
+    background-position: 0% 50%;
+  }
+  .border-gradient-animated::before,
+  .shimmer-active::after {
+    animation: none !important;
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

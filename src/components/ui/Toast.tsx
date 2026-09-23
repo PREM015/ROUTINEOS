@@ -20,10 +20,10 @@ export function Toast({ message, type = 'info', onClose, duration = 3000 }: Toas
     return () => clearTimeout(timer);
   }, [onClose, duration]);
 
-  const bgColors = {
-    success: 'bg-emerald-600',
-    error: 'bg-rose-600',
-    info: 'bg-sky-600',
+  const typeClasses = {
+    success: 'toast-success',
+    error: 'toast-error',
+    info: 'toast-info',
   };
 
   return (
@@ -34,7 +34,7 @@ export function Toast({ message, type = 'info', onClose, duration = 3000 }: Toas
       transition={{ duration: 0.35, ease: EASE }}
       role="status"
       aria-live="polite"
-      className={`relative flex items-center pl-4 pr-3 py-3 overflow-hidden rounded-xl text-white shadow-modal ${bgColors[type]}`}
+      className={`relative flex items-center overflow-hidden rounded-xl px-4 py-3 backdrop-blur-md ${typeClasses[type]}`}
     >
       <span className="text-sm font-medium">{message}</span>
       <button
