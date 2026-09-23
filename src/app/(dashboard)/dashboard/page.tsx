@@ -46,10 +46,11 @@ export default async function DashboardPage() {
     <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
       {/* Header Banner */}
       <Mount>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6">
+          <div className="absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-primary/60 via-primary/20 to-transparent" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Welcome back, {session.user.name || 'User'} 👋
+            <h1 className="text-3xl font-bold tracking-tight animated-gradient-text">
+              Welcome back, {session.user.name || 'User'}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               Here is your daily productivity overview and performance insights.
@@ -58,7 +59,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/today"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:opacity-90 transition-opacity text-sm shadow-sm"
+              className="light-sweep glow-neon inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg text-sm transition-transform duration-300 ease-out-expo hover:scale-[1.03] active:scale-[0.97]"
             >
               Go to Today
               <ArrowRight className="w-4 h-4" />
@@ -85,7 +86,7 @@ export default async function DashboardPage() {
                 <Link
                   key={feature.href}
                   href={feature.href}
-                  className="flex flex-col items-center justify-center p-3 rounded-xl bg-card border border-border hover:border-primary/50 hover:bg-muted/50 hover:-translate-y-0.5 transition-all duration-300 ease-out-expo text-center group"
+                  className="spotlight-hover flex flex-col items-center justify-center p-3 rounded-xl glass-panel shadow-soft hover:border-primary/40 hover:-translate-y-0.5 transition-transform duration-300 ease-out-expo text-center group"
                 >
                   <div className={`p-2.5 rounded-lg ${feature.color} mb-2 group-hover:scale-110 transition-transform`}>
                     <Icon className="w-5 h-5" />

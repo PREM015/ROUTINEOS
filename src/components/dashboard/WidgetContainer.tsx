@@ -17,10 +17,10 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onEdit
 }) => {
   return (
-    <div className={`flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-md ${className}`}>
-      <div className="px-4 py-3 border-b border-border flex justify-between items-center bg-muted/30">
+    <div className={`spotlight-hover group flex flex-col overflow-hidden rounded-xl glass-panel shadow-soft transition-transform duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-long ${className}`}>
+      <div className="flex justify-between items-center border-b border-white/10 px-4 py-3 bg-muted/30">
         <div className="flex items-center space-x-2">
-          {icon && <span className="text-muted-foreground">{icon}</span>}
+          {icon && <span className="text-primary/80 transition-transform duration-300 ease-out-expo group-hover:scale-110">{icon}</span>}
           <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">{title}</h3>
         </div>
         {onEdit && (
