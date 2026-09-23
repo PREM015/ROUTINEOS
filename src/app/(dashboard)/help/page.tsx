@@ -116,10 +116,10 @@ export default async function HelpPage() {
     <div className="container mx-auto max-w-5xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <HelpCircle className="h-7 w-7 text-blue-600" />
+          <HelpCircle className="h-7 w-7 text-primary" />
           Help &amp; Documentation
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Everything you need to get the most out of RoutineOS. Start with a feature below or jump
           to the FAQ.
         </p>
@@ -127,17 +127,17 @@ export default async function HelpPage() {
 
       <section aria-labelledby="feature-guide-heading" className="mb-12">
         <h2 id="feature-guide-heading" className="mb-4 flex items-center gap-2 text-xl font-semibold">
-          <Compass className="h-5 w-5 text-gray-500" />
+          <Compass className="h-5 w-5 text-muted-foreground" />
           Feature guide
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(({ icon: Icon, title, description }) => (
             <Card key={title} className="p-5">
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <Icon className="h-5 w-5" />
               </span>
-              <h3 className="mt-3 text-base font-semibold text-gray-900">{title}</h3>
-              <p className="mt-1 text-sm text-gray-600">{description}</p>
+              <h3 className="mt-3 text-base font-semibold text-foreground">{title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
             </Card>
           ))}
         </div>
@@ -151,12 +151,12 @@ export default async function HelpPage() {
           {faqs.map(({ question, answer }) => (
             <details
               key={question}
-              className="group rounded-xl border border-gray-200 bg-white p-4 open:shadow-sm"
+              className="group rounded-xl border border-border bg-card p-4 transition-[box-shadow] duration-200 ease-out-expo open:shadow-raised"
             >
-              <summary className="cursor-pointer list-none text-sm font-semibold text-gray-900 marker:content-none">
+              <summary className="cursor-pointer list-none text-sm font-semibold text-foreground marker:content-none">
                 {question}
               </summary>
-              <p className="mt-2 text-sm leading-relaxed text-gray-600">{answer}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{answer}</p>
             </details>
           ))}
         </div>
@@ -165,10 +165,10 @@ export default async function HelpPage() {
       <section aria-labelledby="support-heading">
         <Card className="p-6">
           <h2 id="support-heading" className="flex items-center gap-2 text-lg font-semibold">
-            <Mail className="h-5 w-5 text-gray-500" />
+            <Mail className="h-5 w-5 text-muted-foreground" />
             Still need a hand?
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-muted-foreground">
             Send us feedback from the Feedback page and we will get back to you. Include the steps
             you took and what you expected to happen so we can reproduce it quickly.
           </p>

@@ -97,6 +97,7 @@ export default function SearchPage() {
   useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset results on empty query
       setData(null);
       setLoading(false);
       return;
@@ -137,10 +138,10 @@ export default function SearchPage() {
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <SearchIcon className="h-7 w-7 text-blue-600" />
+          <SearchIcon className="h-7 w-7 text-primary" />
           Search
         </h1>
-        <p className="mt-2 text-gray-600">Find anything across your routines and records.</p>
+        <p className="mt-2 text-muted-foreground">Find anything across your routines and records.</p>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_200px]">
@@ -158,7 +159,7 @@ export default function SearchPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -169,13 +170,13 @@ export default function SearchPage() {
         </div>
       ) : !data ? (
         <EmptyState
-          icon={<SearchIcon className="h-10 w-10 text-gray-300" />}
+          icon={<SearchIcon className="h-10 w-10 text-muted-foreground/60" />}
           title="Start typing to search"
           description="Results update as you type."
         />
       ) : total === 0 ? (
         <EmptyState
-          icon={<SearchIcon className="h-10 w-10 text-gray-300" />}
+          icon={<SearchIcon className="h-10 w-10 text-muted-foreground/60" />}
           title="No results"
           description={`Nothing matched "${data.query}".`}
         />
@@ -183,22 +184,22 @@ export default function SearchPage() {
         <div className="space-y-6">
           {groups.map((group) => (
             <section key={group.category}>
-              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {group.category} ({group.items.length})
               </h2>
-              <Card className="divide-y divide-gray-100 p-0">
+              <Card className="divide-y divide-border p-0">
                 {group.items.map((item, index) => {
                   const label = itemLabel(item);
                   const subtitle = itemSubtitle(item);
                   const href = itemHref(group.category, item);
                   const content = (
                     <div className="px-4 py-3">
-                      <p className="text-sm font-medium text-gray-900">{label}</p>
-                      {subtitle && <p className="mt-0.5 truncate text-xs text-gray-500">{subtitle}</p>}
+                      <p className="text-sm font-medium text-foreground">{label}</p>
+                      {subtitle && <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>}
                     </div>
                   );
                   return href ? (
-                    <Link key={index} href={href} className="block hover:bg-gray-50">
+                    <Link key={index} href={href} className="block hover:bg-muted/50">
                       {content}
                     </Link>
                   ) : (

@@ -23,10 +23,10 @@ export default function IntegrationsPage() {
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <Plug className="h-7 w-7 text-blue-600" />
+          <Plug className="h-7 w-7 text-primary" />
           Integrations
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Connect the tools you already use to sync calendars, tasks, health data and more.
         </p>
       </div>

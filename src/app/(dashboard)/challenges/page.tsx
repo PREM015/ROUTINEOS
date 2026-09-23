@@ -58,6 +58,7 @@ export default function ChallengesPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -115,10 +116,10 @@ export default function ChallengesPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Flag className="h-7 w-7 text-blue-600" />
+            <Flag className="h-7 w-7 text-primary" />
             Challenges
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-muted-foreground">
             Join a challenge to hold yourself accountable alongside the community.
           </p>
         </div>
@@ -129,7 +130,7 @@ export default function ChallengesPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -140,7 +141,7 @@ export default function ChallengesPage() {
         </div>
       ) : challenges.length === 0 ? (
         <EmptyState
-          icon={<Flag className="h-10 w-10 text-gray-300" />}
+          icon={<Flag className="h-10 w-10 text-muted-foreground/60" />}
           title="No challenges yet"
           description="Be the first to start a community challenge."
           action={{ label: 'New challenge', onClick: () => setDialogOpen(true) }}
@@ -150,14 +151,14 @@ export default function ChallengesPage() {
           {challenges.map((challenge) => (
             <Card key={challenge.id} className="flex flex-col p-5">
               <div className="flex items-start justify-between gap-3">
-                <h2 className="text-lg font-semibold text-gray-900">{challenge.title}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{challenge.title}</h2>
                 <Badge variant={challenge.isPublic ? 'primary' : 'default'}>
                   {challenge.isPublic ? 'Public' : 'Private'}
                 </Badge>
               </div>
-              <p className="mt-2 flex-1 text-sm text-gray-600">{challenge.description}</p>
+              <p className="mt-2 flex-1 text-sm text-muted-foreground">{challenge.description}</p>
 
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1">
                   <CalendarRange className="h-3.5 w-3.5" />
                   {formatDate(new Date(challenge.startDate))} –{' '}

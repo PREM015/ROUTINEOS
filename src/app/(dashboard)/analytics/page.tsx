@@ -32,12 +32,12 @@ function StatCard({
 }) {
   return (
     <Card className="p-4">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {icon}
         {label}
       </div>
-      <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-gray-500">{hint}</p>}
+      <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </Card>
   );
 }
@@ -93,12 +93,12 @@ export default function AnalyticsPage() {
   if (error) {
     return (
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
         <button
           onClick={() => setRetryKey((k) => k + 1)}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
         >
           Retry
         </button>
@@ -117,12 +117,12 @@ export default function AnalyticsPage() {
   const { today, week } = data;
   if (!month) {    return (
       <div className="container mx-auto max-w-6xl px-4 py-8">
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           Analytics data was incomplete. Please try again.
         </p>
         <button
           onClick={() => setRetryKey((k) => k + 1)}
-          className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
         >
           Retry
         </button>
@@ -134,10 +134,10 @@ export default function AnalyticsPage() {
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <BarChart3 className="h-7 w-7 text-blue-600" />
+          <BarChart3 className="h-7 w-7 text-primary" />
           Analytics
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           How you are doing today, this week and this month.
         </p>
       </div>
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
       </div>
 
       <Card className="mt-6 p-5">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Today&apos;s breakdown</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Today&apos;s breakdown</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { label: 'Core', value: today?.score?.core },
@@ -178,11 +178,11 @@ export default function AnalyticsPage() {
             { label: 'Bonus', value: today?.score?.bonus },
             { label: 'Habit reliability', value: today?.habitReliability },
           ].map((item) => (
-            <div key={item.label} className="rounded-lg bg-gray-50 p-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+            <div key={item.label} className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {item.label}
               </p>
-              <p className="mt-1 text-xl font-bold tabular-nums text-gray-900">
+              <p className="mt-1 text-xl font-bold tabular-nums text-foreground">
                 {item.value !== null && item.value !== undefined ? Math.round(item.value) : '—'}
               </p>
             </div>
@@ -190,34 +190,34 @@ export default function AnalyticsPage() {
         </div>
         <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
           <div>
-            <dt className="text-gray-500">Routine</dt>
-            <dd className="font-semibold text-gray-900">{today?.routine?.completionRate ?? 0}%</dd>
+            <dt className="text-muted-foreground">Routine</dt>
+            <dd className="font-semibold text-foreground">{today?.routine?.completionRate ?? 0}%</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Habits completed</dt>
-            <dd className="font-semibold text-gray-900">
+            <dt className="text-muted-foreground">Habits completed</dt>
+            <dd className="font-semibold text-foreground">
               {(today?.habits ?? []).filter((habit) => habit.status === 'COMPLETED').length}/
               {(today?.habits ?? []).length}
             </dd>
           </div>
           <div>
-            <dt className="text-gray-500">Sleep</dt>
-            <dd className="font-semibold text-gray-900">
+            <dt className="text-muted-foreground">Sleep</dt>
+            <dd className="font-semibold text-foreground">
               {today?.sleep?.durationMinutes != null
                 ? `${Math.round(today.sleep.durationMinutes / 60)}h`
                 : '—'}
             </dd>
           </div>
           <div>
-            <dt className="text-gray-500">Mood</dt>
-            <dd className="font-semibold text-gray-900">{today?.reflection?.mood ?? '—'}/5</dd>
+            <dt className="text-muted-foreground">Mood</dt>
+            <dd className="font-semibold text-foreground">{today?.reflection?.mood ?? '—'}/5</dd>
           </div>
         </dl>
       </Card>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">Weekly habit consistency</h2>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Weekly habit consistency</h2>
           {habitChartData.length > 0 ? (
             <BarChart
               data={habitChartData}
@@ -227,12 +227,12 @@ export default function AnalyticsPage() {
               ariaLabel="Weekly habit completion rate by habit"
             />
           ) : (
-            <p className="py-10 text-center text-sm text-gray-500">No habit activity this week.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">No habit activity this week.</p>
           )}
         </Card>
 
         <Card className="p-5">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">Monthly tier completion</h2>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Monthly tier completion</h2>
           {tierChartData.length > 0 ? (
             <BarChart
               data={tierChartData}
@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
               ariaLabel="Monthly completion rate by habit tier"
             />
           ) : (
-            <p className="py-10 text-center text-sm text-gray-500">No tier data this month.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">No tier data this month.</p>
           )}
         </Card>
       </div>

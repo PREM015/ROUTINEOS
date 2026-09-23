@@ -38,6 +38,7 @@ export default function MoodPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -61,13 +62,13 @@ export default function MoodPage() {
           <HeartPulse className="h-7 w-7 text-rose-500" />
           Mood
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Check in with how you feel and watch your mood patterns emerge.
         </p>
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -77,9 +78,9 @@ export default function MoodPage() {
 
         <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Recent mood</h2>
+            <h2 className="text-lg font-semibold text-foreground">Recent mood</h2>
             {averageMood !== null && (
-              <span className="inline-flex items-center gap-1 text-sm text-gray-500">
+              <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
                 <Smile className="h-4 w-4 text-amber-500" />
                 Avg {averageMood.toFixed(1)}/5
               </span>
@@ -96,14 +97,14 @@ export default function MoodPage() {
       </div>
 
       {logs && logs.length > 0 && (
-        <Card className="mt-6 divide-y divide-gray-100 p-0">
+        <Card className="mt-6 divide-y divide-border p-0">
           {logs.slice(0, 10).map((log) => (
             <div key={log.id} className="flex items-center justify-between gap-3 p-4 text-sm">
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-foreground">
                   {MOOD_LABELS[log.mood] ?? `${log.mood}/5`}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {new Date(log.timestamp).toLocaleString([], {
                     dateStyle: 'medium',
                     timeStyle: 'short',
@@ -111,7 +112,7 @@ export default function MoodPage() {
                 </p>
               </div>
               {log.energy !== null && log.energy !== undefined && (
-                <span className="text-xs text-gray-500">Energy {log.energy}/5</span>
+                <span className="text-xs text-muted-foreground">Energy {log.energy}/5</span>
               )}
             </div>
           ))}

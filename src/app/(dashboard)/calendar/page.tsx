@@ -52,14 +52,14 @@ export default function CalendarPage() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <Sparkles className="h-7 w-7 text-blue-600" />
+          <Sparkles className="h-7 w-7 text-primary" />
           Calendar
         </h1>
-        <p className="mt-2 text-gray-600">Your daily scores and streaks at a glance.</p>
+        <p className="mt-2 text-muted-foreground">Your daily scores and streaks at a glance.</p>
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -72,33 +72,33 @@ export default function CalendarPage() {
         <>
           <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Card className="p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Current streak
               </p>
-              <p className="mt-1 flex items-center gap-1.5 text-2xl font-bold text-gray-900">
+              <p className="mt-1 flex items-center gap-1.5 text-2xl font-bold text-foreground">
                 <Flame className="h-5 w-5 text-orange-500" />
                 {analytics.current.total}
               </p>
             </Card>
             <Card className="p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Longest streak
               </p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">{analytics.longest.total}</p>
+              <p className="mt-1 text-2xl font-bold text-foreground">{analytics.longest.total}</p>
             </Card>
             <Card className="p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Perfect days
               </p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
+              <p className="mt-1 text-2xl font-bold text-foreground">
                 {analytics.history.perfectDays}
               </p>
             </Card>
             <Card className="p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Completed days
               </p>
-              <p className="mt-1 text-2xl font-bold text-gray-900">
+              <p className="mt-1 text-2xl font-bold text-foreground">
                 {analytics.history.completedDays}
               </p>
             </Card>
@@ -106,7 +106,7 @@ export default function CalendarPage() {
 
           <Card className="p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-foreground">
                 {month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h2>
               <div className="flex gap-1">
@@ -128,7 +128,7 @@ export default function CalendarPage() {
 
           {analytics.milestones.length > 0 && (
             <Card className="mt-6 p-5">
-              <h2 className="mb-3 text-lg font-semibold text-gray-900">Streak milestones</h2>
+              <h2 className="mb-3 text-lg font-semibold text-foreground">Streak milestones</h2>
               <ul className="flex flex-wrap gap-2">
                 {analytics.milestones.map((milestone) => (
                   <li key={`${milestone.type}-${milestone.days}`}>

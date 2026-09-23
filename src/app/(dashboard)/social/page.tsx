@@ -28,7 +28,7 @@ function UserRow({
 }) {
   return (
     <div className="flex items-center gap-3 p-4">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 text-sm font-semibold text-gray-600">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold text-muted-foreground">
         {user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -37,8 +37,8 @@ function UserRow({
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-gray-900">{displayName(user)}</span>
-        {user.isMutual && <span className="text-xs text-gray-500">Follows you back</span>}
+        <span className="block truncate text-sm font-medium text-foreground">{displayName(user)}</span>
+        {user.isMutual && <span className="text-xs text-muted-foreground">Follows you back</span>}
       </span>
       {action}
     </div>
@@ -72,6 +72,7 @@ export default function SocialPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void loadLists();
   }, [loadLists]);
 
@@ -129,10 +130,10 @@ export default function SocialPage() {
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <Users className="h-7 w-7 text-blue-600" />
+          <Users className="h-7 w-7 text-primary" />
           Social
         </h1>
-        <p className="mt-2 text-gray-600">Connect with others and follow their progress.</p>
+        <p className="mt-2 text-muted-foreground">Connect with others and follow their progress.</p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -155,7 +156,7 @@ export default function SocialPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -177,7 +178,7 @@ export default function SocialPage() {
         </div>
       ) : list.length === 0 ? (
         <EmptyState
-          icon={<Users className="h-10 w-10 text-gray-300" />}
+          icon={<Users className="h-10 w-10 text-muted-foreground/60" />}
           title={
             tab === 'following'
               ? 'Not following anyone yet'
@@ -192,7 +193,7 @@ export default function SocialPage() {
           }
         />
       ) : (
-        <Card className="divide-y divide-gray-100 p-0">
+        <Card className="divide-y divide-border p-0">
           {list.map((user) => {
             const isFollowing = (following ?? []).some((item) => item.id === user.id);
             if (tab === 'followers') {

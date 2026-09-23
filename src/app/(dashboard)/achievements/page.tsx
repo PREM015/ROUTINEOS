@@ -121,7 +121,7 @@ export default function AchievementsPage() {
           <Trophy className="h-7 w-7 text-amber-500" />
           Achievements
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           {rows
             ? `${unlockedCount} of ${achievements.length} achievements unlocked. Keep the streak going.`
             : 'Track milestones as you build consistency.'}
@@ -129,7 +129,7 @@ export default function AchievementsPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}

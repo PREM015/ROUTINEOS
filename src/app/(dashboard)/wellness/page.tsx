@@ -22,7 +22,7 @@ export default async function WellnessPage() {
           <HeartPulse className="h-7 w-7 text-pink-600" />
           Wellness
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Track how you feel, spot patterns in your energy and sleep, and act on the insights
           RoutineOS surfaces.
         </p>

@@ -50,6 +50,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync profile form state on mount
     setName(user.name ?? '');
     setDisplayName(user.displayName ?? '');
     setBio(user.bio ?? '');
@@ -110,7 +111,7 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-8 flex items-center gap-4">
-        <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gray-100 text-xl font-semibold text-gray-500">
+        <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-muted text-xl font-semibold text-muted-foreground">
           {user.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -120,7 +121,7 @@ export default function ProfilePage() {
         </span>
         <div>
           <h1 className="text-3xl font-bold">{user.displayName ?? user.name ?? 'Your profile'}</h1>
-          <p className="text-gray-600">{user.email}</p>
+          <p className="text-muted-foreground">{user.email}</p>
         </div>
       </div>
 
@@ -133,19 +134,19 @@ export default function ProfilePage() {
             { label: 'Goals done', value: stats.completedGoals, icon: <Target className="h-3.5 w-3.5" /> },
           ].map((item) => (
             <Card key={item.label} className="p-4">
-              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {item.icon}
                 {item.label}
               </div>
-              <p className="mt-2 text-2xl font-bold tabular-nums text-gray-900">{item.value}</p>
+              <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">{item.value}</p>
             </Card>
           ))}
         </div>
       )}
 
       <Card className="p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <UserIcon className="h-5 w-5 text-blue-600" />
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+          <UserIcon className="h-5 w-5 text-primary" />
           Edit profile
         </h2>
         <div className="space-y-4">
@@ -182,12 +183,12 @@ export default function ProfilePage() {
           </div>
 
           {error && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-sm text-destructive">
               {error}
             </p>
           )}
           {saved && (
-            <p className="text-sm text-green-600" aria-live="polite">
+            <p className="text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite">
               Profile saved.
             </p>
           )}

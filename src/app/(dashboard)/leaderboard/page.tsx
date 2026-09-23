@@ -103,13 +103,13 @@ export default function LeaderboardPage() {
           <Trophy className="h-7 w-7 text-amber-500" />
           Leaderboard
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Community members ranked by 90-day average score and consistency.
         </p>
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -120,7 +120,7 @@ export default function LeaderboardPage() {
         </div>
       ) : rows.length === 0 ? (
         <EmptyState
-          icon={<Award className="h-10 w-10 text-gray-300" />}
+          icon={<Award className="h-10 w-10 text-muted-foreground/60" />}
           title="No one to rank yet"
           description="Once more people join and track their routines, they will appear here."
         />
@@ -139,23 +139,23 @@ export default function LeaderboardPage() {
                   <span className="text-2xl" aria-hidden="true">
                     {MEDALS[index] ?? '🏅'}
                   </span>
-                  <p className="mt-2 truncate text-sm font-semibold text-gray-900">{row.name}</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums text-blue-600">
+                  <p className="mt-2 truncate text-sm font-semibold text-foreground">{row.name}</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums text-primary">
                     {Math.round(row.averageScore)}
                   </p>
-                  <p className="text-xs text-gray-500">avg score</p>
+                  <p className="text-xs text-muted-foreground">avg score</p>
                 </Card>
               ))}
             </div>
           )}
 
-          <Card className="divide-y divide-gray-100 p-0">
+          <Card className="divide-y divide-border p-0">
             {rows.map((row, index) => (
               <div key={row.id} className="flex items-center gap-3 p-4">
-                <span className="w-8 shrink-0 text-center text-sm font-semibold tabular-nums text-gray-500">
+                <span className="w-8 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">
                   {index + 1}
                 </span>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100 text-sm font-semibold text-gray-600">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-semibold text-muted-foreground">
                   {row.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={row.avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -163,14 +163,14 @@ export default function LeaderboardPage() {
                     row.name.charAt(0).toUpperCase()
                   )}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                   {row.name}
                 </span>
                 <span className="inline-flex items-center gap-1 text-xs text-orange-600">
                   <Flame className="h-3.5 w-3.5" />
                   {row.currentStreak}
                 </span>
-                <span className="w-14 text-right text-sm font-bold tabular-nums text-gray-900">
+                <span className="w-14 text-right text-sm font-bold tabular-nums text-foreground">
                   {Math.round(row.averageScore)}
                 </span>
               </div>

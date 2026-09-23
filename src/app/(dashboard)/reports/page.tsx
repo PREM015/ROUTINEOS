@@ -20,9 +20,9 @@ function currentMonth(): string {
 
 function Row({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="flex items-center justify-between border-b border-gray-100 py-2 text-sm last:border-0">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-semibold tabular-nums text-gray-900">{value}</span>
+    <div className="flex items-center justify-between border-b border-border py-2 text-sm last:border-0">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-semibold tabular-nums text-foreground">{value}</span>
     </div>
   );
 }
@@ -64,6 +64,7 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load(type, date);
   }, [load, type, date]);
 
@@ -92,10 +93,10 @@ export default function ReportsPage() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <FileText className="h-7 w-7 text-blue-600" />
+          <FileText className="h-7 w-7 text-primary" />
           Reports
         </h1>
-        <p className="mt-2 text-gray-600">Review a detailed summary for any week or month.</p>
+        <p className="mt-2 text-muted-foreground">Review a detailed summary for any week or month.</p>
       </div>
 
       <Card className="mb-6 p-5">
@@ -128,7 +129,7 @@ export default function ReportsPage() {
       </Card>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -140,8 +141,8 @@ export default function ReportsPage() {
       ) : type === 'weekly' && weekly ? (
         <div className="space-y-6">
           <Card className="p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <CalendarRange className="h-5 w-5 text-blue-600" />
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-foreground">
+              <CalendarRange className="h-5 w-5 text-primary" />
               {weekly.period.startDate} – {weekly.period.endDate}
             </h2>
             <Row label="Average score" value={weekly.scores.average} />
@@ -157,8 +158,8 @@ export default function ReportsPage() {
       ) : type === 'monthly' && monthly ? (
         <div className="space-y-6">
           <Card className="p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-900">
-              <CalendarRange className="h-5 w-5 text-blue-600" />
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-foreground">
+              <CalendarRange className="h-5 w-5 text-primary" />
               {monthly.period.startDate} – {monthly.period.endDate}
             </h2>
             <Row label="Average score" value={monthly.scores.average} />
@@ -176,7 +177,7 @@ export default function ReportsPage() {
 
       {chartData.length > 0 && (
         <Card className="mt-6 p-5">
-          <h2 className="mb-4 text-lg font-semibold text-gray-900">Habit completion</h2>
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Habit completion</h2>
           <BarChart
             data={chartData}
             xKey="name"

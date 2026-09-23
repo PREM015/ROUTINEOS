@@ -69,6 +69,7 @@ export default function FeedbackPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -107,16 +108,16 @@ export default function FeedbackPage() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <MessageSquare className="h-7 w-7 text-blue-600" />
+          <MessageSquare className="h-7 w-7 text-primary" />
           Feedback
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Tell us what is working, what is not, and what you would like to see next.
         </p>
       </div>
 
       <Card className="mb-8 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Send feedback</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Send feedback</h2>
         <div className="space-y-4">
           <Select
             label="Type"
@@ -146,12 +147,12 @@ export default function FeedbackPage() {
           />
 
           {error && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-sm text-destructive">
               {error}
             </p>
           )}
           {success && (
-            <p className="text-sm text-green-600" aria-live="polite">
+            <p className="text-sm text-emerald-600 dark:text-emerald-400" aria-live="polite">
               Thanks! Your feedback has been submitted.
             </p>
           )}
@@ -165,14 +166,14 @@ export default function FeedbackPage() {
         </div>
       </Card>
 
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Your submissions</h2>
+      <h2 className="mb-4 text-lg font-semibold text-foreground">Your submissions</h2>
       {!items ? (
         <div className="flex justify-center py-12">
           <Spinner className="h-6 w-6" />
         </div>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<MessageSquare className="h-10 w-10 text-gray-300" />}
+          icon={<MessageSquare className="h-10 w-10 text-muted-foreground/60" />}
           title="No feedback yet"
           description="Your submitted feedback and its status will appear here."
         />
@@ -181,7 +182,7 @@ export default function FeedbackPage() {
           {items.map((item) => (
             <Card key={item.id} className="p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-gray-900">{item.subject}</h3>
+                <h3 className="text-sm font-semibold text-foreground">{item.subject}</h3>
                 <div className="flex items-center gap-2">
                   <Badge variant="default">{item.type.replace(/_/g, ' ')}</Badge>
                   <Badge variant={STATUS_VARIANT[item.status] ?? 'default'}>
@@ -189,8 +190,8 @@ export default function FeedbackPage() {
                   </Badge>
                 </div>
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-gray-600">{item.message}</p>
-              <p className="mt-2 text-xs text-gray-400">{formatDate(new Date(item.createdAt))}</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">{item.message}</p>
+              <p className="mt-2 text-xs text-muted-foreground/60">{formatDate(new Date(item.createdAt))}</p>
             </Card>
           ))}
         </div>
