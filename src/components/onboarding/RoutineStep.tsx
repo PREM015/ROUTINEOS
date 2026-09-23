@@ -14,7 +14,7 @@ export function RoutineStep({ onNext, onBack }: { onNext: () => void; onBack: ()
         <button
           type="button"
           onClick={onNext}
-          className="rounded-xl border border-border p-6 text-center shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out-expo hover:border-primary hover:bg-muted/40 hover:shadow-raised active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className="glass-panel glow-primary p-6 text-center shadow-soft transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         >
           <h3 className="text-lg font-semibold">Workday Optimizer</h3>
           <p className="mt-2 text-sm text-muted-foreground">Focused on deep work, regular breaks, and evening wind-down.</p>
@@ -22,7 +22,7 @@ export function RoutineStep({ onNext, onBack }: { onNext: () => void; onBack: ()
         <button
           type="button"
           onClick={onNext}
-          className="rounded-xl border border-border p-6 text-center shadow-sm transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out-expo hover:border-primary hover:bg-muted/40 hover:shadow-raised active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          className="glass-panel glow-primary p-6 text-center shadow-soft transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:border-primary/40 active:scale-[0.98] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         >
           <h3 className="text-lg font-semibold">Balanced Life</h3>
           <p className="mt-2 text-sm text-muted-foreground">Mix of fitness, learning, and steady productivity.</p>

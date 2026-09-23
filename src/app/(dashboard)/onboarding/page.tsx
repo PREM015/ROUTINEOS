@@ -30,12 +30,16 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden p-4 bg-background">
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="gradient-mesh-animated absolute inset-0" />
+        <div className="noise-overlay absolute inset-0" />
+      </div>
       {step > 0 && step < MAX_STEP && (
-        <div className="w-full max-w-2xl mb-6">
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <div className="relative w-full max-w-2xl mb-6">
+          <div className="h-2 overflow-hidden rounded-full bg-muted shadow-soft">
             <motion.div
-              className="h-full rounded-full bg-primary"
+              className="shimmer-active glow-primary h-full rounded-full bg-primary"
               initial={false}
               animate={{ width: `${(step / MAX_STEP) * 100}%` }}
               transition={{ duration: 0.4, ease: EASE }}
@@ -44,7 +48,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-8 shadow-raised sm:p-10">
+      <div className="relative w-full max-w-2xl rounded-2xl glass-panel glow-primary p-8 shadow-long sm:p-10">
         <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div
             key={step}

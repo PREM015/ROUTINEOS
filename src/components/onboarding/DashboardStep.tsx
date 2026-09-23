@@ -9,7 +9,7 @@ export function DashboardStep() {
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6 text-center">
-      <div className="p-4 rounded-full bg-emerald-500/10">
+      <div className="glass-panel glow-primary p-4 rounded-full">
         <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400" />
       </div>
       <h2 className="text-3xl font-bold">You&apos;re all set!</h2>

@@ -9,7 +9,7 @@ export function WelcomeStep({ onNext }: { onNext: () => void }) {
       <div className="flex justify-center">
         <Logo variant="icon" size="lg" />
       </div>
-      <h1 className="text-3xl font-bold">Welcome to RoutineOS</h1>
+      <h1 className="animated-gradient-text text-3xl font-bold">Welcome to RoutineOS</h1>
       <p className="max-w-md text-muted-foreground">
         Your ultimate productivity platform. Let&rsquo;s get you set up so you can start achieving your goals and building better habits.
       </p>
