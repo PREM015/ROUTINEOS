@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useCountUp } from '@/components/motion/useCountUp';
 
 interface ScoreRingMiniProps {
   score: number;
@@ -10,11 +11,14 @@ interface ScoreRingMiniProps {
 }
 
 export default function ScoreRingMini({ score, color, label, size = 64 }: ScoreRingMiniProps) {
+  const reduce = useReducedMotion();
+  const clamped = Math.min(100, Math.max(0, score));
+  const display = useCountUp(clamped, 1);
   const strokeWidth = size * 0.12;
   const center = size / 2;
   const radius = center - strokeWidth / 2;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const offset = circumference - (clamped / 100) * circumference;
 
   return (
     <div className="flex flex-col items-center">
@@ -28,23 +32,37 @@ export default function ScoreRingMini({ score, color, label, size = 64 }: ScoreR
             strokeWidth={strokeWidth}
             className="stroke-muted"
           />
-          <motion.circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            style={{ stroke: color }}
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1, type: 'spring', bounce: 0.2 }}
-          />
+          {reduce ? (
+            <circle
+              cx={center}
+              cy={center}
+              r={radius}
+              fill="none"
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              style={{ stroke: color }}
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+            />
+          ) : (
+            <motion.circle
+              cx={center}
+              cy={center}
+              r={radius}
+              fill="none"
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              style={{ stroke: color }}
+              strokeDasharray={circumference}
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset: offset }}
+              transition={{ duration: 1, type: 'spring', bounce: 0.2 }}
+            />
+          )}
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span className="text-foreground font-bold" style={{ fontSize: size * 0.25 }}>
-            {score}
+            {reduce ? clamped : Math.round(display)}
           </span>
         </div>
       </div>

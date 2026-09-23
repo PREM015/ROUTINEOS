@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, Circle, Flame } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getTodayString } from '@/lib/dates';
+import { cn } from '@/lib/utils';
+import { EASE } from '@/lib/motion';
 import { ScrollableCard } from '@/components/dashboard/ScrollableCard';
 
 interface Habit {
@@ -34,6 +37,7 @@ const TIER_DOT: Record<string, string> = {
 export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps) {
   const { habits, getLogForDate, logHabit, selectedDate } = useApp();
   const today = selectedDate || getTodayString();
+  const reduce = useReducedMotion();
 
   if (habitsProp) {
     return (
@@ -92,20 +96,30 @@ export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps
         const done = getLogForDate(habit.id, today)?.status === 'COMPLETED';
         const dot = TIER_DOT[habit.tier] ?? 'bg-sky-500';
         return (
-          <div
+          <motion.div
             key={habit.id}
-            className="flex items-center gap-2.5 h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5"
+            layout={reduce ? false : true}
+            transition={reduce ? undefined : { layout: { duration: 0.4, ease: EASE } }}
+            className="flex items-center gap-2.5 h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5 hover:bg-muted/50 transition-colors"
           >
-            <button
-              onClick={() => toggle(habit.id)}
-              aria-label={done ? `Mark ${habit.name} not done` : `Mark ${habit.name} done`}
-              className={`shrink-0 transition-colors ${done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'}`}
+            <motion.span
+              key={done ? 'done' : 'open'}
+              initial={reduce ? false : { scale: done ? 0.6 : 1 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+              className="shrink-0"
             >
-              {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-            </button>
+              <button
+                onClick={() => toggle(habit.id)}
+                aria-label={done ? `Mark ${habit.name} not done` : `Mark ${habit.name} done`}
+                className={`transition-colors ${done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'}`}
+              >
+                {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+              </button>
+            </motion.span>
             <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} title={`Tier: ${habit.tier}`} />
             <div className="flex-1 min-w-0">
-              <p className={`truncate text-[13px] font-semibold ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+              <p className={cn('truncate text-[13px] font-semibold transition-colors duration-300', done ? 'text-muted-foreground line-through' : 'text-foreground')}>
                 {habit.name}
               </p>
             </div>
@@ -115,7 +129,7 @@ export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps
                 {habit.streakCount}
               </span>
             )}
-          </div>
+          </motion.div>
         );
       })}
     </ScrollableCard>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { getTodayString } from '@/lib/dates';
+import { useCountUp } from '@/components/motion/useCountUp';
 
 export interface ScoreAxis {
   label: string;
@@ -136,6 +137,7 @@ export function CoreScoreWidget({ axes: axesProp, score: scoreProp, dayMode }: C
 
   const overall = scoreProp ?? live?.totalScore ?? 0;
   const n = axes.length;
+  const display = useCountUp(overall, 1);
 
   if (loading) {
     return (
@@ -292,7 +294,7 @@ export function CoreScoreWidget({ axes: axesProp, score: scoreProp, dayMode }: C
               fontSize={26}
               fontWeight={800}
             >
-              {Math.round(overall)}
+              {Math.round(display)}
             </text>
             <text
               x={CENTER}
@@ -308,10 +310,10 @@ export function CoreScoreWidget({ axes: axesProp, score: scoreProp, dayMode }: C
 
           {/* Tooltip for hover/tap */}
           {hovered !== null && axes[hovered] && (
-            <div
-              role="status"
-              className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground shadow-lg"
-            >
+<div
+            role="status"
+            className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground shadow-lg fade-rise-in"
+          >
               {axes[hovered].label}: {Math.round(axes[hovered].value)}
             </div>
           )}

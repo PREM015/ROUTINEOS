@@ -30,7 +30,7 @@ export function ScrollableCard({
     <section
       aria-label={title}
       className={cn(
-        'bg-card border border-border rounded-xl p-4 flex flex-col min-w-0 min-h-0 overflow-hidden',
+        'bg-card border border-border rounded-xl p-4 flex flex-col min-w-0 min-h-0 overflow-hidden fade-rise-in',
         className
       )}
     >

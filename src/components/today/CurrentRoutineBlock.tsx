@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
+import { Mount } from '@/components/motion/Mount';
 import { getCurrentBlock, calculateBlockProgress } from '@/lib/routine/duration';
 
 interface Block {
@@ -29,7 +30,7 @@ export function CurrentRoutineBlock() {
     try {
       const res = await fetch('/api/routine/today');
       const data = await res.json();
-      
+
       if (data.success && data.data.blocks) {
         const current = getCurrentBlock(data.data.blocks) as Block | null;
         setCurrentBlock(current);
@@ -50,31 +51,39 @@ export function CurrentRoutineBlock() {
   }
 
   return (
-    <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {currentBlock.icon && (
-            <span className="text-3xl">{currentBlock.icon}</span>
-          )}
-          <div>
-            <h3 className="text-lg font-semibold">{currentBlock.title}</h3>
-            <p className="text-sm text-gray-600">
-              {currentBlock.startTime} - {currentBlock.endTime}
-            </p>
+    <Mount>
+      <Card className="p-6 bg-gradient-to-r from-primary/10 via-card to-card border-primary/20">
+        <div className="flex items-start justify-between mb-4 gap-3">
+          <div className="flex items-center gap-3">
+            {currentBlock.icon && (
+              <span className="text-3xl">{currentBlock.icon}</span>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">{currentBlock.title}</h3>
+                <span className="relative flex h-2 w-2" aria-hidden="true">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:animate-none" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {currentBlock.startTime} - {currentBlock.endTime}
+              </p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-sm text-muted-foreground">Time Remaining</p>
+            <p className="text-xl font-bold text-primary tabular-nums">{timeRemaining}</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-600">Time Remaining</p>
-          <p className="text-xl font-bold text-blue-600">{timeRemaining}</p>
-        </div>
-      </div>
 
-      {currentBlock.description && (
-        <p className="text-sm text-gray-700 mb-4">{currentBlock.description}</p>
-      )}
+        {currentBlock.description && (
+          <p className="text-sm text-muted-foreground mb-4">{currentBlock.description}</p>
+        )}
 
-      <Progress value={progress} className="h-2" />
-    </Card>
+        <Progress value={progress} className="h-2" />
+      </Card>
+    </Mount>
   );
 }
 

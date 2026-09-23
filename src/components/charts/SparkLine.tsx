@@ -47,7 +47,7 @@ export function SparkLine({
         role="img"
         aria-label={`${ariaLabel} — no data`}
       >
-        <span className="text-xs text-gray-600">—</span>
+        <span className="text-xs text-muted-foreground">—</span>
       </div>
     );
   }
@@ -77,7 +77,9 @@ export function SparkLine({
             fill={showArea ? `url(#${gradientId})` : 'transparent'}
             fillOpacity={1}
             dot={false}
-            isAnimationActive={false}
+            animationDuration={800}
+            animationEasing="ease-out"
+            baseValue={0}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -8,6 +8,7 @@ import { TodayGoals } from '@/components/today/TodayGoals';
 import { TodaySleep } from '@/components/today/TodaySleep';
 import { DailyReflection } from '@/components/today/DailyReflection';
 import { QuickActions } from '@/components/today/QuickActions';
+import { Mount } from '@/components/motion/Mount';
 import { StreakCard } from '@/components/streak/StreakCard';
 import { getTodayString } from '@/lib/dates';
 import { userService } from '@/server/services/user.service';
@@ -24,37 +25,39 @@ export default async function TodayPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Today</h1>
-        <p className="text-gray-600">
-          {formatInTimeZone(new Date(), timezone, 'EEEE, MMMM d, yyyy')}
-        </p>
-      </div>
+      <Mount>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2 text-foreground">Today</h1>
+          <p className="text-muted-foreground">
+            {formatInTimeZone(new Date(), timezone, 'EEEE, MMMM d, yyyy')}
+          </p>
+        </div>
+      </Mount>
 
       <div className="space-y-6">
         {/* Quick Actions */}
-        <QuickActions date={today} />
+        <Mount delay={0.06}><QuickActions date={today} /></Mount>
 
         {/* Current Routine Block */}
-        <CurrentRoutineBlock />
+        <Mount delay={0.12}><CurrentRoutineBlock /></Mount>
 
         {/* Today's Score */}
-        <TodayScore date={today} />
+        <Mount delay={0.18}><TodayScore date={today} /></Mount>
 
         {/* Streak */}
-        <StreakCard />
+        <Mount delay={0.24}><StreakCard /></Mount>
 
         {/* Today's Habits */}
-        <TodayHabitChecklist date={today} />
+        <Mount delay={0.3}><TodayHabitChecklist date={today} /></Mount>
 
         {/* Today's Goals */}
-        <TodayGoals date={today} />
+        <Mount delay={0.36}><TodayGoals date={today} /></Mount>
 
         {/* Sleep */}
-        <TodaySleep date={today} />
+        <Mount delay={0.42}><TodaySleep date={today} /></Mount>
 
         {/* Daily Reflection */}
-        <DailyReflection date={today} />
+        <Mount delay={0.48}><DailyReflection date={today} /></Mount>
       </div>
     </div>
   );

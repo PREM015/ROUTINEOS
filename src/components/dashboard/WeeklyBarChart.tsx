@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Mount } from '@/components/motion/Mount';
 import { getTodayString } from '@/lib/dates';
 import { format, parseISO, subDays, addDays } from 'date-fns';
 
@@ -14,6 +17,7 @@ interface DayScore {
 }
 
 export function WeeklyBarChart() {
+  const reduce = useReducedMotion();
   const [rows, setRows] = useState<DayScore[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,11 +73,9 @@ export function WeeklyBarChart() {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-muted rounded w-1/3" />
-          <div className="h-48 bg-muted rounded" />
-        </div>
+      <Card className="p-6" aria-busy="true" aria-label="Loading weekly chart">
+        <Skeleton shine className="mb-4 h-6 w-1/3" />
+        <Skeleton className="h-48 w-full" />
       </Card>
     );
   }
@@ -81,7 +83,8 @@ export function WeeklyBarChart() {
   const hasData = days.some((d) => d.score !== null);
 
   return (
-    <Card className="p-6">
+    <Mount>
+      <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-foreground">Last 7 Days</h3>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -106,7 +109,7 @@ export function WeeklyBarChart() {
         </p>
       ) : (
         <div className="flex items-end justify-between gap-2 sm:gap-3 h-48">
-          {days.map(({ date, score }) => {
+          {days.map(({ date, score }, dayIndex) => {
             const short = format(parseISO(date), 'EEE');
             const isToday = date === weekRange.end;
             const hasScore = score !== null;
@@ -120,7 +123,7 @@ export function WeeklyBarChart() {
                 className="group relative flex-1 flex flex-col items-center gap-2"
               >
                 {hasScore && (
-                  <div className="absolute -top-6 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10 text-xs bg-muted border border-border text-foreground rounded-md px-2 py-1 whitespace-nowrap shadow-sm">
+                  <div className="absolute -top-6 pointer-events-none z-10 text-xs bg-muted border border-border text-foreground rounded-md px-2 py-1 whitespace-nowrap shadow-sm opacity-0 translate-y-1 transition-all duration-200 ease-out-expo group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none">
                     <div className="font-semibold mb-0.5">
                       {format(parseISO(date), 'EEE, MMM d')}
                     </div>
@@ -145,7 +148,12 @@ export function WeeklyBarChart() {
                   </div>
                 )}
 
-                <div className="relative w-full flex flex-col-reverse rounded-t overflow-hidden">
+                <motion.div
+                  className="relative w-full flex flex-col-reverse rounded-t overflow-hidden origin-bottom"
+                  initial={reduce ? false : { scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: dayIndex * 0.06 }}
+                >
                   {hasScore ? (
                     <>
                       <div
@@ -167,7 +175,7 @@ export function WeeklyBarChart() {
                   ) : (
                     <div className="w-full bg-muted/60 h-48 border-x border-b border-border/50" />
                   )}
-                </div>
+                </motion.div>
 
                 <div className="text-center">
                   <div
@@ -188,7 +196,8 @@ export function WeeklyBarChart() {
           })}
         </div>
       )}
-    </Card>
+      </Card>
+    </Mount>
   );
 }
 

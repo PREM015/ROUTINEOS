@@ -17,16 +17,16 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
   onEdit
 }) => {
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-xl shadow flex flex-col overflow-hidden ${className}`}>
-      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+    <div className={`flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-md ${className}`}>
+      <div className="px-4 py-3 border-b border-border flex justify-between items-center bg-muted/30">
         <div className="flex items-center space-x-2">
-          {icon && <span className="text-gray-500 dark:text-gray-400">{icon}</span>}
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">{title}</h3>
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">{title}</h3>
         </div>
         {onEdit && (
-          <button 
+          <button
             onClick={onEdit}
-            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-1 text-muted-foreground/70 hover:text-foreground transition-colors rounded-md hover:bg-muted active:scale-90"
             aria-label="Edit widget"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,3 +42,5 @@ export const WidgetContainer: React.FC<WidgetContainerProps> = ({
     </div>
   );
 };
+
+export default WidgetContainer;

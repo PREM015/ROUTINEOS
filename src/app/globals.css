@@ -6,6 +6,7 @@
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -74,6 +75,93 @@ body {
 
 .animate-in {
   animation: menu-in 0.1s ease-out;
+}
+
+/* Shared motion system — one easing curve across the app.
+   Timing for every entrance/feedback animation uses ease-out-expo so the
+   whole product feels like it moves together. */
+@keyframes blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -32px) scale(1.12);
+  }
+  66% {
+    transform: translate(-32px, 24px) scale(0.92);
+  }
+}
+
+.animate-blob {
+  animation: blob 18s var(--ease-out-expo) infinite;
+}
+
+.animate-blob-slow {
+  animation: blob 26s var(--ease-out-expo) infinite reverse;
+}
+
+/* Generic entrance for newly-mounted content (empty states, page sections).
+   Mirrors the framer-motion Mount wrapper so CSS/SVG-only components can join
+   the same "assembling" cadence without a motion dependency. */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.fade-rise-in {
+  animation: fade-rise 0.6s var(--ease-out-expo);
+}
+
+/* Shimmer sweep overlay for the `shine` Skeleton variant. */
+.animate-shimmer {
+  animation: shimmer 1.8s var(--ease-out-expo) infinite;
+}
+
+/* Accordion expand/collapse (height is measured by Radix). */
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* Skeleton shimmer sweep (used by the `shine` Skeleton variant). */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-blob,
+  .animate-blob-slow,
+  .fade-rise-in,
+  .animate-shimmer {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

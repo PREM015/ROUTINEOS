@@ -1,10 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ListChecks } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import AddHabitModal from '@/components/habits/AddHabitModal';
+import { cn } from '@/lib/utils';
+import { EASE } from '@/lib/motion';
 import type { HabitTier, HabitLogStatus } from '@prisma/client';
 import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
 
@@ -26,6 +32,7 @@ interface TodayHabitChecklistProps {
 }
 
 export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
+  const reduce = useReducedMotion();
   const [habits, setHabits] = useState<TodayHabit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,14 +107,15 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-12 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+      <Card className="p-6" aria-busy="true" aria-label="Loading today's habits">
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton shine className="h-6 w-40" />
+          <Skeleton className="h-9 w-24 rounded-lg" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-14 rounded-lg" />
+          ))}
         </div>
       </Card>
     );
@@ -143,46 +151,58 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
                   <span>{tierConfig.icon}</span>
                   <h3 className="font-semibold">{tierConfig.label}</h3>
                 </div>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground tabular-nums">
                   {completedCount}/{tierHabits.length}
                 </span>
               </div>
 
               <div className="space-y-2">
-                {tierHabits.map(habit => (
-                  <div
-                    key={habit.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={habit.log?.status === 'COMPLETED'}
-                      disabled={togglingId === habit.id}
-                      onCheckedChange={() =>
-                        toggleHabit(habit.id, habit.log?.status || null)
-                      }
-                      aria-label={`Mark ${habit.name} ${habit.log?.status === 'COMPLETED' ? 'not done' : 'done'}`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {habit.icon && <span>{habit.icon}</span>}
-                        <span
-                          className={
-                            habit.log?.status === 'COMPLETED'
-                              ? 'line-through text-gray-500'
-                              : ''
+                {tierHabits.map(habit => {
+                  const done = habit.log?.status === 'COMPLETED';
+                  return (
+                    <motion.div
+                      key={habit.id}
+                      layout={reduce ? false : true}
+                      transition={reduce ? undefined : { layout: { duration: 0.4, ease: EASE } }}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/60 transition-colors"
+                    >
+                      <motion.div
+                        key={done ? 'done' : 'open'}
+                        initial={reduce ? false : { scale: done ? 0.6 : 1 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                        className="shrink-0"
+                      >
+                        <Checkbox
+                          checked={done}
+                          disabled={togglingId === habit.id}
+                          onCheckedChange={() =>
+                            toggleHabit(habit.id, habit.log?.status || null)
                           }
-                        >
-                          {habit.name}
-                        </span>
+                          aria-label={`Mark ${habit.name} ${done ? 'not done' : 'done'}`}
+                        />
+                      </motion.div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {habit.icon && <span>{habit.icon}</span>}
+                          <span
+                            className={cn(
+                              'transition-colors duration-300',
+                              done ? 'line-through text-muted-foreground' : 'text-foreground'
+                            )}
+                          >
+                            {habit.name}
+                          </span>
+                        </div>
+                        {habit.estimatedDuration && (
+                          <span className="text-xs text-muted-foreground">
+                            {habit.estimatedDuration} min
+                          </span>
+                        )}
                       </div>
-                      {habit.estimatedDuration && (
-                        <span className="text-xs text-gray-500">
-                          {habit.estimatedDuration} min
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           );
@@ -190,12 +210,15 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
       </div>
 
       {habits.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
-          <p>No habits scheduled for today</p>
-          <Button className="mt-4" variant="outline" onClick={() => setModalOpen(true)}>
-            Add Habits
-          </Button>
-        </div>
+        <EmptyState
+          icon={<ListChecks className="mx-auto h-10 w-10 text-muted-foreground/50" />}
+          title="No habits scheduled for today"
+          action={
+            <Button variant="outline" onClick={() => setModalOpen(true)}>
+              Add Habits
+            </Button>
+          }
+        />
       )}
 
       <AddHabitModal

@@ -152,7 +152,7 @@ export function QuoteDisplay() {
         </span>
         <div className="flex-1 min-w-0">
           <div
-            className={`transition-opacity duration-200 ${fading ? 'opacity-0' : 'opacity-100'}`}
+            className={`transition-all duration-300 ease-out-expo motion-reduce:transition-none ${fading ? 'opacity-0 translate-y-1' : 'opacity-100 translate-y-0'}`}
             aria-live="polite"
           >
             <p className="text-base italic text-foreground leading-relaxed">

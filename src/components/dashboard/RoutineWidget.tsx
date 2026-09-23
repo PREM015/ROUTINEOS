@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getTodayString } from '@/lib/dates';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { EASE } from '@/lib/motion';
+import { useCountUp } from '@/components/motion/useCountUp';
 import {
   PERIOD_LABEL,
   shiftAnchor,
@@ -51,6 +54,7 @@ interface ProgressPayload {
 export function RoutineWidget() {
   const { selectedDate } = useApp();
   const today = selectedDate || getTodayString();
+  const reduce = useReducedMotion();
 
   const [period, setPeriod] = useState<Period>('day');
   const [anchorDate, setAnchorDate] = useState<string>(today);
@@ -117,6 +121,8 @@ export function RoutineWidget() {
     return data.days.every((d) => !d.scheduled && d.total === 0);
   }, [data, period]);
 
+  const rateDisplay = useCountUp(totals.rate, 0.8);
+
   const statusOf = (blockId: string): Block['status'] =>
     overlay[blockId] ?? null;
 
@@ -173,7 +179,7 @@ export function RoutineWidget() {
 
       <div className="mb-3 shrink-0">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xl font-bold text-foreground tabular-nums">{totals.rate}%</span>
+          <span className="text-xl font-bold text-foreground tabular-nums">{Math.round(rateDisplay)}%</span>
         </div>
         <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
           <div
@@ -196,7 +202,7 @@ export function RoutineWidget() {
         </div>
       ) : error ? (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          Couldn't load routine progress. Please try again.
+          Couldn&apos;t load routine progress. Please try again.
         </p>
       ) : isEmpty ? (
         <div className="py-6 text-center">
@@ -220,25 +226,35 @@ export function RoutineWidget() {
                 dayBlocks.map((block) => {
                   const done = statusOf(block.blockId) === 'COMPLETED';
                   return (
-                    <div
+                    <motion.div
                       key={`${activeDay?.date ?? ''}:${block.blockId}`}
-                      className="flex items-center gap-2.5 h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5"
+                      layout={reduce ? false : true}
+                      transition={reduce ? undefined : { layout: { duration: 0.4, ease: EASE } }}
+                      className="flex items-center gap-2.5 h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5 hover:bg-muted/50 transition-colors"
                     >
-                      <button
-                        onClick={() => toggleDone(block.blockId)}
-                        disabled={togglingId === block.blockId}
-                        aria-label={done ? `Mark ${block.title} not done` : `Mark ${block.title} done`}
-                        className={cn(
-                          'shrink-0 transition-colors disabled:opacity-50',
-                          done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'
-                        )}
+                      <motion.span
+                        key={done ? 'done' : 'open'}
+                        initial={reduce ? false : { scale: done ? 0.6 : 1 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                        className="shrink-0"
                       >
-                        {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-                      </button>
+                        <button
+                          onClick={() => toggleDone(block.blockId)}
+                          disabled={togglingId === block.blockId}
+                          aria-label={done ? `Mark ${block.title} not done` : `Mark ${block.title} done`}
+                          className={cn(
+                            'transition-colors disabled:opacity-50',
+                            done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'
+                          )}
+                        >
+                          {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+                        </button>
+                      </motion.span>
                       <div className="flex-1 min-w-0">
                         <p
                           className={cn(
-                            'truncate text-[13px] font-semibold',
+                            'truncate text-[13px] font-semibold transition-colors duration-300',
                             done ? 'text-muted-foreground line-through' : 'text-foreground'
                           )}
                         >
@@ -248,7 +264,7 @@ export function RoutineWidget() {
                           {block.startTime} – {block.endTime}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })
               )}

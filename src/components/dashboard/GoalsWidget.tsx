@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useApp, Goal } from '@/context/AppContext';
 import { Target, Plus, CheckCircle2, Circle } from 'lucide-react';
 import { EmptyState, Badge } from '@/components/ui';
 import { getDaysRemaining, getTodayString } from '@/lib/dates';
+import { useCountUp } from '@/components/motion/useCountUp';
+import { EASE } from '@/lib/motion';
 
 interface GoalsWidgetProps {
   type?: Goal['type'];
@@ -23,8 +25,14 @@ const PRIORITY_COLORS: Record<Goal['priority'], 'success' | 'warning' | 'default
   NON_PROFIT: 'default',
 };
 
+function AnimatedPct({ value }: { value: number }) {
+  const display = useCountUp(value, 0.8);
+  return <>{Math.round(display)}%</>;
+}
+
 export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: GoalsWidgetProps = {}) {
   const { goals, updateGoalProgress, updateGoal } = useApp();
+  const reduce = useReducedMotion();
   const [incrementingId, setIncrementingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,18 +105,28 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-card border border-border rounded-xl p-4 space-y-3"
+              whileHover={reduce ? undefined : { y: -2 }}
+              transition={{ layout: { duration: 0.4, ease: EASE } }}
+              className="bg-card border border-border rounded-xl p-4 space-y-3 transition-shadow hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   {isDaily && showDailyCheckoff && (
-                    <button
-                      onClick={() => handleDailyCheck(goal)}
-                      aria-label={checked ? `Uncheck ${goal.title}` : `Check off ${goal.title}`}
-                      className={`mt-0.5 shrink-0 transition ${checked ? 'text-emerald-400' : 'text-muted-foreground hover:text-emerald-400'}`}
+                    <motion.span
+                      key={checked ? 'checked' : 'open'}
+                      initial={reduce ? false : { scale: checked ? 0.6 : 1 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                      className="mt-0.5 shrink-0"
                     >
-                      {checked ? <CheckCircle2 size={18} /> : <Circle size={18} />}
-                    </button>
+                      <button
+                        onClick={() => handleDailyCheck(goal)}
+                        aria-label={checked ? `Uncheck ${goal.title}` : `Check off ${goal.title}`}
+                        className={`transition-colors ${checked ? 'text-emerald-400' : 'text-muted-foreground hover:text-emerald-400'}`}
+                      >
+                        {checked ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                      </button>
+                    </motion.span>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -129,7 +147,8 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
                       {goal.currentValue}/{goal.targetValue} {goal.unit || ''}
                     </span>
                     <motion.button
-                      animate={incrementingId === goal.id ? { scale: [1, 1.3, 1] } : {}}
+                      animate={reduce ? {} : incrementingId === goal.id ? { scale: [1, 1.3, 1] } : {}}
+                      whileTap={reduce ? undefined : { scale: 0.85 }}
                       onClick={() => handleIncrement(goal)}
                       className="w-6 h-6 rounded-full bg-zinc-800 hover:bg-emerald-500/20 hover:text-emerald-400 text-muted-foreground flex items-center justify-center transition"
                       title="Increment progress by 1"
@@ -152,7 +171,7 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
                     />
                   </div>
                   <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>{Math.round(pct)}% complete</span>
+                    <span><AnimatedPct value={pct} /> complete</span>
                     {pct >= 100 && <span className="text-emerald-500 font-bold">✓ Done!</span>}
                   </div>
                 </div>

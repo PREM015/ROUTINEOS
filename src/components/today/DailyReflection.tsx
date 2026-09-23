@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Slider } from '@/components/ui/Slider';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ReflectionData {
   energy: number | null;
@@ -170,10 +171,11 @@ export function DailyReflection({ date }: DailyReflectionProps) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
+      <Card className="p-6" aria-busy="true" aria-label="Loading reflection">
+        <Skeleton shine className="mb-4 h-6 w-1/3" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4" />
         </div>
       </Card>
     );
@@ -181,13 +183,13 @@ export function DailyReflection({ date }: DailyReflectionProps) {
 
   if (!isEditing && !hasSaved) {
     return (
-      <Card className="p-6">
+      <Card className="p-6 fade-rise-in">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Daily Reflection</h3>
         </div>
         {error && <p role="alert" className="text-sm text-red-500 mb-3">{error}</p>}
         <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">Take a moment to reflect on your day</p>
+          <p className="text-muted-foreground mb-4">Take a moment to reflect on your day</p>
           <Button onClick={() => setIsEditing(true)}>
             Start Reflection
           </Button>
@@ -204,7 +206,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
       { key: 'focus' as const, label: 'Focus' },
     ];
     return (
-      <Card className="p-6">
+      <Card className="p-6 fade-rise-in">
         <h3 className="text-lg font-semibold mb-6">Daily Reflection</h3>
 
         <div className="space-y-6">
@@ -342,7 +344,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-6 fade-rise-in">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Daily Reflection</h3>
         <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
@@ -357,7 +359,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
         <div className="grid grid-cols-4 gap-4 pb-4 border-b">
           {(['energy', 'mood', 'stress', 'focus'] as const).map((k) => (
             <div key={k} className="text-center">
-              <p className="text-sm text-gray-600 capitalize">{k}</p>
+              <p className="text-sm text-muted-foreground capitalize">{k}</p>
               <p className="text-2xl font-bold">{saved?.[k] ?? '-'}/5</p>
             </div>
           ))}
@@ -365,36 +367,36 @@ export function DailyReflection({ date }: DailyReflectionProps) {
 
         {saved?.biggestWin && (
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Biggest Win</p>
-            <p className="text-gray-900">{saved.biggestWin}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Biggest Win</p>
+            <p className="text-foreground">{saved.biggestWin}</p>
           </div>
         )}
 
         {saved?.biggestDifficulty && (
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Biggest Challenge</p>
-            <p className="text-gray-900">{saved.biggestDifficulty}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Biggest Challenge</p>
+            <p className="text-foreground">{saved.biggestDifficulty}</p>
           </div>
         )}
 
         {saved?.reflectionText && (
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Overall Reflection</p>
-            <p className="text-gray-900">{saved.reflectionText}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Overall Reflection</p>
+            <p className="text-foreground">{saved.reflectionText}</p>
           </div>
         )}
 
         {saved?.gratitude && (
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Gratitude</p>
-            <p className="text-gray-900">{saved.gratitude}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Gratitude</p>
+            <p className="text-foreground">{saved.gratitude}</p>
           </div>
         )}
 
         {saved?.tomorrowFocus && (
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Tomorrow&apos;s Focus</p>
-            <p className="text-gray-900">{saved.tomorrowFocus}</p>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Tomorrow&apos;s Focus</p>
+            <p className="text-foreground">{saved.tomorrowFocus}</p>
           </div>
         )}
       </div>

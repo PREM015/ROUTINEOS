@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import { useCountUp } from '@/components/motion/useCountUp';
 
 interface MonthlySummaryWidgetProps {
   averageScore: number;
@@ -14,38 +15,62 @@ export const MonthlySummaryWidget: React.FC<MonthlySummaryWidgetProps> = ({
   currentStreak,
   habitsCompleted,
 }) => {
+  const avg = useCountUp(averageScore, 1);
+  const streak = useCountUp(currentStreak, 0.8);
+
+  const statCards = [
+    {
+      label: 'Avg Score',
+      value: Math.round(avg),
+      accent: 'bg-sky-500/10 border-sky-500/20 text-sky-600 dark:text-sky-400',
+      body: 'text-foreground',
+    },
+    {
+      label: 'Streak',
+      value: `${Math.round(streak)}`,
+      hint: 'days',
+      accent: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+      body: 'text-foreground',
+    },
+    {
+      label: 'Habits',
+      value: habitsCompleted,
+      accent: 'bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-400',
+      body: 'text-foreground',
+    },
+  ];
+
   return (
-    <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow h-full">
-      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Monthly Summary</h3>
-      
+    <div className="h-full rounded-xl border border-border bg-card p-4 shadow-sm transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-md fade-rise-in">
+      <h3 className="text-lg font-semibold text-foreground mb-4">Monthly Summary</h3>
+
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-          <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide font-semibold mb-1">Avg Score</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{averageScore}</p>
-        </div>
-        
-        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
-          <p className="text-xs text-green-600 dark:text-green-400 uppercase tracking-wide font-semibold mb-1">Streak</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{currentStreak} <span className="text-sm font-normal">days</span></p>
-        </div>
-        
-        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-100 dark:border-purple-800">
-          <p className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wide font-semibold mb-1">Habits</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{habitsCompleted}</p>
-        </div>
-        
-        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800">
-          <p className="text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wide font-semibold mb-1">Best Day</p>
+        {statCards.map((card) => (
+          <div key={card.label} className={`p-3 rounded-lg border ${card.accent}`}>
+            <p className="text-xs uppercase tracking-wide font-semibold mb-1">{card.label}</p>
+            <p className={`text-2xl font-bold tabular-nums ${card.body}`}>
+              {card.value}
+              {card.hint && <span className="text-sm font-normal">{card.hint}</span>}
+            </p>
+          </div>
+        ))}
+
+        <div className="p-3 rounded-lg border bg-amber-500/10 border-amber-500/20">
+          <p className="text-xs uppercase tracking-wide font-semibold mb-1 text-amber-600 dark:text-amber-400">
+            Best Day
+          </p>
           {bestDay ? (
             <div>
-              <p className="text-xl font-bold text-gray-900 dark:text-white">{bestDay.score}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{bestDay.date}</p>
+              <p className="text-xl font-bold text-foreground tabular-nums">{bestDay.score}</p>
+              <p className="text-xs text-muted-foreground">{bestDay.date}</p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">N/A</p>
+            <p className="text-sm text-muted-foreground">N/A</p>
           )}
         </div>
       </div>
     </div>
   );
 };
+
+export default MonthlySummaryWidget;

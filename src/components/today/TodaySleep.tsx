@@ -5,7 +5,9 @@ import { Moon, BedDouble, Clock3, Timer } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog';
+import { Mount } from '@/components/motion/Mount';
 import { showNotification } from '@/lib/pwa/notifications';
 import {
   useSleepSession,
@@ -70,17 +72,16 @@ export function TodaySleep({ date }: TodaySleepProps) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-muted rounded w-1/3" />
-          <div className="h-20 bg-muted rounded" />
-        </div>
+      <Card className="p-6" aria-busy="true" aria-label="Loading sleep">
+        <Skeleton shine className="mb-4 h-6 w-1/3" />
+        <Skeleton className="h-20 w-full" />
       </Card>
     );
   }
 
   return (
-    <Card className="p-6">
+    <Mount>
+      <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">Sleep</h3>
         {!active && !prompt && (
@@ -188,7 +189,8 @@ export function TodaySleep({ date }: TodaySleepProps) {
           </div>
         </div>
       )}
-    </Card>
+      </Card>
+    </Mount>
   );
 }
 
@@ -215,7 +217,11 @@ function ActiveTimer({
     <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75 motion-reduce:animate-none" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
             Sleep session active
           </p>
           <p className="mt-1 text-3xl font-bold text-foreground tabular-nums">{elapsed}</p>

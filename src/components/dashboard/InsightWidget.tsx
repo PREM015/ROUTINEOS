@@ -1,8 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Mount } from '@/components/motion/Mount';
 
 interface Insight {
   id: string;
@@ -14,6 +18,7 @@ interface Insight {
 }
 
 export function InsightWidget() {
+  const reduce = useReducedMotion();
   const [insight, setInsight] = useState<Insight | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -79,14 +84,12 @@ export function InsightWidget() {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          </div>
+      <Card className="p-6" aria-busy="true" aria-label="Loading insights">
+        <Skeleton shine className="mb-4 h-6 w-1/2" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-3/4" />
         </div>
       </Card>
     );
@@ -94,9 +97,9 @@ export function InsightWidget() {
 
   if (!insight) {
     return (
-      <Card className="p-6">
+      <Card className="p-6 fade-rise-in">
         <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
-        <p className="text-gray-600 dark:text-gray-300 mb-4">
+        <p className="text-muted-foreground mb-4">
           Get personalized insights powered by AI
         </p>
         {notice && (
@@ -105,6 +108,7 @@ export function InsightWidget() {
           </p>
         )}
         <Button onClick={generateNewInsight} disabled={generating}>
+          {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
           {generating ? 'Generating...' : 'Generate Insight'}
         </Button>
       </Card>
@@ -115,65 +119,72 @@ export function InsightWidget() {
   const suggestions = insight.suggestions.split('\n').filter(Boolean);
 
   return (
-    <Card className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">AI Insights</h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={generateNewInsight}
-          disabled={generating}
+    <Mount>
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">AI Insights</h3>
+          <Button variant="ghost" size="sm" onClick={generateNewInsight} disabled={generating}>
+            {generating ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <span aria-hidden="true">🔄</span>
+            )}
+          </Button>
+        </div>
+
+        <motion.div
+          key={insight.id}
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="space-y-4"
         >
-          {generating ? '...' : '🔄'}
-        </Button>
-      </div>
-
-      <div className="space-y-4">
-        {notice && (
-          <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-            {notice}
-          </p>
-        )}
-        {/* Summary */}
-        <div>
-          <p className="text-sm text-gray-900 dark:text-gray-100">{insight.summary}</p>
-        </div>
-
-        {/* Wins */}
-        {wins.length > 0 && (
+          {notice && (
+            <p role="status" className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+              {notice}
+            </p>
+          )}
+          {/* Summary */}
           <div>
-            <h4 className="text-sm font-semibold mb-2 text-green-700 dark:text-green-400">✨ Wins</h4>
-            <ul className="space-y-1">
-              {wins.slice(0, 2).map((win, i) => (
-                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                  • {win}
-                </li>
-              ))}
-            </ul>
+            <p className="text-sm text-foreground">{insight.summary}</p>
           </div>
-        )}
 
-        {/* Suggestions */}
-        {suggestions.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold mb-2 text-blue-700 dark:text-blue-400">
-              💡 Suggestions
-            </h4>
-            <ul className="space-y-1">
-              {suggestions.slice(0, 3).map((suggestion, i) => (
-                <li key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                  • {suggestion}
-                </li>
-              ))}
-            </ul>
+{/* Wins */}
+          {wins.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold mb-2 text-emerald-700 dark:text-emerald-400">Wins</h4>
+              <ul className="space-y-1">
+                {wins.slice(0, 2).map((win, i) => (
+                  <li key={i} className="text-sm text-muted-foreground">
+                    • {win}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Suggestions */}
+          {suggestions.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold mb-2 text-sky-700 dark:text-sky-400">
+                Suggestions
+              </h4>
+              <ul className="space-y-1">
+                {suggestions.slice(0, 3).map((suggestion, i) => (
+                  <li key={i} className="text-sm text-muted-foreground">
+                    • {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="text-xs text-muted-foreground/80 pt-2 border-t border-border">
+            Generated {new Date(insight.generatedAt).toLocaleDateString()}
           </div>
-        )}
-
-        <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-border">
-          Generated {new Date(insight.generatedAt).toLocaleDateString()}
-        </div>
-      </div>
-    </Card>
+        </motion.div>
+      </Card>
+    </Mount>
   );
 }
 

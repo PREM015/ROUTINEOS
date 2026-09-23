@@ -68,6 +68,7 @@ export function QuickActions({ date }: QuickActionsProps) {
         variant="outline"
         onClick={activateMinimumDay}
         disabled={loading}
+        className="transition-all duration-300 ease-out-expo hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
       >
         🎯 Minimum Day
       </Button>
@@ -75,6 +76,7 @@ export function QuickActions({ date }: QuickActionsProps) {
         variant="outline"
         onClick={activateRestDay}
         disabled={loading}
+        className="transition-all duration-300 ease-out-expo hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
       >
         😴 Rest Day
       </Button>
