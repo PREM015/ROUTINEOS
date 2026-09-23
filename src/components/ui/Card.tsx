@@ -7,8 +7,12 @@ const cardVariants = cva(
     variants: {
       variant: {
         default: "",
-        elevated: "shadow-md border-none",
+        elevated: "shadow-floating border-none",
         bordered: "border-2",
+        // Hover-lift surface for clickable cards: lift + shadow deepen,
+        // never a color jump alone.
+        interactive:
+          "transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:shadow-floating hover:border-primary/30 cursor-pointer",
       }
     },
     defaultVariants: { variant: "default" }

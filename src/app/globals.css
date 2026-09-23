@@ -7,6 +7,11 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Elevation scale — flat / raised / floating / modal. */
+  --shadow-flat: 0 0 0 1px rgba(0, 0, 0, 0.02);
+  --shadow-raised: 0 1px 2px 0 rgb(0 0 0 / 0.04), 0 2px 8px -2px rgb(0 0 0 / 0.06);
+  --shadow-floating: 0 8px 24px -6px rgb(0 0 0 / 0.1), 0 16px 40px -12px rgb(0 0 0 / 0.14);
+  --shadow-modal: 0 24px 48px -12px rgb(0 0 0 / 0.28);
 }
 
 @theme inline {
@@ -75,6 +80,131 @@ body {
 
 .animate-in {
   animation: menu-in 0.1s ease-out;
+}
+
+/* Deliberate glass surface — frosted panels, sticky nav, overlays. Only use
+   where a translucent surface over content is wanted, never on every card. */
+.glass {
+  background: color-mix(in srgb, var(--background) 78%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+/* Radix portal entrances. Radix mounts content fresh on open, so a mount
+   animation covers the enter moment; transform-origin follows the anchored
+   menu/popover/tooltip so things grow from their trigger. */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes drawer-in-left {
+  from {
+    opacity: 0.4;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-in-right {
+  from {
+    opacity: 0.4;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-in-bottom {
+  from {
+    opacity: 0.4;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.overlay-in {
+  animation: overlay-in 0.25s var(--ease-out-expo) forwards;
+}
+
+.content-in {
+  animation: content-in 0.3s var(--ease-out-expo) forwards;
+}
+
+.drawer-in-left {
+  animation: drawer-in-left 0.32s var(--ease-out-expo) forwards;
+}
+
+.drawer-in-right {
+  animation: drawer-in-right 0.32s var(--ease-out-expo) forwards;
+}
+
+.drawer-in-bottom {
+  animation: drawer-in-bottom 0.32s var(--ease-out-expo) forwards;
+}
+
+.menu-in {
+  animation: menu-in 0.18s var(--ease-out-expo);
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin, center);
+}
+
+.popover-in {
+  animation: menu-in 0.2s var(--ease-out-expo);
+  transform-origin: var(--radix-popover-content-transform-origin, center);
+}
+
+.tooltip-in {
+  animation: tooltip-in 0.16s var(--ease-out-expo);
+  transform-origin: var(--radix-tooltip-content-transform-origin, center);
+}
+
+/* Toast auto-dismiss progress bar (synced to the 3s + 3s toast lifetime). */
+@keyframes toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.toast-progress {
+  animation: toast-progress 2.9s linear forwards;
 }
 
 /* Shared motion system — one easing curve across the app.
@@ -159,7 +289,16 @@ body {
   .animate-blob,
   .animate-blob-slow,
   .fade-rise-in,
-  .animate-shimmer {
+  .animate-shimmer,
+  .overlay-in,
+  .content-in,
+  .drawer-in-left,
+  .drawer-in-right,
+  .drawer-in-bottom,
+  .menu-in,
+  .popover-in,
+  .tooltip-in,
+  .toast-progress {
     animation: none;
   }
 }

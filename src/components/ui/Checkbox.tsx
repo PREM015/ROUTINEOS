@@ -40,14 +40,17 @@ export function Checkbox({
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
         disabled={disabled}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-gray-300 bg-white transition-colors hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-card transition-colors ease-out-expo hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ring-offset-background data-[state=checked]:border-primary data-[state=checked]:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <CheckboxPrimitive.Indicator className="flex items-center justify-center text-white">
-          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+        <CheckboxPrimitive.Indicator className="flex items-center justify-center text-primary-foreground">
+          <Check
+            className="h-3.5 w-3.5 origin-center transition-transform duration-200 ease-out-expo data-[state=checked]:scale-100 data-[state=unchecked]:scale-0"
+            strokeWidth={3}
+          />
         </CheckboxPrimitive.Indicator>
       </CheckboxPrimitive.Root>
       {label && (
-        <label htmlFor={resolvedId} className="text-sm font-medium text-gray-700 select-none">
+        <label htmlFor={resolvedId} className="text-sm font-medium text-foreground select-none">
           {label}
         </label>
       )}

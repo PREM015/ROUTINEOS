@@ -74,7 +74,7 @@ export function Dropdown({
           side={side}
           sideOffset={sideOffset}
           className={cn(
-            'z-50 min-w-[10rem] rounded-md border border-gray-200 bg-white p-1 text-sm text-gray-700 shadow-lg outline-none',
+            'z-50 min-w-[10rem] rounded-lg border border-border bg-card/90 p-1 text-sm text-foreground shadow-floating backdrop-blur-lg outline-none menu-in',
             className,
           )}
         >
@@ -83,7 +83,7 @@ export function Dropdown({
               return (
                 <DropdownMenuPrimitive.Label
                   key={`label-${index}`}
-                  className="px-2 py-1.5 text-xs font-semibold text-gray-500"
+                  className="px-2 py-1.5 text-xs font-semibold text-muted-foreground"
                 >
                   {item.label}
                 </DropdownMenuPrimitive.Label>
@@ -96,13 +96,13 @@ export function Dropdown({
                   disabled={item.disabled}
                   onSelect={item.onSelect}
                   className={cn(
-                    'relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 outline-none transition-colors focus:bg-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
-                    item.destructive && 'text-red-600 focus:bg-red-50 focus:text-red-700',
+                    'relative flex cursor-default select-none items-center gap-2 rounded-md px-2 py-1.5 outline-none transition-colors focus:bg-muted focus:text-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+                    item.destructive && 'text-destructive focus:bg-destructive/10 focus:text-destructive',
                   )}
                 >
                   {Icon && <Icon className="h-4 w-4 shrink-0" />}
                   <span className="flex-1">{item.label}</span>
-                  {item.shortcut && <span className="text-xs text-gray-400">{item.shortcut}</span>}
+                  {item.shortcut && <span className="text-xs text-muted-foreground/60">{item.shortcut}</span>}
                 </DropdownMenuPrimitive.Item>
               </FragmentWithSeparator>
             );
@@ -122,7 +122,7 @@ function FragmentWithSeparator({
 }) {
   return (
     <React.Fragment>
-      {showSeparator && <DropdownMenuPrimitive.Separator className="my-1 h-px bg-gray-200" />}
+      {showSeparator && <DropdownMenuPrimitive.Separator className="my-1 h-px bg-border" />}
       {children}
     </React.Fragment>
   );

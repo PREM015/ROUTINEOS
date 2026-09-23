@@ -46,12 +46,12 @@ export function Tooltip({
             side={side}
             sideOffset={6}
             className={cn(
-              'z-50 max-w-xs rounded-md bg-gray-900 px-3 py-1.5 text-xs font-medium text-white shadow-md',
+              'z-50 max-w-xs rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background shadow-floating tooltip-in',
               className,
             )}
           >
             {content}
-            <TooltipPrimitive.Arrow className="fill-gray-900" />
+            <TooltipPrimitive.Arrow className="fill-foreground" />
           </TooltipPrimitive.Content>
         </TooltipPrimitive.Portal>
       </TooltipPrimitive.Root>

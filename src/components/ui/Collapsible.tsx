@@ -63,9 +63,12 @@ export function Collapsible({
         </button>
       </CollapsiblePrimitive.Trigger>
       <CollapsiblePrimitive.Content
-        className={cn('overflow-hidden data-[state=closed]:hidden', contentClassName)}
+        className={cn(
+          'grid transition-[grid-template-rows] duration-300 ease-out-expo motion-reduce:transition-none data-[state=open]:[grid-template-rows:1fr] data-[state=closed]:[grid-template-rows:0fr]',
+          contentClassName,
+        )}
       >
-        {children}
+        <div className="overflow-hidden min-h-0">{children}</div>
       </CollapsiblePrimitive.Content>
     </CollapsiblePrimitive.Root>
   );

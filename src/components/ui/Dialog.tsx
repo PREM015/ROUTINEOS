@@ -57,10 +57,10 @@ export function Dialog({
         </DialogPrimitive.Trigger>
       )}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overlay-in" />
         <DialogPrimitive.Content
           className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card border border-border p-6 shadow-xl outline-none text-foreground',
+            'fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card border border-border p-6 shadow-modal outline-none text-foreground content-in',
             SIZE_CLASSES[size],
             className,
           )}
@@ -101,10 +101,10 @@ export function DialogContent({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm overlay-in" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card border border-border p-6 shadow-xl outline-none text-foreground',
+          'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card border border-border p-6 shadow-modal outline-none text-foreground content-in',
           className,
         )}
         {...props}

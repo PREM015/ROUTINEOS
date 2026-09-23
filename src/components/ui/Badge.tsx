@@ -2,15 +2,15 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2 ring-offset-background",
   {
     variants: {
       variant: {
-        default: "bg-gray-100 text-gray-800",
-        primary: "bg-blue-100 text-blue-800",
-        success: "bg-green-100 text-green-800",
-        danger: "bg-red-100 text-red-800",
-        warning: "bg-yellow-100 text-yellow-800",
+        default: "bg-muted text-muted-foreground",
+        primary: "bg-primary/10 text-primary",
+        success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+        danger: "bg-destructive/10 text-destructive",
+        warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
       }
     },
     defaultVariants: { variant: "default" }

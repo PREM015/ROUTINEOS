@@ -39,7 +39,7 @@ export function Radio({
 }: RadioProps) {
   return (
     <div className={cn('w-full', className)}>
-      {label && <span className="mb-2 block text-sm font-medium text-gray-700">{label}</span>}
+      {label && <span className="mb-2 block text-sm font-medium text-foreground">{label}</span>}
       <RadioGroupPrimitive.Root
         value={value}
         onValueChange={onValueChange}
@@ -57,16 +57,16 @@ export function Radio({
                 id={optionId}
                 value={option.value}
                 disabled={option.disabled}
-                className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white transition-colors hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 data-[state=checked]:border-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-border bg-card transition-colors ease-out-expo hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ring-offset-background data-[state=checked]:border-primary disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RadioGroupPrimitive.Indicator className="flex h-4 w-4 items-center justify-center">
-                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  <span className="h-2 w-2 rounded-full bg-primary origin-center transition-transform duration-200 ease-out-expo data-[state=checked]:scale-100 data-[state=unchecked]:scale-0" />
                 </RadioGroupPrimitive.Indicator>
               </RadioGroupPrimitive.Item>
               <span className="select-none">
-                <span className="block text-sm font-medium text-gray-700">{option.label}</span>
+                <span className="block text-sm font-medium text-foreground">{option.label}</span>
                 {option.description && (
-                  <span className="block text-xs text-gray-500">{option.description}</span>
+                  <span className="block text-xs text-muted-foreground">{option.description}</span>
                 )}
               </span>
             </label>

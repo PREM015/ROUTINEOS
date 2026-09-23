@@ -15,10 +15,10 @@ import { cn } from '@/lib/utils';
 const alertVariants = cva('relative w-full rounded-lg border p-4', {
   variants: {
     variant: {
-      info: 'border-blue-200 bg-blue-50 text-blue-900',
-      success: 'border-green-200 bg-green-50 text-green-900',
-      warning: 'border-yellow-200 bg-yellow-50 text-yellow-900',
-      danger: 'border-red-200 bg-red-50 text-red-900',
+      info: 'border-sky-500/20 bg-sky-500/10 text-sky-700 dark:text-sky-300',
+      success: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+      warning: 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300',
+      danger: 'border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300',
     },
   },
   defaultVariants: {
