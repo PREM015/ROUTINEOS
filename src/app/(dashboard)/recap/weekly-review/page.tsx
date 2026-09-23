@@ -52,9 +52,23 @@ export default function WeeklyReviewPage() {
     try {
       const res = await fetch('/api/weekly-review?weekStart=' + defaultWeekStart);
       const json = await res.json();
-      if (json.success && json.data?.review) {
-        // History endpoint returns an array; adapt if needed
-        setHistory(Array.isArray(json.data) ? json.data : []);
+      if (json.success) {
+        // The API returns `{ review, recap }` (single saved review for the
+        // week). Map the real saved review into the history list, or empty.
+        const record = json.data?.review;
+        if (record) {
+          const snapshot = record.statsSnapshot ? JSON.parse(record.statsSnapshot) : null;
+          setHistory([
+            {
+              id: record.id,
+              weekStart: record.weekStart,
+              weekEnd: record.weekEnd,
+              averageScore: Math.round(snapshot?.scores?.average ?? 0),
+            },
+          ]);
+        } else {
+          setHistory([]);
+        }
       }
     } catch {
       // History is best-effort; don't block the page

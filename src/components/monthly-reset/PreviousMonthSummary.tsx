@@ -1,52 +1,69 @@
 'use client';
 import React from 'react';
+import { CheckCircle2, Clock, Target, TrendingUp } from 'lucide-react';
 
 interface PreviousMonthSummaryProps {
   month: string;
   year: number;
   averageScore: number;
-  bestStreak: number;
   habitsCompleted: number;
-  goalsAchieved: number;
-  totalGoals: number;
+  goalsMet: number;
+  focusMinutes: number;
 }
 
 export const PreviousMonthSummary: React.FC<PreviousMonthSummaryProps> = ({
   month,
   year,
   averageScore,
-  bestStreak,
   habitsCompleted,
-  goalsAchieved,
-  totalGoals
+  goalsMet,
+  focusMinutes,
 }) => {
+  const focusHours = Math.round(focusMinutes / 60);
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-3xl mx-auto w-full text-center">
-      <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+    <div className="glass-panel mx-auto w-full max-w-3xl rounded-2xl p-8 text-center shadow-soft">
+      <h2 className="text-3xl font-bold text-foreground">
         {month} {year} Review
       </h2>
-      <p className="text-gray-500 dark:text-gray-400 mb-8">Let's look back before planning ahead.</p>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800">
-          <p className="text-sm text-indigo-600 dark:text-indigo-400 font-semibold mb-2 uppercase tracking-wide">Avg Score</p>
-          <p className="text-4xl font-black text-indigo-700 dark:text-indigo-300">{averageScore}</p>
+      <p className="mb-8 mt-1 text-sm text-muted-foreground">
+        Let&apos;s look back before planning ahead.
+      </p>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="glass-panel rounded-xl p-6">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-primary">
+            <TrendingUp className="h-4 w-4" aria-hidden="true" />
+            Avg Score
+          </p>
+          <p className="mt-2 text-4xl font-black tabular-nums text-foreground">{averageScore}</p>
         </div>
-        
-        <div className="bg-emerald-50 dark:bg-emerald-900/30 p-6 rounded-xl border border-emerald-100 dark:border-emerald-800">
-          <p className="text-sm text-emerald-600 dark:text-emerald-400 font-semibold mb-2 uppercase tracking-wide">Best Streak</p>
-          <p className="text-4xl font-black text-emerald-700 dark:text-emerald-300">{bestStreak}</p>
+
+        <div className="glass-panel rounded-xl p-6">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-emerald-500">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+            Habits Done
+          </p>
+          <p className="mt-2 text-4xl font-black tabular-nums text-foreground">
+            {habitsCompleted}
+          </p>
         </div>
-        
-        <div className="bg-amber-50 dark:bg-amber-900/30 p-6 rounded-xl border border-amber-100 dark:border-amber-800">
-          <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold mb-2 uppercase tracking-wide">Habits Done</p>
-          <p className="text-4xl font-black text-amber-700 dark:text-amber-300">{habitsCompleted}</p>
+
+        <div className="glass-panel rounded-xl p-6">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-amber-500">
+            <Target className="h-4 w-4" aria-hidden="true" />
+            Goals Met
+          </p>
+          <p className="mt-2 text-4xl font-black tabular-nums text-foreground">{goalsMet}</p>
         </div>
-        
-        <div className="bg-blue-50 dark:bg-blue-900/30 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
-          <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mb-2 uppercase tracking-wide">Goals Met</p>
-          <p className="text-4xl font-black text-blue-700 dark:text-blue-300">
-            {goalsAchieved}<span className="text-xl text-blue-500/70 font-medium">/{totalGoals}</span>
+
+        <div className="glass-panel rounded-xl p-6">
+          <p className="flex items-center justify-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-sky-500">
+            <Clock className="h-4 w-4" aria-hidden="true" />
+            Deep Focus
+          </p>
+          <p className="mt-2 text-4xl font-black tabular-nums text-foreground">
+            {focusMinutes > 0 ? `${focusHours}h` : '—'}
           </p>
         </div>
       </div>

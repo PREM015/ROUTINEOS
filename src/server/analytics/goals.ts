@@ -125,7 +125,6 @@ export async function getAllGoalsAnalytics(
       overdue,
       completed,
       averageProgress: Math.round(averageProgress * 100) / 100,
-      averageVelocity: 0, // Would need historical data
     },
     topGoals,
   };

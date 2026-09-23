@@ -99,7 +99,6 @@ export async function sleepAnalytics(userId: string, range: DateRange): Promise<
       bedtime: toTimeString(analysis.averageBedtimeMinutes),
       wakeTime: toTimeString(analysis.averageWakeTimeMinutes),
       quality: analysis.averageQuality !== null ? round(analysis.averageQuality) : null,
-      interruptions: null,
     },
     consistency: {
       bedtimeVariance: Math.round(stdDev(

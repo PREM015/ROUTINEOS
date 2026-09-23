@@ -121,7 +121,6 @@ export async function getHabitAnalytics(
     patterns: {
       bestDayOfWeek: bestDay,
       worstDayOfWeek: worstDay,
-      bestTimeOfDay: null, // Would need time-of-day tracking
       consistencyScore,
     },
     trends,

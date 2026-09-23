@@ -130,7 +130,6 @@ export interface HabitAnalyticsSummary {
   patterns: {
     bestDayOfWeek: string | null;
     worstDayOfWeek: string | null;
-    bestTimeOfDay: string | null;
     consistencyScore: number; // 0-100
   };
   
@@ -247,7 +246,6 @@ export interface AllGoalsAnalytics {
     overdue: number;
     completed: number;
     averageProgress: number;
-    averageVelocity: number;
   };
   
   topGoals: Array<{
@@ -363,7 +361,6 @@ export interface SleepAnalyticsSummary {
     bedtime: string; // HH:mm
     wakeTime: string; // HH:mm
     quality: number | null;
-    interruptions: number | null;
   };
   
   consistency: {
@@ -433,18 +430,14 @@ export interface FrictionAnalysis {
   
   frictionScore: number; // 0-100, higher = more friction
   
-  indicators: {
-    highDifficulty: boolean;
+indicators: {
     inconsistentCompletion: boolean;
     frequentSkips: boolean;
     decliningTrend: boolean;
-    lowMoodAfter: boolean;
   };
-  
+
   patterns: {
     strugglingDays: string[]; // weekdays
-    strugglingTimes: string[]; // time ranges
-    strugglingContexts: string[];
   };
   
   recommendations: string[];

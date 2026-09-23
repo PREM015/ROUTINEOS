@@ -55,9 +55,6 @@ interface HabitFrictionMetrics {
   inconsistency: number;
   declining: number;
   strugglingDays: string[];
-  strugglingTimes: string[];
-  highDifficulty: boolean;
-  lowMoodAfter: boolean;
 }
 
 function analyzeFriction(logs: { date: string; status: HabitLog['status'] }[]): HabitFrictionMetrics {
@@ -113,9 +110,6 @@ function analyzeFriction(logs: { date: string; status: HabitLog['status'] }[]): 
     inconsistency,
     declining,
     strugglingDays,
-    strugglingTimes: [],
-    highDifficulty: false,
-    lowMoodAfter: false,
   };
 }
 
@@ -161,16 +155,12 @@ export async function analyzeHabitFriction(
     habitName,
     frictionScore: score,
     indicators: {
-      highDifficulty: metrics.highDifficulty,
       inconsistentCompletion: metrics.inconsistency > 0.5,
       frequentSkips: metrics.skipRate > 0.25,
       decliningTrend: metrics.declining > 0.3,
-      lowMoodAfter: metrics.lowMoodAfter,
     },
     patterns: {
       strugglingDays: metrics.strugglingDays,
-      strugglingTimes: metrics.strugglingTimes,
-      strugglingContexts: [],
     },
     recommendations,
   };

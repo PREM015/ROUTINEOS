@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, subMonths } from 'date-fns';
 import { PreviousMonthSummary } from '@/components/monthly-reset/PreviousMonthSummary';
@@ -30,10 +30,9 @@ interface GoalEntry {
 
 interface MonthSummary {
   averageScore: number;
-  bestStreak: number;
   habitsCompleted: number;
-  goalsAchieved: number;
-  totalGoals: number;
+  goalsMet: number;
+  focusMinutes: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -56,9 +55,9 @@ export default function MonthlyResetPage() {
   const router = useRouter();
 
   // Previous month string e.g. "2026-08"
-  const prevMonthDate = subMonths(new Date(), 1);
-  const prevMonth = format(prevMonthDate, 'yyyy-MM');
-  const prevMonthLabel = format(prevMonthDate, 'MMMM yyyy');
+  const prevMonthDate = useMemo(() => subMonths(new Date(), 1), []);
+  const prevMonth = useMemo(() => format(prevMonthDate, 'yyyy-MM'), [prevMonthDate]);
+  const prevMonthLabel = useMemo(() => format(prevMonthDate, 'MMMM yyyy'), [prevMonthDate]);
 
   const [step, setStep] = useState<Step>('summary');
   const [loading, setLoading] = useState(true);
@@ -121,26 +120,30 @@ export default function MonthlyResetPage() {
         setGoalsInProgress(rawGoals.map((g: Record<string, unknown>) => g.id as string));
       }
 
-      // Use analytics data if available; otherwise fall back to zeros
+      // Map the REAL month-level analytics (`/api/analytics/monthly`). No
+      // fallback zeros — if it fails, the summary step shows an empty note.
       if (analyticsRes?.ok) {
         const analyticsJson = await analyticsRes.json();
-        const d = analyticsJson.data ?? {};
-        setSummary({
-          averageScore: d.averageScore ?? 0,
-          bestStreak: d.bestStreak ?? 0,
-          habitsCompleted: d.habitsCompleted ?? 0,
-          goalsAchieved: d.goalsAchieved ?? 0,
-          totalGoals: d.totalGoals ?? goals.length,
-        });
+        const d = analyticsJson.data ?? null;
+        setSummary(
+          d?.scores && d.habits && d.goals
+            ? {
+                averageScore: d.scores.average ?? 0,
+                habitsCompleted: d.habits.totalCompleted ?? 0,
+                goalsMet: d.goals.completed ?? 0,
+                focusMinutes: d.focus?.totalFocusMinutes ?? 0,
+              }
+            : null
+        );
       } else {
-        setSummary({ averageScore: 0, bestStreak: 0, habitsCompleted: 0, goalsAchieved: 0, totalGoals: 0 });
+        setSummary(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load reset data');
     } finally {
       setLoading(false);
     }
-  }, [prevMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [prevMonth]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
   useEffect(() => { loadData(); }, [loadData]);
@@ -307,11 +310,31 @@ export default function MonthlyResetPage() {
             month={format(prevMonthDate, 'MMMM')}
             year={prevMonthDate.getFullYear()}
             averageScore={Math.round(summary.averageScore)}
-            bestStreak={summary.bestStreak}
             habitsCompleted={summary.habitsCompleted}
-            goalsAchieved={summary.goalsAchieved}
-            totalGoals={summary.totalGoals}
+            goalsMet={summary.goalsMet}
+            focusMinutes={summary.focusMinutes}
           />
+          <div className="flex justify-end">
+            <button
+              onClick={() => setStep('habits')}
+              className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
+            >
+              Review Habits →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══ STEP: PREVIOUS MONTH SUMMARY — no data available ══ */}
+      {!loading && !submitted && step === 'summary' && !summary && (
+        <div className="space-y-6">
+          <div className="glass-panel rounded-2xl p-8 text-center shadow-soft">
+            <h2 className="text-lg font-semibold text-foreground">{prevMonthLabel} Review</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We could not load last month&apos;s summary. Your habits and goal review below
+              still shows your real data.
+            </p>
+          </div>
           <div className="flex justify-end">
             <button
               onClick={() => setStep('habits')}
