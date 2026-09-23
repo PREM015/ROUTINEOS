@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Calendar,
   Target,
@@ -21,6 +22,11 @@ import {
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { useMagneticHover } from '@/hooks/useMagneticHover';
+import { useTilt3D } from '@/hooks/useTilt3D';
+import { useSpotlight } from '@/hooks/useSpotlight';
+import { useParallax } from '@/hooks/useParallax';
+import { EASE, fadeSlideUp, stagger } from '@/lib/motion';
 
 const FEATURES = [
   {
@@ -151,10 +157,15 @@ function MiniHexagon() {
 }
 
 function ProductPreview() {
+  const reduce = useReducedMotion();
   return (
-    <div
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 32 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.8, ease: EASE }}
       aria-hidden="true"
-      className="mx-auto mt-14 w-full max-w-3xl rounded-2xl border border-border bg-card p-4 shadow-2xl shadow-emerald-500/5 sm:p-6"
+      className="glass-panel mx-auto mt-14 w-full max-w-3xl rounded-2xl p-4 shadow-long sm:p-6"
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flex flex-col items-center rounded-xl border border-border bg-muted/30 p-4">
@@ -194,13 +205,59 @@ function ProductPreview() {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
+  );
+}
+
+/** Feature card — glass panel + cursor spotlight + 3D tilt + scroll reveal. */
+function FeatureCard({ icon: Icon, title, description }: (typeof FEATURES)[number]) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  useTilt3D(cardRef, 6);
+  useSpotlight(cardRef, 280);
+
+  return (
+    <motion.div variants={fadeSlideUp}>
+      <div
+        ref={cardRef}
+        className="glass-panel spotlight-hover tilt-3d rounded-2xl p-6 h-full transition-transform duration-200"
+      >
+        <div className="glow-primary w-10 h-10 rounded-xl bg-primary/10 border border-primary/25 text-primary flex items-center justify-center mb-5">
+          <Icon className="w-5 h-5" />
+        </div>
+        <h3 className="text-lg font-bold mb-2">{title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+/** Primary CTA — magnetic hover wrapper + neon glow + light sweep. */
+function MagneticCta({ href, children }: { href: string; children: React.ReactNode }) {
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  useMagneticHover(wrapRef, 0.18);
+  return (
+    <span ref={wrapRef} className="magnetic-hover inline-flex">
+      <Link
+        href={href}
+        className="light-sweep glow-neon inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-base hover:bg-primary/90 active:scale-[0.97] transition-[background-color,transform] ease-out-expo motion-reduce:transition-none"
+      >
+        {children}
+      </Link>
+    </span>
   );
 }
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const reduce = useReducedMotion();
+
+  const heroRef = useRef<HTMLElement>(null);
+  useSpotlight(heroRef, 560);
+
+  const heroBlobRef = useParallax<HTMLDivElement>(0.18);
+  const accentBlobRef = useParallax<HTMLDivElement>(0.12);
+  const howBlobRef = useParallax<HTMLDivElement>(0.14);
 
   const loggedIn = status === 'authenticated' && session?.user;
 
@@ -210,56 +267,89 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden px-4 sm:px-6 pt-16 sm:pt-24 pb-12">
-        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-          <div className="absolute -top-32 left-1/2 h-72 w-[42rem] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-[100px]" />
+      <section
+        ref={heroRef}
+        className="relative overflow-hidden px-4 sm:px-6 pt-16 sm:pt-24 pb-12"
+      >
+        <div className="absolute inset-0 gradient-mesh-animated" aria-hidden="true" />
+        <div className="absolute inset-0 noise-overlay" aria-hidden="true" />
+        <div className="cursor-glow" aria-hidden="true" />
+        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2" aria-hidden="true">
+          <div
+            ref={heroBlobRef}
+            className="parallax-layer h-72 w-[42rem] max-w-[120vw] rounded-full bg-emerald-500/15 blur-[110px]"
+          />
         </div>
+        <div
+          ref={accentBlobRef}
+          className="parallax-layer pointer-events-none absolute bottom-4 -right-24 h-64 w-64 rounded-full bg-violet-500/10 blur-[100px]"
+          aria-hidden="true"
+        />
+
         <div className="relative max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-8">
-            <Zap className="w-3.5 h-3.5" />
-            <span>Habits · Routine · Goals · Focus · Journal</span>
-          </div>
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: EASE }}
+          >
+            <div className="glass-panel inline-flex items-center gap-2 px-3 py-1.5 rounded-full border-primary/25 text-primary text-xs font-semibold mb-8">
+              <Zap className="w-3.5 h-3.5" />
+              <span>Habits · Routine · Goals · Focus · Journal</span>
+            </div>
+          </motion.div>
 
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.15] mb-6">
+          <motion.h1
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 0.08 }}
+            className="text-4xl md:text-6xl font-extrabold tracking-tight leading-[1.15] mb-6"
+          >
             Build consistent days with{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500 dark:from-emerald-400 dark:via-teal-300 dark:to-cyan-400 bg-clip-text text-transparent">
-              data-driven clarity
-            </span>
-          </h1>
+            <span className="animated-gradient-text">data-driven clarity</span>
+          </motion.h1>
 
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+          <motion.p
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 0.16 }}
+            className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
+          >
             RoutineOS unifies habit tracking, time-blocked routines, daily goals, focus sessions, and journaling into one calm workspace — with a hexagon score that shows your whole day at a glance.
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 0.24 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
             {loggedIn ? (
-              <Link
-                href="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-base hover:opacity-90 transition-opacity"
-              >
+              <MagneticCta href="/dashboard">
                 Go to Dashboard
                 <ArrowRight className="w-5 h-5" />
-              </Link>
+              </MagneticCta>
             ) : (
               <>
-                <Link
-                  href="/register"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-base hover:opacity-90 transition-opacity"
-                >
+                <MagneticCta href="/register">
                   Start For Free
                   <ArrowRight className="w-5 h-5" />
-                </Link>
+                </MagneticCta>
                 <Link
                   href="/login"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-card border border-border text-foreground px-8 py-3.5 rounded-xl font-semibold text-base hover:bg-muted transition-colors"
+                  className="shadow-soft inline-flex items-center justify-center gap-2 bg-card/70 border border-border text-foreground px-8 py-3.5 rounded-xl font-semibold text-base hover:bg-muted hover:border-foreground/20 active:scale-[0.97] transition-all ease-out-expo"
                 >
                   Sign In
                 </Link>
               </>
             )}
-          </div>
+          </motion.div>
 
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-muted-foreground text-xs font-medium max-w-3xl mx-auto">
+          <motion.div
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, ease: EASE, delay: 0.4 }}
+            className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-muted-foreground text-xs font-medium max-w-3xl mx-auto"
+          >
             {[
               { icon: CheckCircle2, label: 'Rest days respected' },
               { icon: Shield, label: 'Private by default' },
@@ -271,100 +361,156 @@ export default function LandingPage() {
                 <span>{label}</span>
               </div>
             ))}
-          </div>
+          </motion.div>
 
           <ProductPreview />
         </div>
       </section>
 
       {/* Feature bento grid */}
-      <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 border-y border-border bg-muted/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-3xl font-bold mb-4">Everything for a consistent day</h2>
-            <p className="text-muted-foreground text-sm md:text-base">
+      <section id="features" className="relative overflow-hidden py-16 sm:py-20 px-4 sm:px-6 border-y border-border bg-muted/30">
+        <div className="absolute inset-0 gradient-mesh-bg opacity-60" aria-hidden="true" />
+        <div className="relative max-w-7xl mx-auto">
+          <motion.div
+            variants={reduce ? undefined : stagger}
+            initial={reduce ? false : 'hidden'}
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="text-center max-w-2xl mx-auto mb-12"
+          >
+            <motion.h2 variants={fadeSlideUp} className="text-3xl font-bold mb-4">
+              Everything for a consistent day
+            </motion.h2>
+            <motion.p variants={fadeSlideUp} className="text-muted-foreground text-sm md:text-base">
               Six tools that share one state: check something off anywhere and your score, streaks, and widgets update everywhere.
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {FEATURES.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <div
-                  key={feature.title}
-                  className="bg-card border border-border rounded-2xl p-6 hover:border-primary/40 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mb-5">
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
+          <motion.div
+            variants={reduce ? undefined : stagger}
+            initial={reduce ? false : 'hidden'}
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+          >
+            {FEATURES.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* How it works */}
-      <section id="how" className="py-16 sm:py-20 px-4 sm:px-6 max-w-5xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-primary text-xs font-bold uppercase tracking-wider">How it works</span>
-          <h2 className="text-3xl font-bold mt-2 mb-4">Three steps to a better day</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {STEPS.map((s) => (
-            <div key={s.n} className="bg-card border border-border rounded-2xl p-6">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary font-extrabold">
-                {s.n}
-              </span>
-              <h3 className="mt-4 text-base font-bold">{s.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{s.description}</p>
-            </div>
-          ))}
-        </div>
+      <section id="how" className="relative overflow-hidden py-16 sm:py-20 px-4 sm:px-6 max-w-5xl mx-auto">
+        <div
+          ref={howBlobRef}
+          className="parallax-layer pointer-events-none absolute top-10 -left-40 h-72 w-72 rounded-full bg-teal-500/10 blur-[100px]"
+          aria-hidden="true"
+        />
+        <div className="relative">
+          <motion.div
+            variants={reduce ? undefined : stagger}
+            initial={reduce ? false : 'hidden'}
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="text-center max-w-2xl mx-auto mb-12"
+          >
+            <motion.span variants={fadeSlideUp} className="text-primary text-xs font-bold uppercase tracking-wider">How it works</motion.span>
+            <motion.h2 variants={fadeSlideUp} className="text-3xl font-bold mt-2 mb-4">Three steps to a better day</motion.h2>
+          </motion.div>
 
-        <div className="mt-10 rounded-2xl border border-primary/20 bg-primary/5 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <BookOpen className="h-5 w-5 text-primary mb-2" />
-            <h3 className="font-bold">Hexagon score</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Six axes — Core, Growth, Bonus, Habits, Routine, Sleep — one honest number in the middle.</p>
-          </div>
-          <div>
-            <Flame className="h-5 w-5 text-orange-500 mb-2" />
-            <h3 className="font-bold">Streaks that forgive</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Planned rest no longer breaks streaks. Momentum survives real life.</p>
-          </div>
-          <div>
-            <Award className="h-5 w-5 text-primary mb-2" />
-            <h3 className="font-bold">Achievements</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Milestones unlock as streaks grow and goals complete.</p>
-          </div>
+          <motion.div
+            variants={reduce ? undefined : stagger}
+            initial={reduce ? false : 'hidden'}
+            whileInView="visible"
+            viewport={{ once: true, margin: '-60px' }}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+          >
+            {STEPS.map((s) => (
+              <motion.div key={s.n} variants={fadeSlideUp} className="glass-panel rounded-2xl p-6">
+                <span className="glow-primary inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 border border-primary/30 text-primary font-extrabold">
+                  {s.n}
+                </span>
+                <h3 className="mt-4 text-base font-bold">{s.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{s.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.7, ease: EASE }}
+            className="glass-panel glow-primary mt-10 rounded-2xl border-primary/25 p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            <div>
+              <BookOpen className="h-5 w-5 text-primary mb-2" />
+              <h3 className="font-bold">Hexagon score</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Six axes — Core, Growth, Bonus, Habits, Routine, Sleep — one honest number in the middle.</p>
+            </div>
+            <div>
+              <Flame className="h-5 w-5 text-orange-500 mb-2" />
+              <h3 className="font-bold">Streaks that forgive</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Planned rest no longer breaks streaks. Momentum survives real life.</p>
+            </div>
+            <div>
+              <Award className="h-5 w-5 text-primary mb-2" />
+              <h3 className="font-bold">Achievements</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Milestones unlock as streaks grow and goals complete.</p>
+            </div>
+          </motion.div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-16 sm:py-20 px-4 sm:px-6 border-t border-border">
+      <section id="faq" className="py-16 sm:py-20 px-4 sm:px-6 border-t border-border bg-muted/30">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-10">Questions, answered</h2>
+          <motion.h2
+            initial={reduce ? false : { opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="text-3xl font-bold text-center mb-10"
+          >
+            Questions, answered
+          </motion.h2>
           <div className="space-y-3">
             {FAQS.map((f, i) => {
               const open = openFaq === i;
               return (
-                <div key={f.q} className="rounded-xl border border-border bg-card overflow-hidden">
-                  <button
-                    onClick={() => setOpenFaq(open ? null : i)}
-                    aria-expanded={open}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold hover:bg-muted/50 transition-colors"
-                  >
-                    {f.q}
-                    <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-                  </button>
-                  {open && (
-                    <p className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
-                  )}
-                </div>
+                <motion.div
+                  key={f.q}
+                  initial={reduce ? false : { opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 0.5, ease: EASE, delay: i * 0.04 }}
+                  className={`${open ? 'border-gradient-animated' : ''} overflow-hidden rounded-xl`}
+                >
+                  <div className="glass-panel">
+                    <button
+                      onClick={() => setOpenFaq(open ? null : i)}
+                      aria-expanded={open}
+                      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold hover:bg-muted/40 transition-colors"
+                    >
+                      {f.q}
+                      <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-out-expo ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {open && (
+                        <motion.div
+                          initial={reduce ? false : { height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={reduce ? undefined : { height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: EASE }}
+                          className="overflow-hidden"
+                        >
+                          <p className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{f.a}</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
               );
             })}
           </div>
@@ -372,26 +518,30 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 px-4 sm:px-6 text-center border-t border-border bg-muted/30">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold mb-4">Ready for more consistent days?</h2>
+      <section className="relative overflow-hidden py-16 px-4 sm:px-6 text-center border-t border-border">
+        <div className="absolute inset-0 gradient-mesh-animated opacity-70" aria-hidden="true" />
+        <div className="absolute inset-0 noise-overlay" aria-hidden="true" />
+        <div className="relative max-w-3xl mx-auto">
+          <motion.h2
+            initial={reduce ? false : { opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: EASE }}
+            className="text-3xl font-bold mb-4"
+          >
+            Ready for <span className="animated-gradient-text">more consistent days?</span>
+          </motion.h2>
           <p className="text-muted-foreground text-sm mb-8">Create an account, add your first habit, and see tonight&apos;s hexagon.</p>
           {loggedIn ? (
-            <Link
-              href="/today"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-base hover:opacity-90 transition-opacity"
-            >
+            <MagneticCta href="/today">
               Open Today
               <ArrowRight className="w-5 h-5" />
-            </Link>
+            </MagneticCta>
           ) : (
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-bold text-base hover:opacity-90 transition-opacity"
-            >
+            <MagneticCta href="/register">
               Create Your Account
               <ArrowRight className="w-5 h-5" />
-            </Link>
+            </MagneticCta>
           )}
         </div>
       </section>
