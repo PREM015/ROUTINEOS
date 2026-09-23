@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Calendar,
   Target,
@@ -14,13 +14,12 @@ import {
   Clock,
   Award,
   CheckCircle2,
-  Menu,
-  X,
   Timer,
   BookOpen,
   ChevronDown,
 } from 'lucide-react';
-import { Logo } from '@/components/layout/Logo';
+import { Navbar } from '@/components/layout/Navbar';
+import { Footer } from '@/components/layout/Footer';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
 const FEATURES = [
@@ -201,147 +200,14 @@ function ProductPreview() {
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  // Lazy init (never in an effect): SSR-safe constant unless the client is
-  // in a different calendar year, which only matters at New Year midnight.
-  const [year] = useState(() =>
-    typeof window === 'undefined' ? 2026 : new Date().getFullYear()
-  );
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
-  }, [menuOpen]);
 
   const loggedIn = status === 'authenticated' && session?.user;
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col selection:bg-emerald-500 selection:text-white dark:selection:text-black">
-      {/* Landing navbar */}
-      <header
-        className={`sticky top-0 z-50 backdrop-blur-md transition-all ${
-          scrolled ? 'border-b border-border bg-background/80 shadow-sm' : 'border-b border-transparent bg-background/60'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="RoutineOS home">
-            <Logo size="md" />
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground" aria-label="Landing">
-            <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-            <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
-            <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
-          </nav>
-
-          <div className="hidden md:flex items-center gap-2">
-            <ThemeToggle />
-            {loggedIn ? (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-primary text-primary-foreground px-4 py-2 rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
-                >
-                  Get Started
-                </Link>
-              </>
-            )}
-          </div>
-
-          <div className="flex md:hidden items-center gap-1">
-            <ThemeToggle />
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={menuOpen}
-              className="p-2 text-muted-foreground hover:text-foreground"
-            >
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
-        </div>
-
-        {menuOpen && (
-          <nav className="md:hidden border-t border-border bg-background px-4 py-4" aria-label="Mobile">
-            <div className="flex flex-col gap-1">
-              {[
-                { href: '#features', label: 'Features' },
-                { href: '#how', label: 'How it works' },
-                { href: '#faq', label: 'FAQ' },
-              ].map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  {l.label}
-                </a>
-              ))}
-              <div className="mt-2 flex gap-2 border-t border-border pt-4">
-                {loggedIn ? (
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-semibold text-sm"
-                  >
-                    Go to Dashboard
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex-1 inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium text-muted-foreground"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex-1 inline-flex items-center justify-center bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-semibold text-sm"
-                    >
-                      Get Started
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </nav>
-        )}
-      </header>
+      {/* Shared public navbar */}
+      <Navbar />
 
       {/* Hero */}
       <section className="relative overflow-hidden px-4 sm:px-6 pt-16 sm:pt-24 pb-12">
@@ -531,55 +397,9 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="mt-auto border-t border-border py-10 px-4 sm:px-6 text-sm">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-          <div className="col-span-2 md:col-span-1">
-            <Logo size="sm" />
-            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
-              A calm workspace for habits, routines, goals, focus, and reflection.
-            </p>
-            <div className="mt-4">
-              <ThemeToggle />
-            </div>
-          </div>
-          <nav aria-label="Product">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Product</h3>
-            <ul className="space-y-2 text-muted-foreground">
-              <li><a href="#features" className="hover:text-foreground transition-colors">Features</a></li>
-              <li><a href="#how" className="hover:text-foreground transition-colors">How it works</a></li>
-              <li><a href="#faq" className="hover:text-foreground transition-colors">FAQ</a></li>
-            </ul>
-          </nav>
-          <nav aria-label="Resources">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Resources</h3>
-            <ul className="space-y-2 text-muted-foreground">
-              <li><Link href="/analytics" className="hover:text-foreground transition-colors">Analytics</Link></li>
-              <li><Link href="/achievements" className="hover:text-foreground transition-colors">Achievements</Link></li>
-              <li><Link href="/recap" className="hover:text-foreground transition-colors">Recaps</Link></li>
-            </ul>
-          </nav>
-          <nav aria-label="Account">
-            <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Account</h3>
-            <ul className="space-y-2 text-muted-foreground">
-              {loggedIn ? (
-                <>
-                  <li><Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link></li>
-                  <li><Link href="/settings" className="hover:text-foreground transition-colors">Settings</Link></li>
-                </>
-              ) : (
-                <>
-                  <li><Link href="/login" className="hover:text-foreground transition-colors">Login</Link></li>
-                  <li><Link href="/register" className="hover:text-foreground transition-colors">Register</Link></li>
-                </>
-              )}
-            </ul>
-          </nav>
-        </div>
-        <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>© {year} RoutineOS. All rights reserved.</span>
-          <span>Built for consistent days.</span>
-        </div>
-      </footer>
+      <Footer>
+        <ThemeToggle />
+      </Footer>
     </div>
   );
 }
