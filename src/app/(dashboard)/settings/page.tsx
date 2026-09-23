@@ -66,8 +66,8 @@ export default function SettingsHubPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-8">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Settings2 className="h-5 w-5" aria-hidden="true" />
+        <div className="glass-panel glow-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-xl p-3">
+          <Settings2 className="h-6 w-6 text-primary" aria-hidden="true" />
         </div>
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
@@ -90,7 +90,7 @@ export default function SettingsHubPage() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="group flex items-start gap-4 border border-border bg-card rounded-xl p-5 transition-colors hover:border-primary"
+                  className="glass-panel group flex items-start gap-4 rounded-xl p-5 transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-long"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary">
                     <Icon className="h-5 w-5" aria-hidden="true" />

@@ -6,7 +6,7 @@ export default function ScoringSettingsPage() {
         <p className="text-muted-foreground mt-2">Adjust how different habit tiers affect your daily score.</p>
       </div>
 
-      <div className="bg-card border rounded-xl p-6 space-y-4">
+      <div className="glass-panel shadow-soft rounded-xl p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1 flex justify-between">
             <span>Non-Negotiable</span>

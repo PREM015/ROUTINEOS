@@ -6,7 +6,7 @@ export default function DataSettingsPage() {
         <p className="text-muted-foreground mt-2">Export or import your RoutineOS data.</p>
       </div>
 
-      <div className="bg-card border rounded-xl p-6 space-y-6">
+      <div className="glass-panel shadow-soft rounded-xl p-6 space-y-6">
         <div>
           <h3 className="font-medium mb-2">Export Data</h3>
           <p className="text-sm text-muted-foreground mb-4">Download all your habits, routines, and logs in JSON format.</p>

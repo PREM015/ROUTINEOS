@@ -177,7 +177,7 @@ export default function QuotesSettingsPage() {
         </p>
       )}
 
-      <div className="bg-card border border-border rounded-xl p-5">
+      <div className="glass-panel shadow-soft rounded-xl p-5">
         <h2 className="text-sm font-semibold text-foreground">Widget pool</h2>
         <p className="mt-1 text-sm text-muted-foreground">The dashboard quote rotates from this pool every 10 minutes.</p>
         <div className="mt-3 inline-flex gap-1 rounded-xl border border-border bg-muted/50 p-1" role="radiogroup" aria-label="Quote pool">
@@ -191,7 +191,7 @@ export default function QuotesSettingsPage() {
               aria-checked={scope === o.value}
               onClick={() => setScopePref(o.value)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                scope === o.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                scope === o.value ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {o.label}
@@ -200,7 +200,7 @@ export default function QuotesSettingsPage() {
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-5">
+      <div className="glass-panel shadow-soft rounded-xl p-5">
         <h2 className="text-sm font-semibold text-foreground">Your quotes</h2>
         {loading ? (
           <div className="mt-4 animate-pulse space-y-3" aria-busy="true" aria-label="Loading quotes">
@@ -223,7 +223,7 @@ export default function QuotesSettingsPage() {
         ) : (
           <ul className="mt-4 space-y-3">
             {ownQuotes.map((q) => (
-              <li key={q.id} className="rounded-xl border border-border p-4">
+              <li key={q.id} className="glass-panel rounded-xl p-4">
                 <p className="text-sm text-foreground leading-relaxed">&ldquo;{q.text}&rdquo;</p>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -266,7 +266,7 @@ export default function QuotesSettingsPage() {
             role="dialog"
             aria-modal="true"
             aria-label={editing ? 'Edit quote' : 'Add quote'}
-            className="w-full max-w-md rounded-2xl border border-border bg-card p-6"
+            className="w-full max-w-md glass-panel shadow-soft rounded-2xl p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-foreground">{editing ? 'Edit quote' : 'Add quote'}</h2>
@@ -349,7 +349,7 @@ export default function QuotesSettingsPage() {
             role="alertdialog"
             aria-modal="true"
             aria-label="Delete quote"
-            className="w-full max-w-sm rounded-2xl border border-border bg-card p-6"
+            className="w-full max-w-sm glass-panel shadow-soft rounded-2xl p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-foreground">Delete quote?</h2>

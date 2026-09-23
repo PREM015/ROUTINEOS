@@ -6,7 +6,7 @@ export default function ProfileSettingsPage() {
         <p className="text-muted-foreground mt-2">Update your personal information.</p>
       </div>
 
-      <div className="bg-card border rounded-xl p-6 space-y-4">
+      <div className="glass-panel shadow-soft rounded-xl p-6 space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Display Name</label>
           <input type="text" className="w-full p-2 border rounded-md bg-background" placeholder="Your name" />

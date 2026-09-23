@@ -6,7 +6,7 @@ export default function NotificationsSettingsPage() {
         <p className="text-muted-foreground mt-2">Manage your email and push notifications.</p>
       </div>
 
-      <div className="bg-card border rounded-xl p-6 space-y-4">
+      <div className="glass-panel shadow-soft rounded-xl p-6 space-y-4">
         <label className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
           <div>
             <div className="font-medium">Daily Reminder</div>

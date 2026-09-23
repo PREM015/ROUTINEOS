@@ -10,7 +10,7 @@ export default function AppearanceSettingsPage() {
         <p className="text-muted-foreground mt-2">Customize how RoutineOS looks. Your choice is saved automatically.</p>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+      <div className="glass-panel shadow-soft rounded-xl p-6 space-y-6">
         <div>
           <h3 className="font-medium mb-3 text-foreground">Theme</h3>
           <ThemeToggle variant="segmented" />
