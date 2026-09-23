@@ -177,6 +177,7 @@ export default function RecapPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load(period, anchorDate);
   }, [period, anchorDate, load]);
 

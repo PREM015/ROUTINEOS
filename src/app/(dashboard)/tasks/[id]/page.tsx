@@ -56,6 +56,7 @@ export default function TaskDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -91,7 +92,7 @@ export default function TaskDetailPage() {
   if (error && !task) {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-8">
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       </div>
@@ -110,14 +111,14 @@ export default function TaskDetailPage() {
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <Link
         href="/tasks"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to tasks
       </Link>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -140,7 +141,7 @@ export default function TaskDetailPage() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {task.project && <Badge variant="primary">{task.project.name}</Badge>}
             {task.goal && <Badge variant="default">{task.goal.title}</Badge>}
             {task.dueDate && (
@@ -152,7 +153,7 @@ export default function TaskDetailPage() {
             {task.tags.map(({ tag }) => (
               <span
                 key={tag.id}
-                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5"
+                className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5"
               >
                 <Tag className="h-3 w-3" />
                 {tag.name}
@@ -163,7 +164,7 @@ export default function TaskDetailPage() {
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
             <Button
               variant="ghost"
-              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               onClick={() => void remove()}
               isLoading={deleting}
             >
@@ -179,14 +180,14 @@ export default function TaskDetailPage() {
 
       {task.subtasks.length > 0 && (
         <Card className="mt-6 p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-900">
-            <ListTree className="h-5 w-5 text-blue-600" />
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-foreground">
+            <ListTree className="h-5 w-5 text-primary" />
             Subtasks
           </h2>
           <ul className="space-y-2">
             {task.subtasks.map((subtask) => (
               <li key={subtask.id} className="flex items-center justify-between gap-3 text-sm">
-                <Link href={`/tasks/${subtask.id}`} className="truncate text-gray-900 hover:underline">
+                <Link href={`/tasks/${subtask.id}`} className="truncate text-foreground hover:underline">
                   {subtask.title}
                 </Link>
                 <Badge variant={subtask.status === 'COMPLETED' ? 'success' : 'default'}>
@@ -200,18 +201,18 @@ export default function TaskDetailPage() {
 
       {(task.dependsOn.length > 0 || task.blocks.length > 0) && (
         <Card className="mt-6 p-5">
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-900">
-            <GitBranch className="h-5 w-5 text-blue-600" />
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold text-foreground">
+            <GitBranch className="h-5 w-5 text-primary" />
             Dependencies
           </h2>
           {task.dependsOn.length > 0 && (
             <div className="mb-3">
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Depends on
               </p>
               <ul className="space-y-1 text-sm">
                 {task.dependsOn.map((dependency) => (
-                  <li key={dependency.id} className="text-gray-700">
+                  <li key={dependency.id} className="text-foreground">
                     {dependency.dependsOn.title}
                   </li>
                 ))}
@@ -220,12 +221,12 @@ export default function TaskDetailPage() {
           )}
           {task.blocks.length > 0 && (
             <div>
-              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Blocks
               </p>
               <ul className="space-y-1 text-sm">
                 {task.blocks.map((dependency) => (
-                  <li key={dependency.id} className="text-gray-700">
+                  <li key={dependency.id} className="text-foreground">
                     {dependency.task.title}
                   </li>
                 ))}

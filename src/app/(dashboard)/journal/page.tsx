@@ -76,6 +76,7 @@ export default function JournalPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -178,10 +179,10 @@ export default function JournalPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <BookOpen className="h-7 w-7 text-blue-600" />
+            <BookOpen className="h-7 w-7 text-primary" />
             Journal
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-muted-foreground">
             Capture reflections, track mood and energy, and look back over time.
           </p>
         </div>
@@ -199,13 +200,13 @@ export default function JournalPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
 
       {actionError && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {actionError}
         </p>
       )}
@@ -243,7 +244,7 @@ export default function JournalPage() {
             </Card>
 
             <Card className="h-fit p-5">
-              <h2 className="mb-3 text-sm font-semibold text-gray-900">Filters</h2>
+              <h2 className="mb-3 text-sm font-semibold text-foreground">Filters</h2>
               <div className="space-y-3">
                 <Select
                   label="Tag"
@@ -285,7 +286,7 @@ export default function JournalPage() {
 
             <Card className="h-fit p-5">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold text-gray-900">
+                <h2 className="text-sm font-semibold text-foreground">
                   Recently deleted ({deletedEntries.length})
                 </h2>
                 <Button
@@ -299,7 +300,7 @@ export default function JournalPage() {
               {showTrash && (
                 <div className="mt-3">
                   {deletedEntries.length === 0 ? (
-                    <p className="text-sm text-gray-500">Trash is empty.</p>
+                    <p className="text-sm text-muted-foreground">Trash is empty.</p>
                   ) : (
                     <ul className="space-y-2">
                       {deletedEntries.map((entry) => {
@@ -307,12 +308,12 @@ export default function JournalPage() {
                         return (
                           <li
                             key={entry.id}
-                            className="rounded-lg border border-gray-200 bg-gray-50 p-3"
+                            className="rounded-lg border border-border bg-muted/50 p-3"
                           >
-                            <p className="truncate text-sm font-medium text-gray-900">
+                            <p className="truncate text-sm font-medium text-foreground">
                               {entryLabel(entry)}
                             </p>
-                            <p className="mt-0.5 text-xs text-gray-500">
+                            <p className="mt-0.5 text-xs text-muted-foreground">
                               {formatDate(entry.date)}
                             </p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -352,16 +353,16 @@ export default function JournalPage() {
           </div>
 
           <div>
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               Recent entries
               {filtered.length !== (entries?.length ?? 0) && (
-                <span className="ml-2 text-sm font-normal text-gray-500">
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
                   ({filtered.length} of {entries?.length ?? 0})
                 </span>
               )}
             </h2>
             {filtered.length === 0 && (tagFilter || dateFilter) ? (
-              <Card className="p-8 text-center text-sm text-gray-500">
+              <Card className="p-8 text-center text-sm text-muted-foreground">
                 No entries match these filters.
               </Card>
             ) : (
@@ -442,7 +443,7 @@ export default function JournalPage() {
           </>
         }
       >
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           {pendingDelete?.permanent
             ? 'Use permanent delete only when you are sure the entry is no longer needed.'
             : 'Deleted entries stay in the trash until you restore or permanently delete them.'}

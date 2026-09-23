@@ -82,21 +82,21 @@ export default function HabitsPage() {
         layout
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl group hover:border-zinc-700 transition"
+        className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl group hover:border-foreground/20 transition"
       >
         {tab === 'ACTIVE' && (
           <button
             onClick={() => toggleToday(habit)}
             disabled={busy}
             aria-label={done ? `Mark ${habit.name} not done` : `Mark ${habit.name} done`}
-            className={`shrink-0 transition-colors disabled:opacity-50 ${done ? 'text-emerald-500' : 'text-zinc-500 hover:text-emerald-400'}`}
+            className={`shrink-0 transition-colors disabled:opacity-50 ${done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-400'}`}
           >
             {done ? <CheckCircle2 size={22} /> : <Circle size={22} />}
           </button>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-sm font-semibold truncate ${done ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
+            <span className={`text-sm font-semibold truncate ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
               {habit.name}
             </span>
             {(habit.streakCount ?? 0) > 0 && (
@@ -105,13 +105,13 @@ export default function HabitsPage() {
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-500 mt-1 truncate">
+          <p className="text-xs text-muted-foreground mt-1 truncate">
             {getFrequencyLabel(habit)}
             {habit.targetCount ? ` · target ${habit.targetCount}` : ''}
             {habit.reminderTime ? ` · ⏰ ${habit.reminderTime}` : ''}
           </p>
           {habit.description && (
-            <p className="text-xs text-zinc-500 mt-0.5 truncate">{habit.description}</p>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{habit.description}</p>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
@@ -119,7 +119,7 @@ export default function HabitsPage() {
             <button
               onClick={() => runAction(habit.id, () => updateHabit(habit.id, { status: 'PAUSED' }))}
               disabled={busy}
-              className="p-2 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition disabled:opacity-50"
+              className="p-2 rounded-lg text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition disabled:opacity-50"
               title="Pause habit"
               aria-label={`Pause ${habit.name}`}
             >
@@ -130,7 +130,7 @@ export default function HabitsPage() {
             <button
               onClick={() => runAction(habit.id, () => updateHabit(habit.id, { status: 'ACTIVE' }))}
               disabled={busy}
-              className="p-2 rounded-lg text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition disabled:opacity-50"
+              className="p-2 rounded-lg text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition disabled:opacity-50"
               title="Resume habit"
               aria-label={`Resume ${habit.name}`}
             >
@@ -139,7 +139,7 @@ export default function HabitsPage() {
           )}
           <button
             onClick={() => setEditing(habit)}
-            className="p-2 rounded-lg text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition"
+            className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
             title="Edit habit"
             aria-label={`Edit ${habit.name}`}
           >
@@ -149,7 +149,7 @@ export default function HabitsPage() {
             <button
               onClick={() => runAction(habit.id, () => archiveHabit(habit.id))}
               disabled={busy}
-              className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition disabled:opacity-50"
+              className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition disabled:opacity-50"
               title="Archive habit"
               aria-label={`Archive ${habit.name}`}
             >
@@ -158,7 +158,7 @@ export default function HabitsPage() {
           ) : (
             <button
               onClick={() => setConfirmDelete(habit)}
-              className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition"
+              className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
               title="Delete habit permanently"
               aria-label={`Delete ${habit.name}`}
             >
@@ -176,7 +176,7 @@ export default function HabitsPage() {
     const sorted = [...tierHabits].sort((a, b) => a.name.localeCompare(b.name));
     return (
       <div key={tier} className="space-y-3">
-        <h3 className="text-xs uppercase tracking-widest font-bold text-zinc-500">{TIER_LABELS[tier]}</h3>
+        <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">{TIER_LABELS[tier]}</h3>
         <div className="space-y-2">
           {sorted.map(renderHabitRow)}
         </div>
@@ -190,8 +190,8 @@ export default function HabitsPage() {
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">My Habits</h1>
-          <p className="text-sm text-zinc-500 mt-1">{habits.filter(h => h.status === 'ACTIVE').length} active habits</p>
+          <h1 className="text-2xl font-bold text-foreground">My Habits</h1>
+          <p className="text-sm text-muted-foreground mt-1">{habits.filter(h => h.status === 'ACTIVE').length} active habits</p>
         </div>
         <Button onClick={() => setModalOpen(true)} variant="primary">
           <Plus size={16} /> Add Habit
@@ -199,13 +199,13 @@ export default function HabitsPage() {
       </div>
 
       {actionError && (
-        <p role="alert" className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p role="alert" className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           {actionError}
         </p>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-1 w-fit" role="tablist" aria-label="Habit status filter">
+      <div className="flex gap-1 mb-6 bg-card border border-border rounded-xl p-1 w-fit" role="tablist" aria-label="Habit status filter">
         {(['ACTIVE', 'PAUSED', 'ARCHIVED'] as TabType[]).map(t => (
           <button
             key={t}
@@ -213,7 +213,7 @@ export default function HabitsPage() {
             aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === t ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.charAt(0) + t.slice(1).toLowerCase()}
@@ -245,7 +245,7 @@ export default function HabitsPage() {
               {(['GROWTH', 'BONUS', 'LIFESTYLE'] as TierType[]).map(tier => renderTierGroup(tier))}
               {otherHabits.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-xs uppercase tracking-widest font-bold text-zinc-500">More Habits</h3>
+                  <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">More Habits</h3>
                   <div className="space-y-2">
                     {otherHabits.map(renderHabitRow)}
                   </div>
@@ -273,14 +273,14 @@ export default function HabitsPage() {
               initial={{ scale: 0.95, y: 8 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 8 }}
-              className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
               role="alertdialog"
               aria-modal="true"
               aria-label="Delete habit"
             >
-              <h2 className="text-lg font-bold text-zinc-100">Delete habit?</h2>
-              <p className="text-sm text-zinc-400 mt-2">
+              <h2 className="text-lg font-bold text-foreground">Delete habit?</h2>
+              <p className="text-sm text-muted-foreground mt-2">
                 &ldquo;{confirmDelete.name}&rdquo; and its history will be permanently removed. This cannot be undone.
               </p>
               <div className="flex justify-end gap-3 mt-6">

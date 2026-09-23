@@ -41,6 +41,7 @@ export default function ProjectsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -51,10 +52,10 @@ export default function ProjectsPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <FolderKanban className="h-7 w-7 text-blue-600" />
+            <FolderKanban className="h-7 w-7 text-primary" />
             Projects
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-muted-foreground">
             Group goals, tasks and milestones so you can track outcomes, not just output.
           </p>
         </div>
@@ -71,18 +72,18 @@ export default function ProjectsPage() {
             { label: 'Completed', value: stats.completed },
             { label: 'Avg progress', value: `${stats.avgProgress}%` },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-gray-200 bg-white p-4">
-              <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+            <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {stat.label}
               </dt>
-              <dd className="mt-1 text-2xl font-bold tabular-nums text-gray-900">{stat.value}</dd>
+              <dd className="mt-1 text-2xl font-bold tabular-nums text-foreground">{stat.value}</dd>
             </div>
           ))}
         </dl>
       )}
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -95,7 +96,7 @@ export default function ProjectsPage() {
         </div>
       ) : projects.length === 0 ? (
         <EmptyState
-          icon={<FolderKanban className="h-10 w-10 text-gray-300" />}
+          icon={<FolderKanban className="h-10 w-10 text-muted-foreground/60" />}
           title="No projects yet"
           description="Create your first project to group related goals and tasks."
           action={{ label: 'New project', onClick: () => setModalOpen(true) }}

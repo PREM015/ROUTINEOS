@@ -48,6 +48,7 @@ export default function JournalDatePage() {
   }, [date]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -57,7 +58,7 @@ export default function JournalDatePage() {
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <Link
         href="/journal"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to journal
@@ -65,13 +66,13 @@ export default function JournalDatePage() {
 
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <BookOpen className="h-7 w-7 text-blue-600" />
+          <BookOpen className="h-7 w-7 text-primary" />
           {formatHeading(date)}
         </h1>
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -90,7 +91,7 @@ export default function JournalDatePage() {
         />
       ) : (
         <EmptyState
-          icon={<PenLine className="h-10 w-10 text-gray-300" />}
+          icon={<PenLine className="h-10 w-10 text-muted-foreground/60" />}
           title="No entry for this day"
           description="You did not record a journal entry on this date."
           action={{ label: 'Write in journal', onClick: () => router.push('/journal') }}

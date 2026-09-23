@@ -73,6 +73,7 @@ export default function TasksPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -133,10 +134,10 @@ export default function TasksPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <ListTodo className="h-7 w-7 text-blue-600" />
+            <ListTodo className="h-7 w-7 text-primary" />
             Tasks
           </h1>
-          <p className="mt-2 text-gray-600">Capture, prioritize and check off your work.</p>
+          <p className="mt-2 text-muted-foreground">Capture, prioritize and check off your work.</p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1.5 h-4 w-4" />
@@ -158,7 +159,7 @@ export default function TasksPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -169,13 +170,13 @@ export default function TasksPage() {
         </div>
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon={<CheckCircle2 className="h-10 w-10 text-gray-300" />}
+          icon={<CheckCircle2 className="h-10 w-10 text-muted-foreground/60" />}
           title="Nothing here"
           description="No tasks match this filter. Create one to get started."
           action={{ label: 'New task', onClick: () => setDialogOpen(true) }}
         />
       ) : (
-        <Card className="divide-y divide-gray-100 p-0">
+        <Card className="divide-y divide-border p-0">
           {filtered.map((task) => {
             const done = task.status === 'COMPLETED';
             return (
@@ -186,19 +187,19 @@ export default function TasksPage() {
                   disabled={busyId === task.id}
                   aria-pressed={done}
                   aria-label={done ? 'Mark incomplete' : 'Mark complete'}
-                  className="mt-0.5 text-gray-400 transition-colors hover:text-green-600 disabled:opacity-50"
+                  className="mt-0.5 text-muted-foreground/60 transition-colors hover:text-emerald-600 dark:text-emerald-400 disabled:opacity-50"
                 >
                   {done ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                   ) : (
                     <Circle className="h-5 w-5" />
                   )}
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className={done ? 'text-gray-400 line-through' : 'text-gray-900'}>
+                  <p className={done ? 'text-muted-foreground/60 line-through' : 'text-foreground'}>
                     {task.title}
                   </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant={PRIORITY_VARIANT[task.priority]}>{task.priority}</Badge>
                     {task.project && <span>{task.project.name}</span>}
                     {task.dueDate && (

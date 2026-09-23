@@ -58,13 +58,14 @@ export default function ProjectDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
   if (error) {
     return (
       <div className="container mx-auto max-w-4xl px-4 py-8">
-        <p role="alert" className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       </div>
@@ -83,7 +84,7 @@ export default function ProjectDetailPage() {
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <Link
         href="/projects"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to projects
@@ -91,11 +92,11 @@ export default function ProjectDetailPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl font-bold">{project.name}</h1>
-        {project.description && <p className="mt-2 text-gray-600">{project.description}</p>}
+        {project.description && <p className="mt-2 text-muted-foreground">{project.description}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {project.category && <Badge variant="default">{project.category.name}</Badge>}
           {project.startDate && (
-            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" />
               {formatDate(project.startDate)}
               {project.endDate ? ` – ${formatDate(project.endDate)}` : ''}
@@ -107,8 +108,8 @@ export default function ProjectDetailPage() {
       <ProjectProgress project={project} milestones={milestones} goals={project.goals} />
 
       <Card className="mt-8 p-5">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <Target className="h-5 w-5 text-blue-600" />
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+          <Target className="h-5 w-5 text-primary" />
           Linked goals
         </h2>
         {project.goals.length > 0 ? (
@@ -116,7 +117,7 @@ export default function ProjectDetailPage() {
             {project.goals.map((goal) => (
               <li key={goal.id}>
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-gray-900">{goal.title}</span>
+                  <span className="truncate text-sm font-medium text-foreground">{goal.title}</span>
                   <Badge variant={goal.status === 'COMPLETED' ? 'success' : 'default'}>
                     {goal.status.replace(/_/g, ' ')}
                   </Badge>
@@ -132,7 +133,7 @@ export default function ProjectDetailPage() {
           </ul>
         ) : (
           <EmptyState
-            icon={<Target className="h-10 w-10 text-gray-300" />}
+            icon={<Target className="h-10 w-10 text-muted-foreground/60" />}
             title="No goals linked"
             description="Attach goals to this project to track outcomes."
           />

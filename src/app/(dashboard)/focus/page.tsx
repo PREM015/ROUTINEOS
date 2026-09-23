@@ -21,11 +21,11 @@ export default function FocusPage() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
       <div className="mb-6">
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-zinc-900 sm:text-3xl dark:text-zinc-50">
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
           <Timer className="h-7 w-7 text-sky-600 dark:text-sky-400" aria-hidden="true" />
           Focus
         </h1>
-        <p className="mt-2 text-sm text-zinc-600 sm:text-base dark:text-zinc-300">
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
           Run a focus session, take planned breaks, and watch your focus minutes add up.
         </p>
       </div>

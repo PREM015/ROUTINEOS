@@ -62,7 +62,7 @@ function GoalCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0 }}
-      className="bg-zinc-900/60 border border-zinc-800/60 rounded-xl p-4 space-y-3"
+      className="bg-card border border-border rounded-xl p-4 space-y-3"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -71,23 +71,23 @@ function GoalCard({
               onClick={() => onCheckin(goal, !checkedToday)}
               disabled={busy}
               aria-label={checkedToday ? `Uncheck ${goal.title} for today` : `Check off ${goal.title} for today`}
-              className={`mt-0.5 shrink-0 transition disabled:opacity-50 ${checkedToday ? 'text-emerald-400' : 'text-zinc-500 hover:text-emerald-400'}`}
+              className={`mt-0.5 shrink-0 transition disabled:opacity-50 ${checkedToday ? 'text-emerald-400' : 'text-muted-foreground hover:text-emerald-400'}`}
             >
               {checkedToday ? <CheckCircle2 size={20} /> : <Circle size={20} />}
             </button>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-sm font-semibold truncate ${checkedToday ? 'text-zinc-500 line-through' : 'text-zinc-200'}`}>
+              <span className={`text-sm font-semibold truncate ${checkedToday ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                 {goal.title}
               </span>
               <Badge variant={PRIORITY_COLORS[goal.priority]}>{goal.priority}</Badge>
               {isDaily && <Badge variant="primary">Daily</Badge>}
             </div>
             {goal.description && (
-              <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{goal.description}</p>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>
             )}
-            <p className="text-[11px] text-zinc-600 mt-0.5">
+            <p className="text-[11px] text-muted-foreground/60 mt-0.5">
               {goal.startDate} → {goal.endDate}
             </p>
           </div>
@@ -95,7 +95,7 @@ function GoalCard({
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 transition"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
             title="Edit goal"
             aria-label={`Edit ${goal.title}`}
           >
@@ -103,7 +103,7 @@ function GoalCard({
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded-md text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
             title="Delete goal"
             aria-label={`Delete ${goal.title}`}
           >
@@ -128,11 +128,11 @@ function GoalCard({
               aria-label={`${goal.title} progress`}
               className="flex-1 accent-emerald-500"
             />
-            <span className="text-xs font-medium text-zinc-400 whitespace-nowrap">
+            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
               {goal.currentValue}/{goal.targetValue} {goal.unit || ''}
             </span>
           </div>
-          <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${pct}%` }}
@@ -140,11 +140,11 @@ function GoalCard({
               className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-400' : 'bg-gradient-to-r from-emerald-600 to-emerald-400'}`}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-zinc-600">
+          <div className="flex justify-between text-[10px] text-muted-foreground/60">
             <span>{Math.round(pct)}% complete</span>
             {pct >= 100 && <span className="text-emerald-500 font-bold">✓ Done!</span>}
           </div>
-          {sliderError && <p role="alert" className="text-xs text-red-400">{sliderError}</p>}
+          {sliderError && <p role="alert" className="text-xs text-destructive">{sliderError}</p>}
         </div>
       )}
     </motion.div>
@@ -214,8 +214,8 @@ export default function GoalsPage() {
     <DashboardLayout>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Goals</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-2xl font-bold text-foreground">Goals</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             {dailyGoals.length} daily · {longTermGoals.length} long-term · {completedGoals.length} completed
           </p>
         </div>
@@ -225,12 +225,12 @@ export default function GoalsPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+        <p role="alert" className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
           {error}
         </p>
       )}
 
-      <div className="flex gap-1 mb-6 bg-zinc-900/50 border border-zinc-800 rounded-xl p-1 w-fit" role="tablist" aria-label="Goal filter">
+      <div className="flex gap-1 mb-6 bg-card border border-border rounded-xl p-1 w-fit" role="tablist" aria-label="Goal filter">
         {([
           { value: 'DAILY', label: 'Daily' },
           { value: 'LONG_TERM', label: 'Long-term' },
@@ -242,7 +242,7 @@ export default function GoalsPage() {
             aria-selected={tab === t.value}
             onClick={() => setTab(t.value)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === t.value ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              tab === t.value ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.label}
@@ -303,14 +303,14 @@ export default function GoalsPage() {
               initial={{ scale: 0.95, y: 8 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 8 }}
-              className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6"
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6"
               onClick={(e) => e.stopPropagation()}
               role="alertdialog"
               aria-modal="true"
               aria-label="Delete goal"
             >
-              <h2 className="text-lg font-bold text-zinc-100">Delete goal?</h2>
-              <p className="text-sm text-zinc-400 mt-2">
+              <h2 className="text-lg font-bold text-foreground">Delete goal?</h2>
+              <p className="text-sm text-muted-foreground mt-2">
                 &ldquo;{confirmDelete.title}&rdquo; and its progress history will be permanently removed.
               </p>
               <div className="flex justify-end gap-3 mt-6">

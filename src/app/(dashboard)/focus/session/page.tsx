@@ -69,10 +69,10 @@ export default function FocusSessionPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <Timer className="h-7 w-7 text-blue-600" />
+            <Timer className="h-7 w-7 text-primary" />
             Focus Session
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-muted-foreground">
             Review your current session and recent focus history, then start a new timer.
           </p>
         </div>
@@ -80,42 +80,42 @@ export default function FocusSessionPage() {
       </div>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
       )}
 
       <section aria-labelledby="active-session-heading" className="mb-10">
-        <h2 id="active-session-heading" className="mb-3 text-xl font-semibold text-gray-900">
+        <h2 id="active-session-heading" className="mb-3 text-xl font-semibold text-foreground">
           Current session
         </h2>
         {active ? (
           <Card className="p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h3 className="truncate text-base font-semibold text-gray-900">{active.title}</h3>
+                <h3 className="truncate text-base font-semibold text-foreground">{active.title}</h3>
                 {active.description && (
-                  <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">{active.description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{active.description}</p>
                 )}
               </div>
               <Badge variant={statusVariant(active.status)}>{active.status.replaceAll('_', ' ')}</Badge>
             </div>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <div>
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Planned</dt>
-                <dd className="font-semibold text-gray-900">{active.plannedDuration} min</dd>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground/60">Planned</dt>
+                <dd className="font-semibold text-foreground">{active.plannedDuration} min</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Elapsed</dt>
-                <dd className="font-semibold text-gray-900">{active.actualDuration ?? 0} min</dd>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground/60">Elapsed</dt>
+                <dd className="font-semibold text-foreground">{active.actualDuration ?? 0} min</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Started</dt>
-                <dd className="font-semibold text-gray-900">{formatDateTime(active.startedAt)}</dd>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground/60">Started</dt>
+                <dd className="font-semibold text-foreground">{formatDateTime(active.startedAt)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-wide text-gray-400">Completed</dt>
-                <dd className="font-semibold text-gray-900">
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground/60">Completed</dt>
+                <dd className="font-semibold text-foreground">
                   {active.completedAt ? formatDateTime(active.completedAt) : '—'}
                 </dd>
               </div>
@@ -123,7 +123,7 @@ export default function FocusSessionPage() {
           </Card>
         ) : (
           <EmptyState
-            icon={<Clock className="h-10 w-10 text-gray-300" />}
+            icon={<Clock className="h-10 w-10 text-muted-foreground/60" />}
             title="No active session"
             description="Start a pomodoro from the Focus page to track deep work here."
           />
@@ -131,15 +131,15 @@ export default function FocusSessionPage() {
       </section>
 
       <section aria-labelledby="history-heading" className="mb-10">
-        <h2 id="history-heading" className="mb-3 flex items-center gap-2 text-xl font-semibold text-gray-900">
-          <History className="h-5 w-5 text-gray-500" />
+        <h2 id="history-heading" className="mb-3 flex items-center gap-2 text-xl font-semibold text-foreground">
+          <History className="h-5 w-5 text-muted-foreground" />
           Recent sessions
         </h2>
         {!sessions ? (
           <ListSkeleton count={4} />
         ) : sessions.length === 0 ? (
           <EmptyState
-            icon={<History className="h-10 w-10 text-gray-300" />}
+            icon={<History className="h-10 w-10 text-muted-foreground/60" />}
             title="No sessions yet"
             description="Your completed focus sessions will show up here."
           />
@@ -149,11 +149,11 @@ export default function FocusSessionPage() {
               <li key={session.id}>
                 <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-gray-900">{session.title}</p>
-                    <p className="text-xs text-gray-500">{formatDateTime(session.startedAt)}</p>
+                    <p className="truncate text-sm font-semibold text-foreground">{session.title}</p>
+                    <p className="text-xs text-muted-foreground">{formatDateTime(session.startedAt)}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       {session.actualDuration ?? session.plannedDuration} min
                     </span>
                     <Badge variant={statusVariant(session.status)}>
@@ -168,7 +168,7 @@ export default function FocusSessionPage() {
       </section>
 
       <section aria-labelledby="focus-stats-heading">
-        <h2 id="focus-stats-heading" className="mb-3 text-xl font-semibold text-gray-900">
+        <h2 id="focus-stats-heading" className="mb-3 text-xl font-semibold text-foreground">
           Focus stats
         </h2>
         <FocusStats />

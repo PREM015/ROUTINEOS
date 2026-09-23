@@ -18,10 +18,10 @@ export default async function TemplatesPage() {
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8">
         <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <Sparkles className="h-7 w-7 text-blue-600" />
+          <Sparkles className="h-7 w-7 text-primary" />
           Templates
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-muted-foreground">
           Browse curated routines and habit stacks, preview the schedule, and apply one to your
           workspace in a single click.
         </p>

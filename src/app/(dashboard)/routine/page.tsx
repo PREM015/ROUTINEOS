@@ -18,8 +18,8 @@ export default function RoutinePage() {
     <DashboardLayout>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Routine</h1>
-          <p className="mt-1 text-sm text-zinc-500">Shape your weekly rhythm and keep your day structured.</p>
+          <h1 className="text-2xl font-bold text-foreground">Routine</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Shape your weekly rhythm and keep your day structured.</p>
         </div>
         <Button onClick={() => setModalOpen(true)} variant="primary">
           <Plus size={16} /> Add block
@@ -36,7 +36,7 @@ export default function RoutinePage() {
             className={`rounded-xl border px-3 py-2 text-sm whitespace-nowrap shrink-0 transition ${
               selectedRoutineTab === tab
                 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
-                : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+                : 'border-border bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.replace('_', ' ')}
@@ -44,9 +44,9 @@ export default function RoutinePage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5">
+      <div className="rounded-2xl border border-border bg-card p-5">
         <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarRange size={16} className="text-emerald-400" />
             {routineBlocks.filter((block) => block.dayType === selectedRoutineTab).length} blocks scheduled
           </div>

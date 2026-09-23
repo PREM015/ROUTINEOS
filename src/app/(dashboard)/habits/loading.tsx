@@ -4,7 +4,7 @@ export default function HabitsLoading() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="h-14 w-full animate-pulse rounded-lg bg-neutral-800/60"
+          className="h-14 w-full animate-pulse rounded-lg bg-muted"
         />
       ))}
     </div>

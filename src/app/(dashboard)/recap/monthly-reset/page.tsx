@@ -143,6 +143,7 @@ export default function MonthlyResetPage() {
     }
   }, [prevMonth]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
   useEffect(() => { loadData(); }, [loadData]);
 
   // ── Habit decision helpers ────────────────────────────────────────────────
@@ -230,14 +231,14 @@ export default function MonthlyResetPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             aria-label="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Monthly Reset</h1>
-            <p className="mt-0.5 text-sm text-zinc-500">{prevMonthLabel}</p>
+            <h1 className="text-2xl font-bold text-foreground">Monthly Reset</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">{prevMonthLabel}</p>
           </div>
         </div>
 
@@ -249,15 +250,15 @@ export default function MonthlyResetPage() {
                 <span
                   className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                     step === s.key
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : stepIndex(step) > i
-                      ? 'bg-emerald-700/60 text-emerald-200'
-                      : 'bg-zinc-800 text-zinc-500'
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {i + 1}. {s.label}
                 </span>
-                {i < STEPS.length - 1 && <span className="text-zinc-700">›</span>}
+                {i < STEPS.length - 1 && <span className="text-muted-foreground/60">›</span>}
               </span>
             ))}
           </nav>
@@ -266,9 +267,9 @@ export default function MonthlyResetPage() {
 
       {/* Error */}
       {error && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <span className="flex-1">{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200">✕</button>
+          <button onClick={() => setError(null)} className="text-destructive hover:text-destructive">✕</button>
         </div>
       )}
 
@@ -276,7 +277,7 @@ export default function MonthlyResetPage() {
       {loading && (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 w-full animate-pulse rounded-2xl bg-zinc-800/60" />
+            <div key={i} className="h-32 w-full animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
       )}
@@ -287,13 +288,13 @@ export default function MonthlyResetPage() {
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
             <span className="text-3xl">🎉</span>
           </div>
-          <h2 className="text-xl font-bold text-zinc-100 mb-2">Reset Complete!</h2>
-          <p className="text-zinc-400 mb-6 max-w-sm">
+          <h2 className="text-xl font-bold text-foreground mb-2">Reset Complete!</h2>
+          <p className="text-muted-foreground mb-6 max-w-sm">
             Your habits and goals have been updated for {format(new Date(), 'MMMM yyyy')}. Time to execute.
           </p>
           <button
             onClick={() => router.push('/today')}
-            className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+            className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
           >
             Go to Today →
           </button>
@@ -315,7 +316,7 @@ export default function MonthlyResetPage() {
           <div className="flex justify-end">
             <button
               onClick={() => setStep('habits')}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+              className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               Review Habits →
             </button>
@@ -335,13 +336,13 @@ export default function MonthlyResetPage() {
           <div className="flex justify-between">
             <button
               onClick={() => setStep('summary')}
-              className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               ← Back
             </button>
             <button
               onClick={() => setStep('goals')}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+              className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               Review Goals →
             </button>
@@ -361,13 +362,13 @@ export default function MonthlyResetPage() {
           <div className="flex justify-between">
             <button
               onClick={() => setStep('habits')}
-              className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               ← Back
             </button>
             <button
               onClick={() => setStep('plan')}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+              className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               Plan Next Month →
             </button>
@@ -382,7 +383,7 @@ export default function MonthlyResetPage() {
           <div className="flex justify-start">
             <button
               onClick={() => setStep('goals')}
-              className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               ← Back
             </button>
@@ -399,7 +400,7 @@ export default function MonthlyResetPage() {
             onConfirm={handleConfirm}
           />
           {submitting && (
-            <div className="flex items-center justify-center gap-2 text-sm text-zinc-400">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 size={16} className="animate-spin" />
               Applying your reset…
             </div>

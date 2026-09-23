@@ -48,6 +48,7 @@ export default function WeeklyReviewPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // ── Fetch past reviews for the history list ────────────────────────────────
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
   const fetchHistory = useCallback(async () => {
     try {
       const res = await fetch('/api/weekly-review?weekStart=' + defaultWeekStart);
@@ -59,9 +60,11 @@ export default function WeeklyReviewPage() {
     } catch {
       // History is best-effort; don't block the page
     }
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- defaultWeekStart is stable for this page
   }, [defaultWeekStart]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     fetchHistory();
   }, [fetchHistory]);
 
@@ -165,15 +168,15 @@ export default function WeeklyReviewPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100 transition-colors"
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             aria-label="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">Weekly Review</h1>
+            <h1 className="text-2xl font-bold text-foreground">Weekly Review</h1>
             {displayWeekRange && step !== 'history' && (
-              <p className="mt-0.5 text-sm text-zinc-500">{displayWeekRange}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{displayWeekRange}</p>
             )}
           </div>
         </div>
@@ -185,13 +188,13 @@ export default function WeeklyReviewPage() {
               <span
                 className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                   step === s
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-zinc-800 text-zinc-400'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
                 }`}
               >
                 {i + 1}. {stepLabels[s]}
               </span>
-              {i < 3 && <span className="text-zinc-700">›</span>}
+              {i < 3 && <span className="text-muted-foreground/60">›</span>}
             </span>
           ))}
         </nav>
@@ -199,15 +202,15 @@ export default function WeeklyReviewPage() {
 
       {/* ── Global error banner ── */}
       {error && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-red-800 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <span className="flex-1">{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200">✕</button>
+          <button onClick={() => setError(null)} className="text-destructive hover:text-destructive">✕</button>
         </div>
       )}
 
       {/* ── Save success toast ── */}
       {saveSuccess && (
-        <div className="mb-4 rounded-xl border border-emerald-800 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-300">
+        <div className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400">
           ✅ Review saved successfully!
         </div>
       )}
@@ -216,7 +219,7 @@ export default function WeeklyReviewPage() {
       {loading && (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 w-full animate-pulse rounded-2xl bg-zinc-800/60" />
+            <div key={i} className="h-24 w-full animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
       )}
@@ -225,16 +228,16 @@ export default function WeeklyReviewPage() {
       {!loading && step === 'history' && (
         <div className="space-y-6">
           {/* CTA to start this week's review */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 text-center">
-            <h2 className="text-lg font-semibold text-zinc-100 mb-2">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center">
+            <h2 className="text-lg font-semibold text-foreground mb-2">
               Ready to reflect on last week?
             </h2>
-            <p className="text-sm text-zinc-400 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               {format(lastWeekStart, 'EEEE, MMM d')} – {format(lastWeekEnd, 'EEEE, MMM d, yyyy')}
             </p>
             <button
               onClick={startCurrentWeekReview}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary hover:bg-primary/90 px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               <RefreshCw size={16} />
               Start This Week&apos;s Review
@@ -247,7 +250,7 @@ export default function WeeklyReviewPage() {
           )}
 
           {history.length === 0 && (
-            <div className="rounded-2xl border border-dashed border-zinc-700 p-8 text-center text-sm text-zinc-500">
+            <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
               No past reviews yet. Complete your first one above!
             </div>
           )}
@@ -271,7 +274,7 @@ export default function WeeklyReviewPage() {
           <div className="flex justify-end">
             <button
               onClick={() => setStep('questions')}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+              className="rounded-xl bg-primary hover:bg-primary/90 px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               Write My Review →
             </button>
@@ -284,7 +287,7 @@ export default function WeeklyReviewPage() {
         <div className="space-y-4">
           <ReviewQuestions onSubmit={handleQuestionsSubmit} />
           {saving && (
-            <p className="text-center text-sm text-zinc-400 animate-pulse">Saving your review…</p>
+            <p className="text-center text-sm text-muted-foreground animate-pulse">Saving your review…</p>
           )}
         </div>
       )}
@@ -296,13 +299,13 @@ export default function WeeklyReviewPage() {
           <div className="flex gap-3 justify-end">
             <button
               onClick={() => setStep('questions')}
-              className="rounded-xl border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               Edit Answers
             </button>
             <button
               onClick={() => { setStep('history'); setSaveSuccess(false); }}
-              className="rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white shadow transition-colors"
+              className="rounded-xl bg-primary hover:bg-primary/90 px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow transition-colors"
             >
               Done
             </button>
