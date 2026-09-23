@@ -63,6 +63,7 @@ export default function ApiKeysSettingsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void loadKeys();
   }, [loadKeys]);
 
@@ -132,7 +133,7 @@ export default function ApiKeysSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -207,33 +208,33 @@ export default function ApiKeysSettingsPage() {
     <main className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">API Keys</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Generate keys for the public API. The raw key is shown only once.
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           {error}
         </div>
       )}
       {notice && (
-        <div className="mb-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+        <div className="mb-6 rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400" role="status">
           {notice}
         </div>
       )}
 
       {createdKey?.key && (
-        <Card className="mb-6 border-green-200 bg-green-50/70">
+        <Card className="mb-6 border-emerald-500/20 bg-emerald-500/10">
           <div className="p-6">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <h2 className="text-sm font-semibold text-green-800">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                 Key created — copy it now
               </h2>
             </div>
             <p className="mt-2 font-mono text-sm">{createdKey.key}</p>
-            <p className="mt-1 text-xs text-green-700">
+            <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
               For security, this value will not be shown again.
             </p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => void copyKey()}>
@@ -245,7 +246,7 @@ export default function ApiKeysSettingsPage() {
       )}
 
       <Card>
-        <div className="border-b border-gray-200 px-6 py-4">
+        <div className="border-b border-border px-6 py-4">
           <h2 className="text-lg font-bold">Your keys</h2>
         </div>
         <div className="p-6">
@@ -261,7 +262,7 @@ export default function ApiKeysSettingsPage() {
       </Card>
 
       <Card className="mt-6">
-        <div className="border-b border-gray-200 px-6 py-4">
+        <div className="border-b border-border px-6 py-4">
           <h2 className="text-lg font-bold">Create key</h2>
         </div>
         <div className="space-y-4 p-6">

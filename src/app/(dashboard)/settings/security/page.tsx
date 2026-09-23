@@ -63,6 +63,7 @@ export default function SecuritySettingsPage() {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync 2FA state on mount
       setTwoFactorEnabled(user.twoFactorEnabled);
       void loadSessions();
     }
@@ -173,7 +174,7 @@ export default function SecuritySettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -187,18 +188,18 @@ export default function SecuritySettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Security</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Two-factor authentication, password and active sessions.
         </p>
       </div>
 
       <div className="space-y-6">
         <Card>
-          <div className="flex items-center gap-2 border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center gap-2 border-b border-border px-6 py-4">
             {twoFactorEnabled ? (
-              <ShieldCheck className="h-5 w-5 text-green-600" />
+              <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             ) : (
-              <Lock className="h-5 w-5 text-gray-500" />
+              <Lock className="h-5 w-5 text-muted-foreground" />
             )}
             <h2 className="text-lg font-bold">Two-factor authentication</h2>
             <Badge variant={twoFactorEnabled ? 'success' : 'default'}>
@@ -207,12 +208,12 @@ export default function SecuritySettingsPage() {
           </div>
           <div className="p-6">
             {tfaError && (
-              <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              <div className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                 {tfaError}
               </div>
             )}
             {tfaSuccess && (
-              <div className="mb-4 flex items-center gap-2 rounded-md bg-green-50 px-4 py-3 text-sm text-green-700" role="status">
+              <div className="mb-4 flex items-center gap-2 rounded-md bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400" role="status">
                 <CheckCircle2 className="h-4 w-4" />
                 {tfaSuccess}
               </div>
@@ -220,7 +221,7 @@ export default function SecuritySettingsPage() {
 
             {!twoFactorEnabled && secret === null && (
               <div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Add an authenticator app for an extra layer of security on login.
                 </p>
                 <Button className="mt-4" onClick={() => void startSetup()} isLoading={tfaBusy}>
@@ -232,17 +233,17 @@ export default function SecuritySettingsPage() {
 
             {!twoFactorEnabled && secret !== null && otpauthUrl !== null && (
               <div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Scan the QR code with your authenticator app, or enter the secret manually:
                 </p>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="mb-1 text-xs font-medium uppercase text-gray-500">Secret</p>
-                    <p className="rounded-md bg-gray-50 p-3 font-mono text-xs">{secret}</p>
+                    <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Secret</p>
+                    <p className="rounded-md bg-muted/50 p-3 font-mono text-xs">{secret}</p>
                   </div>
                   <div>
-                    <p className="mb-1 text-xs font-medium uppercase text-gray-500">Setup URI</p>
-                    <p className="break-all rounded-md bg-gray-50 p-3 font-mono text-xs">{otpauthUrl}</p>
+                    <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Setup URI</p>
+                    <p className="break-all rounded-md bg-muted/50 p-3 font-mono text-xs">{otpauthUrl}</p>
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -265,7 +266,7 @@ export default function SecuritySettingsPage() {
 
             {twoFactorEnabled && (
               <div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Two-factor authentication is active on your account.
                 </p>
                 <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -294,18 +295,18 @@ export default function SecuritySettingsPage() {
         </Card>
 
         <Card>
-          <div className="flex items-center gap-2 border-b border-gray-200 px-6 py-4">
-            <KeyRound className="h-5 w-5 text-blue-600" />
+          <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+            <KeyRound className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold">Change password</h2>
           </div>
           <div className="space-y-4 p-6">
             {passwordError && (
-              <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+              <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
                 {passwordError}
               </div>
             )}
             {passwordSuccess && (
-              <div className="flex items-center gap-2 rounded-md bg-green-50 px-4 py-3 text-sm text-green-700" role="status">
+              <div className="flex items-center gap-2 rounded-md bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600 dark:text-emerald-400" role="status">
                 <CheckCircle2 className="h-4 w-4" />
                 {passwordSuccess}
               </div>
@@ -340,32 +341,32 @@ export default function SecuritySettingsPage() {
         </Card>
 
         <Card>
-          <div className="flex items-center gap-2 border-b border-gray-200 px-6 py-4">
-            <Laptop className="h-5 w-5 text-gray-500" />
+          <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+            <Laptop className="h-5 w-5 text-muted-foreground" />
             <h2 className="text-lg font-bold">Active sessions</h2>
           </div>
           <div className="p-6">
             {sessionsLoading ? (
               <Skeleton className="h-24 w-full" />
             ) : sessions.length === 0 ? (
-              <p className="text-sm text-gray-500">No active sessions found.</p>
+              <p className="text-sm text-muted-foreground">No active sessions found.</p>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-border">
                 {sessions.slice(0, 5).map((session) => (
                   <li key={session.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {session.deviceName ?? session.deviceType ?? 'Unknown device'}
                         {session.isCurrent && <Badge variant="primary" className="ml-2">This device</Badge>}
                       </p>
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {session.location ?? 'Unknown location'}
                         {session.ipAddress ? ` · ${session.ipAddress}` : ''}
                         {' · '}
                         active {getRelativeTime(session.lastActiveAt)}
                       </p>
                     </div>
-                    <a href="/settings/sessions" className="text-sm text-blue-600 hover:underline">
+                    <a href="/settings/sessions" className="text-sm text-primary hover:underline">
                       Manage
                     </a>
                   </li>

@@ -80,6 +80,7 @@ export default function RoutineSettingsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -131,7 +132,7 @@ export default function RoutineSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -148,25 +149,25 @@ export default function RoutineSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Routine</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Templates used by the routine planner for different day types.
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           {error}
         </div>
       )}
       {notice && (
-        <div className="mb-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+        <div className="mb-6 rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400" role="status">
           {notice}
         </div>
       )}
 
       <Card>
-        <div className="flex items-center gap-2 border-b border-gray-200 px-6 py-4">
-          <Rows3 className="h-5 w-5 text-blue-600" />
+        <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+          <Rows3 className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-bold">Templates</h2>
         </div>
         <div className="p-6">
@@ -176,21 +177,21 @@ export default function RoutineSettingsPage() {
               <Skeleton className="h-14 w-full" />
             </div>
           ) : templates.length === 0 ? (
-            <div className="p-4 text-center text-sm text-gray-500">
+            <div className="p-4 text-center text-sm text-muted-foreground">
               No routine templates yet.
             </div>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-border">
               {templates.map((template) => (
                 <li key={template.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                   <div className="flex items-center gap-3">
                     <span className="text-lg" aria-hidden="true">{template.icon ?? '🗓️'}</span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900">{template.name}</p>
+                        <p className="text-sm font-medium text-foreground">{template.name}</p>
                         {template.isDefault && <Badge variant="primary">Default</Badge>}
                       </div>
-                      <p className="mt-0.5 text-xs text-gray-500">
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {template.description ?? 'No description'}
                       </p>
                     </div>
@@ -198,7 +199,7 @@ export default function RoutineSettingsPage() {
                   <div className="flex items-center gap-2">
                     <Badge variant={variantFor(template.dayType)}>{template.dayType}</Badge>
                     {template.estimatedDuration !== null && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-muted-foreground/60">
                         {template.estimatedDuration} min
                       </span>
                     )}
@@ -211,7 +212,7 @@ export default function RoutineSettingsPage() {
       </Card>
 
       <Card className="mt-6">
-        <div className="border-b border-gray-200 px-6 py-4">
+        <div className="border-b border-border px-6 py-4">
           <h2 className="text-lg font-bold">Create template</h2>
         </div>
         <div className="space-y-4 p-6">
@@ -244,7 +245,7 @@ export default function RoutineSettingsPage() {
             Create template
           </Button>
           {created && (
-            <span className="inline-flex items-center gap-1 text-sm text-green-600">
+            <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />
               Template created
             </span>

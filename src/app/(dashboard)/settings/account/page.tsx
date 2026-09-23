@@ -36,6 +36,7 @@ export default function AccountSettingsPage() {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync profile form state on mount
       setName(user.name ?? '');
       setDisplayName(user.displayName ?? '');
       setBio(user.bio ?? '');
@@ -89,7 +90,7 @@ export default function AccountSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -103,7 +104,7 @@ export default function AccountSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Account</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Update your public profile information.
         </p>
       </div>
@@ -158,7 +159,7 @@ export default function AccountSettingsPage() {
           </div>
 
           {error && (
-            <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
               {error}
             </div>
           )}
@@ -168,7 +169,7 @@ export default function AccountSettingsPage() {
               Save profile
             </Button>
             {saved && (
-              <span className="inline-flex items-center gap-1 text-sm text-green-600">
+              <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 Saved
               </span>

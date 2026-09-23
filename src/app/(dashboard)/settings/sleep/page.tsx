@@ -61,6 +61,7 @@ export default function SleepSettingsPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
   const load = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -83,6 +84,7 @@ export default function SleepSettingsPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -130,7 +132,7 @@ export default function SleepSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -144,13 +146,13 @@ export default function SleepSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Sleep</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Set targets the wellness tracker compares against.
         </p>
       </div>
 
       {loadError && (
-        <div className="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           {loadError}
         </div>
       )}
@@ -198,17 +200,17 @@ export default function SleepSettingsPage() {
                 label="Sleep reminder"
               />
               {pushEnabled === true && settings.sleepReminder && (
-                <p className="-mt-2 text-xs text-green-600">
+                <p className="-mt-2 text-xs text-emerald-600 dark:text-emerald-400">
                   Reminder notifications are enabled on this device.
                 </p>
               )}
               {pushEnabled === false && settings.sleepReminder && !pushBusy && (
-                <p className="-mt-2 text-xs text-gray-500">
+                <p className="-mt-2 text-xs text-muted-foreground">
                   Push notifications aren&apos;t available on this device.
                 </p>
               )}
               {pushBusy && (
-                <p className="-mt-2 flex items-center gap-1.5 text-xs text-gray-500">
+                <p className="-mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Bell className="h-3.5 w-3.5" />
                   Setting up device notifications&hellip;
                 </p>
@@ -239,7 +241,7 @@ export default function SleepSettingsPage() {
           )}
 
           {error && (
-            <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
               {error}
             </div>
           )}
@@ -249,7 +251,7 @@ export default function SleepSettingsPage() {
               Save changes
             </Button>
             {saved && (
-              <span className="inline-flex items-center gap-1 text-sm text-green-600">
+              <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 Saved
               </span>
@@ -258,7 +260,7 @@ export default function SleepSettingsPage() {
         </div>
       </Card>
 
-      <p className="mt-4 flex items-center gap-1.5 text-xs text-gray-500">
+      <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
         <Moon className="h-3.5 w-3.5" />
         Sleep logs are recorded from the wellness page; these targets set your goals.
       </p>

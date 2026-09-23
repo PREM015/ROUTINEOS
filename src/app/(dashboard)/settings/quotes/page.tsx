@@ -172,7 +172,7 @@ export default function QuotesSettingsPage() {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-500 dark:text-red-400">
+        <p role="alert" className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -245,7 +245,7 @@ export default function QuotesSettingsPage() {
                       onClick={() => setDeleting(q)}
                       disabled={busyId === q.id}
                       aria-label={`Delete quote: ${q.text.slice(0, 40)}`}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -316,7 +316,7 @@ export default function QuotesSettingsPage() {
                 </span>
               </label>
               {formError && (
-                <p role="alert" className="text-sm text-red-500 dark:text-red-400">{formError}</p>
+                <p role="alert" className="text-sm text-destructive dark:text-destructive">{formError}</p>
               )}
               <div className="flex justify-end gap-3">
                 <button
@@ -365,7 +365,7 @@ export default function QuotesSettingsPage() {
               </button>
               <button
                 onClick={confirmDelete}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
+                className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete
               </button>

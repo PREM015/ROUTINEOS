@@ -36,7 +36,7 @@ export default function BillingSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -50,16 +50,16 @@ export default function BillingSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Billing</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage your payment method and invoices.
         </p>
       </div>
 
       <Card>
         <div className="p-8 text-center">
-          <CreditCard className="mx-auto h-12 w-12 text-blue-600" />
+          <CreditCard className="mx-auto h-12 w-12 text-primary" />
           <h2 className="mt-4 text-lg font-bold">Manage via Stripe</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             Payment method, invoices and plan changes are handled securely in
             the Stripe customer portal. In-app billing is not available yet, so
             there is nothing to change on this page.
@@ -70,7 +70,7 @@ export default function BillingSettingsPage() {
             </Button>
             <a
               href="mailto:billing@routineos.app"
-              className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+              className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <Mail className="h-4 w-4" />
               Contact billing support

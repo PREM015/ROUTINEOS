@@ -37,7 +37,7 @@ export default function ExportSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -51,7 +51,7 @@ export default function ExportSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Export</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Download a portable copy of your data.
         </p>
       </div>
@@ -61,17 +61,17 @@ export default function ExportSettingsPage() {
       <Card className="mt-6">
         <div className="p-6">
           <div className="flex items-center gap-2">
-            <FileDown className="h-5 w-5 text-gray-500" />
+            <FileDown className="h-5 w-5 text-muted-foreground" />
             <h2 className="text-lg font-bold">What is included?</h2>
           </div>
-          <ul className="mt-4 list-inside space-y-1 text-sm text-gray-600">
+          <ul className="mt-4 list-inside space-y-1 text-sm text-muted-foreground">
             <li>• Profile, settings and preferences</li>
             <li>• Habits, routines and their logs</li>
             <li>• Goals, projects and tasks</li>
             <li>• Journal entries, sleep and mood records</li>
             <li>• Daily scores and streak history</li>
           </ul>
-          <p className="mt-4 text-xs text-gray-500">
+          <p className="mt-4 text-xs text-muted-foreground">
             Exports are available for 7 days and can be requested again at any time.
           </p>
         </div>

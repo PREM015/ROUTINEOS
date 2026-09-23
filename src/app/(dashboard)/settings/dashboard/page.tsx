@@ -55,6 +55,7 @@ export default function DashboardSettingsPage() {
   const [widgets, setWidgets] = useState<WidgetPref[]>(DEFAULT_WIDGETS);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync widget defaults on mount
     setWidgets(loadWidgets());
   }, []);
 
@@ -86,7 +87,7 @@ export default function DashboardSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -102,29 +103,29 @@ export default function DashboardSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Choose which widgets appear on your home page.
         </p>
       </div>
 
       <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
           <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-blue-600" />
+            <LayoutGrid className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold">Widgets</h2>
           </div>
           <Badge variant="primary">{enabledCount} / {widgets.length} enabled</Badge>
         </div>
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-border">
           {widgets.map((widget) => (
             <li key={widget.key} className="flex items-center justify-between px-6 py-4">
-              <span className="text-sm text-gray-800">{widget.label}</span>
+              <span className="text-sm text-foreground">{widget.label}</span>
               <Switch checked={widget.enabled} onChange={(enabled) => toggle(widget.key, enabled)} />
             </li>
           ))}
         </ul>
-        <div className="border-t border-gray-100 px-6 py-4">
-          <p className="text-xs text-gray-500">
+        <div className="border-t border-border px-6 py-4">
+          <p className="text-xs text-muted-foreground">
             Preferences are stored in your browser (localStorage). They follow
             you per device, not per account.
           </p>

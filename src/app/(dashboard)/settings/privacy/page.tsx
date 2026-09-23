@@ -33,6 +33,7 @@ export default function PrivacySettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
   const load = useCallback(async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -51,6 +52,7 @@ export default function PrivacySettingsPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -94,7 +96,7 @@ export default function PrivacySettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -108,13 +110,13 @@ export default function PrivacySettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Privacy</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Control who can see your profile and stats.
         </p>
       </div>
 
       {loadError && (
-        <div className="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           {loadError}
         </div>
       )}
@@ -131,10 +133,10 @@ export default function PrivacySettingsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Eye className="h-4 w-4 text-gray-500" />
-                    <p className="text-sm font-medium text-gray-900">Public profile</p>
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">Public profile</p>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Allow others to view your profile page and bio.
                   </p>
                 </div>
@@ -147,10 +149,10 @@ export default function PrivacySettingsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Share2 className="h-4 w-4 text-gray-500" />
-                    <p className="text-sm font-medium text-gray-900">Share statistics</p>
+                    <Share2 className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">Share statistics</p>
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Share aggregate stats such as streaks and average score.
                   </p>
                 </div>
@@ -163,7 +165,7 @@ export default function PrivacySettingsPage() {
           )}
 
           {error && (
-            <div className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
               {error}
             </div>
           )}
@@ -173,7 +175,7 @@ export default function PrivacySettingsPage() {
               Save changes
             </Button>
             {saved && (
-              <span className="inline-flex items-center gap-1 text-sm text-green-600">
+              <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
                 Saved
               </span>

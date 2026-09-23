@@ -58,6 +58,7 @@ export default function IntegrationsSettingsPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
   }, [load]);
 
@@ -97,7 +98,7 @@ export default function IntegrationsSettingsPage() {
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
             <a
               href="/login"
-              className="mt-6 inline-block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
             </a>
@@ -115,25 +116,25 @@ export default function IntegrationsSettingsPage() {
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Integrations</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Connect external services to sync data both ways.
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
           {error}
         </div>
       )}
       {notice && (
-        <div className="mb-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800" role="status">
+        <div className="mb-6 rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400" role="status">
           {notice}
         </div>
       )}
 
       <Card>
-        <div className="flex items-center gap-2 border-b border-gray-200 px-6 py-4">
-          <Link2 className="h-5 w-5 text-blue-600" />
+        <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+          <Link2 className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-bold">Connected services</h2>
         </div>
 
@@ -144,22 +145,22 @@ export default function IntegrationsSettingsPage() {
             <Skeleton className="h-16 w-2/3" />
           </div>
         ) : integrations.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">
+          <div className="p-8 text-center text-sm text-muted-foreground">
             No integrations connected yet.
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {integrations.map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{row.providerName}</span>
+                    <span className="font-medium text-foreground">{row.providerName}</span>
                     <Badge variant={row.isActive ? 'success' : 'default'}>
                       {row.isActive ? (row.needsReauth ? 'Needs reauth' : 'Active') : 'Disconnected'}
                     </Badge>
                     {row.syncError && <Badge variant="danger">Sync error</Badge>}
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Connected {new Date(row.connectedAt).toLocaleDateString()}
                     {row.lastSyncedAt
                       ? ` · last synced ${new Date(row.lastSyncedAt).toLocaleDateString()}`
@@ -168,7 +169,7 @@ export default function IntegrationsSettingsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   {row.scopes.length > 0 && (
-                    <span className="hidden text-xs text-gray-400 sm:inline">
+                    <span className="hidden text-xs text-muted-foreground/60 sm:inline">
                       {row.scopes.length} scope{row.scopes.length === 1 ? '' : 's'}
                     </span>
                   )}
@@ -193,10 +194,10 @@ export default function IntegrationsSettingsPage() {
 
       {availableProviderNames.size > 0 && (
         <Card className="mt-6">
-          <div className="border-b border-gray-200 px-6 py-4">
+          <div className="border-b border-border px-6 py-4">
             <h2 className="text-lg font-bold">Available providers</h2>
           </div>
-          <ul className="divide-y divide-gray-100">
+          <ul className="divide-y divide-border">
             {getEnabledIntegrations().map((config) => {
               const connected = integrations.some(
                 (row) => row.provider === config.provider && row.isActive
@@ -206,8 +207,8 @@ export default function IntegrationsSettingsPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-xl" aria-hidden="true">{config.icon}</span>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{config.name}</p>
-                      <p className="text-xs text-gray-500">{config.description}</p>
+                      <p className="text-sm font-medium text-foreground">{config.name}</p>
+                      <p className="text-xs text-muted-foreground">{config.description}</p>
                     </div>
                   </div>
                   <Badge variant={connected ? 'success' : 'primary'}>
@@ -217,8 +218,8 @@ export default function IntegrationsSettingsPage() {
               );
             })}
           </ul>
-          <div className="border-t border-gray-100 px-6 py-4">
-            <p className="text-xs text-gray-500">
+          <div className="border-t border-border px-6 py-4">
+            <p className="text-xs text-muted-foreground">
               New connections use POST /api/integrations; OAuth providers
               require the environment to be configured with OAuth credentials.
             </p>
