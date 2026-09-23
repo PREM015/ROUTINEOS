@@ -23,6 +23,7 @@ function usePrefersReducedMotion(): boolean {
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync matchMedia initial state on mount
     setReduced(query.matches);
     const onChange = (event: MediaQueryListEvent): void => {
       setReduced(event.matches);
@@ -79,6 +80,7 @@ export function FlipClock({ className }: { className?: string }) {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw !== null) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate 12/24h preference from localStorage on mount
         setIs24h(raw === '24');
       }
     } catch {
@@ -108,13 +110,13 @@ export function FlipClock({ className }: { className?: string }) {
     return (
       <div
         className={cn(
-          'rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900',
+          'glass-panel rounded-2xl p-4 sm:p-6 shadow-soft',
           className
         )}
         aria-hidden="true"
       >
-        <div className="mx-auto h-12 w-48 animate-pulse rounded-md bg-zinc-200 sm:h-16 sm:w-72 dark:bg-zinc-800" />
-        <div className="mx-auto mt-3 h-4 w-40 animate-pulse rounded bg-zinc-200 sm:w-56 dark:bg-zinc-800" />
+<div className="mx-auto h-12 w-48 animate-pulse rounded-md bg-muted sm:h-16 sm:w-72" />
+  <div className="mx-auto mt-3 h-4 w-40 animate-pulse rounded bg-muted sm:w-56" />
       </div>
     );
   }
@@ -145,14 +147,14 @@ export function FlipClock({ className }: { className?: string }) {
     <section
       aria-label={accessibleLabel}
       className={cn(
-        'rounded-2xl border border-zinc-200 bg-white p-4 text-center sm:p-6 dark:border-zinc-800 dark:bg-zinc-900',
+        'glass-panel rounded-2xl p-4 text-center sm:p-6 shadow-soft',
         className
       )}
     >
       <div
         role="timer"
         aria-hidden="true"
-        className="inline-flex items-baseline justify-center gap-1 font-mono text-5xl font-bold tracking-tight text-zinc-900 tabular-nums sm:gap-2 sm:text-7xl dark:text-zinc-50"
+        className="inline-flex items-baseline justify-center gap-1 font-mono text-5xl font-bold tracking-tight text-foreground tabular-nums sm:gap-2 sm:text-7xl"
       >
         <DigitGroup value={hh} reduceMotion={reduceMotion} />
         <span className="animate-pulse">:</span>
@@ -162,12 +164,12 @@ export function FlipClock({ className }: { className?: string }) {
           <DigitGroup value={ss} reduceMotion={reduceMotion} />
         </span>
         {suffix && (
-          <span className="ml-2 text-xl font-semibold text-zinc-500 sm:text-2xl dark:text-zinc-400">
+          <span className="ml-2 text-xl font-semibold text-muted-foreground sm:text-2xl">
             {suffix}
           </span>
         )}
       </div>
-      <p className="mt-2 text-sm font-medium text-zinc-600 sm:text-base dark:text-zinc-300">
+      <p className="mt-2 text-sm font-medium text-muted-foreground sm:text-base">
         {dayDate}
       </p>
       <button
@@ -175,7 +177,7 @@ export function FlipClock({ className }: { className?: string }) {
         onClick={toggleFormat}
         aria-pressed={!is24h}
         aria-label={is24h ? 'Switch to 12-hour clock' : 'Switch to 24-hour clock'}
-        className="mt-3 inline-flex items-center rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="mt-3 inline-flex items-center rounded-full border border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         {is24h ? '24H' : '12H'} · tap to switch
       </button>

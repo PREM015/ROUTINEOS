@@ -52,7 +52,7 @@ function formatShortDay(date: Date): string {
 }
 
 function computeStreak(daysWithSessions: ReadonlySet<string>, now: Date): number {
-  let cursor = new Date(now);
+  const cursor = new Date(now);
   if (!daysWithSessions.has(localDayKey(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
   }

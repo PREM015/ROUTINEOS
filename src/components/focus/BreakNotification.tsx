@@ -53,7 +53,7 @@ export function BreakNotification({
         <div
           className={cn(
             'flex h-12 w-12 shrink-0 items-center justify-center rounded-full',
-            dueNow ? 'bg-green-600' : 'bg-blue-600'
+            dueNow ? 'bg-emerald-600' : 'bg-blue-600'
           )}
           aria-hidden="true"
         >

@@ -228,7 +228,7 @@ export default function WeeklyReviewPage() {
       {!loading && step === 'history' && (
         <div className="space-y-6">
           {/* CTA to start this week's review */}
-          <div className="rounded-2xl border border-border bg-card p-6 text-center">
+          <div className="glass-panel shadow-soft rounded-2xl p-6 text-center">
             <h2 className="text-lg font-semibold text-foreground mb-2">
               Ready to reflect on last week?
             </h2>

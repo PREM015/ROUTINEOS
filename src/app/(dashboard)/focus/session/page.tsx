@@ -90,7 +90,7 @@ export default function FocusSessionPage() {
           Current session
         </h2>
         {active ? (
-          <Card className="p-5">
+          <Card className="glass-panel glow-primary p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="truncate text-base font-semibold text-foreground">{active.title}</h3>

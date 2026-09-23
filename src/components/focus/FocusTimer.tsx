@@ -396,13 +396,14 @@ export function FocusTimer(props: FocusTimerProps) {
     },
     []
   );
+// eslint-disable-next-line react-hooks/refs -- latest-ref pattern: kept in sync outside render so callbacks read the newest values
   postSessionRef.current = postSession;
 
   // Keep mutable refs in sync outside render (interval callbacks read them).
   useEffect(() => {
     onCompleteRef.current = onComplete;
     statusRef.current = status;
-    postSessionRef.current = postSession;
+  postSessionRef.current = postSession;
   }, [onComplete, status, postSession]);
 
   // ---- Restore persisted timer + settings (mount only) --------------------
@@ -423,6 +424,7 @@ export function FocusTimer(props: FocusTimerProps) {
               ? parsed.mode
               : 'focus';
           const savedCycles = clampInt(Number(parsed.cycles ?? 0), 0, 1000);
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time localStorage hydration on mount
           setMode(savedMode);
           setCycles(savedCycles);
 
@@ -508,6 +510,7 @@ export function FocusTimer(props: FocusTimerProps) {
   // ---- History: exactly one fetch, AbortController, limit=100 -------------
   useEffect(() => {
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset fetch state before the mount fetch
     setHistoryError(null);
     fetch('/api/focus?limit=100', { credentials: 'include', signal: controller.signal })
       .then(async (response) => {
@@ -716,6 +719,7 @@ export function FocusTimer(props: FocusTimerProps) {
     nextModeAfterFocus,
     beginCountdown,
   ]);
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern: kept in sync outside render so interval callbacks read the newest values
   finishRef.current = finish;
 
   const start = (): void => {
@@ -759,6 +763,7 @@ export function FocusTimer(props: FocusTimerProps) {
     }
     setStatus('paused');
   };
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern: kept in sync outside render so the sleep-auto-pause effect can call it
   pauseRef.current = pause;
 
   // Auto-pause a running timer when a sleep session becomes active (the
@@ -984,7 +989,7 @@ export function FocusTimer(props: FocusTimerProps) {
     <div className={cn('flex flex-col gap-8', className)}>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* Timer card */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 lg:col-span-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-soft lg:col-span-3">
           {/* Mode tabs */}
           <div role="tablist" aria-label="Timer mode" className="flex flex-wrap items-center justify-center gap-2">
             {(Object.keys(MODE_META) as TimerMode[]).map((tab) => {
@@ -998,10 +1003,10 @@ export function FocusTimer(props: FocusTimerProps) {
                   aria-selected={active}
                   onClick={() => switchMode(tab)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2',
+                    'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                     active
                       ? 'border-transparent text-white'
-                      : 'border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                      : 'border-border bg-card text-muted-foreground hover:bg-muted'
                   )}
                   style={active ? { backgroundColor: MODE_META[tab].color } : undefined}
                 >
@@ -1023,7 +1028,7 @@ export function FocusTimer(props: FocusTimerProps) {
                 aria-label={`${meta.label} timer, ${displayText} remaining`}
                 className="h-56 w-56 sm:h-60 sm:w-60"
               >
-                <circle cx="120" cy="120" r={RING_RADIUS + 48} fill="none" strokeWidth="12" className="stroke-zinc-200 dark:stroke-zinc-800" />
+                <circle cx="120" cy="120" r={RING_RADIUS + 48} fill="none" strokeWidth="12" className="stroke-muted-foreground/20" />
                 <circle
                   cx="120"
                   cy="120"
@@ -1040,7 +1045,7 @@ export function FocusTimer(props: FocusTimerProps) {
               </svg>
               <div className="absolute flex max-w-full flex-col items-center px-6 text-center">
                 <span
-                  className="font-mono font-bold tabular-nums text-zinc-900 dark:text-zinc-50"
+                  className="font-mono font-bold tabular-nums text-foreground"
                   style={{ fontSize: isCountdown ? '2.75rem' : '1.6rem' }}
                   aria-label={displayText}
                 >
@@ -1050,7 +1055,7 @@ export function FocusTimer(props: FocusTimerProps) {
                   {statusLabel}
                 </span>
                 {cycles > 0 && (
-                  <span className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  <span className="mt-1 text-xs text-muted-foreground">
                     {cycles} {cycles === 1 ? 'pomodoro' : 'pomodoros'} completed
                   </span>
                 )}
@@ -1106,18 +1111,18 @@ export function FocusTimer(props: FocusTimerProps) {
             </div>
 
             {saveError && (
-              <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+              <p role="alert" className="rounded-lg rounded-lg text-sm toast-error px-4 py-2">
                 {saveError}
               </p>
             )}
 
             {/* Duration presets (countdown modes) */}
             {isCountdown && (
-              <div className="w-full rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
-                <p id="focus-presets-label" className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+              <div className="w-full glass-panel shadow-soft rounded-xl p-4">
+                <p id="focus-presets-label" className="text-sm font-medium text-foreground">
                   Duration for {meta.label.toLowerCase()} · {currentDurationMinutes} min
                   {(status === 'running' || status === 'paused') && (
-                    <span className="ml-2 text-xs font-normal text-zinc-500 dark:text-zinc-400">
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
                       (applies to the next session)
                     </span>
                   )}
@@ -1131,10 +1136,10 @@ export function FocusTimer(props: FocusTimerProps) {
                       aria-pressed={currentDurationMinutes === preset}
                       aria-label={`Set duration to ${preset} minutes`}
                       className={cn(
-                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2',
+                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                         currentDurationMinutes === preset
                           ? 'border-transparent text-white'
-                          : 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                          : 'border-border text-muted-foreground hover:bg-muted'
                       )}
                       style={currentDurationMinutes === preset ? { backgroundColor: meta.color } : undefined}
                     >
@@ -1168,10 +1173,10 @@ export function FocusTimer(props: FocusTimerProps) {
 
             {/* Stopwatch laps */}
             {mode === 'stopwatch' && (
-              <div className="w-full rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+              <div className="w-full glass-panel shadow-soft rounded-xl p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                    Laps {laps.length > 0 && <span className="text-zinc-500 dark:text-zinc-400">({laps.length})</span>}
+                  <h3 className="text-sm font-medium text-foreground">
+                    Laps {laps.length > 0 && <span className="text-muted-foreground">({laps.length})</span>}
                   </h3>
                   {laps.length > 0 && (
                     <button
@@ -1186,7 +1191,7 @@ export function FocusTimer(props: FocusTimerProps) {
                   )}
                 </div>
                 {laps.length === 0 ? (
-                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     No laps yet — press Lap while the stopwatch is running.
                   </p>
                 ) : (
@@ -1197,29 +1202,29 @@ export function FocusTimer(props: FocusTimerProps) {
                         className={cn(
                           'flex items-center justify-between rounded-lg border px-3 py-1.5 font-mono text-sm tabular-nums',
                           lap.id === lapExtremes.bestId &&
-                            'border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300',
+                            'border-primary/30 bg-primary/10 text-primary',
                           lap.id === lapExtremes.worstId &&
-                            'border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300',
+                            'border-destructive/30 bg-destructive/10 text-destructive',
                           lap.id !== lapExtremes.bestId &&
                             lap.id !== lapExtremes.worstId &&
-                            'border-zinc-200 text-zinc-700 dark:border-zinc-800 dark:text-zinc-200'
+                            'border-border text-foreground'
                         )}
                       >
                         <span>
                           Lap {lap.n}
                           {lap.id === lapExtremes.bestId && (
-                            <span className="ml-2 rounded-full bg-green-600 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-white">
+                            <span className="ml-2 rounded-full bg-emerald-600 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-white">
                               Best
                             </span>
                           )}
                           {lap.id === lapExtremes.worstId && (
-                            <span className="ml-2 rounded-full bg-red-600 px-1.5 py-0.5 font-sans text-[10px] font-semibold text-white">
+                            <span className="ml-2 rounded-full bg-destructive px-1.5 py-0.5 font-sans text-[10px] font-semibold text-white">
                               Slowest
                             </span>
                           )}
                         </span>
                         <span>
-                          <span className="mr-3 text-zinc-500 dark:text-zinc-400">{formatLap(lap.lapMs)}</span>
+                          <span className="mr-3 text-muted-foreground">{formatLap(lap.lapMs)}</span>
                           <span>{formatStopwatch(lap.totalMs)}</span>
                         </span>
                       </li>
@@ -1233,8 +1238,8 @@ export function FocusTimer(props: FocusTimerProps) {
 
         {/* Settings + today */}
         <div className="flex flex-col gap-6 lg:col-span-2">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Session settings</h2>
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-soft">
+            <h2 className="text-base font-semibold text-foreground">Session settings</h2>
             <div className="mt-4">
               <Input
                 id="focus-cycles"
@@ -1271,8 +1276,8 @@ export function FocusTimer(props: FocusTimerProps) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Today</h2>
+          <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-soft">
+            <h2 className="text-base font-semibold text-foreground">Today</h2>
             {history === null ? (
               <div className="mt-3 space-y-2" aria-busy="true" aria-label="Loading today's total">
                 <Skeleton className="h-8 w-24" />
@@ -1280,11 +1285,11 @@ export function FocusTimer(props: FocusTimerProps) {
               </div>
             ) : (
               <>
-                <p className="mt-2 font-mono text-3xl font-bold tabular-nums text-zinc-900 dark:text-zinc-50">
+                <p className="mt-2 font-mono text-3xl font-bold tabular-nums text-foreground">
                   {todayMinutes}
-                  <span className="ml-1 font-sans text-sm font-normal text-zinc-500 dark:text-zinc-400">min</span>
+                  <span className="ml-1 font-sans text-sm font-normal text-muted-foreground">min</span>
                 </p>
-                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {history.length} {history.length === 1 ? 'session' : 'sessions'} in the last 100 records
                 </p>
               </>
@@ -1294,10 +1299,10 @@ export function FocusTimer(props: FocusTimerProps) {
       </div>
 
       {/* History */}
-      <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="glass-panel rounded-2xl p-4 sm:p-6 shadow-soft">
         <div className="flex items-center gap-2">
           <History className="h-5 w-5 text-sky-600 dark:text-sky-400" aria-hidden="true" />
-          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Session history</h2>
+          <h2 className="text-base font-semibold text-foreground">Session history</h2>
         </div>
         {history === null && !historyError ? (
           <div className="mt-4 space-y-2" aria-busy="true" aria-label="Loading session history">
@@ -1348,13 +1353,13 @@ export function FocusTimer(props: FocusTimerProps) {
         ) : history !== null && history.length === 0 ? (
           <div className="mt-4">
             <EmptyState
-              icon={<TimerIcon className="h-12 w-12 text-zinc-300 dark:text-zinc-700" aria-hidden="true" />}
+              icon={<TimerIcon className="h-12 w-12 text-muted-foreground/40" aria-hidden="true" />}
               title="No focus sessions yet"
               description="Complete your first session and it will show up here."
             />
           </div>
         ) : (
-          <ol className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ol className="mt-4 divide-y divide-border">
             {(history ?? []).map((item) => {
               const started = new Date(item.startedAt);
               const timeLabel = Number.isNaN(started.getTime())
@@ -1368,8 +1373,8 @@ export function FocusTimer(props: FocusTimerProps) {
               return (
                 <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{item.title}</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <p className="truncate text-sm font-medium text-foreground">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">
                       {timeLabel} · planned {item.plannedMinutes}m · actual {item.actualMinutes}m
                     </p>
                   </div>

@@ -244,7 +244,7 @@ function SkeletonGrid() {
 
 function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-10 text-center">
+    <div className="glass-panel shadow-soft rounded-2xl p-10 text-center">
       <div className="text-muted-foreground">{icon}</div>
       <h2 className="mt-4 text-lg font-semibold text-foreground">{title}</h2>
       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
@@ -260,7 +260,7 @@ function EmptyState({ icon, title, body }: { icon: ReactNode; title: string; bod
 
 function Stat({ icon, label, value, detail }: { icon: ReactNode; label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="glass-panel shadow-soft rounded-2xl p-5">
       <div className="mb-4 inline-flex rounded-xl p-2 bg-primary/10 text-primary">
         {icon}
       </div>
@@ -370,7 +370,7 @@ function ScoreChart({ period, report }: { period: Period; report: Report }) {
     const maxBar = Math.max(segments.reduce((sum, s) => sum + s.value, 0), 100);
 
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="mb-5 text-lg font-semibold text-foreground">Daily score breakdown</h2>
         <div className="flex h-8 w-full overflow-hidden rounded-lg bg-muted">
           {segments.map((segment) => (
@@ -419,7 +419,7 @@ function ScoreChart({ period, report }: { period: Period; report: Report }) {
 
   if (!rows || rows.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Score trend</h2>
         <p className="mt-4 text-center text-sm text-muted-foreground">No scores for this period.</p>
       </div>
@@ -430,7 +430,7 @@ function ScoreChart({ period, report }: { period: Period; report: Report }) {
   const isYear = period === 'year';
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <div className="glass-panel shadow-soft rounded-2xl p-6">
       <h2 className="mb-5 text-lg font-semibold text-foreground">
         {period === 'year' ? 'Monthly average scores' : 'Score trend'}
       </h2>
@@ -504,7 +504,7 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
     const wins = day.topMoments;
     const focus = day.bottomMoments;
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Day at a glance</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <HighlightCard title="Wins" items={wins} empty="No completed highlights yet." tone="emerald" />
@@ -518,7 +518,7 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
     const best = week.scores.bestDay;
     const worst = week.scores.worstDay;
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Week at a glance</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <HighlightCard
@@ -553,7 +553,7 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
       .filter((habit) => habit.weeklyRates.some((rate) => rate !== null))
       .sort((a, b) => b.completionRate - a.completionRate)[0];
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Month at a glance</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <HighlightCard
@@ -587,7 +587,7 @@ function Highlights({ period, report }: { period: Period; report: Report }) {
 
   if (period === 'year' && year) {
     return (
-      <div className="rounded-2xl border border-border bg-card p-6">
+      <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Year at a glance</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <HighlightCard
