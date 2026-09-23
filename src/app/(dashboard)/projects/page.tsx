@@ -52,7 +52,9 @@ export default function ProjectsPage() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <FolderKanban className="h-7 w-7 text-primary" />
+            <span className="glass-panel glow-primary flex h-12 w-12 items-center justify-center rounded-xl p-2.5">
+              <FolderKanban className="h-6 w-6 text-primary" />
+            </span>
             Projects
           </h1>
           <p className="mt-2 text-muted-foreground">
@@ -72,7 +74,7 @@ export default function ProjectsPage() {
             { label: 'Completed', value: stats.completed },
             { label: 'Avg progress', value: `${stats.avgProgress}%` },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
+            <div key={stat.label} className="glass-panel glow-primary rounded-xl p-4 transition-all duration-300 ease-out-expo hover:-translate-y-0.5">
               <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {stat.label}
               </dt>

@@ -134,7 +134,9 @@ export default function TasksPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <ListTodo className="h-7 w-7 text-primary" />
+            <span className="glass-panel glow-primary flex h-12 w-12 items-center justify-center rounded-xl p-2.5">
+              <ListTodo className="h-6 w-6 text-primary" />
+            </span>
             Tasks
           </h1>
           <p className="mt-2 text-muted-foreground">Capture, prioritize and check off your work.</p>
@@ -176,11 +178,11 @@ export default function TasksPage() {
           action={{ label: 'New task', onClick: () => setDialogOpen(true) }}
         />
       ) : (
-        <Card className="divide-y divide-border p-0">
-          {filtered.map((task) => {
+        <Card className="glass-panel divide-y divide-border p-0 shadow-soft">
+            {filtered.map((task) => {
             const done = task.status === 'COMPLETED';
             return (
-              <div key={task.id} className="flex items-start gap-3 p-4">
+              <div key={task.id} className="flex items-start gap-3 p-4 transition-colors hover:bg-muted/40">
                 <button
                   type="button"
                   onClick={() => void toggleComplete(task)}

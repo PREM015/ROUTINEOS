@@ -35,7 +35,7 @@ export default function RoutinePage() {
             onClick={() => setSelectedRoutineTab(tab)}
             className={`rounded-xl border px-3 py-2 text-sm whitespace-nowrap shrink-0 transition ${
               selectedRoutineTab === tab
-                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+                ? 'border-primary/40 bg-primary/10 text-primary shadow-soft'
                 : 'border-border bg-card text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -44,10 +44,10 @@ export default function RoutinePage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-border bg-card p-5">
+      <div className="glass-panel glow-primary rounded-2xl p-5 shadow-soft">
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CalendarRange size={16} className="text-emerald-400" />
+            <CalendarRange size={16} className="text-primary" />
             {routineBlocks.filter((block) => block.dayType === selectedRoutineTab).length} blocks scheduled
           </div>
         </div>

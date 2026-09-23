@@ -62,7 +62,7 @@ function GoalCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, height: 0 }}
-      className="bg-card border border-border rounded-xl p-4 space-y-3"
+      className="glass-panel rounded-xl p-4 space-y-3 transition-all duration-300 ease-out-expo hover:-translate-y-0.5"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 flex-1 min-w-0">

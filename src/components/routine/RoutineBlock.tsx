@@ -21,23 +21,23 @@ export default function RoutineBlockCard({ block, isCompleted, isCurrent, onTogg
   };
 
   const getColorClass = () => {
-    if (isCompleted) return 'bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-800/50 dark:border-gray-700 dark:text-gray-400';
-    if (isCurrent) return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
-    return 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700';
+    if (isCompleted) return 'border-border bg-muted/40 text-muted-foreground';
+    if (isCurrent) return 'glow-primary border-primary/40 bg-primary/10';
+    return 'glass-panel border-white/10 dark:border-white/10';
   };
 
   return (
-    <div className={`p-4 rounded-lg border shadow-sm transition-all ${getColorClass()} ${isCompleted ? 'opacity-75' : ''}`}>
+    <div className={`p-4 rounded-lg border shadow-soft transition-all duration-300 ease-out-expo ${getColorClass()} ${isCompleted ? 'opacity-75' : ''} hover:-translate-y-0.5`}>
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3">
-          <div className={`mt-1 p-2 rounded-md ${isCurrent ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+          <div className={`mt-1 p-2 rounded-md ${isCompleted ? 'bg-muted-foreground/10 text-muted-foreground' : isCurrent ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
             {getIcon()}
           </div>
           <div>
-            <h4 className={`text-base font-medium ${isCompleted ? 'line-through' : 'text-gray-900 dark:text-gray-100'}`}>
+            <h4 className={`text-base font-medium ${isCompleted ? 'line-through' : 'text-foreground'}`}>
               {block.title}
             </h4>
-            <div className="flex items-center mt-1 text-sm text-gray-500 space-x-3">
+            <div className="flex items-center mt-1 text-sm text-muted-foreground space-x-3">
               <span className="flex items-center space-x-1 font-mono">
                 <Clock size={14} />
                 <span>{block.startTime} - {block.endTime}</span>
@@ -46,7 +46,7 @@ export default function RoutineBlockCard({ block, isCompleted, isCurrent, onTogg
               <span>{duration}</span>
             </div>
             {block.description && (
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{block.description}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{block.description}</p>
             )}
           </div>
         </div>
