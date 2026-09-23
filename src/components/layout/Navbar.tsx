@@ -83,6 +83,9 @@ export function Navbar({ className }: { className?: string }) {
   const isCurrentRoute = (href: string): boolean =>
     href.startsWith('/') && !href.includes('#') && pathname === href;
 
+  const CTA_CLASS =
+  'light-sweep glow-neon inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-transform duration-300 ease-out-expo hover:scale-[1.03] active:scale-[0.98]';
+
   const primaryCta = loggedIn ? 'Go to Dashboard' : 'Get Started';
 
   return (
@@ -91,10 +94,10 @@ export function Navbar({ className }: { className?: string }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: EASE }}
       className={cn(
-        'sticky top-0 z-50 backdrop-blur-md transition-[height,background-color,border-color,box-shadow] duration-300 ease-out-expo',
+        'sticky top-0 z-50 transition-[height,background-color,border-color,box-shadow] duration-300 ease-out-expo',
         scrolled
-          ? 'border-b border-border bg-background/80 shadow-sm'
-          : 'border-b border-transparent bg-background/60',
+          ? 'glass-panel shadow-soft'
+          : 'border-b border-transparent bg-background/40 backdrop-blur-sm',
         className,
       )}
     >
@@ -145,7 +148,7 @@ export function Navbar({ className }: { className?: string }) {
             <Magnetic strength={0.12}>
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm shadow-emerald-500/20 transition-transform duration-300 ease-out-expo hover:scale-[1.03] active:scale-[0.98]"
+                className={CTA_CLASS}
               >
                 {primaryCta}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -162,7 +165,7 @@ export function Navbar({ className }: { className?: string }) {
               <Magnetic strength={0.12}>
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm shadow-emerald-500/20 transition-transform duration-300 ease-out-expo hover:scale-[1.03] active:scale-[0.98]"
+                  className={CTA_CLASS}
                 >
                   {primaryCta}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -212,7 +215,7 @@ export function Navbar({ className }: { className?: string }) {
         {menuOpen && (
           <motion.div
             key="mobile-menu"
-            className="overflow-hidden border-t border-border bg-background/95 backdrop-blur-md md:hidden"
+            className="glass-panel overflow-hidden border-t border-border md:hidden"
             initial={reduce ? { opacity: 1, height: 'auto' } : { opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={reduce ? { opacity: 0, height: 0 } : { opacity: 0, height: 0 }}

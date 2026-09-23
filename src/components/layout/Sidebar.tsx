@@ -35,7 +35,7 @@ export function Sidebar() {
   const { data: session } = useSession();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 border-r border-border bg-card p-4 overflow-y-auto z-40">
+    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 border-r border-border bg-card/70 backdrop-blur-xl shadow-soft p-4 overflow-y-auto z-40">
       <Link href="/dashboard" className="flex items-center gap-2 mb-6 px-2" aria-label="RoutineOS dashboard">
         <Logo size="md" />
       </Link>

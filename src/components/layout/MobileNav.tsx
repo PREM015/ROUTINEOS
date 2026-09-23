@@ -21,7 +21,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Mobile"
-      className="fixed bottom-0 left-0 right-0 z-50 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-stretch justify-around border-t border-border bg-background/90 px-2 backdrop-blur-lg md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 flex h-[calc(4rem+env(safe-area-inset-bottom))] items-stretch justify-around border-t border-border bg-card/85 px-2 backdrop-blur-xl shadow-soft md:hidden"
     >
       {links.map((link) => {
         const Icon = link.icon;
@@ -42,14 +42,14 @@ export function MobileNav() {
                 ? (
                     <span
                       aria-hidden="true"
-                      className="absolute inset-1 rounded-xl bg-primary/10"
+                      className="glow-primary absolute inset-1 rounded-xl bg-primary/10"
                     />
                   )
                 : (
                     <motion.span
                       aria-hidden="true"
                       layoutId="mobile-nav-active"
-                      className="absolute inset-1 rounded-xl bg-primary/10"
+                      className="glow-primary absolute inset-1 rounded-xl bg-primary/10"
                       transition={{ type: 'spring', stiffness: 420, damping: 32 }}
                     />
                   )

@@ -59,7 +59,7 @@ export function ThemeToggle({ variant = 'icon' }: ThemeToggleProps) {
               onClick={() => setTheme(value)}
               className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
                 selected
-                  ? 'bg-card text-foreground shadow-sm'
+                  ? 'bg-card text-foreground shadow-soft'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >

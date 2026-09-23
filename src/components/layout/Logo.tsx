@@ -24,11 +24,11 @@ const WORD_SIZES = {
  */
 export function Logo({ variant = 'full', size = 'md', className }: LogoProps) {
   return (
-    <span className={cn('inline-flex items-center gap-2', className)}>
+    <span className={cn('group inline-flex items-center gap-2', className)}>
       <span
         aria-hidden="true"
         className={cn(
-          'inline-flex items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20',
+          'inline-flex items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 transition-shadow duration-300 ease-out-expo group-hover:shadow-[0_0_26px_-4px_rgba(16,185,129,0.7)]',
           TILE_SIZES[size]
         )}
       >
@@ -45,7 +45,12 @@ export function Logo({ variant = 'full', size = 'md', className }: LogoProps) {
         </svg>
       </span>
       {variant === 'full' && (
-        <span className={cn('font-bold tracking-tight text-foreground', WORD_SIZES[size])}>
+        <span
+          className={cn(
+            'chromatic-edge font-bold tracking-tight text-foreground',
+            WORD_SIZES[size]
+          )}
+        >
           RoutineOS
         </span>
       )}

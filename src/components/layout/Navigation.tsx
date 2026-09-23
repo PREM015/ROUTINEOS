@@ -91,12 +91,12 @@ export function Navigation({
           >
             {active &&
               (reduce ? (
-                <span aria-hidden="true" className="absolute inset-0 rounded-lg bg-primary/10" />
+                <span aria-hidden="true" className="glow-primary absolute inset-0 rounded-lg bg-primary/10" />
               ) : (
                 <motion.span
                   aria-hidden="true"
                   layoutId="nav-active-pill"
-                  className="absolute inset-0 rounded-lg bg-primary/10"
+                  className="glow-primary absolute inset-0 rounded-lg bg-primary/10"
                   transition={{ duration: 0.35, ease: EASE }}
                 />
               ))}

@@ -89,11 +89,13 @@ export function Footer({
   return (
     <footer
       className={cn(
-        'mt-auto border-t border-border bg-card/40 px-4 sm:px-6 py-10 sm:py-12',
+        'mt-auto relative overflow-hidden border-t border-border bg-card/40 px-4 sm:px-6 py-10 sm:py-12',
         className,
       )}
     >
-      <div className="mx-auto w-full max-w-7xl">
+      <div className="pointer-events-none absolute inset-0 gradient-mesh-bg opacity-40" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 noise-overlay" aria-hidden="true" />
+      <div className="relative mx-auto w-full max-w-7xl">
         <div className="flex flex-col gap-10 lg:flex-row lg:justify-between">
           <div className="max-w-sm">
             <Link href="/" aria-label="RoutineOS home">
@@ -115,7 +117,7 @@ export function Footer({
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="transition-colors hover:text-primary"
+                        className="transition-all duration-300 ease-out-expo hover:text-primary hover:translate-x-0.5"
                       >
                         {link.label}
                       </Link>

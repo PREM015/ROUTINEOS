@@ -18,7 +18,7 @@ export function Header() {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-card/60 backdrop-blur-md sticky top-0 z-30">
+    <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/70 backdrop-blur-xl shadow-soft sticky top-0 z-30">
       <div className="flex items-center gap-3">
         <h2 className="font-semibold text-lg text-foreground hidden md:block">
           RoutineOS
@@ -31,7 +31,7 @@ export function Header() {
       <div className="flex items-center gap-3 sm:gap-4">
         <Link
           href="/achievements"
-          className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-full text-xs font-semibold transition-colors"
+          className="glow-primary flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-full text-xs font-semibold transition-colors"
         >
           <Flame className="w-4 h-4 fill-current" />
           <span className="hidden sm:inline">Active Streak</span>
@@ -71,7 +71,7 @@ export function Header() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -4, scale: 0.97 }}
               transition={{ duration: 0.18, ease: EASE }}
-              className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl bg-card/95 border border-border shadow-floating backdrop-blur-xl py-1 origin-top-right z-50"
+              className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl bg-card/95 border border-border shadow-long backdrop-blur-xl py-1 origin-top-right z-50"
             >
               <div className="px-3 py-2.5 border-b border-border">
                 <p className="text-xs font-bold text-foreground truncate">
