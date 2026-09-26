@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 import { Mount } from '@/components/motion/Mount';
@@ -20,13 +20,7 @@ export function CurrentRoutineBlock() {
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState('');
 
-  useEffect(() => {
-    fetchRoutine();
-    const interval = setInterval(fetchRoutine, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, []);
-
-  async function fetchRoutine() {
+  const fetchRoutine = useCallback(async () => {
     try {
       const res = await fetch('/api/routine/today');
       const data = await res.json();
@@ -44,7 +38,18 @@ export function CurrentRoutineBlock() {
     } catch (error) {
       console.error('Error fetching routine:', error);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    fetchRoutine();
+    const interval = setInterval(fetchRoutine, 60000); // Update every minute
+    window.addEventListener('day-mode-changed', fetchRoutine);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('day-mode-changed', fetchRoutine);
+    };
+  }, [fetchRoutine]);
 
   if (!currentBlock) {
     return null;

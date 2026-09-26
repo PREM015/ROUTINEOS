@@ -1,20 +1,18 @@
 import { auth } from '@/lib/auth';
-import { monthlySummary } from '@/server/analytics/monthly';
+import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 
 const monthQuerySchema = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/),
 });
 
-function currentMonth(): string {
-  return `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-}
-
 /**
  * GET /api/analytics/monthly
  * Real month-level aggregates (scores, habits, focus, journal, goals, sleep)
- * for a specific `YYYY-MM` month. Defaults to the current calendar month.
+ * for a specific `YYYY-MM` month. Defaults to the current calendar month in the
+ * user's timezone. Delegates to AnalyticsService.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +22,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const month = searchParams.get('month') ?? currentMonth();
+    const month =
+      searchParams.get('month') ??
+      getTodayString(DEFAULT_TZ).slice(0, 7);
 
     const validated = monthQuerySchema.safeParse({ month });
     if (!validated.success) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await monthlySummary(session.user.id, validated.data.month);
+    const data = await analyticsService.getMonthly(session.user.id, validated.data.month);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

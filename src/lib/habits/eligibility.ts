@@ -107,14 +107,25 @@ export async function calculateHabitEligibility(
     };
   }
 
+  // A RESCHEDULE override covering this date marks a manual ad-hoc inclusion
+  // for the day (added directly to today's list rather than by frequency). It
+  // overrides the schedule check below but still yields to skip/pause/NA above.
+  const manualInclusion = overrides.find(
+    o =>
+      o.type === 'RESCHEDULE' &&
+      o.startDate <= date &&
+      (o.endDate === null || o.endDate === undefined || o.endDate >= date)
+  );
+
   // Check if scheduled for this date
   const scheduled = isHabitScheduledForDate(habit, date, DEFAULT_TZ);
-  if (!scheduled) {
+  if (!scheduled && !manualInclusion) {
     return {
       habitId,
       date,
       isEligible: false,
       reason: HabitEligibilityReason.NOT_SCHEDULED,
+      source: 'SCHEDULED',
     };
   }
 
@@ -123,6 +134,8 @@ export async function calculateHabitEligibility(
     habitId,
     date,
     isEligible: true,
+    source: manualInclusion && !scheduled ? 'MANUAL' : 'SCHEDULED',
+    ...(manualInclusion ? { override: manualInclusion } : {}),
   };
 }
 

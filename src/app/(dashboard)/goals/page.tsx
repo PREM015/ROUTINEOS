@@ -6,6 +6,7 @@ import { Target, Plus, Pencil, Trash2, CheckCircle2, Circle } from 'lucide-react
 import AddGoalModal from '@/components/goals/AddGoalModal';
 import EditGoalModal from '@/components/goals/EditGoalModal';
 import { useApp, type Goal } from '@/context/AppContext';
+import { runAchievementCheck } from '@/store/achievement.store';
 import { getTodayString } from '@/lib/dates';
 import { Button, Badge, EmptyState } from '@/components/ui';
 
@@ -189,6 +190,7 @@ export default function GoalsPage() {
         currentValue: completed ? 1 : 0,
         status: completed ? 'COMPLETED' : 'ACTIVE',
       });
+      if (completed) void runAchievementCheck();
     } catch (err) {
       setCheckins((prev) => ({ ...prev, [goal.id]: !completed }));
       setError(err instanceof Error ? err.message : 'Failed to save check-in');

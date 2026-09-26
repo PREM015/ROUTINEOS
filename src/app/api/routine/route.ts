@@ -31,6 +31,7 @@ const createBlockSchema = z.object({
   sortOrder: z.number().int().min(0).optional(),
   trackCompletion: z.boolean().optional(),
   description: z.string().optional(),
+  energyLevel: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
 });
 
 const updateBlockSchema = z.object({
@@ -47,6 +48,7 @@ const updateBlockSchema = z.object({
   sortOrder: z.number().int().min(0).optional(),
   trackCompletion: z.boolean().optional(),
   description: z.string().optional(),
+  energyLevel: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
 });
 
 const deleteBlockSchema = z.object({ id: z.string().min(1) });
@@ -80,6 +82,7 @@ function toBlockDto(block: {
   sortOrder: number;
   trackCompletion: boolean;
   description?: string | null;
+  energyLevel?: string | null;
   category?: { name?: string } | null;
   template?: { dayType?: string } | null;
 }) {
@@ -95,6 +98,7 @@ function toBlockDto(block: {
     sortOrder: block.sortOrder,
     trackCompletion: block.trackCompletion,
     description: block.description ?? undefined,
+    energyLevel: block.energyLevel ?? undefined,
   };
 }
 
@@ -197,6 +201,7 @@ export async function POST(request: NextRequest) {
         icon: validated.data.icon,
         sortOrder: validated.data.sortOrder ?? siblingCount,
         trackCompletion: validated.data.trackCompletion ?? true,
+        energyLevel: validated.data.energyLevel,
       });
 
       return NextResponse.json(

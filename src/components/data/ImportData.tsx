@@ -5,12 +5,13 @@
  *
  * Accepts a JSON backup file, parses it, validates that it contains
  * recognizable top-level entity collections and renders a preview via
- * `ImportPreview`. The backend import endpoint does not exist yet, so the
- * Import button is disabled with an explanatory note — this component is a
- * safe preview-only surface until POST /api/import lands.
+ * `ImportPreview`. Confirming sends the validated payload to POST /api/import,
+ * which persists habits and goals as entity merges and reports every other
+ * collection as skipped (never deleted, never silently dropped).
  */
 
 import { useRef, useState } from 'react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import { FileText, FileUp, Info, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
@@ -46,6 +47,11 @@ export function ImportData() {
   const [counts, setCounts] = useState<ParsedCount[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported: number;
+    skipped: number;
+  } | null>(null);
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -74,6 +80,41 @@ export function ImportData() {
     } finally {
       setReading(false);
       if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const handleImport = async () => {
+    if (!parsed) return;
+
+    setImporting(true);
+    setError(null);
+    setImportResult(null);
+
+    try {
+      const response = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? `Import failed (${response.status})`);
+      }
+
+      const result = (await response.json()) as {
+        data?: { imported?: number; skipped?: number };
+      };
+      setImportResult({
+        imported: result.data?.imported ?? 0,
+        skipped: result.data?.skipped ?? 0,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Import failed');
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -137,13 +178,39 @@ export function ImportData() {
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="flex items-start gap-2 text-xs text-gray-500">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
-                Importing is not available yet — the import API has not been
-                deployed. You can review your file here and import it later.
+                The importer persists habits and goals as entity merges; any
+                other collections in the file are reported as skipped, never
+                deleted.
               </p>
-              <Button disabled title="Import API not available yet">
-                Import data
+              <Button
+                onClick={handleImport}
+                disabled={importing}
+                title={
+                  importing ? 'Importing…' : 'Import the selected backup into your account'
+                }
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Importing…
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import data
+                  </>
+                )}
               </Button>
             </div>
+
+            {importResult && (
+              <div className="mt-4 flex items-center gap-2 rounded-md bg-green-50 px-4 py-3 text-sm text-green-700">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                Imported {importResult.imported.toLocaleString()} item
+                {importResult.imported === 1 ? '' : 's'} (
+                {importResult.skipped.toLocaleString()} skipped).
+              </div>
+            )}
           </>
         )}
       </div>

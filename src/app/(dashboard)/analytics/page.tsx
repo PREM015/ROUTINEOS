@@ -1,71 +1,97 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { BarChart3, CalendarRange, Flame, Moon, Target, TrendingUp } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { BarChart3, CalendarRange, Flame, Moon, Target } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
-import type { DailyBreakdown } from '@/server/analytics/daily';
-import type { WeeklySummary } from '@/server/analytics/weekly';
-import type { MonthlySummary } from '@/server/analytics/monthly';
+import { getTodayString } from '@/lib/dates';
+import { shiftAnchor, type Period } from '@/lib/period-range';
+import { PeriodControl } from '@/components/shared/PeriodControl';
+import type { AnalyticsDashboard } from '@/types/analytics';
 import { Spinner } from '@/components/ui';
 import { BarChart } from '@/components/charts/BarChart';
-
-interface DashboardData {
-  date: string;
-  weekStart: string;
-  today: DailyBreakdown;
-  week: WeeklySummary;
-  month: MonthlySummary;
-  // Older API shape used `monthly`; accept both.
-  monthly?: MonthlySummary;
-}
+import StreakPanel from '@/components/analytics/StreakPanel';
+import TierMixBar from '@/components/analytics/TierMixBar';
+import FocusSummaryCard from '@/components/analytics/FocusSummaryCard';
+import TaskQuadrantCard from '@/components/analytics/TaskQuadrantCard';
+import ProjectProgressList from '@/components/analytics/ProjectProgressList';
+import MoodPulseCard from '@/components/analytics/MoodPulseCard';
+import AICalloutCard from '@/components/analytics/AICalloutCard';
+import SleepSnapshotCard from '@/components/analytics/SleepSnapshotCard';
+import RoutineDetailCard from '@/components/analytics/RoutineDetailCard';
+import MilestoneHitsCard from '@/components/recap/MilestoneHitsCard';
+import TimeAllocationCard from '@/components/analytics/TimeAllocationCard';
+import NutritionHealthCard from '@/components/recap/NutritionHealthCard';
+import JournalCard from '@/components/recap/JournalCard';
+import AchievementsStrip from '@/components/analytics/AchievementsStrip';
 
 /**
  * Analytics Page — real data only.
- * Dashboard rollup for today, this week and this month with charts.
- * Accent colors are assigned per metric; charts render gradient fills.
+ * Day / Week / Month / Year periods fetched from /api/analytics/dashboard and
+ * rendered as a period-scoped bento dashboard: score hero, consistency charts,
+ * and the widget grid. Period navigation is shared with the Recap page via
+ * PeriodControl.
  */
+
+function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
+function chartLabel(period: Period): string {
+  if (period === 'day') return 'Habit status today';
+  if (period === 'week') return 'Habit consistency';
+  if (period === 'month') return 'Habit consistency';
+  return 'Habit consistency';
+}
+
+function chart2Label(period: Period): string {
+  if (period === 'day') return 'Tier completion today';
+  if (period === 'week') return 'Tier completion (this month)';
+  if (period === 'month') return 'Tier completion';
+  return 'Monthly average score';
+}
+
 export default function AnalyticsPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [period, setPeriod] = useState<Period>('day');
+  const [anchorDate, setAnchorDate] = useState<string>(() => getTodayString());
+  const [data, setData] = useState<AnalyticsDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [dismissedInsightId, setDismissedInsightId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
+  const load = useCallback(
+    async (nextPeriod: Period, anchor: string) => {
       try {
         setError(null);
-        const result = await apiRequest<DashboardData>('/api/analytics/dashboard');
-        if (!cancelled) setData(result);
+        const result = await apiRequest<AnalyticsDashboard>(
+          `/api/analytics/dashboard?period=${nextPeriod}&date=${anchor}`
+        );
+        setData(result);
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load analytics');
+        setError(err instanceof Error ? err.message : 'Failed to load analytics');
       }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [retryKey]);
+    },
+    []
+  );
 
-  // Accept both `month` (current) and legacy `monthly` shapes; default every
-  // nested field so new users with no data never crash.
-  const month: MonthlySummary | undefined = data?.month ?? data?.monthly;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    void load(period, anchorDate);
+  }, [period, anchorDate, load, retryKey]);
+
+  const navigate = (delta: number) => setAnchorDate(shiftAnchor(anchorDate, period, delta));
 
   const habitChartData = useMemo(
-    () =>
-      (data?.week?.habits?.perHabit ?? []).map((habit) => ({
-        name: habit.habitName,
-        completionRate: habit.completionRate,
-      })),
-    [data],
+    () => (data?.chart1 ?? []).map((point) => ({ name: point.name, value: point.value })),
+    [data]
   );
 
   const tierChartData = useMemo(
-    () =>
-      (month?.scores?.byTier ?? []).map((tier) => ({
-        name: tier.tier,
-        completionRate: tier.completionRate,
-      })),
-    [month],
+    () => (data?.chart2 ?? []).map((point) => ({ name: point.name, value: point.value })),
+    [data]
   );
 
   if (error) {
@@ -92,43 +118,37 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { today, week } = data;
-  if (!month) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
-        <p role="alert" className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          Analytics data was incomplete. Please try again.
-        </p>
-        <button
-          onClick={() => setRetryKey((k) => k + 1)}
-          className="mt-4 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  const todayScore = today?.score?.total;
-  const todayPct = todayScore != null ? Math.min(todayScore, 100) : 0;
+  const { hero, tiles } = data;
+  const today = getTodayString();
+  const heroPct = hero.total != null ? Math.min(Math.max(hero.total, 0), 100) : 0;
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="flex items-center gap-3 text-3xl font-bold">
-          <span className="inline-flex rounded-2xl bg-primary/10 p-2 text-primary">
-            <BarChart3 className="h-7 w-7" />
-          </span>
-          <span className="animated-gradient-text">Analytics</span>
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          How you are doing today, this week and this month.
-        </p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="flex items-center gap-3 text-3xl font-bold">
+            <span className="inline-flex rounded-2xl bg-primary/10 p-2 text-primary">
+              <BarChart3 className="h-7 w-7" />
+            </span>
+            <span className="animated-gradient-text">Analytics</span>
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Your dashboard for <span className="font-semibold text-foreground">{data.range.label}</span>.
+          </p>
+        </div>
+
+        <PeriodControl
+          period={period}
+          onPeriodChange={setPeriod}
+          label={data.range.label}
+          onPrev={() => navigate(-1)}
+          onNext={() => navigate(1)}
+          onToday={() => setAnchorDate(today)}
+        />
       </div>
 
       {/* Bento hero — mixed-size cards, one accent per metric */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Today — hero, spans 2 columns */}
         <section className="glass-panel glow-primary relative overflow-hidden rounded-2xl p-6 shadow-soft lg:col-span-2">
           <div
             className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/10 blur-3xl"
@@ -137,33 +157,35 @@ export default function AnalyticsPage() {
 
           <p className="shimmer-active inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary">
             <Target className="h-3.5 w-3.5" aria-hidden="true" />
-            Today
+            {data.range.label}
           </p>
 
           <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row">
             <div className="relative h-32 w-32 shrink-0 rounded-full">
               <div
                 className="conic-gradient-ring absolute inset-0 rounded-full"
-                style={{ '--p': `${todayPct}%` } as CSSProperties}
+                style={{ '--p': `${heroPct}%` } as CSSProperties}
                 aria-hidden="true"
               />
               <div className="absolute inset-1.5 flex items-center justify-center rounded-full glass-panel shadow-soft">
                 <span className="text-3xl font-black tabular-nums text-foreground">
-                  {todayScore != null ? Math.round(todayScore) : '—'}
+                  {hero.total != null ? Math.round(hero.total) : '—'}
                 </span>
               </div>
             </div>
 
             <div className="flex-1 space-y-3">
               <p className="text-sm text-muted-foreground">
-                {today?.score?.grade != null ? `Grade ${today.score.grade}` : 'No score yet'}
+                {hero.grade != null
+                  ? `Grade ${hero.grade}${data.period === 'day' ? '' : ' (average)'}`
+                  : 'No score yet'}
               </p>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: 'Core', value: today?.score?.core, accent: 'text-sky-400 bg-sky-400/10' },
-                  { label: 'Growth', value: today?.score?.growth, accent: 'text-violet-400 bg-violet-400/10' },
-                  { label: 'Bonus', value: today?.score?.bonus, accent: 'text-amber-400 bg-amber-400/10' },
-                  { label: 'Habit reliability', value: today?.habitReliability, accent: 'text-emerald-400 bg-emerald-400/10' },
+                  { label: 'Core', value: hero.core, accent: 'text-sky-400 bg-sky-400/10' },
+                  { label: 'Growth', value: hero.growth, accent: 'text-violet-400 bg-violet-400/10' },
+                  { label: 'Bonus', value: hero.bonus, accent: 'text-amber-400 bg-amber-400/10' },
+                  { label: 'Habit reliability', value: hero.habitReliability, accent: 'text-emerald-400 bg-emerald-400/10' },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl bg-card/70 p-3">
                     <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -182,51 +204,54 @@ export default function AnalyticsPage() {
             <div className="rounded-xl border border-border/60 bg-card/60 p-3">
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Routine</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {today?.routine?.completionRate != null ? `${Math.round(today.routine.completionRate)}%` : '—'}
+                {tiles.routine != null ? `${Math.round(tiles.routine.completionRate)}%` : '—'}
               </dd>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3">
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Habits</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {(today?.habits ?? []).filter((h) => h.status === 'COMPLETED').length}/
-                {(today?.habits ?? []).length}
+                {tiles.habitCompletion != null ? `${Math.round(tiles.habitCompletion)}% completed` : '—'}
               </dd>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3">
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Sleep</dt>
               <dd className="mt-1 flex items-center gap-1 font-semibold tabular-nums text-foreground">
                 <Moon className="h-3.5 w-3.5 text-sky-400" aria-hidden="true" />
-                {today?.sleep?.durationMinutes != null
-                  ? `${Math.round(today.sleep.durationMinutes / 60)}h`
+                {tiles.sleepMinutes != null
+                  ? `${Math.round(tiles.sleepMinutes / 60)}h${data.period === 'day' ? '' : ' avg'}`
                   : '—'}
               </dd>
             </div>
             <div className="rounded-xl border border-border/60 bg-card/60 p-3">
               <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Mood</dt>
               <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {today?.reflection?.mood != null ? `${today.reflection.mood}/5` : '—'}
+                {tiles.mood != null ? `${tiles.mood}/5` : '—'}
               </dd>
             </div>
           </dl>
         </section>
 
-        {/* Side rail — week, month, streak */}
+        {/* Side rail — period stats, streak */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-1">
           <SideStat
             icon={<CalendarRange className="h-4 w-4" />}
-            tag="This week"
+            tag={data.range.label}
             label="Average score"
-            value={week?.scores ? String(Math.round(week.scores.average ?? 0)) : '—'}
-            hint={`${week?.scores?.excellentDays ?? 0} excellent days`}
+            value={hero.total != null ? String(Math.round(hero.total)) : '—'}
+            hint={hero.grade != null ? `Grade ${hero.grade}` : 'No scores yet'}
             accentClass="from-emerald-500/80 to-emerald-500"
             glowClass="text-emerald-400 bg-emerald-500/10"
           />
           <SideStat
-            icon={<TrendingUp className="h-4 w-4" />}
-            tag="This month"
-            label="Average score"
-            value={month?.scores ? String(Math.round(month.scores.average ?? 0)) : '—'}
-            hint={`${month?.scores?.perfectDays ?? 0} perfect days`}
+            icon={<Moon className="h-4 w-4" />}
+            tag="Sleep"
+            label="Average per night"
+            value={tiles.sleepMinutes != null ? formatDuration(tiles.sleepMinutes) : '—'}
+            hint={
+              data.sleep?.periodStats?.loggedDays != null
+                ? `${data.sleep.periodStats.loggedDays} nights logged`
+                : 'No sleep logged'
+            }
             accentClass="from-amber-500/80 to-amber-500"
             glowClass="text-amber-400 bg-amber-500/10"
           />
@@ -234,8 +259,12 @@ export default function AnalyticsPage() {
             icon={<Flame className="h-4 w-4" />}
             tag="Streak"
             label="Current streak"
-            value={`${week?.streaks?.current ?? 0} day${(week?.streaks?.current ?? 0) === 1 ? '' : 's'}`}
-            hint={`Longest ${week?.streaks?.longest ?? 0}`}
+            value={`${data.streaks.current} day${data.streaks.current === 1 ? '' : 's'}`}
+            hint={
+              data.streaks.nextMilestone != null
+                ? `Next milestone ${data.streaks.nextMilestone}d`
+                : `Longest ${data.streaks.longest}`
+            }
             accentClass="from-rose-500/80 to-rose-500"
             glowClass="text-rose-400 bg-rose-500/10"
           />
@@ -245,42 +274,70 @@ export default function AnalyticsPage() {
       {/* Charts */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="glass-panel spotlight-hover rounded-2xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground">Weekly habit consistency</h2>
+          <h2 className="text-lg font-semibold text-foreground">{chartLabel(period)}</h2>
           {habitChartData.length > 0 ? (
             <div className="mt-4 h-72">
               <BarChart
                 data={habitChartData}
                 xKey="name"
-                dataKey="completionRate"
+                dataKey="value"
                 height={288}
-                ariaLabel="Weekly habit completion rate by habit"
+                ariaLabel={`${chartLabel(period)} chart`}
                 gradient={{ id: 'habitGradient', from: '#10b981', to: '#059669' }}
               />
             </div>
           ) : (
             <p className="py-10 text-center text-sm text-muted-foreground">
-              No habit activity this week.
+              No habit activity in this period.
             </p>
           )}
         </section>
 
         <section className="glass-panel spotlight-hover rounded-2xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground">Monthly tier completion</h2>
+          <h2 className="text-lg font-semibold text-foreground">{chart2Label(period)}</h2>
           {tierChartData.length > 0 ? (
             <div className="mt-4 h-72">
               <BarChart
                 data={tierChartData}
                 xKey="name"
-                dataKey="completionRate"
+                dataKey="value"
                 height={288}
-                ariaLabel="Monthly completion rate by habit tier"
+                ariaLabel={`${chart2Label(period)} chart`}
                 gradient={{ id: 'tierGradient', from: '#8b5cf6', to: '#6d28d9' }}
               />
             </div>
           ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">No tier data this month.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              No tier data in this period.
+            </p>
           )}
         </section>
+      </div>
+
+      {/* Widget grid — each tile renders its own empty state from real data */}
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <StreakPanel streaks={data.streaks} />
+        <TierMixBar tierMix={data.tierMix} />
+        <FocusSummaryCard focus={data.focus} periodLabel={data.range.label} />
+        <TimeAllocationCard allocation={data.timeAllocation} />
+        <RoutineDetailCard routine={data.routine} />
+        <TaskQuadrantCard tasks={data.tasks} />
+        <ProjectProgressList projects={data.projects} />
+        <MilestoneHitsCard milestones={data.milestones} title="Milestones" accent="emerald" />
+        <SleepSnapshotCard sleep={data.sleep} />
+        <NutritionHealthCard nutrition={data.nutrition} health={data.health} />
+        <JournalCard journal={data.journal} />
+        <AchievementsStrip achievements={data.achievements} />
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <MoodPulseCard moodPulse={data.moodPulse} />
+        <div>
+          <AICalloutCard
+            insight={data.aiInsight && data.aiInsight.id !== dismissedInsightId ? data.aiInsight : null}
+            onDismiss={(id) => setDismissedInsightId(id)}
+          />
+        </div>
       </div>
     </div>
   );

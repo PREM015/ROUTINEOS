@@ -5,6 +5,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { SleepPromptHost } from '@/components/shared/SleepPromptHost';
+import { FloatingFocusBar } from '@/components/focus/FloatingFocusBar';
+import { CelebrationHost } from '@/components/achievements/CelebrationHost';
 
 export default function DashboardLayout({
   children,
@@ -29,6 +31,8 @@ export default function DashboardLayout({
 
         <Footer />
         <MobileNav />
+        <FloatingFocusBar />
+        <CelebrationHost />
         <SleepPromptHost />
       </div>
     </div>

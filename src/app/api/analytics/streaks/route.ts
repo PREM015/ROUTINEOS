@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { streakAnalytics } from '@/server/analytics/streaks';
+import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -15,7 +15,7 @@ function addDaysIso(date: Date, days: number): string {
 /**
  * GET /api/analytics/streaks
  * Streak analytics with timeline and milestones over a date range
- * (defaults to the last 90 days).
+ * (defaults to the last 90 days). Delegates to AnalyticsService.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -39,10 +39,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const analytics = await streakAnalytics(session.user.id, {
-      startDate: validated.data.from,
-      endDate: validated.data.to,
-    });
+    const analytics = await analyticsService.getStreaks(
+      session.user.id,
+      validated.data.from,
+      validated.data.to
+    );
 
     return NextResponse.json({ success: true, data: analytics });
   } catch (error) {

@@ -10,7 +10,10 @@ import { SleepWidget } from '@/components/dashboard/SleepWidget';
 import { HabitHealthWidget } from '@/components/dashboard/HabitHealthWidget';
 import { InsightWidget } from '@/components/dashboard/InsightWidget';
 import { QuoteDisplay } from '@/components/dashboard/QuoteDisplay';
+import { TodayDayType } from '@/components/today/TodayDayType';
 import { RoutineWidget } from '@/components/dashboard/RoutineWidget';
+import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { UserRepository } from '@/server/repositories/user.repository';
 import { Mount } from '@/components/motion/Mount';
 import {
   Activity,
@@ -41,6 +44,10 @@ export default async function DashboardPage() {
     { name: 'Analytics', href: '/analytics', icon: BarChart3, desc: 'Performance & habit trends', color: 'text-indigo-400 bg-indigo-500/10' },
     { name: 'Achievements', href: '/achievements', icon: Trophy, desc: 'Milestones & badges', color: 'text-yellow-400 bg-yellow-500/10' },
   ];
+
+  const userTimezone =
+    (await new UserRepository().getSettings(session.user.id))?.timezone || DEFAULT_TZ;
+  const today = getTodayString(userTimezone);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl space-y-8">
@@ -103,6 +110,10 @@ export default async function DashboardPage() {
 
       {/* Top Stats Overview */}
       <Mount delay={0.24}>
+        <TodayDayType date={today} />
+      </Mount>
+
+      <Mount delay={0.28}>
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Metrics & Momentum

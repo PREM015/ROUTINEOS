@@ -106,7 +106,7 @@ export class NutritionRepository extends BaseRepository {
 
       return await this.prisma.nutritionEntry.findMany({
         where,
-        orderBy: { date: 'desc', createdAt: 'desc' },
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
         ...this.buildPaginationQuery(query.limit, query.offset),
       });
     } catch (error) {

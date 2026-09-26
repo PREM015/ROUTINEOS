@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { formatInTimeZone } from 'date-fns-tz';
 import { TodayHabitChecklist } from '@/components/today/TodayHabitChecklist';
 import { CurrentRoutineBlock } from '@/components/today/CurrentRoutineBlock';
+import { TodayDayType } from '@/components/today/TodayDayType';
 import { TodayScore } from '@/components/today/TodayScore';
 import { TodayGoals } from '@/components/today/TodayGoals';
 import { TodaySleep } from '@/components/today/TodaySleep';
@@ -43,8 +44,11 @@ export default async function TodayPage() {
         {/* Quick Actions */}
         <Mount delay={0.06}><QuickActions date={today} /></Mount>
 
+        {/* Day Type selector + current routine */}
+        <Mount delay={0.1}><TodayDayType date={today} /></Mount>
+
         {/* Current Routine Block */}
-        <Mount delay={0.12}><CurrentRoutineBlock /></Mount>
+        <Mount delay={0.16}><CurrentRoutineBlock /></Mount>
 
         {/* Today's Score */}
         <Mount delay={0.18}><TodayScore date={today} /></Mount>

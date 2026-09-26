@@ -8,7 +8,7 @@ const DEFAULT_QUOTES = [
   { text: 'Small steps every day create a life you can be proud of.', author: 'Daily Progress', isPublic: true },
   { text: 'You do not need to be perfect. You only need to keep showing up.', author: 'RoutineOS', isPublic: true },
   { text: 'Consistency compounds quietly, but it changes everything.', author: 'Momentum', isPublic: true },
-];
+];     
 
 const createQuoteSchema = z.object({
   text: z.string().trim().min(1, 'Quote text is required').max(280, 'Quote must be 280 characters or less'),

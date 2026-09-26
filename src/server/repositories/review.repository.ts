@@ -14,6 +14,12 @@ export class ReviewRepository {
     });
   }
 
+  async findMonthly(userId: string, month: string) {
+    return prisma.monthlyReset.findUnique({
+      where: { userId_month: { userId, month } },
+    });
+  }
+
   async create(data: any) {
     return prisma.weeklyReview.create({ data });
   }

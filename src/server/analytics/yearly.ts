@@ -37,6 +37,7 @@ export interface YearlySummary {
     averageCompletionRate: number;
     bestHabit: { habitId: string; habitName: string; tier: HabitTier; completionRate: number } | null;
     mostMissedHabit: { habitId: string; habitName: string; tier: HabitTier; missedDays: number } | null;
+    perHabit: Array<{ habitId: string; habitName: string; tier: HabitTier; completed: number; missed: number; completionRate: number }>;
     totalCompleted: number;
     totalMissed: number;
   };
@@ -222,6 +223,10 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
             missedDays: mostMissedHabit.missed,
           }
         : null,
+      perHabit: perHabit.map(habit => ({
+        ...habit,
+        completionRate: round(habit.completionRate),
+      })),
       totalCompleted,
       totalMissed,
     },

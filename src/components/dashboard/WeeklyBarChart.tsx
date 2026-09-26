@@ -69,7 +69,9 @@ export function WeeklyBarChart() {
     });
   }, [rows, weekRange]);
 
-  const maxScore = Math.max(...days.map((d) => d.score?.totalScore ?? 0), 100);
+  // Auto-scale to the tallest bar so the chart fills its height; floor of 1
+  // avoids division-by-zero when every day is an empty (zero-height) column.
+  const maxScore = Math.max(...days.map((d) => d.score?.totalScore ?? 0), 1);
 
   if (loading) {
     return (

@@ -2,11 +2,24 @@ import Link from 'next/link';
 import {
   AlertTriangle,
   Bell,
+  CalendarRange,
   ChevronRight,
+  Clock,
+  CreditCard,
   Database,
+  Download,
+  FileUp,
+  KeyRound,
+  LayoutDashboard,
+  Lock,
+  MonitorSmartphone,
+  Moon,
   Palette,
+  Plug,
   Quote,
+  Repeat,
   Settings2,
+  ShieldCheck,
   SlidersHorizontal,
   User,
   type LucideIcon,
@@ -29,15 +42,44 @@ const settingsGroups: SettingsGroup[] = [
     links: [
       { name: 'Profile', href: '/settings/profile', desc: 'Manage your personal details' },
       { name: 'Appearance', href: '/settings/appearance', desc: 'Customize the look and feel' },
+      { name: 'Time Zone', href: '/settings/timezone', desc: 'Set the timezone used for dates' },
+      { name: 'Dashboard', href: '/settings/dashboard', desc: 'Choose your default dashboard view' },
+      { name: 'Habits', href: '/settings/habits', desc: 'Configure habit defaults' },
+      { name: 'Routine', href: '/settings/routine', desc: 'Routine preferences and defaults' },
+      { name: 'Sleep', href: '/settings/sleep', desc: 'Set sleep targets and reminders' },
       { name: 'Quotes', href: '/settings/quotes', desc: 'Manage your quotes and widget pool' },
       { name: 'Scoring Weights', href: '/settings/scoring', desc: 'Adjust how habits are scored' },
       { name: 'Notifications', href: '/settings/notifications', desc: 'Configure reminders' },
     ],
   },
   {
+    title: 'Account & Safety',
+    links: [
+      { name: 'Security', href: '/settings/security', desc: 'Password, 2FA and account security' },
+      { name: 'Active Sessions', href: '/settings/sessions', desc: 'Review and revoke logins' },
+      { name: 'Privacy', href: '/settings/privacy', desc: 'Control profile visibility' },
+    ],
+  },
+  {
+    title: 'Integrations & API',
+    links: [
+      { name: 'Integrations', href: '/settings/integrations', desc: 'Connect external services' },
+      { name: 'API Keys', href: '/settings/api-keys', desc: 'Create keys for the REST API' },
+    ],
+  },
+  {
+    title: 'Billing',
+    links: [
+      { name: 'Subscription', href: '/settings/subscription', desc: 'Plan and usage details' },
+      { name: 'Billing', href: '/settings/billing', desc: 'Payment methods and invoices' },
+    ],
+  },
+  {
     title: 'Account & Data',
     links: [
-      { name: 'Data', href: '/settings/data', desc: 'Export or import your data' },
+      { name: 'Data', href: '/settings/data', desc: 'Manage your stored data' },
+      { name: 'Export', href: '/settings/export', desc: 'Request an export of your data' },
+      { name: 'Import', href: '/settings/import', desc: 'Restore data from a JSON backup' },
       { name: 'Danger Zone', href: '/settings/danger-zone', desc: 'Account deletion' },
     ],
   },
@@ -46,19 +88,47 @@ const settingsGroups: SettingsGroup[] = [
 type SettingsIconKey =
   | 'Profile'
   | 'Appearance'
+  | 'Time Zone'
+  | 'Dashboard'
+  | 'Habits'
+  | 'Routine'
+  | 'Sleep'
   | 'Quotes'
   | 'Scoring Weights'
   | 'Notifications'
+  | 'Security'
+  | 'Active Sessions'
+  | 'Privacy'
+  | 'Integrations'
+  | 'API Keys'
+  | 'Subscription'
+  | 'Billing'
   | 'Data'
+  | 'Export'
+  | 'Import'
   | 'Danger Zone';
 
 const ICONS: Record<SettingsIconKey, LucideIcon> = {
   Profile: User,
   Appearance: Palette,
+  'Time Zone': Clock,
+  Dashboard: LayoutDashboard,
+  Habits: Repeat,
+  Routine: CalendarRange,
+  Sleep: Moon,
   Quotes: Quote,
   'Scoring Weights': SlidersHorizontal,
   Notifications: Bell,
+  Security: ShieldCheck,
+  'Active Sessions': MonitorSmartphone,
+  Privacy: Lock,
+  Integrations: Plug,
+  'API Keys': KeyRound,
+  Subscription: CreditCard,
+  Billing: CreditCard,
   Data: Database,
+  Export: Download,
+  Import: FileUp,
   'Danger Zone': AlertTriangle,
 };
 

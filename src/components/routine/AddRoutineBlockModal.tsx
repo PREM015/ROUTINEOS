@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { Modal, Input, Select, Button } from '@/components/ui';
+import { Modal, Input, Select, Button, Textarea, Switch, ColorPicker } from '@/components/ui';
 
 interface AddRoutineBlockModalProps {
   open: boolean;
@@ -23,6 +23,13 @@ const DAY_TYPES = [
   { value: 'CUSTOM', label: 'Custom' },
 ];
 
+const ENERGY_OPTIONS = [
+  { value: '', label: 'Default energy' },
+  { value: 'HIGH', label: 'High energy' },
+  { value: 'MEDIUM', label: 'Medium energy' },
+  { value: 'LOW', label: 'Low energy' },
+];
+
 export default function AddRoutineBlockModal({ open, onClose, defaultDayType = 'WEEKDAY' }: AddRoutineBlockModalProps) {
   const { addRoutineBlock, routineBlocks } = useApp();
   const [title, setTitle] = useState('');
@@ -31,6 +38,9 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
   const [category, setCategory] = useState('Personal');
   const [dayType, setDayType] = useState(defaultDayType);
   const [trackCompletion, setTrackCompletion] = useState(true);
+  const [description, setDescription] = useState('');
+  const [energyLevel, setEnergyLevel] = useState('');
+  const [color, setColor] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -62,14 +72,19 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
     setSubmitting(true);
     setSubmitError(null);
     try {
+      // sortOrder is per-day-type: new blocks go last within that tab.
+      const siblingCount = routineBlocks.filter(b => b.dayType === dayType).length;
       const saved = await addRoutineBlock({
         dayType,
         startTime,
         endTime,
         title: title.trim(),
         category,
-        sortOrder: routineBlocks.length,
+        sortOrder: siblingCount,
         trackCompletion,
+        description: description.trim() || undefined,
+        energyLevel: energyLevel === '' ? undefined : (energyLevel as 'HIGH' | 'MEDIUM' | 'LOW'),
+        color: color.trim() || undefined,
       });
       if (saved.overlapWarning) {
         setErrors(prev => ({ ...prev, conflict: 'Saved with an overlap warning.' }));
@@ -80,6 +95,9 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
       setStartTime('06:00');
       setEndTime('07:00');
       setCategory('Personal');
+      setDescription('');
+      setEnergyLevel('');
+      setColor('');
       setErrors({});
       setSubmitError(null);
       onClose();
@@ -133,15 +151,28 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
           options={DAY_TYPES}
         />
 
-        <label className="flex items-center gap-3 cursor-pointer group">
-          <div
-            onClick={() => setTrackCompletion(!trackCompletion)}
-            className={`w-10 h-6 rounded-full transition-colors ${trackCompletion ? 'bg-emerald-500' : 'bg-zinc-700'} relative`}
-          >
-            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${trackCompletion ? 'translate-x-5' : 'translate-x-1'}`} />
-          </div>
-          <span className="text-sm text-zinc-300">Track completion for this block</span>
-        </label>
+        <Select
+          label="Energy Level"
+          value={energyLevel}
+          onChange={e => setEnergyLevel(e.target.value)}
+          options={ENERGY_OPTIONS}
+        />
+
+        <Textarea
+          label="Description (optional)"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="What is this block about?"
+          rows={2}
+        />
+
+        <ColorPicker
+          label="Color (optional)"
+          value={color || '#64748b'}
+          onChange={setColor}
+        />
+
+        <Switch checked={trackCompletion} onChange={setTrackCompletion} label="Track completion for this block" />
 
         {errors.conflict && (
           <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">

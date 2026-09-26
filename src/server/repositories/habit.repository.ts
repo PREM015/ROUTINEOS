@@ -298,6 +298,31 @@ export class HabitRepository extends BaseRepository {
   }
 
   /**
+   * Find all habit logs for a user across a date range (any habit).
+   * Distinct from findLogsByRange — that one is scoped to a single habit.
+   */
+  async findLogsByUserRange(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<HabitLog[]> {
+    try {
+      return await this.prisma.habitLog.findMany({
+        where: {
+          userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        orderBy: { date: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findLogsByUserRange');
+    }
+  }
+
+  /**
    * Create habit log
    */
   async createLog(data: Prisma.HabitLogCreateInput): Promise<HabitLog> {

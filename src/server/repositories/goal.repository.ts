@@ -355,6 +355,48 @@ export class GoalRepository extends BaseRepository {
     }
   }
 
+  /**
+   * Milestones completed inside [from, to] for the user's goals.
+   */
+  async findCompletedMilestones(
+    userId: string,
+    from: Date,
+    to: Date
+  ): Promise<
+    Prisma.MilestoneGetPayload<{
+      include: {
+        goal: {
+          select: {
+            id: true;
+            title: true;
+            project: { select: { id: true, name: true } };
+          };
+        };
+      };
+    }>[]
+  > {
+    try {
+      return await this.prisma.milestone.findMany({
+        where: {
+          completedAt: { not: null, gte: from, lte: to },
+          goal: { userId },
+        },
+        include: {
+          goal: {
+            select: {
+              id: true,
+              title: true,
+              project: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { completedAt: 'desc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findCompletedMilestones');
+    }
+  }
+
   // ============================================================================
   // Analytics
   // ============================================================================

@@ -40,6 +40,8 @@ import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useFocusStore } from '@/store/focus.store';
+import { runAchievementCheck } from '@/store/achievement.store';
 
 export type TimerMode = 'focus' | 'short-break' | 'long-break' | 'stopwatch';
 export type TimerStatus = 'idle' | 'running' | 'paused' | 'finished';
@@ -134,7 +136,7 @@ const MODE_META: Record<TimerMode, { label: string; color: string; icon: LucideI
   stopwatch: { label: 'Stopwatch', color: '#f59e0b', icon: Hourglass },
 };
 
-const RING_RADIUS = 52;
+const RING_RADIUS = 104;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 function clampInt(value: number, min: number, max: number): number {
@@ -322,6 +324,8 @@ export function FocusTimer(props: FocusTimerProps) {
   const restoreDoneRef = useRef(false);
   const pauseRef = useRef<() => void>(() => {});
   const finishRef = useRef<() => void>(() => {});
+  const startRef = useRef<() => void>(() => {});
+  const stopResetRef = useRef<() => void>(() => {});
   const postSessionRef = useRef<(args: {
     type: TimerMode;
     plannedSeconds: number;
@@ -676,6 +680,7 @@ export function FocusTimer(props: FocusTimerProps) {
         startedAt: started,
         completed: true,
       });
+      void runAchievementCheck();
       const nextTotal = durationMsFor(next, settings);
       onPhaseChange?.(next === 'long-break' ? 'LONG_BREAK' : 'SHORT_BREAK');
       if (settings.autoStartBreak) {
@@ -745,6 +750,8 @@ export function FocusTimer(props: FocusTimerProps) {
     const total = status === 'finished' ? remainingMs : durationMsFor(mode, settings);
     beginCountdown(mode, Math.max(1000, total));
   };
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern: delegates floating-bar resume to the live handler
+  startRef.current = start;
 
   const pause = (): void => {
     if (status !== 'running') return;
@@ -776,6 +783,27 @@ export function FocusTimer(props: FocusTimerProps) {
       pauseRef.current();
     }
   }, [props.sleepActive, status]);
+
+  // ---- Global focus store sync ---------------------------------------------
+  const syncTimer = useFocusStore((s) => s.sync);
+  const setFocusControls = useFocusStore((s) => s.setControls);
+
+  // Push a lightweight snapshot (timestamp-based, tick-independent) so the
+  // floating bar stays in sync without mirroring the 5Hz tick interval.
+  useEffect(() => {
+    syncTimer({ status, mode, endsAt, remainingMs, plannedMs, swAccumMs, swRunStart, cycles });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- discrete fields only; remainingMs is a derived field the bar recomputes itself
+  }, [status, mode, endsAt, plannedMs, swAccumMs, swRunStart, cycles]);
+
+  // Register controls once: floating-bar pause/resume/stop delegate into the
+  // mounted timer handlers (refs keep the latest closures).
+  useEffect(() => {
+    setFocusControls({
+      pause: () => pauseRef.current(),
+      resume: () => startRef.current(),
+      stop: () => stopResetRef.current(),
+    });
+  }, [setFocusControls]);
 
   const resetToIdle = useCallback(
     (nextMode: TimerMode): void => {
@@ -821,6 +849,8 @@ export function FocusTimer(props: FocusTimerProps) {
     }
     resetToIdle(mode);
   };
+  // eslint-disable-next-line react-hooks/refs -- latest-ref pattern: delegates floating-bar stop to the live handler
+  stopResetRef.current = stopAndReset;
 
   /** Skip the current countdown session and advance to the next mode. */
   const skip = (): void => {
@@ -1021,26 +1051,90 @@ export function FocusTimer(props: FocusTimerProps) {
           <div className="mt-6 flex flex-col items-center gap-6" role="tabpanel" aria-label={`${meta.label} timer`}>
             <div className="relative flex items-center justify-center" aria-live="polite">
               <svg
-                width="240"
-                height="240"
-                viewBox="0 0 240 240"
+                width="280"
+                height="280"
+                viewBox="0 0 280 280"
                 role="img"
                 aria-label={`${meta.label} timer, ${displayText} remaining`}
-                className="h-56 w-56 sm:h-60 sm:w-60"
+                className={cn(
+                  "h-64 w-64 sm:h-72 sm:w-72 transition-transform duration-500 ease-out",
+                  status === "running" && "scale-[1.02]"
+                )}
               >
-                <circle cx="120" cy="120" r={RING_RADIUS + 48} fill="none" strokeWidth="12" className="stroke-muted-foreground/20" />
+                <defs>
+                  <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                  <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor={meta.color} stopOpacity="1" />
+                    <stop offset="100%" stopColor={meta.color} stopOpacity="0.6" />
+                  </linearGradient>
+                </defs>
+
                 <circle
-                  cx="120"
-                  cy="120"
-                  r={RING_RADIUS + 48}
+                  cx="140"
+                  cy="140"
+                  r="128"
                   fill="none"
-                  stroke={meta.color}
-                  strokeWidth="12"
+                  strokeWidth="2"
+                  strokeDasharray="4 8"
+                  className={cn(
+                    "stroke-muted-foreground/20 transition-all duration-1000",
+                    status === "running" && "stroke-muted-foreground/40"
+                  )}
+                  style={{
+                    transformOrigin: "140px 140px",
+                    animation: status === "running" ? "spin 120s linear infinite" : "none"
+                  }}
+                />
+
+                <circle
+                  cx="140"
+                  cy="140"
+                  r={RING_RADIUS}
+                  fill="none"
+                  strokeWidth="16"
+                  className="stroke-muted-foreground/10"
+                />
+
+                {Array.from({ length: 60 }).map((_, i) => {
+                  const angle = (i * 6 * Math.PI) / 180 - Math.PI / 2;
+                  const innerR = 76;
+                  const outerR = i % 5 === 0 ? 84 : 80;
+                  const x1 = 140 + innerR * Math.cos(angle);
+                  const y1 = 140 + innerR * Math.sin(angle);
+                  const x2 = 140 + outerR * Math.cos(angle);
+                  const y2 = 140 + outerR * Math.sin(angle);
+                  const isPassed = progress > i / 60;
+                  return (
+                    <line
+                      key={i}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      strokeWidth={i % 5 === 0 ? 2 : 1}
+                      className="transition-colors duration-300"
+                      stroke={isPassed && status === "running" ? meta.color : "currentColor"}
+                      opacity={isPassed && status === "running" ? 0.8 : 0.15}
+                    />
+                  );
+                })}
+
+                <circle
+                  cx="140"
+                  cy="140"
+                  r={RING_RADIUS}
+                  fill="none"
+                  stroke="url(#ring-gradient)"
+                  strokeWidth="16"
                   strokeLinecap="round"
                   strokeDasharray={RING_CIRCUMFERENCE}
                   strokeDashoffset={dashOffset}
-                  transform="rotate(-90 120 120)"
-                  className="transition-[stroke-dashoffset] duration-200"
+                  transform="rotate(-90 140 140)"
+                  className="transition-[stroke-dashoffset] duration-300 ease-out"
+                  filter="url(#neon-glow)"
                 />
               </svg>
               <div className="absolute flex max-w-full flex-col items-center px-6 text-center">
@@ -1399,3 +1493,4 @@ export function FocusTimer(props: FocusTimerProps) {
 }
 
 export default FocusTimer;
+

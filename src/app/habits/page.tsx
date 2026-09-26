@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AddHabitModal from '@/components/habits/AddHabitModal';
@@ -8,8 +8,9 @@ import EditHabitModal from '@/components/habits/EditHabitModal';
 import { useApp, type Habit } from '@/context/AppContext';
 import { getFrequencyLabel } from '@/lib/scheduling';
 import { getTodayString } from '@/lib/dates';
-import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, CheckCircle2, Circle, Flame } from 'lucide-react';
+import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, CheckCircle2, Circle, Flame, TrendingUp } from 'lucide-react';
 import { Button, EmptyState } from '@/components/ui';
+import { cn } from '@/lib/utils';
 
 type TabType = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
 type TierType = 'GROWTH' | 'BONUS' | 'LIFESTYLE';
@@ -19,7 +20,22 @@ const TIER_LABELS: Record<TierType, string> = {
   BONUS: 'Growth Habits',
   LIFESTYLE: 'Lifestyle Habits',
 };
-const OTHER_TIERS = ['FLEXIBLE', 'OPTIONAL', 'EXPERIMENTAL', 'ALTERNATIVE', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'];
+const OTHER_TIERS = ['NON_NEGOTIABLE', 'FLEXIBLE', 'OPTIONAL', 'EXPERIMENTAL', 'ALTERNATIVE', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'];
+
+interface HealthRow {
+  habitId: string;
+  name: string;
+  completionRate: number | null;
+  longestStreak: number;
+  health: 'HEALTHY' | 'AT_RISK' | 'UNHEALTHY' | 'NO_DATA';
+}
+
+const HEALTH_BAR: Record<HealthRow['health'], string> = {
+  HEALTHY: 'bg-emerald-500',
+  AT_RISK: 'bg-amber-500',
+  UNHEALTHY: 'bg-red-500',
+  NO_DATA: 'bg-muted',
+};
 
 export default function HabitsPage() {
   const {
@@ -32,8 +48,44 @@ export default function HabitsPage() {
   const [confirmDelete, setConfirmDelete] = useState<Habit | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [healthData, setHealthData] = useState<HealthRow[]>([]);
 
   const today = selectedDate || getTodayString();
+
+  const fetchHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/habits/health?days=28');
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setHealthData(data.data.habits as HealthRow[]);
+      }
+    } catch {
+      // Non-fatal; rows render without health metrics.
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    fetchHealth();
+  }, [fetchHealth]);
+
+  const healthByHabit = useMemo(
+    () => new Map(healthData.map(h => [h.habitId, h])),
+    [healthData]
+  );
+
+  const healthSummary = useMemo(() => {
+    const withRate = healthData.filter(h => h.completionRate !== null);
+    const overall = withRate.length
+      ? Math.round(withRate.reduce((s, h) => s + (h.completionRate as number), 0) / withRate.length)
+      : null;
+    return {
+      overall,
+      healthy: healthData.filter(h => h.health === 'HEALTHY').length,
+      atRisk: healthData.filter(h => h.health === 'AT_RISK').length,
+      unhealthy: healthData.filter(h => h.health === 'UNHEALTHY').length,
+    };
+  }, [healthData]);
 
   const statusMap: Record<TabType, string[]> = {
     ACTIVE: ['ACTIVE'],
@@ -52,6 +104,7 @@ export default function HabitsPage() {
     setActionError(null);
     try {
       await fn();
+      fetchHealth();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Action failed');
     } finally {
@@ -76,6 +129,7 @@ export default function HabitsPage() {
     const log = getLogForDate(habit.id, today);
     const done = log?.status === 'COMPLETED';
     const busy = busyId === habit.id;
+    const health = healthByHabit.get(habit.id);
     return (
       <motion.div
         key={habit.id}
@@ -104,12 +158,30 @@ export default function HabitsPage() {
                 <Flame size={12} /> {habit.streakCount}
               </span>
             )}
+            {health?.longestStreak && health.longestStreak > (habit.streakCount ?? 0) && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-semibold" title="Longest streak">
+                <TrendingUp size={12} /> best {health.longestStreak}
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-1 truncate">
             {getFrequencyLabel(habit)}
             {habit.targetCount ? ` · target ${habit.targetCount}` : ''}
             {habit.reminderTime ? ` · ⏰ ${habit.reminderTime}` : ''}
           </p>
+          {health?.completionRate !== null && health?.completionRate !== undefined && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="w-full max-w-[180px] bg-muted rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={cn('h-1.5 rounded-full transition-all duration-500', HEALTH_BAR[health.health])}
+                  style={{ width: `${health.completionRate}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                {health.completionRate}% · {health.health.toLowerCase().replace('_', ' ')}
+              </span>
+            </div>
+          )}
           {habit.description && (
             <p className="text-xs text-muted-foreground mt-0.5 truncate">{habit.description}</p>
           )}
@@ -191,7 +263,26 @@ export default function HabitsPage() {
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-foreground">My Habits</h1>
-          <p className="text-sm text-muted-foreground mt-1">{habits.filter(h => h.status === 'ACTIVE').length} active habits</p>
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span>{habits.filter(h => h.status === 'ACTIVE').length} active habits</span>
+            {healthData.length > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className={cn('font-medium', healthSummary.healthy > 0 && 'text-emerald-600 dark:text-emerald-400')}>
+                  {healthSummary.healthy} healthy
+                </span>
+                <span className={cn('font-medium', healthSummary.atRisk > 0 && 'text-amber-600 dark:text-amber-400')}>
+                  {healthSummary.atRisk} at risk
+                </span>
+                <span className={cn('font-medium', healthSummary.unhealthy > 0 && 'text-red-600 dark:text-red-400')}>
+                  {healthSummary.unhealthy} unhealthy
+                </span>
+                {healthSummary.overall !== null && (
+                  <span className="tabular-nums">{healthSummary.overall}% avg (28d)</span>
+                )}
+              </>
+            )}
+          </div>
         </div>
         <Button onClick={() => setModalOpen(true)} variant="primary">
           <Plus size={16} /> Add Habit

@@ -157,11 +157,45 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role || 'USER';
+        // Stamp absolute login time once at sign-in. This is the anchor for
+        // the 6-hour absolute expiry; it never moves regardless of activity.
+        token.loginAt = Date.now();
+        // Snapshot the user's sessionVersion so we can detect forced
+        // invalidation (e.g. dev-restart bumps, logout-all, password change).
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id! },
+          select: { sessionVersion: true },
+        });
+        token.sessionVersion = dbUser?.sessionVersion ?? 0;
       }
 
       // Handle session update
       if (trigger === 'update' && session) {
         token.role = session.role || token.role;
+      }
+
+      // ── Absolute 6-hour expiry (server-side enforcement) ──────────────────
+      // Reject the token if it was issued more than 6 hours ago, even if
+      // NextAuth's default rolling refresh would otherwise keep it alive.
+      const SESSION_MAX_MS = 6 * 60 * 60 * 1000; // 6 hours
+      const loginAt = token.loginAt as number | undefined;
+      if (loginAt && Date.now() - loginAt > SESSION_MAX_MS) {
+        // Return a token with a past expiry so NextAuth treats it as invalid.
+        return { ...token, exp: 0 };
+      }
+
+      // ── sessionVersion check ──────────────────────────────────────────────
+      // If the stored version differs from the token's snapshot, the session
+      // has been force-invalidated (dev restart, logout-all, password change).
+      const tokenSessionVersion = token.sessionVersion as number | undefined;
+      if (typeof token.id === 'string' && typeof tokenSessionVersion === 'number') {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { sessionVersion: true },
+        });
+        if (dbUser && dbUser.sessionVersion !== tokenSessionVersion) {
+          return { ...token, exp: 0 };
+        }
       }
 
       return token;
@@ -185,8 +219,8 @@ export const authOptions = {
 
   session: {
     strategy: 'jwt' as const,
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    updateAge: 24 * 60 * 60, // 1 day
+    maxAge: 6 * 60 * 60, // 6 hours in seconds — absolute, not idle-based
+    updateAge: 0, // disable rolling refresh; the 6-hour clock never resets
   },
 
   events: {

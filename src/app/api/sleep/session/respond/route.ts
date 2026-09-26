@@ -8,6 +8,12 @@ import { z } from 'zod';
  * Respond to a pending sleep prompt. YES resolves it into an active session;
  * NOT_YET dismisses it so sleep does not auto-start.
  * Body: { promptId: string, answer: 'YES' | 'NOT_YET' }
+ *
+ * "There is nothing to respond to" (already dismissed, already auto-started,
+ * or a stale promptId from a client that polled before the prompt resolved) is
+ * a successful no-op, not an error: the response is 200 with
+ * `alreadyHandled: true`. Returning 404 here made a healthy endpoint look
+ * broken in request logs and monitoring.
  */
 
 const respondSchema = z.object({

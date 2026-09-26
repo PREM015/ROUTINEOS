@@ -3,9 +3,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp, RoutineBlock } from '@/context/AppContext';
-import { Clock, Trash2, AlertTriangle, CheckCircle2, Circle, Pencil } from 'lucide-react';
-import { EmptyState, Modal, Input, Button } from '@/components/ui';
+import { Clock, Trash2, AlertTriangle, CheckCircle2, Circle, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
+import { EmptyState, Modal, Input, Button, Select, Textarea, Switch, ColorPicker } from '@/components/ui';
 import { timeToMinutes, getTodayString } from '@/lib/dates';
+
+export const BLOCK_ENERGY_LABELS: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
+  HIGH: '⚡ High energy',
+  MEDIUM: '• Medium',
+  LOW: '↓ Low energy',
+};
+
+export const BLOCK_ENERGY_STYLES: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
+  HIGH: 'bg-sky-500/15 text-sky-400',
+  MEDIUM: 'bg-violet-500/15 text-violet-400',
+  LOW: 'bg-amber-500/15 text-amber-400',
+};
 
 function hasConflict(a: RoutineBlock, b: RoutineBlock): boolean {
   if (a.id === b.id || a.dayType !== b.dayType) return false;
@@ -42,6 +54,10 @@ export default function RoutineList() {
   const [editTitle, setEditTitle] = useState('');
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editEnergy, setEditEnergy] = useState<'HIGH' | 'MEDIUM' | 'LOW' | ''>('');
+  const [editColor, setEditColor] = useState('');
+  const [editTrack, setEditTrack] = useState(true);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<RoutineBlock | null>(null);
@@ -91,7 +107,7 @@ export default function RoutineList() {
   const filteredBlocks = useMemo(
     () => routineBlocks
       .filter(b => b.dayType === selectedRoutineTab)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.startTime.localeCompare(b.startTime)),
     [routineBlocks, selectedRoutineTab]
   );
 
@@ -121,6 +137,10 @@ export default function RoutineList() {
     setEditTitle(block.title);
     setEditStart(block.startTime);
     setEditEnd(block.endTime);
+    setEditDescription(block.description ?? '');
+    setEditEnergy(block.energyLevel ?? '');
+    setEditColor(block.color ?? '');
+    setEditTrack(block.trackCompletion);
     setEditError(null);
   };
 
@@ -133,12 +153,39 @@ export default function RoutineList() {
     setEditSaving(true);
     setEditError(null);
     try {
-      await updateRoutineBlock(editing.id, { title: editTitle.trim(), startTime: editStart, endTime: editEnd });
+      await updateRoutineBlock(editing.id, {
+        title: editTitle.trim(),
+        startTime: editStart,
+        endTime: editEnd,
+        description: editDescription.trim() || undefined,
+        energyLevel: editEnergy === '' ? undefined : editEnergy,
+        color: editColor.trim() || undefined,
+        trackCompletion: editTrack,
+      });
       setEditing(null);
     } catch (err) {
       setEditError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  /** Reorder a block by swapping sortOrder with its neighbor (persisted). */
+  const moveBlock = async (block: RoutineBlock, dir: -1 | 1) => {
+    const peek = filteredBlocks.findIndex(b => b.id === block.id);
+    const peer = peek === -1 ? null : filteredBlocks[peek + dir];
+    if (!peer || togglingId) return;
+    setTogglingId(block.id);
+    setActionError(null);
+    try {
+      await Promise.all([
+        updateRoutineBlock(block.id, { sortOrder: peer.sortOrder }),
+        updateRoutineBlock(peer.id, { sortOrder: block.sortOrder }),
+      ]);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to reorder block');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -260,6 +307,24 @@ export default function RoutineList() {
                       <span className="text-zinc-700">{durationLabel}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => moveBlock(block, -1)}
+                        disabled={idx === 0 || togglingId === block.id}
+                        className="p-1 rounded-md text-zinc-600 hover:text-foreground hover:bg-muted transition disabled:opacity-40"
+                        title="Move earlier"
+                        aria-label={`Move ${block.title} earlier`}
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        onClick={() => moveBlock(block, 1)}
+                        disabled={idx === filteredBlocks.length - 1 || togglingId === block.id}
+                        className="p-1 rounded-md text-zinc-600 hover:text-foreground hover:bg-muted transition disabled:opacity-40"
+                        title="Move later"
+                        aria-label={`Move ${block.title} later`}
+                      >
+                        <ChevronDown size={14} />
+                      </button>
                       {block.trackCompletion && (
                         <button
                           onClick={() => toggleDone(block)}
@@ -290,7 +355,14 @@ export default function RoutineList() {
                     </div>
                   </div>
 
-                  <div className={`text-sm font-semibold ${current ? 'text-emerald-400' : done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                  <div className="flex items-center gap-2 text-sm font-semibold ${current ? 'text-emerald-400' : done ? 'text-muted-foreground line-through' : 'text-foreground'}">
+                    {block.color && (
+                      <span
+                        className="inline-block h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: block.color }}
+                        aria-hidden="true"
+                      />
+                    )}
                     {block.title}
                     {current && <span className="ml-2 text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">NOW</span>}
                     {done && <span className="ml-2 text-[10px] bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full">DONE</span>}
@@ -300,6 +372,11 @@ export default function RoutineList() {
                     {block.category && (
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${catColor}`}>
                         {block.category}
+                      </span>
+                    )}
+                    {block.energyLevel && (
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${BLOCK_ENERGY_STYLES[block.energyLevel]}`}>
+                        {BLOCK_ENERGY_LABELS[block.energyLevel]}
                       </span>
                     )}
                     {conflict && (
@@ -328,6 +405,34 @@ export default function RoutineList() {
             <Input label="Start" type="time" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
             <Input label="End" type="time" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
           </div>
+          <Textarea
+            label="Description"
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+            placeholder="What is this block about?"
+            rows={2}
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Energy level"
+              value={editEnergy}
+              onChange={(e) => setEditEnergy(e.target.value as 'HIGH' | 'MEDIUM' | 'LOW' | '')}
+              options={[
+                { value: '', label: 'Default energy' },
+                { value: 'HIGH', label: 'High' },
+                { value: 'MEDIUM', label: 'Medium' },
+                { value: 'LOW', label: 'Low' },
+              ]}
+            />
+            <div className="flex items-end pb-1">
+              <Switch checked={editTrack} onChange={setEditTrack} label="Track completion" />
+            </div>
+          </div>
+          <ColorPicker
+            label="Color"
+            value={editColor || '#64748b'}
+            onChange={setEditColor}
+          />
           {editError && <p role="alert" className="text-sm text-red-400">{editError}</p>}
           <div className="flex justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => setEditing(null)} disabled={editSaving}>Cancel</Button>

@@ -215,6 +215,8 @@ export interface HabitEligibility {
   isEligible: boolean;
   reason?: HabitEligibilityReason;
   override?: HabitOverride;
+  /** How the habit landed on a given day: by its schedule or added manually. */
+  source?: 'SCHEDULED' | 'MANUAL';
 }
 
 export enum HabitEligibilityReason {
@@ -320,6 +322,8 @@ export interface TodayHabit {
   } | null;
   isEligible: boolean;
   eligibilityReason?: HabitEligibilityReason;
+  /** 'SCHEDULED' for frequency-scheduled habits, 'MANUAL' for ad-hoc additions today. */
+  source?: 'SCHEDULED' | 'MANUAL';
 }
 
 export interface TodayHabitsByTier {

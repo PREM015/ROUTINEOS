@@ -127,8 +127,8 @@ export const APP_CONFIG = {
   },
   
   session: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-    updateAge: 24 * 60 * 60, // Update session every 24 hours
+    maxAge: 6 * 60 * 60, // 6 hours in seconds — absolute expiry from login
+    updateAge: 0, // rolling refresh is disabled; expiry is fixed at login time
     autoLogoutIdleMinutes: parseInt(
       process.env.NEXT_PUBLIC_AUTO_LOGOUT_IDLE_MINUTES || '30',
       10

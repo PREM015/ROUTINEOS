@@ -145,8 +145,8 @@ export async function streakAnalytics(userId: string, range: DateRange): Promise
 
   return {
     current: {
-      total: current,
-      core: current,
+      total: streak?.currentStreak ?? current,
+      core: streak?.coreStreak ?? longestCore,
       growth: streak?.growthStreak ?? longestGrowth,
       minimum: streak?.minimumDayStreak ?? longestMinimum,
     },

@@ -17,7 +17,21 @@ import BestDayCard from '@/components/recap/BestDayCard';
 import MilestoneCard, { type Milestone } from '@/components/recap/MilestoneCard';
 import ShareRecapCard, { type ShareStat } from '@/components/recap/ShareRecapCard';
 import TrendCard from '@/components/recap/TrendCard';
+import HabitHeatmapCard from '@/components/recap/HabitHeatmapCard';
+import SleepTrendCard from '@/components/recap/SleepTrendCard';
+import MoodEnergyCard from '@/components/recap/MoodEnergyCard';
+import FocusBreakdownCard from '@/components/recap/FocusBreakdownCard';
+import GoalsProgressCard from '@/components/recap/GoalsProgressCard';
+import TaskThroughputCard from '@/components/recap/TaskThroughputCard';
+import NutritionHealthCard from '@/components/recap/NutritionHealthCard';
+import StreakMilestonesCard from '@/components/recap/StreakMilestonesCard';
+import LinkedReviewCard from '@/components/recap/LinkedReviewCard';
+import JournalCard from '@/components/recap/JournalCard';
+import RoutineExceptionsCard from '@/components/recap/RoutineExceptionsCard';
+import MilestoneHitsCard from '@/components/recap/MilestoneHitsCard';
+import ReflectionNarrativesCard from '@/components/recap/ReflectionNarrativesCard';
 import type { RecapReport } from '@/types/recap';
+import type { RecapExtras } from '@/types/recap';
 
 /**
  * Recap page — real data only.
@@ -121,6 +135,7 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
       <div className="space-y-6">
         <DailyRecap day={report.day} />
         <Highlights period={period} report={report} />
+        {report.extras && <ExtrasGrid extras={report.extras} />}
         <ShareRecapCard periodLabel="Today" stats={dayShareStats(report.day)} />
       </div>
     );
@@ -156,6 +171,7 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
           )}
           <MilestoneCard milestones={weekMilestones(report.week)} />
         </div>
+        {report.extras && <ExtrasGrid extras={report.extras} />}
         <Highlights period={period} report={report} />
         <ShareRecapCard periodLabel={report.label} stats={weekShareStats(report.week)} />
       </div>
@@ -191,6 +207,7 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
           )}
           <MilestoneCard milestones={monthMilestones(report.month)} />
         </div>
+        {report.extras && <ExtrasGrid extras={report.extras} />}
         <Highlights period={period} report={report} />
         <ShareRecapCard periodLabel={report.label} stats={monthShareStats(report.month)} />
       </div>
@@ -223,6 +240,7 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
           )}
           <MilestoneCard milestones={yearMilestones(report.year)} />
         </div>
+        {report.extras && <ExtrasGrid extras={report.extras} />}
         <Highlights period={period} report={report} />
         <ShareRecapCard periodLabel={report.label} stats={yearShareStats(report.year)} />
       </div>
@@ -233,6 +251,31 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
 }
 
 /* ── Real share stats (never fabricated; 0 superseded by '—' markers) ─────── */
+
+/**
+ * Extras grid — the per-period enrichment cards. Every card renders its own
+ * empty state from the real data it receives; sections with no rows stay
+ * placeholders instead of showing fabricated numbers.
+ */
+function ExtrasGrid({ extras }: { extras: RecapExtras }) {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <HabitHeatmapCard habitHeatmap={extras.habitHeatmap} />
+      <SleepTrendCard sleepTrend={extras.sleepTrend} />
+      <MoodEnergyCard moodEnergy={extras.moodEnergy} />
+      <FocusBreakdownCard focusByCategory={extras.focusByCategory} />
+      <GoalsProgressCard goalsDelta={extras.goalsDelta} />
+      <TaskThroughputCard taskThroughput={extras.taskThroughput} />
+      <NutritionHealthCard nutrition={extras.nutrition} health={extras.health} />
+      <StreakMilestonesCard streakEvents={extras.streakEvents} achievements={extras.achievements} />
+      <JournalCard journal={extras.journal} />
+      <RoutineExceptionsCard exceptions={extras.routineExceptions} />
+      <MilestoneHitsCard milestones={extras.milestoneHits} />
+      <ReflectionNarrativesCard reflections={extras.reflections} />
+      {extras.linkedReview && <LinkedReviewCard linkedReview={extras.linkedReview} />}
+    </div>
+  );
+}
 
 function dayShareStats(day: NonNullable<RecapReport['day']>): ShareStat[] {
   return [

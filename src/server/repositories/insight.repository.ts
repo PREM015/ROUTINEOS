@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 export class InsightRepository {
   async findLatestByUser(userId: string, limit = 5) {
@@ -6,6 +7,13 @@ export class InsightRepository {
       where: { userId },
       orderBy: { generatedAt: 'desc' },
       take: limit,
+    });
+  }
+
+  /** Delete an insight only when it belongs to the user. Returns null on miss. */
+  async deleteOwned(userId: string, id: string) {
+    return prisma.aIInsight.deleteMany({
+      where: { id, userId },
     });
   }
 
@@ -19,10 +27,9 @@ export class InsightRepository {
     });
   }
 
-  async create(data: any) {
+  async create(data: Prisma.AIInsightUncheckedCreateInput) {
     return prisma.aIInsight.create({ data });
   }
-
   async markRead(id: string) {
     return prisma.aIInsight.update({
       where: { id },

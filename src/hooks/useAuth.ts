@@ -15,7 +15,7 @@ export function useAuth() {
   const sessionChecked = useAuthStore((state) => state.sessionChecked);
   const error = useAuthStore((state) => state.error);
   const isAuthenticated = useAuthStore((state) => state.status === 'authenticated');
-  const isLoading = useAuthStore((state) => state.status === 'loading');
+  const isLoading = useAuthStore((state) => state.status === 'loading' || state.status === 'idle');
 
   const actions = useAuthStore(
     useShallow((state) => ({

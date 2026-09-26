@@ -1,8 +1,25 @@
 'use client';
 import React, { useState } from 'react';
-import { DailyReflection, ReflectionFormData } from '@/types/analytics';
 import { EnergySelector } from './EnergySelector';
 import { MoodSelector } from './MoodSelector';
+
+export interface DailyReflection {
+  energy?: number | null;
+  mood?: number | null;
+  biggestWin?: string | null;
+  biggestDifficulty?: string | null;
+  lessonsLearned?: string | null;
+  gratitude?: string | null;
+}
+
+export interface ReflectionFormData {
+  energyLevel: number;
+  moodLevel: number;
+  biggestWin: string;
+  biggestDifficulty: string;
+  lessonsLearned: string;
+  gratitude: string;
+}
 
 interface ReflectionFormProps {
   reflection?: DailyReflection | null;

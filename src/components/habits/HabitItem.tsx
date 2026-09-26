@@ -13,9 +13,11 @@ interface HabitItemProps {
   date: string;
   onToggle: (habitId: string, isCompleted: boolean) => void;
   onSkip: (habitId: string) => void;
+  onEdit?: (habit: HabitWithLog) => void;
+  onChanged?: () => void | Promise<void>;
 }
 
-export default function HabitItem({ habit, date, onToggle, onSkip }: HabitItemProps) {
+export default function HabitItem({ habit, date, onToggle, onSkip, onEdit, onChanged }: HabitItemProps) {
   const log = habit.logs?.find(l => l.date === date);
   const isCompleted = log?.status === 'COMPLETED';
   
@@ -61,7 +63,12 @@ export default function HabitItem({ habit, date, onToggle, onSkip }: HabitItemPr
             <span>{streak}</span>
           </div>
         )}
-        <HabitQuickActions habit={habit} onSkip={() => onSkip(habit.id)} />
+        <HabitQuickActions
+          habit={habit}
+          onSkip={() => onSkip(habit.id)}
+          onEdit={onEdit ? () => onEdit(habit) : undefined}
+          onChanged={onChanged}
+        />
       </div>
     </div>
   );

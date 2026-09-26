@@ -181,6 +181,12 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
       const completed = logs.filter(log => log.status === 'COMPLETED').length;
       const missed = logs.filter(log => log.status === 'MISSED').length;
       const skipped = logs.filter(log => log.status === 'SKIPPED').length;
+      // Oversight/override-aware scheduling: SKIPPED and NOT_APPLICABLE days
+      // are intentional non-performances — they must not count against the
+      // scheduled (denominator) total.
+      const scheduled = logs.filter(
+        log => log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE'
+      ).length;
       return {
         habitId: habit.id,
         habitName: habit.name,
@@ -188,8 +194,8 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
         completed,
         missed,
         skipped,
-        scheduled: logs.length,
-        completionRate: logs.length > 0 ? round((completed / logs.length) * 100) : 0,
+        scheduled,
+        completionRate: scheduled > 0 ? round((completed / scheduled) * 100) : 0,
       };
     })
   );

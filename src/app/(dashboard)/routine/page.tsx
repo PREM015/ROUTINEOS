@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CalendarRange, Plus } from 'lucide-react';
 import RoutineList from '@/components/routine/RoutineList';
 import AddRoutineBlockModal from '@/components/routine/AddRoutineBlockModal';
+import RoutineScheduleDebug from '@/components/routine/RoutineScheduleDebug';
 import { useApp } from '@/context/AppContext';
 import { Button } from '@/components/ui';
 
@@ -54,6 +55,10 @@ export default function RoutinePage() {
       </div>
 
       <AddRoutineBlockModal open={modalOpen} onClose={() => setModalOpen(false)} defaultDayType={selectedRoutineTab} />
+
+      <div className="mt-8">
+        <RoutineScheduleDebug />
+      </div>
     </div>
   );
 }

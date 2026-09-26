@@ -1,4 +1,6 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma, HabitLog } from '@prisma/client';
+import { format, parseISO, subDays } from 'date-fns';
+import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import type { HabitWithRelations, CreateHabitInput, UpdateHabitInput, LogHabitInput } from '@/types/habit';
@@ -161,7 +163,7 @@ export class HabitService {
     userId: string,
     input: LogHabitInput
   ): Promise<{
-    log: any;
+    log: HabitLog;
     streakUpdated: boolean;
     newStreak?: number;
   }> {
@@ -313,6 +315,142 @@ export class HabitService {
     await this.habitRepository.prisma.habitOverride.deleteMany({
       where: { habitId, type: 'PAUSE' },
     });
+  }
+
+  /**
+   * Aggregate habit health across the user's active habits over a recent
+   * window. Real data only: completion rate is completed / (completed +
+   * missed + skipped) within the window, classified into healthy / at-risk /
+   * unhealthy. Habits with no logs in the window report "no data".
+   */
+  async getHabitHealth(userId: string, windowDays = 28) {
+    const endDate = getTodayString(DEFAULT_TZ);
+    const startDate = format(subDays(parseISO(endDate), windowDays - 1), 'yyyy-MM-dd');
+
+    const [habits, logs] = await Promise.all([
+      this.habitRepository.findAll(userId, { status: 'ACTIVE' }),
+      this.habitRepository.findLogsByUserRange(userId, startDate, endDate),
+    ]);
+
+    const logsByHabit = new Map<string, HabitLog[]>();
+    for (const log of logs) {
+      const list = logsByHabit.get(log.habitId) ?? [];
+      list.push(log);
+      logsByHabit.set(log.habitId, list);
+    }
+
+    const rows = habits.map((habit) => {
+      const habitLogs = logsByHabit.get(habit.id) ?? [];
+      const completedCount = habitLogs.filter(l => l.status === 'COMPLETED').length;
+      const missedCount = habitLogs.filter(l => l.status === 'MISSED').length;
+      const skippedCount = habitLogs.filter(l => l.status === 'SKIPPED').length;
+      const dueCount = completedCount + missedCount + skippedCount;
+      const completionRate =
+        dueCount > 0 ? Math.round((completedCount / dueCount) * 100) : null;
+
+      let health: 'HEALTHY' | 'AT_RISK' | 'UNHEALTHY' | 'NO_DATA' = 'NO_DATA';
+      if (completionRate !== null) {
+        health = completionRate >= 75 ? 'HEALTHY' : completionRate >= 40 ? 'AT_RISK' : 'UNHEALTHY';
+      }
+
+      return {
+        habitId: habit.id,
+        name: habit.name,
+        tier: habit.tier,
+        status: habit.status,
+        color: habit.color,
+        icon: habit.icon,
+        currentStreak: habit.streakCount,
+        longestStreak: habit.longestStreak,
+        completedCount,
+        missedCount,
+        skippedCount,
+        dueCount,
+        completionRate,
+        health,
+      };
+    });
+
+    const rated = rows.filter(r => r.completionRate !== null);
+    const overallCompletionRate =
+      rated.length > 0
+        ? Math.round(
+            rated.reduce((sum, r) => sum + (r.completionRate as number), 0) /
+              rated.length
+          )
+        : null;
+
+    return {
+      window: { startDate, endDate, days: windowDays },
+      summary: {
+        totalActive: rows.length,
+        withDataCount: rated.length,
+        healthyCount: rows.filter(r => r.health === 'HEALTHY').length,
+        atRiskCount: rows.filter(r => r.health === 'AT_RISK').length,
+        unhealthyCount: rows.filter(r => r.health === 'UNHEALTHY').length,
+        overallCompletionRate,
+      },
+      habits: rows,
+    };
+  }
+
+  /**
+   * Add a habit to a specific date manually (ad-hoc inclusion). Persists a
+   * RESCHEDULE override scoped to that date so the habit surfaces in today's
+   * list even though it isn't scheduled by frequency.
+   */
+  async addHabitToToday(
+    userId: string,
+    habitId: string,
+    date: string
+  ): Promise<void> {
+    // Verify ownership + active status
+    const habit = await this.habitRepository.findById(habitId, userId);
+    if (!habit) {
+      throw new Error('Habit not found');
+    }
+    if (habit.status !== 'ACTIVE') {
+      throw new Error('Only active habits can be added to today');
+    }
+
+    const existing = await this.habitRepository.findActiveOverrides(habitId, userId, date);
+    const alreadyAdded = existing.some(
+      o =>
+        o.type === 'RESCHEDULE' &&
+        o.startDate <= date &&
+        (o.endDate === null || o.endDate === undefined || o.endDate >= date)
+    );
+    if (alreadyAdded) return;
+
+    await this.habitRepository.createOverride({
+      habit: { connect: { id: habitId } },
+      user: { connect: { id: userId } },
+      type: 'RESCHEDULE',
+      startDate: date,
+      endDate: date,
+      reason: 'Added to today manually',
+    } as Prisma.HabitOverrideCreateInput);
+  }
+
+  /**
+   * Remove a manual ad-hoc inclusion for a date. Only clears the RESCHEDULE
+   * override that added the habit; the habit itself is untouched.
+   */
+  async removeHabitFromToday(
+    userId: string,
+    habitId: string,
+    date: string
+  ): Promise<void> {
+    const existing = await this.habitRepository.findActiveOverrides(habitId, userId, date);
+    const manual = existing.filter(
+      o =>
+        o.type === 'RESCHEDULE' &&
+        o.startDate <= date &&
+        (o.endDate === null || o.endDate === undefined || o.endDate >= date)
+    );
+    for (const override of manual) {
+      await this.habitRepository.deleteOverride(override.id, userId);
+    }
   }
 
   /**

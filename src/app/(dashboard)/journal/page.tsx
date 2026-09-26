@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Tag } from '@prisma/client';
 import {
+  ArrowRight,
   BookOpen,
   History,
   Pencil,
   Plus,
   RotateCcw,
+  Sparkles,
   Trash2,
   X,
 } from 'lucide-react';
@@ -20,6 +22,7 @@ import JournalList from '@/components/journal/JournalList';
 import JournalEditor from '@/components/journal/JournalEditor';
 import JournalVersionHistory from '@/components/journal/JournalVersionHistory';
 import { formatDate } from '@/lib/utils';
+import { getTodayString } from '@/lib/dates';
 
 function toDateKey(date: Date | string): string {
   return new Date(date).toISOString().slice(0, 10);
@@ -55,6 +58,7 @@ export default function JournalPage() {
   const [tagFilter, setTagFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [hasTodayReflection, setHasTodayReflection] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -78,6 +82,16 @@ export default function JournalPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
+    void (async () => {
+      try {
+        const reflection = await apiRequest<unknown | null>('/api/reflections', {
+          query: { date: getTodayString() },
+        });
+        setHasTodayReflection(reflection !== null && reflection !== undefined);
+      } catch {
+        setHasTodayReflection(false);
+      }
+    })();
   }, [load]);
 
   const moodByDate = useMemo(() => {
@@ -236,6 +250,27 @@ export default function JournalPage() {
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
           <div className="space-y-6">
+            <Card className="h-fit p-5">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Daily reflection
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {hasTodayReflection === null
+                  ? 'Checking today\u2019s reflection\u2026'
+                  : hasTodayReflection
+                    ? 'You already reflected today. Catch up on tonight\u2019s prompts or add more below.'
+                    : 'You haven\u2019t reflected today yet. Three short prompts take under a minute.'}
+              </p>
+              <Button
+                className="mt-3"
+                onClick={() => router.push('/today')}
+              >
+                {hasTodayReflection ? 'Open today\u2019s reflection' : 'Take today\u2019s reflection'}
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </Button>
+            </Card>
+
             <Card className="h-fit p-5">
               <JournalCalendar
                 moodByDate={moodByDate}

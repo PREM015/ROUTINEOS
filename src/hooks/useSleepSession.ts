@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 
 /**
  * useSleepSession
@@ -8,6 +8,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * every 15s (plus on tab focus/visibility), which lazily resolves prompts server-side.
  * Exposes start / stop / respond actions and flags long-running sessions (>16h) so the
  * UI can require a confirmation before stopping.
+ *
+ * The poll loop and the resolved state live in a module-level singleton rather
+ * than in the hook body. Several components mount this hook at once
+ * (`SleepPromptHost` in the dashboard layout, `TodaySleep` on /today, the
+ * /focus page), and per-instance copies of the state drifted apart: a prompt
+ * dismissed by one copy stayed visible in another, which then POSTed
+ * `/api/sleep/session/respond` for a prompt that no longer existed. One shared
+ * poller means every consumer renders from the same snapshot and can only
+ * respond to a prompt that is genuinely still pending.
  */
 
 export interface SleepLogView {
@@ -48,18 +57,41 @@ export type SleepSessionAction = 'start' | 'stop' | 'respond';
 const POLL_MS = 15_000;
 export const LONG_SESSION_MS = 16 * 60 * 60 * 1000;
 
-export function useSleepSession() {
-  const [state, setState] = useState<SleepStateView | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<SleepSessionAction | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const stateRef = useRef<SleepStateView | null>(null);
+interface SharedSleepSessionStore {
+  state: SleepStateView | null;
+  loading: boolean;
+  busy: SleepSessionAction | null;
+  error: string | null;
+}
 
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
+let store: SharedSleepSessionStore = {
+  state: null,
+  loading: true,
+  busy: null,
+  error: null,
+};
 
-  const refresh = useCallback(async (): Promise<void> => {
+const listeners = new Set<() => void>();
+let pollTimer: number | null = null;
+let refCount = 0;
+/** Detaches the focus/visibility listeners installed by `startPolling`. */
+let pollCleanup: (() => void) | null = null;
+/** Guards against overlapping refreshes from the interval + focus handlers. */
+let refreshInflight: Promise<void> | null = null;
+
+function emit(next: Partial<SharedSleepSessionStore>): void {
+  store = { ...store, ...next };
+  for (const listener of listeners) listener();
+}
+
+function getServerSnapshot(): SharedSleepSessionStore {
+  return store;
+}
+
+async function refresh(): Promise<void> {
+  if (refreshInflight) return refreshInflight;
+
+  refreshInflight = (async () => {
     try {
       const res = await fetch('/api/sleep/session', { credentials: 'include' });
       const json: unknown = await res.json().catch(() => null);
@@ -68,110 +100,138 @@ export function useSleepSession() {
         typeof json === 'object' &&
         (json as { success?: unknown }).success === true
       ) {
-        setState((json as { data: SleepStateView }).data);
-        setError(null);
+        emit({ state: (json as { data: SleepStateView }).data, error: null });
       }
     } catch {
       // keep the last known state; the next poll retries
+    } finally {
+      emit({ loading: false });
+      refreshInflight = null;
     }
-  }, []);
+  })();
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        await refresh();
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    void load();
+  return refreshInflight;
+}
 
-    const poll = window.setInterval(() => void refresh(), POLL_MS);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') void refresh();
-    };
-    window.addEventListener('focus', onVisible);
-    document.addEventListener('visibilitychange', onVisible);
+function startPolling(): void {
+  if (pollTimer !== null) return;
 
-    return () => {
-      cancelled = true;
-      window.clearInterval(poll);
-      window.removeEventListener('focus', onVisible);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [refresh]);
+  void refresh();
+  pollTimer = window.setInterval(() => void refresh(), POLL_MS);
 
-  const run = useCallback(
-    async (
-      action: SleepSessionAction,
-      path: string,
-      body?: {
-        promptId: string;
-        answer: 'YES' | 'NOT_YET';
-      }
-    ): Promise<boolean> => {
-      setBusy(action);
-      setError(null);
-      try {
-        const res = await fetch(path, {
-          method: 'POST',
-          credentials: 'include',
-          headers: body ? { 'Content-Type': 'application/json' } : undefined,
-          body: body ? JSON.stringify(body) : undefined,
-        });
-        const json: unknown = await res.json().catch(() => null);
-        const ok =
-          res.ok &&
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') void refresh();
+  };
+  window.addEventListener('focus', onVisible);
+  document.addEventListener('visibilitychange', onVisible);
+  pollCleanup = () => {
+    window.removeEventListener('focus', onVisible);
+    document.removeEventListener('visibilitychange', onVisible);
+  };
+}
+
+function stopPolling(): void {
+  if (pollTimer !== null) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  pollCleanup?.();
+  pollCleanup = null;
+}
+
+/**
+ * Runs a sleep-session mutation and re-syncs state afterwards.
+ * A resolved prompt is a successful no-op, not an error.
+ */
+async function run(
+  action: SleepSessionAction,
+  path: string,
+  body?: { promptId: string; answer: 'YES' | 'NOT_YET' }
+): Promise<boolean> {
+  emit({ busy: action, error: null });
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const json: unknown = await res.json().catch(() => null);
+    const ok =
+      res.ok &&
+      json &&
+      typeof json === 'object' &&
+      (json as { success?: unknown }).success === true;
+    if (!ok) {
+      emit({
+        error:
           json &&
           typeof json === 'object' &&
-          (json as { success?: unknown }).success === true;
-        if (!ok) {
-          setError(
-            json &&
-              typeof json === 'object' &&
-              typeof (json as { error?: unknown }).error === 'string'
-              ? (json as { error: string }).error
-              : 'Something went wrong.'
-          );
-        }
-        await refresh();
-        return Boolean(ok);
-      } catch {
-        setError('Network error. Please try again.');
-        return false;
-      } finally {
-        setBusy(null);
-      }
-    },
-    [refresh]
-  );
-
-  const start = useCallback(() => run('start', '/api/sleep/session/start'), [run]);
-  const stop = useCallback(() => run('stop', '/api/sleep/session/stop'), [run]);
-  const respond = useCallback(
-    (answer: 'YES' | 'NOT_YET') => {
-      const prompt = stateRef.current?.prompt;
-      if (!prompt) return Promise.resolve(false);
-      return run('respond', '/api/sleep/session/respond', {
-        promptId: prompt.id,
-        answer,
+          typeof (json as { error?: unknown }).error === 'string'
+            ? (json as { error: string }).error
+            : 'Something went wrong.',
       });
-    },
-    [run]
+    }
+    await refresh();
+    return Boolean(ok);
+  } catch {
+    emit({ error: 'Network error. Please try again.' });
+    return false;
+  } finally {
+    emit({ busy: null });
+  }
+}
+
+export function useSleepSession() {
+  const snapshot = useSyncExternalStore(
+    useCallback((listener: () => void) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    }, []),
+    getServerSnapshot,
+    getServerSnapshot
   );
 
-  const activeAt = state?.active?.startedAt
-    ? Date.parse(state.active.startedAt)
+  const stateRef = useRef<SleepStateView | null>(snapshot.state);
+  stateRef.current = snapshot.state;
+
+  useEffect(() => {
+    refCount += 1;
+    if (refCount === 1) startPolling();
+    return () => {
+      refCount -= 1;
+      if (refCount === 0) stopPolling();
+    };
+  }, []);
+
+  const start = useCallback(() => run('start', '/api/sleep/session/start'), []);
+  const stop = useCallback(() => run('stop', '/api/sleep/session/stop'), []);
+
+  /**
+   * Answer a pending prompt. No-ops unless a prompt is still pending in the
+   * shared snapshot, so a stale render can never fire a request for a prompt
+   * that has already been dismissed or auto-started.
+   */
+  const respond = useCallback((answer: 'YES' | 'NOT_YET') => {
+    const prompt = stateRef.current?.prompt;
+    if (!prompt) return Promise.resolve(false);
+    return run('respond', '/api/sleep/session/respond', {
+      promptId: prompt.id,
+      answer,
+    });
+  }, []);
+
+  const activeAt = snapshot.state?.active?.startedAt
+    ? Date.parse(snapshot.state.active.startedAt)
     : null;
   const longRunning =
     activeAt !== null && Date.now() - activeAt > LONG_SESSION_MS;
 
   return {
-    state,
-    loading,
-    busy,
-    error,
+    state: snapshot.state,
+    loading: snapshot.loading,
+    busy: snapshot.busy,
+    error: snapshot.error,
     refresh,
     start,
     stop,

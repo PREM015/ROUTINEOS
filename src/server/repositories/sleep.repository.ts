@@ -53,14 +53,19 @@ export class SleepRepository extends BaseRepository {
     data: Omit<Prisma.SleepLogCreateInput, 'userId' | 'date'>
   ): Promise<SleepLog> {
     try {
+      // `data` already carries the owning `user` relation. Injecting the
+      // scalar `userId` alongside it makes Prisma reject the whole create
+      // ("Unknown argument `userId`. Did you mean `user`?"), so only `date`
+      // is filled in here.
+      const { user: _owner, ...scaledFields } = data;
       return await this.prisma.sleepLog.upsert({
         where: { userId_date: { userId, date } },
         create: {
-          userId,
+          ...scaledFields,
           date,
-          ...data,
-        } as Prisma.SleepLogCreateInput,
-        update: data,
+          user: _owner ?? { connect: { id: userId } },
+        },
+        update: scaledFields,
       });
     } catch (error) {
       this.handleError(error, 'upsertLog');

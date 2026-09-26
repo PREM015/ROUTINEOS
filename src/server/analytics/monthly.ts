@@ -173,7 +173,13 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
     totalMissed += missed;
     totalSkipped += skipped;
 
-    const completionRate = logs.length > 0 ? (completed / logs.length) * 100 : 0;
+    // Oversight/override-aware scheduling: SKIPPED and NOT_APPLICABLE days are
+    // intentional non-performances — they must not count against the
+    // scheduled (denominator) total.
+    const scheduled = logs.filter(
+      log => log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE'
+    ).length;
+    const completionRate = scheduled > 0 ? (completed / scheduled) * 100 : 0;
     const tierBucket = tierStats.get(habit.tier) ?? { count: 0, completionRate: 0 };
     tierBucket.count++;
     tierBucket.completionRate += completionRate;
@@ -181,8 +187,11 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
 
     const weeklyRates = weeks.map(week => {
       const weekLogs = logs.filter(log => log.date >= week.start && log.date <= week.end);
-      return weekLogs.length > 0
-        ? round((weekLogs.filter(log => log.status === 'COMPLETED').length / weekLogs.length) * 100)
+      const weekScheduled = weekLogs.filter(
+        log => log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE'
+      ).length;
+      return weekScheduled > 0
+        ? round((weekLogs.filter(log => log.status === 'COMPLETED').length / weekScheduled) * 100)
         : null;
     });
 

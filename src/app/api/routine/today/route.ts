@@ -1,6 +1,8 @@
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { db } from '@/lib/db';
+import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { UserRepository } from '@/server/repositories/user.repository';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -16,7 +18,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || new Date().toISOString().slice(0, 10);
+    const date =
+      searchParams.get('date') ||
+      getTodayString((await new UserRepository().getSettings(session.user.id))?.timezone || DEFAULT_TZ);
 
     const routineService = new RoutineService();
     const routine = await routineService.getRoutineForDate(session.user.id, date);

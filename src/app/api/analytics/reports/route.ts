@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth';
-import { weeklySummary } from '@/server/analytics/weekly';
-import { monthlySummary } from '@/server/analytics/monthly';
+import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -12,6 +11,7 @@ const reportsQuerySchema = z.object({
 /**
  * GET /api/analytics/reports
  * Weekly (Monday, YYYY-MM-DD) or monthly (YYYY-MM) summary report.
+ * Delegates to AnalyticsService.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -49,10 +49,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data =
-      type === 'monthly'
-        ? await monthlySummary(session.user.id, date)
-        : await weeklySummary(session.user.id, date);
+    const data = await analyticsService.getReport(session.user.id, type, date);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

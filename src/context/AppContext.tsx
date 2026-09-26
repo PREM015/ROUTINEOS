@@ -59,6 +59,7 @@ export interface RoutineBlock {
   sortOrder: number;
   trackCompletion: boolean;
   overlapWarning?: boolean;
+  energyLevel?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
 export interface Goal {
@@ -240,6 +241,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     name?: string; description?: string | null; category?: string | { name?: string } | null;
     color?: string | null; icon?: string | null; sortOrder?: number | null;
     trackCompletion?: boolean | null; overlapWarning?: boolean;
+    energyLevel?: string | null;
     template?: { dayType?: string } | null;
   }): RoutineBlock => ({
     id: raw.id,
@@ -259,6 +261,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     sortOrder: Number(raw.sortOrder ?? 0),
     trackCompletion: raw.trackCompletion ?? true,
     overlapWarning: raw.overlapWarning,
+    energyLevel: raw.energyLevel === 'HIGH' || raw.energyLevel === 'MEDIUM' || raw.energyLevel === 'LOW'
+      ? raw.energyLevel
+      : undefined,
   }), []);
 
   const fetchAll = useCallback(async () => {

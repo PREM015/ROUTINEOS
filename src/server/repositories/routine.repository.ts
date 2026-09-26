@@ -256,7 +256,7 @@ export class RoutineRepository extends BaseRepository {
     userId: string,
     startDate: string,
     endDate: string
-  ): Promise<RoutineException[]> {
+  ): Promise<Prisma.RoutineExceptionGetPayload<{ include: { template: true } }>[]> {
     try {
       return await this.prisma.routineException.findMany({
         where: {
@@ -353,7 +353,21 @@ export class RoutineRepository extends BaseRepository {
     userId: string,
     startDate: string,
     endDate: string
-  ): Promise<RoutineLog[]> {
+  ): Promise<
+    Prisma.RoutineLogGetPayload<{
+      include: {
+        routineBlock: {
+          select: {
+            id: true;
+            title: true;
+            startTime: true;
+            endTime: true;
+            category: true;
+          };
+        };
+      };
+    }>[]
+  > {
     try {
       return await this.prisma.routineLog.findMany({
         where: {
@@ -374,7 +388,7 @@ export class RoutineRepository extends BaseRepository {
             },
           },
         },
-        orderBy: { date: 'asc', createdAt: 'asc' },
+        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
       });
     } catch (error) {
       this.handleError(error, 'findLogsByRange');

@@ -169,6 +169,43 @@ export class TaskRepository extends BaseRepository {
   }
 
   /**
+   * Task throughput for a date range: tasks created, completed, and still open
+   * within [startDate, endDate] (inclusive). Completion uses completedAt, so a
+   * task counts toward the period in which it was actually finished.
+   */
+  async getThroughput(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ created: number; completed: number; open: number }> {
+    try {
+      const [created, completed, open] = await Promise.all([
+        this.prisma.task.count({
+          where: {
+            userId,
+            createdAt: { gte: startDate, lte: endDate },
+          },
+        }),
+        this.prisma.task.count({
+          where: {
+            userId,
+            completedAt: { gte: startDate, lte: endDate },
+          },
+        }),
+        this.prisma.task.count({
+          where: {
+            userId,
+            status: { in: [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.WAITING] },
+          },
+        }),
+      ]);
+      return { created, completed, open };
+    } catch (error) {
+      this.handleError(error, 'getThroughput');
+    }
+  }
+
+  /**
    * Find a task with full relations
    */
   async findById(userId: string, taskId: string) {

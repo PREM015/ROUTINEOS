@@ -1,27 +1,18 @@
 import { auth } from '@/lib/auth';
-import { dailyBreakdown } from '@/server/analytics/daily';
-import { weeklySummary } from '@/server/analytics/weekly';
-import { monthlySummary } from '@/server/analytics/monthly';
-import { HabitRepository } from '@/server/repositories/habit.repository';
-import { GoalRepository } from '@/server/repositories/goal.repository';
+import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
-import { format, startOfWeek } from 'date-fns';
+import { z } from 'zod';
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function mondayIso(): string {
-  return format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-}
-
-function currentMonth(): string {
-  return format(new Date(), 'yyyy-MM');
-}
+const dashboardQuerySchema = z.object({
+  period: z.enum(['day', 'week', 'month', 'year']).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
 
 /**
  * GET /api/analytics/dashboard
- * Dashboard rollup for the day, current week, and current month.
+ * Period-scoped rollup (day / week / month / year) in the user's timezone,
+ * plus every bento widget dataset. All analytics logic lives in
+ * AnalyticsService so this handler stays thin.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -31,36 +22,23 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || todayIso();
-
-    const weekMonday = mondayIso();
-    const monthKey = currentMonth();
-
-    const [today, week, monthSummary, habitCounts, goalCounts] = await Promise.all([
-      dailyBreakdown(session.user.id, date),
-      weeklySummary(session.user.id, weekMonday),
-      monthlySummary(session.user.id, monthKey),
-      new HabitRepository().countByStatus(session.user.id),
-      new GoalRepository().countByStatus(session.user.id),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        date,
-        weekStart: weekMonday,
-        monthKey,
-        today,
-        week,
-        month: monthSummary,
-        // Alias for backwards compatibility with older clients.
-        monthly: monthSummary,
-        counts: {
-          habits: habitCounts,
-          goals: goalCounts,
-        },
-      },
+    const validated = dashboardQuerySchema.safeParse({
+      period: searchParams.get('period') ?? undefined,
+      date: searchParams.get('date') ?? undefined,
     });
+    if (!validated.success) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: validated.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const data = await analyticsService.getDashboard(session.user.id, {
+      period: validated.data.period,
+      date: validated.data.date,
+    });
+
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching dashboard analytics:', error);
     return NextResponse.json(
