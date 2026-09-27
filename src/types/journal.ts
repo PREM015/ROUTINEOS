@@ -2,7 +2,7 @@ import type {
   JournalEntry,
   JournalEntryTag,
   Tag,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Journaling & Reflection Types

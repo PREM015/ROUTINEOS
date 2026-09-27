@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 
 export async function getUpcomingBlocks(
   userId: string,
@@ -19,3 +19,4 @@ export function buildRoutineReminderMessage(blockName: string, startTime: string
     body: `Starts in ${minutesBefore} minutes at ${startTime}.`
   };
 }
+

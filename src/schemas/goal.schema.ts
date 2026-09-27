@@ -35,6 +35,8 @@ export const createGoalSchema = z.object({
       })
     )
     .optional(),
+  appliesEveryDay: z.boolean().optional(),
+  dayTypeIds: z.array(z.string().cuid()).optional(),
 });
 
 export const updateGoalSchema = createGoalSchema.partial();

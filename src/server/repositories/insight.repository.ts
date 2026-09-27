@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import type { Prisma } from '@prisma/client';
+import type { InsightPeriod, Prisma } from '@/generated/prisma';
 
 export class InsightRepository {
   async findLatestByUser(userId: string, limit = 5) {
@@ -30,6 +30,42 @@ export class InsightRepository {
   async create(data: Prisma.AIInsightUncheckedCreateInput) {
     return prisma.aIInsight.create({ data });
   }
+
+  /**
+   * Most recent insight for a user, optionally scoped to one period.
+   *
+   * `startDate`/`endDate` are YYYY-MM-DD calendar strings; the model's own
+   * startDate/endDate columns are strings, so they are matched directly.
+   */
+  async findLatest(
+    userId: string,
+    filter: { period?: InsightPeriod; startDate?: string; endDate?: string } = {}
+  ) {
+    return prisma.aIInsight.findFirst({
+      where: {
+        userId,
+        ...(filter.period && { period: filter.period }),
+        ...(filter.startDate && { startDate: filter.startDate }),
+        ...(filter.endDate && { endDate: filter.endDate }),
+      },
+      orderBy: { generatedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Insights for a user within a generation window, newest first.
+   */
+  async findHistory(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ) {
+    return prisma.aIInsight.findMany({
+      where: { userId, startDate: { gte: startDate }, endDate: { lte: endDate } },
+      orderBy: { generatedAt: 'desc' },
+    });
+  }
+
   async markRead(id: string) {
     return prisma.aIInsight.update({
       where: { id },
@@ -45,3 +81,4 @@ export class InsightRepository {
 }
 
 export const insightRepository = new InsightRepository();
+

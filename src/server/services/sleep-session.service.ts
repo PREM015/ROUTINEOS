@@ -5,7 +5,7 @@ import {
   type SleepLog,
   type SleepSession,
   type UserSettings,
-} from '@prisma/client';
+} from '@/generated/prisma';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { SleepSessionRepository } from '@/server/repositories/sleep-session.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';

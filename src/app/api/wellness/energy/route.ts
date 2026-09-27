@@ -1,10 +1,6 @@
 import { auth } from '@/lib/auth';
-import { MoodRepository } from '@/server/repositories/mood.repository';
+import { wellnessService } from '@/server/services/wellness.service';
 import { energyLogSchema, energyQuerySchema } from '@/schemas/wellness.schema';
-import {
-  analyzeEnergyPatterns,
-  type EnergyPoint,
-} from '@/lib/wellness/energy-patterns';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -12,31 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * GET  /api/wellness/energy – list energy check-ins, optionally returning an
  *                            energy-pattern analysis when `analyze=true`
  * POST /api/wellness/energy – log an energy check-in
- */
-
-function toDateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function defaultRange(): { startDate: string; endDate: string } {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 29);
-  return { startDate: toDateString(start), endDate: toDateString(end) };
-}
-
-function toEnergyPoint(log: { timestamp: Date; energyLevel: number }): EnergyPoint {
-  return {
-    date: log.timestamp.toISOString().slice(0, 10),
-    time: log.timestamp.toISOString().slice(11, 16),
-    energy: log.energyLevel,
-  };
-}
-
-/**
- * GET /api/wellness/energy
- * List energy check-ins over a date range. With `?analyze=true`, returns the
- * analyzeEnergyPatterns() result (peaks/troughs and high/low energy hours).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -62,40 +33,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const range = defaultRange();
-    const from = validated.data.from ?? range.startDate;
-    const to = validated.data.to ?? range.endDate;
+    const result = await wellnessService.getEnergyLogs(session.user.id, {
+      from: validated.data.from,
+      to: validated.data.to,
+      analyze: validated.data.analyze,
+      limit: validated.data.limit,
+      offset: validated.data.offset,
+    });
 
-    const moodRepository = new MoodRepository();
-
+    // Analysis mode returns the analysis as `data`; list mode returns the rows.
     if (validated.data.analyze) {
-      const logs = await moodRepository.getEnergyRange(session.user.id, from, to);
-      const analysis = analyzeEnergyPatterns(logs.map(toEnergyPoint));
       return NextResponse.json({
         success: true,
-        data: analysis,
-        meta: { startDate: from, endDate: to, sampleCount: logs.length },
+        data: result.analysis,
+        meta: result.meta,
       });
     }
 
-    const logs = await moodRepository.findEnergyByUserId(session.user.id, {
-      from,
-      to,
-      limit: validated.data.limit ?? 30,
-      offset: validated.data.offset ?? 0,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: logs,
-      meta: {
-        total: logs.length,
-        limit: validated.data.limit ?? 30,
-        offset: validated.data.offset ?? 0,
-        startDate: from,
-        endDate: to,
-      },
-    });
+    return NextResponse.json({ success: true, data: result.data, meta: result.meta });
   } catch (error) {
     console.error('Error fetching energy logs:', error);
     return NextResponse.json({ error: 'Failed to fetch energy logs' }, { status: 500 });
@@ -122,8 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const moodRepository = new MoodRepository();
-    const log = await moodRepository.logEnergy(session.user.id, validated.data);
+    const log = await wellnessService.logEnergy(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: log }, { status: 201 });
   } catch (error) {

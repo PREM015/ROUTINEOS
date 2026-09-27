@@ -1,5 +1,5 @@
-import { GoalStatus } from '@prisma/client';
-import type { Goal, GoalProgress, Milestone, Prisma, GoalType, GoalPriority } from '@prisma/client';
+﻿import { GoalStatus } from '@/generated/prisma';
+import type { Goal, GoalProgress, Milestone, Prisma, GoalType, GoalPriority } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -73,6 +73,7 @@ export class GoalRepository extends BaseRepository {
       sortOrder?: 'asc' | 'desc';
       limit?: number;
       offset?: number;
+      dayTypeId?: string;
     }
   ) {
     try {
@@ -126,6 +127,13 @@ export class GoalRepository extends BaseRepository {
         where.status = GoalStatus.ACTIVE;
       }
 
+      // Day type filter
+      if (options?.dayTypeId) {
+        where.dayTypeAssignments = {
+          some: { dayTypeId: options.dayTypeId },
+        };
+      }
+
       return await this.prisma.goal.findMany({
         where,
         include: {
@@ -146,6 +154,9 @@ export class GoalRepository extends BaseRepository {
                 },
               },
             },
+          },
+          dayTypeAssignments: {
+            include: { dayType: true },
           },
           milestones: {
             select: {
@@ -280,9 +291,168 @@ export class GoalRepository extends BaseRepository {
     }
   }
 
+  /**
+   * Find progress logs for a specific calendar date (YYYY-MM-DD) across all of
+   * the user's goals. `GoalProgress.date` is a DateTime, so the day is matched
+   * with a half-open UTC range rather than equality.
+   *
+   * Ordered newest-first, with `createdAt` as the tiebreak: every row in this
+   * result shares the same calendar date, so ordering by `date` alone leaves
+   * same-day rows in an unspecified order. Callers that keep only the first row
+   * per goal (e.g. "/api/goals/today" resolving a daily check-off) need that
+   * first row to genuinely be the most recent one.
+   */
+  async findProgressLogsByDate(
+    userId: string,
+    date: string
+  ): Promise<GoalProgress[]> {
+    try {
+      const start = new Date(`${date}T00:00:00.000Z`);
+      const end = new Date(`${date}T00:00:00.000Z`);
+      end.setUTCDate(end.getUTCDate() + 1);
+
+      return await this.prisma.goalProgress.findMany({
+        where: {
+          goal: { userId },
+          date: { gte: start, lt: end },
+        },
+        include: {
+          goal: {
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              targetValue: true,
+              currentValue: true,
+              unit: true,
+            },
+          },
+        },
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      });
+    } catch (error) {
+      this.handleError(error, 'findProgressLogsByDate');
+    }
+  }
+
+  // ============================================================================
+  // Goal <-> Tag
+  // ============================================================================
+
+  /**
+   * Attach tags to a goal.
+   */
+  async addTags(goalId: string, tagIds: string[]): Promise<void> {
+    if (tagIds.length === 0) return;
+    try {
+      await this.prisma.goalTag.createMany({
+        data: tagIds.map((tagId) => ({ goalId, tagId })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.handleError(error, 'addTags');
+    }
+  }
+
+  /**
+   * Detach every tag from a goal.
+   */
+  async clearTags(goalId: string): Promise<void> {
+    try {
+      await this.prisma.goalTag.deleteMany({ where: { goalId } });
+    } catch (error) {
+      this.handleError(error, 'clearTags');
+    }
+  }
+
+  // ============================================================================
+  // Goal <-> DayType
+  // ============================================================================
+
+  /**
+   * Assign a goal to a set of day-type definitions.
+   */
+  async addDayTypeAssignments(
+    goalId: string,
+    userId: string,
+    dayTypeIds: string[]
+  ): Promise<void> {
+    if (dayTypeIds.length === 0) return;
+    try {
+      await this.prisma.goalDayType.createMany({
+        data: dayTypeIds.map((dayTypeId) => ({ goalId, dayTypeId, userId })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.handleError(error, 'addDayTypeAssignments');
+    }
+  }
+
+  /**
+   * Remove every day-type assignment from a goal.
+   */
+  async clearDayTypeAssignments(goalId: string): Promise<void> {
+    try {
+      await this.prisma.goalDayType.deleteMany({ where: { goalId } });
+    } catch (error) {
+      this.handleError(error, 'clearDayTypeAssignments');
+    }
+  }
+
   // ============================================================================
   // Milestones
   // ============================================================================
+
+  /**
+   * Composable visibility primitives for goals.
+   *
+   * These are deliberately *thin* — they build the reusable `where` fragments
+   * that the visibility rule is composed from, without deciding the rule
+   * itself. The rule ("a goal is visible on a date when it is active, in the
+   * date window, and either applies every day or is assigned to the resolved
+   * day type") lives in `GoalService.getVisibleGoalsForDate`, so the business
+   * decision is testable without a database and is not duplicated per caller.
+   */
+  async findActiveInDateWindow(
+    userId: string,
+    start: Date,
+    end: Date
+  ): Promise<Goal[]> {
+    try {
+      return await this.prisma.goal.findMany({
+        where: {
+          userId,
+          status: GoalStatus.ACTIVE,
+          startDate: { lt: end },
+          endDate: { gte: start },
+        },
+        orderBy: [{ type: 'asc' }, { endDate: 'asc' }],
+      });
+    } catch (error) {
+      this.handleError(error, 'findActiveInDateWindow');
+    }
+  }
+
+  /**
+   * Active goals assigned to a specific day-type definition.
+   */
+  async findActiveByDayTypeId(
+    userId: string,
+    dayTypeId: string
+  ): Promise<Goal[]> {
+    try {
+      return await this.prisma.goal.findMany({
+        where: {
+          userId,
+          status: GoalStatus.ACTIVE,
+          dayTypeAssignments: { some: { dayTypeId } },
+        },
+        orderBy: [{ type: 'asc' }, { endDate: 'asc' }],
+      });
+    } catch (error) {
+      this.handleError(error, 'findActiveByDayTypeId');
+    }
+  }
 
   /**
    * Create milestone

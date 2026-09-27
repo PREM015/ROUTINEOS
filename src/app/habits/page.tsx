@@ -6,11 +6,14 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import AddHabitModal from '@/components/habits/AddHabitModal';
 import EditHabitModal from '@/components/habits/EditHabitModal';
 import { useApp, type Habit } from '@/context/AppContext';
-import { getFrequencyLabel } from '@/lib/scheduling';
+import { getFrequencyLabel } from '@/lib/habits/frequency';
+import type { DayTypeDefinition } from '@/types/routine';
 import { getTodayString } from '@/lib/dates';
-import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, CheckCircle2, Circle, Flame, TrendingUp } from 'lucide-react';
-import { Button, EmptyState } from '@/components/ui';
+import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, CheckCircle2, Circle, Flame, TrendingUp, Filter } from 'lucide-react';
+import { Button, EmptyState, Select } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { fetchWithAuth } from '@/lib/api-client';
+
 
 type TabType = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
 type TierType = 'GROWTH' | 'BONUS' | 'LIFESTYLE';
@@ -43,6 +46,9 @@ export default function HabitsPage() {
     getLogForDate, logHabit, selectedDate,
   } = useApp();
   const [tab, setTab] = useState<TabType>('ACTIVE');
+  const [dayTypeFilter, setDayTypeFilter] = useState<string | null>(null); // null = "All Days"
+  const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
+  const [dayTypesLoading, setDayTypesLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Habit | null>(null);
@@ -51,6 +57,27 @@ export default function HabitsPage() {
   const [healthData, setHealthData] = useState<HealthRow[]>([]);
 
   const today = selectedDate || getTodayString();
+
+  // Fetch day types on mount
+  useEffect(() => {
+    loadDayTypes();
+  }, []);
+
+  const loadDayTypes = async () => {
+    try {
+      setDayTypesLoading(true);
+      const res = await fetchWithAuth('/api/day-types');
+      if (res.ok) {
+        const json = await res.json();
+        const data: DayTypeDefinition[] = json.data || [];
+        setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
+      }
+    } catch (error) {
+      console.error('Failed to load day types:', error);
+    } finally {
+      setDayTypesLoading(false);
+    }
+  };
 
   const fetchHealth = useCallback(async () => {
     try {
@@ -93,10 +120,22 @@ export default function HabitsPage() {
     ARCHIVED: ['ARCHIVED', 'COMPLETED'],
   };
 
+  // Filter habits by day type: global habits (appliesEveryDay: true) + day-specific habits for selected day type
   const filteredHabits = useMemo(
-    () => habits.filter(h => statusMap[tab].includes(h.status)),
+    () => {
+      let filtered = habits.filter(h => statusMap[tab].includes(h.status));
+      
+      if (dayTypeFilter) {
+        filtered = filtered.filter(h => 
+          h.appliesEveryDay === true || 
+          (h.dayTypeAssignments && h.dayTypeAssignments.some(dta => dta.dayTypeId === dayTypeFilter))
+        );
+      }
+      
+      return filtered;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [habits, tab]
+    [habits, tab, dayTypeFilter]
   );
 
   const runAction = async (id: string, fn: () => Promise<unknown>) => {
@@ -165,7 +204,7 @@ export default function HabitsPage() {
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1 truncate">
-            {getFrequencyLabel(habit)}
+            {getFrequencyLabel(habit.frequencyType, habit.frequencyValue)}
             {habit.targetCount ? ` · target ${habit.targetCount}` : ''}
             {habit.reminderTime ? ` · ⏰ ${habit.reminderTime}` : ''}
           </p>
@@ -295,21 +334,40 @@ export default function HabitsPage() {
         </p>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-card border border-border rounded-xl p-1 w-fit" role="tablist" aria-label="Habit status filter">
-        {(['ACTIVE', 'PAUSED', 'ARCHIVED'] as TabType[]).map(t => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {t.charAt(0) + t.slice(1).toLowerCase()}
-          </button>
-        ))}
+      {/* Day Type Filter + Status Tabs */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {/* Day Type Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <Select
+            value={dayTypeFilter || ''}
+            onChange={(e) => setDayTypeFilter(e.target.value || null)}
+            options={[
+              { value: '', label: 'All Days' },
+              ...dayTypes.map(dt => ({ value: dt.id, label: dt.name })),
+            ]}
+            disabled={dayTypesLoading}
+            className="w-auto min-w-[180px]"
+            placeholder="Filter by day type..."
+          />
+        </div>
+
+        {/* Status Tabs */}
+        <div className="flex gap-1 bg-card border border-border rounded-xl p-1 w-fit" role="tablist" aria-label="Habit status filter">
+          {(['ACTIVE', 'PAUSED', 'ARCHIVED'] as TabType[]).map(t => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.charAt(0) + t.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
       <AnimatePresence mode="wait">

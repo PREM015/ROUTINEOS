@@ -1,4 +1,4 @@
-import type { AutomationRule, Prisma } from '@prisma/client';
+import type { AutomationRule, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

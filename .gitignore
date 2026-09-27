@@ -40,9 +40,19 @@ PLAN.MD
 *.tsbuildinfo
 next-env.d.ts
 .neon
+
+# scratch / debugging artifacts (never commit these)
 t.txt
-FILE.MD
+src/t.txt
+cookies.txt
 seed.log
 dev.log
-AGENTS.md
+*.log
+
+# test + coverage output
+coverage/
+playwright-report/
+test-results/
+
+FILE.MD
 AGENTS.md

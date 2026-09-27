@@ -1,4 +1,4 @@
-import type { Prisma, HabitLog } from '@prisma/client';
+import type { Prisma, HabitLog, HabitStatus, HabitTier } from '@/generated/prisma';
 import { format, parseISO, subDays } from 'date-fns';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { HabitRepository } from '@/server/repositories/habit.repository';
@@ -9,6 +9,10 @@ import { calculateHabitEligibility } from '@/lib/habits/eligibility';
 import { calculateStreak, recordStreakMilestone } from '@/lib/streaks/calculate-streak';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { ScoringService } from './scoring.service';
+import { AchievementService } from './achievement.service';
+import { invalidateDashboard } from '@/server/cache/dashboard-cache';
+import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
+import { invalidateInsights } from '@/server/cache/insight-cache';
 
 /**
  * Habit Service
@@ -24,6 +28,122 @@ export class HabitService {
     this.habitRepository = new HabitRepository();
     this.streakRepository = new StreakRepository();
     this.auditRepository = new AuditRepository();
+  }
+
+  /**
+   * List habits for a user.
+   *
+   * The route validates query params with `habitQuerySchema` and hands the
+   * parsed filters straight through, so filtering lives in one place.
+   */
+  async listHabits(
+    userId: string,
+    filters: Parameters<HabitRepository['findAll']>[1] = {}
+  ) {
+    return this.habitRepository.findAll(userId, filters);
+  }
+
+  /**
+   * Filter the user's habits.
+   *
+   * Owns the composed filter rules that used to live in the route: free-text
+   * search over name/description, an "active on this date" window check, and the
+   * "has a log at this energy level" filter (resolved with one query, not one
+   * lookup per habit).
+   */
+  async filterHabits(
+    userId: string,
+    filters: {
+      status?: HabitStatus[];
+      tier?: HabitTier[];
+      categoryId?: string;
+      search?: string;
+      sortBy?: 'name' | 'createdAt' | 'streak' | 'completionRate';
+      sortOrder?: 'asc' | 'desc';
+      limit?: number;
+      offset?: number;
+      includeArchived?: boolean;
+      date?: string;
+      energy?: number;
+    }
+  ) {
+    let habits = await this.habitRepository.findAll(userId, {
+      status: filters.status,
+      tier: filters.tier,
+      categoryId: filters.categoryId,
+      includeArchived: filters.includeArchived,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+      limit: filters.limit,
+      offset: filters.offset,
+    });
+
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      habits = habits.filter(
+        (habit) =>
+          habit.name.toLowerCase().includes(q) ||
+          (habit.description?.toLowerCase().includes(q) ?? false)
+      );
+    }
+
+    if (filters.date) {
+      const target = new Date(`${filters.date}T00:00:00Z`);
+      habits = habits.filter((habit) => {
+        if (new Date(habit.startDate) > target) return false;
+        if (habit.endDate && new Date(habit.endDate) < target) return false;
+        return true;
+      });
+    }
+
+    if (filters.energy !== undefined) {
+      const matchingIds = new Set(
+        await this.habitRepository.findIdsWithLogEnergy(userId, filters.energy)
+      );
+      habits = habits.filter((habit) => matchingIds.has(habit.id));
+    }
+
+    return habits;
+  }
+
+  /**
+   * Today's eligible habits with their completion state.
+   *
+   * Owns the assembly that used to live in the route: list active habits, join
+   * the date's logs, evaluate eligibility for each, then keep only the eligible
+   * ones. Ad-hoc inclusions (added manually for the date) come back flagged
+   * with `source: 'MANUAL'`.
+   */
+  async getHabitsForDate(userId: string, date: string) {
+    const [habits, logs] = await Promise.all([
+      this.habitRepository.findAll(userId, { status: 'ACTIVE' }),
+      this.habitRepository.findLogsByDate(userId, date),
+    ]);
+
+    const logMap = new Map(logs.map((log) => [log.habitId, log]));
+
+    const evaluated = await Promise.all(
+      habits.map(async (habit) => {
+        const eligibility = await calculateHabitEligibility(habit.id, userId, date);
+
+        return {
+          id: habit.id,
+          name: habit.name,
+          tier: habit.tier,
+          color: habit.color,
+          icon: habit.icon,
+          estimatedDuration: habit.estimatedDuration,
+          targetCount: habit.targetCount,
+          category: habit.category,
+          isEligible: eligibility.isEligible,
+          eligibilityReason: eligibility.isEligible ? undefined : eligibility.reason,
+          source: eligibility.source,
+          log: logMap.get(habit.id) || null,
+        };
+      })
+    );
+
+    return evaluated.filter((habit) => habit.isEligible);
   }
 
   /**
@@ -46,43 +166,44 @@ export class HabitService {
     const points = input.points || HABIT_TIER_CONFIG[input.tier].defaultPoints;
 
     // Create habit
+    const { appliesEveryDay, dayTypeIds, tagIds, ...habitData } = input;
     const habit = await this.habitRepository.create({
       user: { connect: { id: userId } },
-      name: input.name,
-      description: input.description,
-      tier: input.tier,
+      name: habitData.name,
+      description: habitData.description,
+      tier: habitData.tier,
       status: 'ACTIVE',
-      category: input.categoryId
-        ? { connect: { id: input.categoryId } }
+      category: habitData.categoryId
+        ? { connect: { id: habitData.categoryId } }
         : undefined,
-      color: input.color,
-      icon: input.icon,
-      frequencyType: input.frequencyType,
-      frequencyValue: input.frequencyValue,
-      targetCount: input.targetCount,
-      startDate: input.startDate || new Date(),
-      endDate: input.endDate,
-      reminderTime: input.reminderTime,
-      reminderEnabled: input.reminderEnabled ?? false,
+      color: habitData.color,
+      icon: habitData.icon,
+      frequencyType: habitData.frequencyType,
+      frequencyValue: habitData.frequencyValue,
+      targetCount: habitData.targetCount,
+      startDate: habitData.startDate || new Date(),
+      endDate: habitData.endDate,
+      reminderTime: habitData.reminderTime,
+      reminderEnabled: habitData.reminderEnabled ?? false,
       points,
-      estimatedDuration: input.estimatedDuration,
-      difficulty: input.difficulty,
-      isPublic: input.isPublic ?? false,
+      estimatedDuration: habitData.estimatedDuration,
+      difficulty: habitData.difficulty,
+      isPublic: habitData.isPublic ?? false,
+      appliesEveryDay: appliesEveryDay ?? true,
     } as Prisma.HabitCreateInput);
 
     // Add tags if provided
-    if (input.tagIds && input.tagIds.length > 0) {
-      await Promise.all(
-        input.tagIds.map(tagId =>
-          this.habitRepository.prisma.habitTag.create({
-            data: {
-              habitId: habit.id,
-              tagId,
-            },
-          })
-        )
-      );
+    await this.habitRepository.addTags(habit.id, tagIds ?? []);
+
+    // Create day type assignments if habit is day-specific
+    if (appliesEveryDay === false) {
+      await this.habitRepository.addDayTypeAssignments(habit.id, dayTypeIds ?? []);
     }
+
+    // Invalidate dashboard cache
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
 
     // Return habit with relations
     return (await this.habitRepository.findWithRelations(
@@ -110,43 +231,41 @@ export class HabitService {
       throw new Error('Habit name must be 100 characters or less');
     }
 
+    const { appliesEveryDay, dayTypeIds, tagIds, ...updateData } = input;
+
     // Update habit
     await this.habitRepository.update(habitId, userId, {
-      ...(input.name && { name: input.name }),
-      ...(input.description !== undefined && { description: input.description }),
-      ...(input.tier && { tier: input.tier }),
-      ...(input.status && { status: input.status }),
-      ...(input.categoryId !== undefined && {
-        category: input.categoryId
-          ? { connect: { id: input.categoryId } }
+      ...(updateData.name && { name: updateData.name }),
+      ...(updateData.description !== undefined && { description: updateData.description }),
+      ...(updateData.tier && { tier: updateData.tier }),
+      ...(updateData.status && { status: updateData.status }),
+      ...(updateData.categoryId !== undefined && {
+        category: updateData.categoryId
+          ? { connect: { id: updateData.categoryId } }
           : { disconnect: true },
       }),
-      ...(input.color && { color: input.color }),
-      ...(input.icon && { icon: input.icon }),
-      ...(input.frequencyType && { frequencyType: input.frequencyType }),
-      ...(input.frequencyValue !== undefined && { frequencyValue: input.frequencyValue }),
-      ...(input.targetCount !== undefined && { targetCount: input.targetCount }),
-      ...(input.reminderTime && { reminderTime: input.reminderTime }),
-      ...(input.reminderEnabled !== undefined && { reminderEnabled: input.reminderEnabled }),
-      ...(input.isPublic !== undefined && { isPublic: input.isPublic }),
+      ...(updateData.color && { color: updateData.color }),
+      ...(updateData.icon && { icon: updateData.icon }),
+      ...(updateData.frequencyType && { frequencyType: updateData.frequencyType }),
+      ...(updateData.frequencyValue !== undefined && { frequencyValue: updateData.frequencyValue }),
+      ...(updateData.targetCount !== undefined && { targetCount: updateData.targetCount }),
+      ...(updateData.reminderTime && { reminderTime: updateData.reminderTime }),
+      ...(updateData.reminderEnabled !== undefined && { reminderEnabled: updateData.reminderEnabled }),
+      ...(updateData.isPublic !== undefined && { isPublic: updateData.isPublic }),
+      ...(appliesEveryDay !== undefined && { appliesEveryDay }),
     });
 
     // Update tags if provided
-    if (input.tagIds) {
-      // Delete existing tags
-      await this.habitRepository.prisma.habitTag.deleteMany({
-        where: { habitId },
-      });
+    if (tagIds) {
+      await this.habitRepository.clearTags(habitId);
+      await this.habitRepository.addTags(habitId, tagIds);
+    }
 
-      // Create new tags
-      if (input.tagIds.length > 0) {
-        await Promise.all(
-          input.tagIds.map(tagId =>
-            this.habitRepository.prisma.habitTag.create({
-              data: { habitId, tagId },
-            })
-          )
-        );
+    // Update day type assignments if provided
+    if (dayTypeIds !== undefined) {
+      await this.habitRepository.clearDayTypeAssignments(habitId);
+      if (appliesEveryDay === false) {
+        await this.habitRepository.addDayTypeAssignments(habitId, dayTypeIds);
       }
     }
 
@@ -229,6 +348,15 @@ export class HabitService {
     // Trigger score recalculation for the date
     await new ScoringService().calculateDailyScore(userId, date);
 
+    // Trigger achievement checks asynchronously (don't block the request)
+    new AchievementService().checkForUnlocks(userId).catch(err => {
+      console.error('Failed to check achievements after habit log:', err);
+    });
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
     return {
       log,
       streakUpdated,
@@ -260,6 +388,10 @@ export class HabitService {
       entityId: habitId,
       metadata: reason ? { reason } : undefined,
     });
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
@@ -292,6 +424,10 @@ export class HabitService {
         reason,
       } as Prisma.HabitOverrideCreateInput);
     }
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
@@ -312,9 +448,11 @@ export class HabitService {
     await this.habitRepository.updateStatus(habitId, userId, 'ACTIVE');
 
     // Clear pause overrides
-    await this.habitRepository.prisma.habitOverride.deleteMany({
-      where: { habitId, type: 'PAUSE' },
-    });
+    await this.habitRepository.deleteOverridesByType(habitId, 'PAUSE');
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
@@ -430,6 +568,10 @@ export class HabitService {
       endDate: date,
       reason: 'Added to today manually',
     } as Prisma.HabitOverrideCreateInput);
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
@@ -451,6 +593,10 @@ export class HabitService {
     for (const override of manual) {
       await this.habitRepository.deleteOverride(override.id, userId);
     }
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
@@ -489,6 +635,10 @@ export class HabitService {
         status: 'SKIPPED',
       } as Prisma.HabitLogCreateInput
     );
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
@@ -501,20 +651,8 @@ export class HabitService {
       throw new Error('Habit not found');
     }
 
-    // Delete related data
-    await this.habitRepository.prisma.$transaction(async (tx) => {
-      // Delete logs
-      await tx.habitLog.deleteMany({ where: { habitId } });
-
-      // Delete overrides
-      await tx.habitOverride.deleteMany({ where: { habitId } });
-
-      // Delete tags
-      await tx.habitTag.deleteMany({ where: { habitId } });
-
-      // Delete habit
-      await tx.habit.delete({ where: { id: habitId } });
-    });
+    // Cascade delete of logs/overrides/tags/day-types is owned by the repository.
+    await this.habitRepository.deleteCascade(habitId);
 
     // Log audit trail
     await this.auditRepository.create({
@@ -523,10 +661,14 @@ export class HabitService {
       entityType: 'HABIT',
       entityId: habitId,
     });
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 
   /**
-   * Get habit analytics
+   * Delete habit
    */
   async getHabitAnalytics(
     userId: string,

@@ -1,4 +1,4 @@
-import type { DailyScore, HabitLog, HabitTier } from '@prisma/client';
+import type { DailyScore, HabitLog, HabitTier } from '@/generated/prisma';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
@@ -24,18 +24,39 @@ import type {
   ScoreHistoryRange,
 } from '@/types/score';
 import { getGradeFromPercentage, isValidScoreGrade } from '@/types/score';
+import { invalidateDashboard } from '@/server/cache/dashboard-cache';
+import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
+import { invalidateInsights } from '@/server/cache/insight-cache';
 
 /**
  * Score Service
  * Daily score calculation, history and analytics for a user
  */
 
-// Tier groupings (canonical mapping shared with lib/scoring/calculate-daily-score):
-// core = GROWTH; growth = BONUS + LIFESTYLE + FLEXIBLE;
-// bonus = OPTIONAL + EXPERIMENTAL + SPECIAL + JUST_FOR_FUN.
-const CORE_TIERS: HabitTier[] = ['GROWTH'];
-const GROWTH_TIERS: HabitTier[] = ['BONUS', 'LIFESTYLE', 'FLEXIBLE'];
-const BONUS_TIERS: HabitTier[] = ['OPTIONAL', 'EXPERIMENTAL', 'SPECIAL', 'JUST_FOR_FUN'];
+/**
+ * Tier → bucket grouping. This is the single canonical grouping in the app.
+ *
+ * Every one of the 11 `HabitTier` values must appear in exactly one bucket: a
+ * tier that appears in none is silently unscored (it counts toward neither the
+ * numerator nor the denominator). The previous grouping dropped
+ * NON_NEGOTIABLE, UNDEFINED and ALTERNATIVE — including the single
+ * highest-priority tier — so those habits never influenced the score at all.
+ *
+ * The bucket names line up 1:1 with `computeDayScore`'s nonNeg/growth/bonus
+ * slots and with the three per-user weight overrides, so each bucket is
+ * weighted by the setting the user actually configured for it.
+ */
+const CORE_TIERS: HabitTier[] = ['NON_NEGOTIABLE', 'GROWTH'];
+const GROWTH_TIERS: HabitTier[] = ['LIFESTYLE', 'FLEXIBLE'];
+const BONUS_TIERS: HabitTier[] = [
+  'BONUS',
+  'OPTIONAL',
+  'EXPERIMENTAL',
+  'SPECIAL',
+  'JUST_FOR_FUN',
+  'UNDEFINED',
+  'ALTERNATIVE',
+];
 const SCORED_TIERS: HabitTier[] = [...CORE_TIERS, ...GROWTH_TIERS, ...BONUS_TIERS];
 
 type HabitForScoring = {
@@ -100,9 +121,9 @@ export class ScoringService {
 
     const result = computeDayScore(
       {
-        nonNeg: core.percentage, // GROWTH habits
-        growth: growth.percentage, // BONUS + LIFESTYLE + FLEXIBLE
-        bonus: bonus.percentage, // OPTIONAL + EXPERIMENTAL + SPECIAL + JUST_FOR_FUN
+        nonNeg: core.percentage, // NON_NEGOTIABLE + GROWTH
+        growth: growth.percentage, // LIFESTYLE + FLEXIBLE
+        bonus: bonus.percentage, // BONUS + OPTIONAL + EXPERIMENTAL + SPECIAL + JUST_FOR_FUN + UNDEFINED + ALTERNATIVE
         core: null, // never used: avoids the zero-weight core bucket
       },
       {
@@ -174,6 +195,10 @@ export class ScoringService {
       }),
     });
 
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
     return this.withBreakdown(persisted);
   }
 
@@ -193,7 +218,14 @@ export class ScoringService {
   }
 
   /**
-   * Get a stored daily score with its breakdown context
+   * Daily scores across a date range, ascending by date.
+   */
+  async getDailyScoreRange(userId: string, startDate: string, endDate: string) {
+    return this.scoreRepository.findByRange(userId, startDate, endDate);
+  }
+
+  /**
+   * Get stored daily score with its breakdown context
    */
   async getDailyScore(userId: string, date: string): Promise<DailyScoreWithContext | null> {
     const parsed = calculateScoreSchema.parse({ date });

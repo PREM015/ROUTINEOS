@@ -1,4 +1,4 @@
-import type { Tag } from '@prisma/client';
+import type { Tag } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import {

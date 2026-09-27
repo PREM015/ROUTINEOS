@@ -1,4 +1,4 @@
-import type { UserSubscription } from '@prisma/client';
+import type { UserSubscription } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -96,3 +96,4 @@ export class SubscriptionRepository extends BaseRepository {
 }
 
 export const subscriptionRepository = new SubscriptionRepository();
+

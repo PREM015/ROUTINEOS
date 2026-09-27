@@ -16,7 +16,7 @@
  *     onOpenChange={setOpen} onSaved={refreshCards} />
  */
 import * as React from 'react';
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 import { AlertTriangle, KeyRound } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { Button, Input, Select, Switch, Spinner } from '@/components/ui';

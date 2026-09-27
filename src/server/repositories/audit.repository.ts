@@ -1,4 +1,4 @@
-import type { AuditLog, ActivityLog, Prisma, AuditAction } from '@prisma/client';
+import type { AuditLog, ActivityLog, Prisma, AuditAction } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

@@ -1,4 +1,4 @@
-import type { Feedback, FeedbackStatus, FeedbackType, Prisma } from '@prisma/client';
+import type { Feedback, FeedbackStatus, FeedbackType, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

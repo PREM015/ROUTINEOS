@@ -109,7 +109,7 @@ export default function TemplatePreview({ open, onOpenChange, template, onUse }:
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <LayoutTemplate className="h-10 w-10 text-gray-300" />
               <p className="text-sm text-gray-500">
-                This template doesn't define a schedule — applying it creates a starter structure.
+                This template doesn&apos;t define a schedule — applying it creates a starter structure.
               </p>
             </div>
           )}

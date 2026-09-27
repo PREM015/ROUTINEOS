@@ -4,7 +4,7 @@
  * validates serialized content. No DB access.
  */
 
-import type { TemplateType } from '@prisma/client';
+import type { TemplateType } from '@/generated/prisma';
 import type { DefaultTemplate } from '@/lib/constants/templates';
 import { DEFAULT_TEMPLATES, getTemplatesByType } from '@/lib/constants/templates';
 import {

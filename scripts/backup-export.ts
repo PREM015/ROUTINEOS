@@ -10,7 +10,7 @@
  * Requires DATABASE_URL to be present in the environment.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 

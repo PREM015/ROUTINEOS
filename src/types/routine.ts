@@ -6,7 +6,7 @@ import type {
   DayType,
   RoutineLogStatus,
   Category,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 export type {
   RoutineTemplate,
@@ -96,22 +96,50 @@ export interface RoutineTemplateUpdateInput {
 // Routine Resolution & Conflict Types
 // ============================================================================
 
+/**
+ * The log fields the routine UI reads.
+ *
+ * The server sends a complete `RoutineLog` row, but the store also builds an
+ * *optimistic* log client-side before any routine-log endpoint exists. That
+ * optimistic object only carries user-editable fields, so it is not a full
+ * `RoutineLog`. This interface is the intersection both satisfy — a full
+ * `RoutineLog` is assignable to it, and so is the client's partial object.
+ */
+export interface ResolvedBlockLog {
+  id: string;
+  status: RoutineLogStatus;
+  actualStartTime: string | null;
+  actualEndTime: string | null;
+  durationMinutes: number | null;
+  focusRating: number | null;
+  productivityRating: number | null;
+  note: string | null;
+}
+
 export interface ResolvedRoutineBlock {
   id: string;
-  templateId: string;
-  title: string;
-  description: string | null;
   startTime: string;
   endTime: string;
-  type: string;
-  isFlex: boolean;
+  title: string;
+  description: string | null;
+  notes: string | null;
+  color: string | null;
+  icon: string | null;
+  /** Projected category — the resolver flattens the relation to three fields. */
   category: {
     id: string;
     name: string;
     color: string | null;
   } | null;
-  status?: RoutineLogStatus;
-  completedAt?: string | null;
+  /** `HIGH` / `MEDIUM` / `LOW`, free-text in the schema so nullable string. */
+  energyLevel: string | null;
+  trackCompletion: boolean;
+  /** Derived from `startTime`/`endTime`; handles blocks crossing midnight. */
+  durationMinutes: number;
+  /** True when the block's end time is before its start time. */
+  isOvernight: boolean;
+  /** The user's log for this block on the resolved date, if any. */
+  log: ResolvedBlockLog | null;
 }
 
 export interface ResolvedDailyRoutine {
@@ -123,6 +151,35 @@ export interface ResolvedDailyRoutine {
   totalBlocks: number;
   completedBlocks: number;
   completionRate: number;
+}
+
+/**
+ * Per-template routine analytics for a date range, as returned by
+ * `RoutineService.getRoutineAnalytics`. Rates are `null` rather than `0` when
+ * there is nothing to divide by, so "no data" is distinguishable from
+ * "0% completion".
+ */
+export interface RoutineAnalytics {
+  templateId: string;
+  templateName: string;
+  period: { startDate: string; endDate: string };
+  totalBlocks: number;
+  trackedBlocks: number;
+  completion: {
+    totalLogs: number;
+    completedLogs: number;
+    partialLogs: number;
+    missedLogs: number;
+    completionRate: number | null;
+  };
+  blocks: Array<{
+    id: string;
+    title: string;
+    tracked: boolean;
+    duration: number;
+    logCount: number;
+    completionRate: number | null;
+  }>;
 }
 
 export interface RoutineConflict {
@@ -271,8 +328,57 @@ export function isOvernightBlock(startTime: string, endTime: string): boolean {
 }
 
 // ============================================================================
+// Day Type Definitions
+// ============================================================================
+
+/**
+ * A user-defined day type.
+ *
+ * Canonical definition — this replaces four hand-rolled copies of the same
+ * interface (routine/page.tsx, habits/page.tsx, AddHabitModal.tsx,
+ * EditHabitModal.tsx), which had already drifted: only one of them declared the
+ * optional `_count` block. Derived from the Prisma model so a schema change
+ * surfaces here rather than in four places.
+ */
+export interface DayTypeDefinition {
+  id: string;
+  userId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  color: string | null;
+  icon: string | null;
+  isDefault: boolean;
+  isArchived: boolean;
+  sortOrder: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+  /** Present only when the query includes a relation count; all keys then exist. */
+  _count?: {
+    routineTemplates: number;
+    routineExceptions: number;
+    habitAssignments: number;
+    goalAssignments: number;
+  };
+}
+
+// ============================================================================
 // Utility Types
 // ============================================================================
+
+/**
+ * A `DayTypeDefinition` projected for a `<select>`: the enum value it maps to
+ * plus its display fields. Shared by the routine page and the routine-block
+ * modal, which previously each declared their own structurally-different copy.
+ */
+export interface DayTypeOption {
+  value: DayType;
+  label: string;
+  /** Nullable to match `DayTypeDefinition`; absent for the static defaults. */
+  color?: string | null;
+  icon?: string | null;
+  dayTypeId?: string;
+}
 
 export type RoutineTemplatesByDayType = Record<DayType, RoutineTemplateWithBlocks[]>;
 

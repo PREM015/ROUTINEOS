@@ -1,4 +1,4 @@
-import type { Prisma, TimeEntry } from '@prisma/client';
+import type { Prisma, TimeEntry } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

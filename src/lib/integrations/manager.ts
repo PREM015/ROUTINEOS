@@ -1,4 +1,4 @@
-import type { Integration, IntegrationProvider } from '@prisma/client';
+import type { Integration, IntegrationProvider } from '@/generated/prisma';
 import {
   INTEGRATIONS,
   getIntegrationConfig,

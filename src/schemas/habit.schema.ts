@@ -13,7 +13,7 @@ export const createHabitSchema = z.object({
     .string()
     .max(500, 'Description must be 500 characters or less')
     .optional(),
-  tier: z.enum(['GROWTH', 'BONUS', 'LIFESTYLE', 'FLEXIBLE', 'ALTERNATIVE', 'OPTIONAL', 'EXPERIMENTAL', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'] as const),
+  tier: z.enum(['NON_NEGOTIABLE', 'GROWTH', 'BONUS', 'LIFESTYLE', 'FLEXIBLE', 'ALTERNATIVE', 'OPTIONAL', 'EXPERIMENTAL', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'] as const),
   categoryId: z.string().cuid().optional(),
   color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
   icon: z.string().optional(),
@@ -29,9 +29,13 @@ export const createHabitSchema = z.object({
   difficulty: z.number().int().min(1).max(5).optional(),
   isPublic: z.boolean().optional(),
   tagIds: z.array(z.string().cuid()).optional(),
+  appliesEveryDay: z.boolean().optional(),
+  dayTypeIds: z.array(z.string().cuid()).optional(),
 });
 
-export const updateHabitSchema = createHabitSchema.partial();
+export const updateHabitSchema = createHabitSchema.partial().extend({
+  status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'ARCHIVED', 'COMPLETED'] as const).optional(),
+});
 
 export const logHabitSchema = z.object({
   habitId: z.string().cuid(),
@@ -57,6 +61,7 @@ export const habitQuerySchema = z.object({
   limit: z.number().int().min(1).max(100).optional(),
   offset: z.number().int().min(0).optional(),
   includeArchived: z.boolean().optional(),
+  dayTypeId: z.string().cuid().optional(),
 });
 
 export type CreateHabitInput = z.infer<typeof createHabitSchema>;

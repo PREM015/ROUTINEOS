@@ -28,7 +28,7 @@ export function calculateBlockDuration(startTime: string, endTime: string): numb
   const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
   const [endHour = 0, endMin = 0] = endTime.split(':').map(Number);
   
-  let startMinutes = startHour * 60 + startMin;
+  const startMinutes = startHour * 60 + startMin;
   let endMinutes = endHour * 60 + endMin;
   
   // Handle overnight blocks
@@ -71,9 +71,9 @@ export function isTimeOverlap(
   const [start2Hour = 0, start2Min = 0] = start2.split(':').map(Number);
   const [end2Hour = 0, end2Min = 0] = end2.split(':').map(Number);
   
-  let start1Minutes = start1Hour * 60 + start1Min;
+  const start1Minutes = start1Hour * 60 + start1Min;
   let end1Minutes = end1Hour * 60 + end1Min;
-  let start2Minutes = start2Hour * 60 + start2Min;
+  const start2Minutes = start2Hour * 60 + start2Min;
   let end2Minutes = end2Hour * 60 + end2Min;
   
   // Handle overnight blocks
@@ -105,7 +105,7 @@ export function getCurrentBlock(
     const [startHour = 0, startMin = 0] = block.startTime.split(':').map(Number);
     const [endHour = 0, endMin = 0] = block.endTime.split(':').map(Number);
     
-    let startMinutes = startHour * 60 + startMin;
+    const startMinutes = startHour * 60 + startMin;
     let endMinutes = endHour * 60 + endMin;
     
     // Handle overnight blocks
@@ -196,7 +196,7 @@ export function calculateBlockProgress(
   const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
   
   let currentMinutes = currentHour * 60 + currentMin;
-  let startMinutes = startHour * 60 + startMin;
+  const startMinutes = startHour * 60 + startMin;
   
   // Handle overnight blocks
   if (currentMinutes < startMinutes) {

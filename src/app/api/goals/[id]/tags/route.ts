@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { TagRepository } from '@/server/repositories/tag.repository';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {

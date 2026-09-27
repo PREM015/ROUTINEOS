@@ -1,5 +1,4 @@
 import { auth } from '@/lib/auth';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { HabitService } from '@/server/services/habit.service';
 import { habitQuerySchema, createHabitSchema } from '@/schemas/habit.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,24 +17,27 @@ export async function GET(request: NextRequest) {
     // Parse query parameters. Every param is optional: a plain GET with no
     // params must validate. Convert null -> undefined so Zod never sees null.
     const { searchParams } = new URL(request.url);
-    const statusParam = searchParams.get('status');
-    const tierParam = searchParams.get('tier');
-    const categoryParam = searchParams.get('categoryId');
-    const searchParam = searchParams.get('search');
-    const sortByParam = searchParams.get('sortBy');
-    const sortOrderParam = searchParams.get('sortOrder');
-    const limitParam = searchParams.get('limit');
-    const offsetParam = searchParams.get('offset');
+    const list = (key: string) => searchParams.get(key)?.split(',').filter(Boolean);
+    const int = (key: string) => {
+      const raw = searchParams.get(key);
+      return raw === null ? undefined : parseInt(raw, 10);
+    };
     const queryData = {
-      status: statusParam ? statusParam.split(',').filter(Boolean) : undefined,
-      tier: tierParam ? tierParam.split(',').filter(Boolean) : undefined,
-      categoryId: categoryParam || undefined,
-      search: searchParam || undefined,
-      sortBy: (sortByParam || 'createdAt') as 'name' | 'createdAt' | 'streak' | 'completionRate',
-      sortOrder: (sortOrderParam || 'desc') as 'asc' | 'desc',
-      limit: limitParam ? parseInt(limitParam, 10) : 20,
-      offset: offsetParam ? parseInt(offsetParam, 10) : 0,
-      includeArchived: searchParams.get('includeArchived') === 'true' ? true : undefined,
+      status: list('status'),
+      tier: list('tier'),
+      categoryId: searchParams.get('categoryId') || undefined,
+      search: searchParams.get('search') || undefined,
+      sortBy: (searchParams.get('sortBy') || 'createdAt') as
+        | 'name'
+        | 'createdAt'
+        | 'streak'
+        | 'completionRate',
+      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
+      limit: int('limit') ?? 20,
+      offset: int('offset') ?? 0,
+      includeArchived:
+        searchParams.get('includeArchived') === 'true' ? true : undefined,
+      dayTypeId: searchParams.get('dayTypeId') || undefined,
     };
 
     // Validate query
@@ -47,8 +49,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const habitRepository = new HabitRepository();
-    const habits = await habitRepository.findAll(session.user.id, validated.data);
+    const habits = await new HabitService().listHabits(session.user.id, validated.data);
 
     return NextResponse.json({
       success: true,
@@ -90,8 +91,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const habitService = new HabitService();
-    const habit = await habitService.createHabit(session.user.id, validated.data);
+    // The service owns day-type assignment, so the route forwards validated
+    // input as-is. Writing the assignments here too was a second code path
+    // doing the same inserts.
+    const habit = await new HabitService().createHabit(session.user.id, {
+      ...validated.data,
+      appliesEveryDay: validated.data.appliesEveryDay ?? true,
+    });
 
     return NextResponse.json(
       { success: true, data: habit },

@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { ReflectionRepository } from '@/server/repositories/reflection.repository';
+import { lifeContextService } from '@/server/services/life-context.service';
 import { reflectionSchema } from '@/schemas/reflection.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -24,16 +24,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const reflectionRepository = new ReflectionRepository();
-    const reflection = await reflectionRepository.findByDate(
-      session.user.id,
-      date
-    );
+    const data = await lifeContextService.getReflection(session.user.id, date);
 
-    return NextResponse.json({
-      success: true,
-      data: reflection,
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching reflection:', error);
     return NextResponse.json(
@@ -64,28 +57,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, gratitude, tomorrowPriorities, ...reflectionData } = validated.data;
-
-    const reflectionRepository = new ReflectionRepository();
-    const reflection = await reflectionRepository.upsertReflection(
+    const reflection = await lifeContextService.saveReflection(
       session.user.id,
-      date,
-      {
-        ...reflectionData,
-        // DB columns are String (JSON arrays) — serialize, never store raw arrays.
-        gratitude: Array.isArray(gratitude)
-          ? JSON.stringify(gratitude)
-          : (gratitude ?? undefined),
-        tomorrowPriorities: Array.isArray(tomorrowPriorities)
-          ? JSON.stringify(tomorrowPriorities)
-          : undefined,
-      }
+      validated.data
     );
 
-    return NextResponse.json({
-      success: true,
-      data: reflection,
-    });
+    return NextResponse.json({ success: true, data: reflection });
   } catch (error) {
     console.error('Error saving reflection:', error);
     return NextResponse.json(

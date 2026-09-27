@@ -2,30 +2,9 @@
 
 import { useEffect } from 'react';
 import { signOut, useSession } from 'next-auth/react';
-import { APP_CONFIG } from '@/config/app';
 
-// Browsers clamp setTimeout delays to 2^31-1 ms (~24.8 days); anything larger
-// overflows and fires almost immediately. Long waits must be chained.
 const MAX_TIMEOUT_MS = 2_147_483_647;
 
-const IDLE_MINUTES =
-  Number.isFinite(APP_CONFIG.session.autoLogoutIdleMinutes) &&
-  APP_CONFIG.session.autoLogoutIdleMinutes > 0
-    ? APP_CONFIG.session.autoLogoutIdleMinutes
-    : 30;
-const IDLE_MS = IDLE_MINUTES * 60_000;
-
-/**
- * AutoLogout — signs the user out automatically. Two rules apply and either
- * of them ends the session:
- *
- *  1. Idle timeout: no pointer/keyboard/touch/wheel activity for
- *     `APP_CONFIG.session.autoLogoutIdleMinutes` minutes.
- *  2. Absolute cap: the session's server-side expiry (`session.expires`,
- *     driven by `APP_CONFIG.session.maxAge`).
- *
- * In both cases the user is sent back to `/login`.
- */
 export function AutoLogout() {
   const { data: session, status } = useSession();
 
@@ -46,9 +25,17 @@ export function AutoLogout() {
       void signOut({ callbackUrl: '/login', redirect: true });
     };
 
-    // Absolute cap: sign out at the server-declared expiry. Waits longer than
-    // the browser limit are chained until the expiry is actually reached.
-    const expiresAt = new Date(session.expires).getTime();
+    // Absolute expiry only: sign out at the server-declared absolute timestamp.
+    // No idle-based re-arm — the 6-hour clock never resets.
+    //
+    // `absoluteExpiresAt` is only stamped when the token carries `loginAt`, so
+    // it can legitimately be absent (e.g. a session cookie issued before that
+    // field existed). Falling back to `0` here treated "unknown" as "expired at
+    // the epoch" and signed the user out immediately; the correct fallback is
+    // the rolling `expires` that NextAuth always provides. The server still
+    // enforces the hard 6-hour cap either way.
+    const expiresAt =
+      session.absoluteExpiresAt ?? new Date(session.expires).getTime();
     const armAbsolute = () => {
       const remaining = expiresAt - Date.now();
       if (!Number.isFinite(remaining)) return;
@@ -60,24 +47,7 @@ export function AutoLogout() {
     };
     armAbsolute();
 
-    // Idle timeout: any activity re-arms the timer.
-    let idleTimer: number | undefined;
-    const armIdle = () => {
-      if (idleTimer !== undefined) window.clearTimeout(idleTimer);
-      idleTimer = schedule(Math.min(IDLE_MS, MAX_TIMEOUT_MS), forceSignOut);
-    };
-    armIdle();
-
-    const activityEvents = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
-    for (const eventName of activityEvents) {
-      window.addEventListener(eventName, armIdle, { passive: true });
-    }
-
     return () => {
-      for (const eventName of activityEvents) {
-        window.removeEventListener(eventName, armIdle);
-      }
-      if (idleTimer !== undefined) window.clearTimeout(idleTimer);
       for (const id of timers) window.clearTimeout(id);
     };
   }, [session, status]);

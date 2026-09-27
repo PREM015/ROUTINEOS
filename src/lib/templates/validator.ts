@@ -1,4 +1,4 @@
-import type { TemplateType } from '@prisma/client';
+import type { TemplateType } from '@/generated/prisma';
 import { TEMPLATE_CATEGORIES } from '@/lib/constants/templates';
 
 /**

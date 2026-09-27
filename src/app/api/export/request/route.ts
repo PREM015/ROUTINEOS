@@ -1,16 +1,28 @@
 import { auth } from '@/lib/auth';
-import { exportUserData, exportToJSON } from '@/server/data/exporter';
-import prisma from '@/lib/prisma';
+import { backupService } from '@/server/services/backup.service';
+import type { ExportFormat } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const exportRequestSchema = z.object({
-  format: z.enum(['JSON', 'CSV']),
+  format: z.enum(['JSON', 'CSV', 'PDF', 'MARKDOWN']),
   includeArchived: z.boolean().optional(),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
+/**
+ * POST /api/export/request
+ *
+ * Requests a full data export. The service owns the whole lifecycle: it records
+ * the request, serialises the user's data, writes the file, and marks the row
+ * completed (or failed).
+ *
+ * The previous version of this route duplicated that orchestration inline and
+ * returned a `/api/export/download/{id}` URL for a file it never wrote, so the
+ * download endpoint 404'd. It now shares the single implementation in
+ * `BackupService`.
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -28,70 +40,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create export request
-    const exportRecord = await prisma.dataExport.create({
-      data: {
-        userId: session.user.id,
-        format: validated.data.format,
-        status: 'PROCESSING',
-        includeAttachments: false,
-        dateFrom: validated.data.startDate,
-        dateTo: validated.data.endDate,
-        requestedAt: new Date(),
-        startedAt: new Date(),
-      },
+    const result = await backupService.createExport(session.user.id, {
+      format: validated.data.format as ExportFormat,
+      includeAttachments: validated.data.includeArchived,
+      dateFrom: validated.data.startDate,
+      dateTo: validated.data.endDate,
     });
 
-    // Generate export (in production, this would be a background job)
-    try {
-      const data = await exportUserData(session.user.id, {
-        includeArchived: validated.data.includeArchived,
-        startDate: validated.data.startDate,
-        endDate: validated.data.endDate,
-      });
-
-      const jsonData = exportToJSON(data);
-      const fileSize = Buffer.byteLength(jsonData, 'utf8');
-
-      // In production, upload to S3 or similar
-      // For now, we'll store the data directly
-      const fileUrl = `/api/export/download/${exportRecord.id}`;
-
-      // Update export record
-      await prisma.dataExport.update({
-        where: { id: exportRecord.id },
-        data: {
-          status: 'COMPLETED',
-          completedAt: new Date(),
-          fileUrl,
-          fileSize,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        },
-      });
-
-      // Store export data temporarily (in production, use proper storage)
-      // For now, return the data directly
-      return NextResponse.json({
-        success: true,
-        data: {
-          exportId: exportRecord.id,
-          fileUrl,
-          fileSize,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        },
-        exportData: data, // Remove this in production
-      });
-    } catch (error) {
-      await prisma.dataExport.update({
-        where: { id: exportRecord.id },
-        data: {
-          status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        },
-      });
-
-      throw error;
-    }
+    return NextResponse.json({
+      success: true,
+      data: {
+        exportId: result.exportId,
+        fileUrl: `/api/export/download/${result.exportId}`,
+        fileSize: result.fileSize ?? 0,
+        expiresAt: result.expiresAt,
+      },
+    });
   } catch (error) {
     console.error('Error requesting export:', error);
 

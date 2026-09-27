@@ -1,4 +1,4 @@
-import type { EnergyLog, Prisma } from '@prisma/client';
+import type { EnergyLog, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

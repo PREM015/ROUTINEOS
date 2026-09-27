@@ -13,6 +13,7 @@ import { Mount } from '@/components/motion/Mount';
 import { StreakCard } from '@/components/streak/StreakCard';
 import { getTodayString } from '@/lib/dates';
 import { userService } from '@/server/services/user.service';
+import { RoutineService } from '@/server/services/routine.service';
 
 export default async function TodayPage() {
   const session = await auth();
@@ -23,6 +24,11 @@ export default async function TodayPage() {
 
   const timezone = await userService.getTimezone(session.user.id);
   const today = getTodayString(timezone);
+  
+  // Resolve the actual day type for today (respects RoutineException)
+  const routineService = new RoutineService();
+  const routine = await routineService.getRoutineForDate(session.user.id, today);
+  const resolvedDayType = routine.dayType;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -33,7 +39,7 @@ export default async function TodayPage() {
           </div>
           <p className="mt-3 inline-flex items-center gap-2 rounded-full glass-panel px-4 py-1.5 text-sm text-muted-foreground shadow-soft">
             <svg className="h-4 w-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v12a2 2 0 002 2z" />
             </svg>
             {formatInTimeZone(new Date(), timezone, 'EEEE, MMMM d, yyyy')}
           </p>
@@ -45,7 +51,7 @@ export default async function TodayPage() {
         <Mount delay={0.06}><QuickActions date={today} /></Mount>
 
         {/* Day Type selector + current routine */}
-        <Mount delay={0.1}><TodayDayType date={today} /></Mount>
+        <Mount delay={0.1}><TodayDayType date={today} resolvedDayType={resolvedDayType} /></Mount>
 
         {/* Current Routine Block */}
         <Mount delay={0.16}><CurrentRoutineBlock /></Mount>

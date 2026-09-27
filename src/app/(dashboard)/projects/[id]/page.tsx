@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Calendar, Target } from 'lucide-react';
-import type { Goal, Milestone } from '@prisma/client';
+import type { Goal, Milestone } from '@/generated/prisma';
 import { apiRequest } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import type { ProjectMilestoneListItem, ProjectWithRelations } from '@/types/projects';

@@ -7,7 +7,7 @@
  * have been removed — no theoretical types.
  */
 
-import type { GoalStatus, HabitStatus, HabitTier, ProjectStatus } from '@prisma/client';
+import type { GoalStatus, HabitStatus, HabitTier, ProjectStatus } from '@/generated/prisma';
 import type { Period } from '@/lib/period-range';
 
 // ============================================================================

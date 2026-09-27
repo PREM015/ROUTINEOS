@@ -1,4 +1,4 @@
-import type { DailyReflection } from '@prisma/client';
+import type { DailyReflection } from '@/generated/prisma';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
 import { reflectionSchema, type ReflectionInput } from '@/schemas/reflection.schema';
 

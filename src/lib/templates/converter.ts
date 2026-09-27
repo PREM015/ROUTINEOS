@@ -1,4 +1,5 @@
-import type { DayType } from '@prisma/client';
+import type { DayType } from '@/generated/prisma';
+import { isDayType } from '@/constants/routine';
 import type { DefaultTemplate } from '@/lib/constants/templates';
 import type { RoutineTemplateWithBlocks } from '@/types/routine';
 import {
@@ -121,9 +122,3 @@ export function contentToRoutineDraft(content: string): RoutineDraft | null {
   };
 }
 
-function isDayType(value: unknown): value is DayType {
-  return (
-    typeof value === 'string' &&
-    ['WORKDAY', 'WEEKEND', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM'].includes(value)
-  );
-}

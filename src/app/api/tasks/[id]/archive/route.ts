@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { TaskRepository } from '@/server/repositories/task.repository';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {

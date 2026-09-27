@@ -9,7 +9,7 @@
  *   <JournalVersionHistory entryId={entry.id} onRestored={reload} />
  */
 import * as React from 'react';
-import type { JournalRevision } from '@prisma/client';
+import type { JournalRevision } from '@/generated/prisma';
 import { History, RotateCcw } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import type { JournalEntryWithRelations } from '@/types/journal';

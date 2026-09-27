@@ -8,7 +8,7 @@
  * the table is unreachable.
  */
 
-import type { FeatureFlag, Role } from '@prisma/client';
+import type { FeatureFlag, Role } from '@/generated/prisma';
 import prisma from '@/lib/prisma';
 
 export interface FlagResult {

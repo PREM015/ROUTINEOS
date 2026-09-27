@@ -17,6 +17,12 @@ interface ProfileStats {
   averageScore: number;
 }
 
+/**
+ * Shape returned by the **public** `GET /api/users/[id]/profile`. That route is
+ * unauthenticated and deliberately exposes only these fields — `timezone`,
+ * `preferredLanguage` and `role` are not public. This page reads its editable
+ * fields from the signed-in session (`useAuth()`), not from here.
+ */
 interface ProfileResponse {
   profile: {
     id: string;
@@ -24,8 +30,7 @@ interface ProfileResponse {
     displayName: string | null;
     bio: string | null;
     avatarUrl: string | null;
-    timezone: string;
-    preferredLanguage: string;
+    createdAt: string;
   };
   stats: ProfileStats;
 }

@@ -1,4 +1,4 @@
-import type { PushSubscription, Prisma } from '@prisma/client';
+import type { PushSubscription, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

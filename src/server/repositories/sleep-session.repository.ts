@@ -1,5 +1,5 @@
-import type { SleepSession, SleepStartSource } from '@prisma/client';
-import { SleepSessionStatus } from '@prisma/client';
+import type { SleepSession, SleepStartSource } from '@/generated/prisma';
+import { SleepSessionStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

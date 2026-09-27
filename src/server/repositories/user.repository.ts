@@ -1,10 +1,13 @@
-import type { User, UserSettings, Prisma } from '@prisma/client';
+import type { User, UserSettings, Prisma } from '@/generated/prisma';
+import { createLogger } from '@/lib/monitoring/logger';
 import { BaseRepository } from './base.repository';
 
 /**
  * User Repository
  * Database operations for User model
  */
+
+const log = createLogger('repository');
 
 export class UserRepository extends BaseRepository {
   /**
@@ -279,8 +282,89 @@ export class UserRepository extends BaseRepository {
         data: { lastActivityAt: new Date() },
       });
     } catch (error) {
-      // Don't throw on activity update failure
-      console.error('Failed to update last activity:', error);
+      // Best-effort: a failed activity ping must never fail the request that
+      // triggered it. Logged rather than swallowed.
+      log.warn('Failed to update last activity', { userId });
+    }
+  }
+
+  // ============================================================================
+  // User search
+  // ============================================================================
+
+  /**
+   * Case-insensitive search over name, displayName and email.
+   * Soft-deleted accounts are excluded.
+   */
+  async search(term: string, limit: number): Promise<User[]> {
+    try {
+      return await this.prisma.user.findMany({
+        where: {
+          isDeleted: false,
+          OR: [
+            { name: { contains: term, mode: 'insensitive' } },
+            { displayName: { contains: term, mode: 'insensitive' } },
+            { email: { contains: term, mode: 'insensitive' } },
+          ],
+        },
+        take: limit,
+      });
+    } catch (error) {
+      this.handleError(error, 'search');
+    }
+  }
+
+  // ============================================================================
+  // Device sessions
+  // ============================================================================
+
+  /**
+   * A user's device sessions, most recently active first.
+   */
+  async listDeviceSessions(userId: string) {
+    try {
+      return await this.prisma.deviceSession.findMany({
+        where: { userId },
+        orderBy: { lastActiveAt: 'desc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'listDeviceSessions');
+    }
+  }
+
+  /**
+   * Find a device session by id, unscoped — callers must verify `userId`.
+   */
+  async findDeviceSessionById(sessionId: string) {
+    try {
+      return await this.prisma.deviceSession.findUnique({
+        where: { id: sessionId },
+      });
+    } catch (error) {
+      this.handleError(error, 'findDeviceSessionById');
+    }
+  }
+
+  /**
+   * Delete a single device session.
+   */
+  async deleteDeviceSession(sessionId: string): Promise<void> {
+    try {
+      await this.prisma.deviceSession.delete({ where: { id: sessionId } });
+    } catch (error) {
+      this.handleError(error, 'deleteDeviceSession');
+    }
+  }
+
+  /**
+   * Revoke every device session for a user. Returns how many were removed.
+   */
+  async deleteAllDeviceSessions(userId: string): Promise<number> {
+    try {
+      const result = await this.prisma.deviceSession.deleteMany({ where: { userId } });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'deleteAllDeviceSessions');
     }
   }
 }

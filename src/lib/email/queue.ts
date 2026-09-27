@@ -24,7 +24,7 @@ export interface QueueStats {
   failed: number;
 }
 
-let queue: QueuedEmail[] = [];
+const queue: QueuedEmail[] = [];
 let inFlight = 0;
 let completed = 0;
 let failed = 0;

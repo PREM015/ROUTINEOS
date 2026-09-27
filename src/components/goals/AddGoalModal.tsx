@@ -75,7 +75,7 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
 
   return (
     <Modal isOpen={open} onClose={onClose} title="Add Goal">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <Input
           label="Goal Title"
           value={title}
@@ -92,7 +92,7 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           placeholder="Any additional context..."
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Type"
             value={type}
@@ -117,7 +117,7 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
         </div>
 
         {type !== 'DAILY' && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Target Value"
               type="number"
@@ -137,7 +137,7 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Start Date"
             type="date"
@@ -157,8 +157,8 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
           <p role="alert" className="text-sm text-red-400">{submitError}</p>
         )}
 
-        <div className="flex gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
           <Button type="submit" variant="primary" disabled={submitting} className="flex-1">
             {submitting ? 'Adding...' : 'Add Goal'}
           </Button>

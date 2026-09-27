@@ -4,7 +4,7 @@ import type {
   Location,
   User,
   IntegrationProvider,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Integration & Automation Types

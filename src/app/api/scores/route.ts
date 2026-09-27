@@ -1,7 +1,9 @@
 import { auth } from '@/lib/auth';
-import { calculateDailyScore } from '@/lib/scoring/calculate-daily-score';
+import { ScoringService } from '@/server/services/scoring.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+
+const scoringService = new ScoringService();
 
 const calculateScoreSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -31,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const breakdown = await calculateDailyScore(
+    const result = await scoringService.calculateDailyScore(
       session.user.id,
       validated.data.date,
       {
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: breakdown,
+      data: result,
     });
   } catch (error) {
     console.error('Error calculating score:', error);

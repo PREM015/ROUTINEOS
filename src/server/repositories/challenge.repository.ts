@@ -1,4 +1,4 @@
-import type { Challenge, ChallengeParticipant } from '@prisma/client';
+import type { Challenge, ChallengeParticipant } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

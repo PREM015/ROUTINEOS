@@ -4,11 +4,14 @@ import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { timeToMinutes } from '@/lib/dates';
+import { dayTypeSchema } from '@/lib/validation/routine.schema';
+import { isDayType } from '@/constants/routine';
+import type { DayType } from '@/generated/prisma';
 
 const createTemplateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  dayType: z.enum(['WORKDAY', 'WEEKEND', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM']),
+  dayType: dayTypeSchema,
   isDefault: z.boolean().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -22,9 +25,8 @@ const createBlockSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100),
   startTime: z.string().regex(HH_MM, 'Start time must be HH:mm'),
   endTime: z.string().regex(HH_MM, 'End time must be HH:mm'),
-  dayType: z
-    .enum(['WORKDAY', 'WEEKEND', 'WEEKDAY', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM'])
-    .optional(),
+  dayTypeId: z.string().uuid().optional(),
+  dayType: dayTypeSchema.optional(),
   category: z.string().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -39,9 +41,8 @@ const updateBlockSchema = z.object({
   title: z.string().min(1).max(100).optional(),
   startTime: z.string().regex(HH_MM, 'Start time must be HH:mm').optional(),
   endTime: z.string().regex(HH_MM, 'End time must be HH:mm').optional(),
-  dayType: z
-    .enum(['WORKDAY', 'WEEKEND', 'WEEKDAY', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM'])
-    .optional(),
+  dayTypeId: z.string().uuid().optional(),
+  dayType: dayTypeSchema.optional(),
   category: z.string().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -53,24 +54,6 @@ const updateBlockSchema = z.object({
 
 const deleteBlockSchema = z.object({ id: z.string().min(1) });
 
-/** Map client day labels onto the Prisma DayType enum. */
-function toDayType(dayType?: string): 'WORKDAY' | 'WEEKEND' | 'HOLIDAY' | 'EXAM_DAY' | 'LOW_ENERGY' | 'CUSTOM' {
-  switch (dayType) {
-    case 'WORKDAY':
-    case 'WEEKDAY':
-      return 'WORKDAY';
-    case 'WEEKEND':
-      return 'WEEKEND';
-    case 'HOLIDAY':
-      return 'HOLIDAY';
-    case 'EXAM_DAY':
-      return 'EXAM_DAY';
-    case 'LOW_ENERGY':
-      return 'LOW_ENERGY';
-    default:
-      return 'CUSTOM';
-  }
-}
 
 function toBlockDto(block: {
   id: string;
@@ -84,13 +67,15 @@ function toBlockDto(block: {
   description?: string | null;
   energyLevel?: string | null;
   category?: { name?: string } | null;
-  template?: { dayType?: string } | null;
+  template?: { id?: string; dayType?: string } | null;
+  templateId?: string;
 }) {
   return {
     id: block.id,
     title: block.title,
     startTime: block.startTime,
     endTime: block.endTime,
+    templateId: block.templateId ?? block.template?.id,
     dayType: block.template?.dayType ?? 'CUSTOM',
     category: block.category?.name,
     color: block.color ?? undefined,
@@ -135,7 +120,7 @@ export async function GET(_request: NextRequest) {
  * POST /api/routine
  * Create a routine template ({ name, dayType, ... }) OR a standalone
  * routine block ({ title, startTime, endTime, ... }). Block creation
- * auto-provisions a template for the given dayType.
+ * auto-provisions a template for the given dayType or dayTypeId.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -162,16 +147,44 @@ export async function POST(request: NextRequest) {
       const isOvernight = end <= start;
 
       const routineRepository = new RoutineRepository();
-      const dayType = toDayType(validated.data.dayType);
 
-      let template = await routineRepository.findTemplateByDayType(userId, dayType);
+      // Determine template: prefer dayTypeId (DayTypeDefinition), fall back to dayType enum
+      let template;
+      if (validated.data.dayTypeId) {
+        template = await routineRepository.findTemplateByDayTypeId(userId, validated.data.dayTypeId);
+      } else {
+        const dayType = validated.data.dayType ?? 'CUSTOM';
+        template = await routineRepository.findTemplateByDayType(userId, dayType);
+      }
+
       if (!template) {
-        template = await routineRepository.createTemplate({
-          user: { connect: { id: userId } },
-          name: `${dayType.charAt(0)}${dayType.slice(1).toLowerCase()} routine`,
-          dayType,
-          isDefault: true,
-        });
+        // Auto-provision template
+        if (validated.data.dayTypeId) {
+          // Verify dayTypeDefinition exists and belongs to user
+          const dayTypeDefById = await routineRepository['prisma'].dayTypeDefinition.findFirst({
+            where: { id: validated.data.dayTypeId, userId },
+          });
+          if (!dayTypeDefById) {
+            return NextResponse.json({ error: 'Day type not found' }, { status: 404 });
+          }
+          template = await routineRepository.createTemplate({
+            user: { connect: { id: userId } },
+            name: dayTypeDefById.name,
+            dayType: 'CUSTOM',
+            dayTypeDef: { connect: { id: validated.data.dayTypeId } },
+            isDefault: false,
+            isActive: true,
+          });
+        } else {
+          const dayType = validated.data.dayType ?? 'CUSTOM';
+          template = await routineRepository.createTemplate({
+            user: { connect: { id: userId } },
+            name: `${dayType.charAt(0)}${dayType.slice(1).toLowerCase()} routine`,
+            dayType,
+            isDefault: true,
+            isActive: true,
+          });
+        }
       }
 
       const existing = await routineRepository['prisma'].routineBlock.findMany({
@@ -204,10 +217,26 @@ export async function POST(request: NextRequest) {
         energyLevel: validated.data.energyLevel,
       });
 
+      // Get the dayType for the response - prefer dayTypeDef's slug or template's dayType
+      let responseDayType: DayType = template.dayType;
+      if (template.dayTypeId) {
+        const dayTypeDef = await routineRepository['prisma'].dayTypeDefinition.findUnique({
+          where: { id: template.dayTypeId },
+        });
+        if (dayTypeDef) {
+          // Slugs are not enum values: 'low-energy-day' -> 'LOW_ENERGY_DAY', which
+          // is not a DayType. Only adopt the derived value when it really is one.
+          const derived = dayTypeDef.slug.toUpperCase().replace(/-/g, '_');
+          if (isDayType(derived)) {
+            responseDayType = derived;
+          }
+        }
+      }
+
       return NextResponse.json(
         {
           success: true,
-          data: { ...toBlockDto({ ...block, template: { dayType } } as never), ...(overlaps ? { overlapWarning: true } : {}) },
+          data: { ...toBlockDto({ ...block, template: { ...template, dayType: responseDayType } } as never), ...(overlaps ? { overlapWarning: true } : {}) },
         },
         { status: 201 }
       );
@@ -262,7 +291,15 @@ export async function PUT(request: NextRequest) {
     const userId = session.user.id;
     const routineRepository = new RoutineRepository();
 
-    if (body && typeof body.title === 'string') {
+    // Route to block-update when the body contains an id AND any block-level field.
+    // Previously only `title` was checked, which caused sortOrder-only updates
+    // (e.g. drag-to-reorder) to fall through to the template-update path and
+    // fail with "Routine template not found".
+    const BLOCK_FIELDS = ['title', 'startTime', 'endTime', 'sortOrder', 'trackCompletion', 'energyLevel', 'description', 'color', 'icon'] as const;
+    const isBlockUpdate = body && typeof body.id === 'string' &&
+      BLOCK_FIELDS.some(f => f in body);
+
+    if (isBlockUpdate) {
       const validated = updateBlockSchema.safeParse(body);
       if (!validated.success) {
         return NextResponse.json(

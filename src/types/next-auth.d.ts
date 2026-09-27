@@ -19,6 +19,12 @@ declare module "next-auth" {
       image: string | null;
       role: Role;
     };
+    /**
+     * Absolute sign-out timestamp (loginAt + 6h). Optional because the server
+     * only stamps it when the JWT carries `loginAt`; consumers must fall back
+     * to the rolling `expires` rather than assuming it is present.
+     */
+    absoluteExpiresAt?: number;
   }
 
   interface User {
@@ -34,5 +40,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: Role;
+    loginAt: number;
+    sessionVersion: number;
   }
 }

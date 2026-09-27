@@ -1,14 +1,15 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { celebrateAchievementSchema } from '@/schemas/achievement.schema';
-import { AchievementRepository } from '@/server/repositories/achievement.repository';
-import { StreakRepository } from '@/server/repositories/streak.repository';
-import { AuditRepository } from '@/server/repositories/audit.repository';
-import prisma from '@/lib/prisma';
+import { AchievementService } from '@/server/services/achievement.service';
+
+const achievementService = new AchievementService();
 
 /**
  * POST /api/achievements/celebrate
  * Celebrate a streak milestone or an unlocked achievement for the user.
+ *
+ * The ownership checks and the audit-trail writes live in AchievementService.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -26,52 +27,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = session.user.id;
-    const auditRepository = new AuditRepository();
+    const { milestoneId, achievementId } = validated.data;
 
-    if (validated.data.milestoneId) {
-      const milestone = await prisma.streakMilestone.findFirst({
-        where: { id: validated.data.milestoneId, userId },
-      });
-      if (!milestone) {
-        return NextResponse.json({ error: 'Streak milestone not found' }, { status: 404 });
-      }
-
-      const updated = await new StreakRepository().celebrateMilestone(milestone.id);
-
-      await auditRepository.createActivity({
-        userId,
-        action: 'MILESTONE_CELEBRATED',
-        entityType: 'streakMilestone',
-        entityId: milestone.id,
-        description: `Celebrated ${milestone.milestoneDays}-day streak milestone`,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: { type: 'milestone', milestone: updated },
-      });
+    if (milestoneId) {
+      const result = await achievementService.celebrateMilestone(
+        session.user.id,
+        milestoneId
+      );
+      return NextResponse.json({ success: true, data: result });
     }
 
-    const achievementId = validated.data.achievementId as string;
-    const achievement = await new AchievementRepository().findById(userId, achievementId);
-    if (!achievement) {
-      return NextResponse.json({ error: 'Achievement not found' }, { status: 404 });
-    }
-
-    await auditRepository.createActivity({
-      userId,
-      action: 'ACHIEVEMENT_CELEBRATED',
-      entityType: 'achievement',
-      entityId: achievement.id,
-      description: `Celebrated achievement: ${achievement.title}`,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: { type: 'achievement', achievement },
-    });
+    // The schema's refine() guarantees at least one id is present.
+    const result = await achievementService.celebrateAchievement(
+      session.user.id,
+      achievementId as string
+    );
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
+    if (error instanceof Error && error.message.endsWith('not found')) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     console.error('Error celebrating achievement:', error);
     return NextResponse.json(
       { error: 'Failed to celebrate achievement' },

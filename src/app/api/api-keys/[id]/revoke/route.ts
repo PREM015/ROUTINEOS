@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { ApiKeyRepository } from '@/server/repositories/api-key.repository';
-import type { APIKey } from '@prisma/client';
+import type { APIKey } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {

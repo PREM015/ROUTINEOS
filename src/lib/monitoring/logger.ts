@@ -43,7 +43,7 @@ export function getLogLevel(): LogLevel {
 }
 
 /** Whether JSON output is preferred (`LOG_FORMAT=json` or in production). */
-function useJson(): boolean {
+function prefersJsonOutput(): boolean {
   return (
     process.env.LOG_FORMAT === 'json' ||
     (process.env.NODE_ENV ?? 'development') === 'production'
@@ -52,7 +52,7 @@ function useJson(): boolean {
 
 function write(entry: LogEntry): void {
   const { level, message, scope, timestamp, metadata } = entry;
-  const line = useJson()
+  const line = prefersJsonOutput()
     ? JSON.stringify({
         level,
         message,

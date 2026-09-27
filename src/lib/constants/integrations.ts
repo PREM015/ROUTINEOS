@@ -1,4 +1,4 @@
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 
 /**
  * Integration Constants

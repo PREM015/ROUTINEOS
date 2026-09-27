@@ -1,21 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Modal, Input, Select, Button, Textarea, Switch, ColorPicker } from '@/components/ui';
+import type { DayType } from '@/generated/prisma';
+import type { DayTypeOption } from '@/types/routine';
+
 
 interface AddRoutineBlockModalProps {
   open: boolean;
   onClose: () => void;
-  defaultDayType?: string;
+  defaultDayType?: DayType;
+  dayTypes?: DayTypeOption[];
 }
 
 const CATEGORIES = [
   'Health', 'GATE', 'DSA', 'Web Dev / AI', 'SSB', 'College', 'Personal', 'Work', 'Study'
 ];
 
-const DAY_TYPES = [
-  { value: 'WEEKDAY', label: 'Weekday' },
+const FALLBACK_DAY_TYPES: DayTypeOption[] = [
+  { value: 'WORKDAY', label: 'Weekday' },
   { value: 'WEEKEND', label: 'Weekend' },
   { value: 'HOLIDAY', label: 'Holiday' },
   { value: 'EXAM_DAY', label: 'Exam Day' },
@@ -30,7 +34,7 @@ const ENERGY_OPTIONS = [
   { value: 'LOW', label: 'Low energy' },
 ];
 
-export default function AddRoutineBlockModal({ open, onClose, defaultDayType = 'WEEKDAY' }: AddRoutineBlockModalProps) {
+export default function AddRoutineBlockModal({ open, onClose, defaultDayType = 'WORKDAY', dayTypes = [] }: AddRoutineBlockModalProps) {
   const { addRoutineBlock, routineBlocks } = useApp();
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('06:00');
@@ -44,6 +48,14 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Use provided dayTypes or fallback
+  const availableDayTypes = dayTypes.length > 0 ? dayTypes : FALLBACK_DAY_TYPES;
+
+  // Reset dayType when defaultDayType changes
+  useEffect(() => {
+    setDayType(defaultDayType);
+  }, [defaultDayType]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -72,10 +84,15 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
     setSubmitting(true);
     setSubmitError(null);
     try {
+      // Find the selected day type to get its dayTypeId
+      const selectedDayTypeOption = availableDayTypes.find(dt => dt.value === dayType);
+      const dayTypeId = selectedDayTypeOption?.dayTypeId;
+
       // sortOrder is per-day-type: new blocks go last within that tab.
       const siblingCount = routineBlocks.filter(b => b.dayType === dayType).length;
       const saved = await addRoutineBlock({
         dayType,
+        dayTypeId,
         startTime,
         endTime,
         title: title.trim(),
@@ -110,7 +127,7 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
 
   return (
     <Modal isOpen={open} onClose={onClose} title="Add Routine Block">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <Input
           label="Title"
           value={title}
@@ -120,7 +137,7 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
           autoFocus
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Start Time"
             type="time"
@@ -147,8 +164,8 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
         <Select
           label="Day Type"
           value={dayType}
-          onChange={e => setDayType(e.target.value)}
-          options={DAY_TYPES}
+          onChange={e => setDayType(e.target.value as DayType)}
+          options={availableDayTypes.map(dt => ({ value: dt.value, label: dt.label }))}
         />
 
         <Select
@@ -186,8 +203,8 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
           </p>
         )}
 
-        <div className="flex gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
           <Button type="submit" variant="default" disabled={submitting} className="flex-1">
             {submitting ? 'Adding...' : 'Add Block'}
           </Button>

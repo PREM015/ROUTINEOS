@@ -1,4 +1,4 @@
-import type { GoalStatus, GoalPriority, GoalType } from '@prisma/client';
+import type { GoalStatus, GoalPriority, GoalType } from '@/generated/prisma';
 
 /**
  * Goal Status and Priority Constants

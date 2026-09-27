@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 import { Plug } from 'lucide-react';
 import { getEnabledIntegrations } from '@/lib/constants/integrations';
 import IntegrationCard from '@/components/integrations/IntegrationCard';

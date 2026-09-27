@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DAY_TYPES_ORDERED } from '@/constants/routine';
 import {
   CreateTemplateSchema,
   UpdateTemplateSchema,
@@ -17,10 +18,19 @@ export {
   LogBlockSchema,
 };
 
+/**
+ * Canonical `DayType` validator, built from the one ordered enum list in
+ * `constants/routine`. Never re-declare day-type literals in a zod enum — a
+ * hand-written list is how the invalid 'WEEKDAY' value got accepted by the API.
+ */
+export const dayTypeSchema = z.enum(
+  DAY_TYPES_ORDERED as [string, ...string[]]
+) as z.ZodType<(typeof DAY_TYPES_ORDERED)[number]>;
+
 export const createRoutineTemplateSchema = z.object({
   name: CreateTemplateSchema.shape.name,
   description: CreateTemplateSchema.shape.description,
-  dayType: z.enum(['WORKDAY', 'WEEKEND', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM']).optional(),
+  dayType: dayTypeSchema.optional(),
   isDefault: CreateTemplateSchema.shape.isDefault,
   color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
   icon: z.string().optional(),
@@ -32,7 +42,7 @@ export const updateRoutineTemplateSchema = createRoutineTemplateSchema.partial()
 });
 
 export const routineTemplateQuerySchema = z.object({
-  dayType: z.enum(['WORKDAY', 'WEEKEND', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM']).optional(),
+  dayType: dayTypeSchema.optional(),
   isActive: z.boolean().optional(),
   isDefault: z.boolean().optional(),
   search: z.string().optional(),

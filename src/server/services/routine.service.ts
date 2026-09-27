@@ -1,4 +1,11 @@
-import type { DayType, Prisma, RoutineLog } from '@prisma/client';
+import type {
+  DayType,
+  Prisma,
+  RoutineBlock,
+  RoutineLog,
+  RoutineLogStatus,
+  RoutineTemplate,
+} from '@/generated/prisma';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { format, parseISO, eachDayOfInterval } from 'date-fns';
 import type {
@@ -9,8 +16,9 @@ import type {
   RoutineProgressPeriod,
   RoutineProgressResponse,
   RoutineProgressDay,
+  RoutineAnalytics,
 } from '@/types/routine';
-import { getDayTypeForDate } from '@/constants/routine';
+import { resolveNaturalDayType } from '@/lib/scheduling/resolve-routine';
 import {
   isOvernightBlock,
   isTimeOverlap,
@@ -19,6 +27,9 @@ import {
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { getPeriodRange } from '@/lib/period-range';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { invalidateDashboard } from '@/server/cache/dashboard-cache';
+import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
+import { invalidateInsights } from '@/server/cache/insight-cache';
 
 /**
  * Routine Service
@@ -42,12 +53,12 @@ export class RoutineService {
     date: Date | string
   ): Promise<DayRoutine> {
     const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
-    const dateObj = new Date(dateStr);
 
     // Check for exception
     const exception = await this.routineRepository.findException(userId, dateStr);
 
-    let dayType: DayType = getDayTypeForDate(dateObj);
+    // Natural day type always comes from the shared resolver.
+    let dayType: DayType = resolveNaturalDayType(dateStr, 'UTC');
     let templateId: string | null = null;
 
     if (exception) {
@@ -115,7 +126,7 @@ export class RoutineService {
       dayType,
       template,
       exception,
-      blocks: blocks as any,
+      blocks,
       totalBlocks: blocks.length,
       completedBlocks,
       completionRate:
@@ -190,7 +201,7 @@ export class RoutineService {
           ? templatesById.get(exception.templateId)
           : templatesByDayType.get(dayType);
       } else {
-        dayType = getDayTypeForDate(parseISO(date));
+        dayType = resolveNaturalDayType(date, 'UTC');
         template = templatesByDayType.get(dayType);
       }
 
@@ -268,23 +279,188 @@ export class RoutineService {
       color?: string;
       icon?: string;
     }
-  ): Promise<any> {
+  ): Promise<RoutineTemplateWithBlocks | RoutineTemplate> {
     if (!input.name?.trim()) {
       throw new Error('Template name is required');
     }
 
-    const template = await this.routineRepository.createTemplate({
-      user: { connect: { id: userId } },
-      name: input.name,
-      description: input.description,
-      dayType: input.dayType,
-      isDefault: input.isDefault ?? false,
-      isActive: true,
-      color: input.color,
-      icon: input.icon,
-    } as Prisma.RoutineTemplateCreateInput);
+    const isDefault = input.isDefault ?? false;
+
+    // "One default template per day type" is enforced here, atomically, so the
+    // exclusivity rule has exactly one implementation.
+    const template = await this.routineRepository.createTemplateWithDefaultFlag(
+      userId,
+      {
+        user: { connect: { id: userId } },
+        name: input.name.trim(),
+        description: input.description,
+        dayType: input.dayType,
+        isDefault,
+        isActive: true,
+        color: input.color,
+        icon: input.icon,
+      } as Prisma.RoutineTemplateCreateInput,
+      isDefault,
+      input.dayType
+    );
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
 
     return template;
+  }
+
+  /**
+   * All templates for a user, with block counts, in display order.
+   */
+  async listTemplates(userId: string) {
+    return this.routineRepository.findAllTemplates(userId, true);
+  }
+
+  /**
+   * Create a template from a minimal { name, dayType, isDefault } payload.
+   * Used by the day-type-scoped templates endpoint.
+   */
+  async createSimpleTemplate(
+    userId: string,
+    input: { name: string; dayType: DayType; isDefault?: boolean }
+  ) {
+    return this.createTemplate(userId, {
+      name: input.name,
+      dayType: input.dayType,
+      isDefault: input.isDefault ?? false,
+    });
+  }
+
+  /**
+   * Update a template's name and/or default flag, preserving the
+   * one-default-per-day-type rule.
+   */
+  async updateTemplate(
+    userId: string,
+    templateId: string,
+    input: { name?: string; isDefault?: boolean }
+  ) {
+    const existing = await this.routineRepository.findTemplateById(
+      templateId,
+      userId
+    );
+    if (!existing) {
+      throw new Error('Routine template not found');
+    }
+
+    const isDefault = input.isDefault === undefined ? existing.isDefault : input.isDefault;
+    const name =
+      typeof input.name === 'string' && input.name.trim() ? input.name.trim() : undefined;
+
+    const template = await this.routineRepository.updateTemplateWithDefaultFlag(
+      templateId,
+      userId,
+      {
+        ...(name !== undefined && { name }),
+        isDefault,
+      },
+      isDefault,
+      existing.dayType
+    );
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
+    return template;
+  }
+
+  // ==========================================================================
+  // Routine exceptions
+  // ==========================================================================
+
+  /**
+   * List a user's routine exceptions, optionally for a single date.
+   */
+  async listExceptions(userId: string, date?: string) {
+    return this.routineRepository.listExceptions(userId, date);
+  }
+
+  /**
+   * Create or replace the per-date routine exception.
+   *
+   * Verifies the referenced template belongs to the user before writing, so an
+   * exception can never point at somebody else's template.
+   */
+  async upsertException(
+    userId: string,
+    input: {
+      date: string;
+      dayType: DayType;
+      templateId?: string | null;
+      note?: string | null;
+    }
+  ) {
+    if (input.templateId) {
+      const template = await this.routineRepository.findTemplateById(
+        input.templateId,
+        userId
+      );
+      if (!template) {
+        throw new Error('Routine template not found');
+      }
+    }
+
+    const exception = await this.routineRepository.upsertException(
+      userId,
+      input.date,
+      {
+        dayType: input.dayType,
+        templateId: input.templateId ?? null,
+        note: input.note?.trim() || null,
+      }
+    );
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
+    return exception;
+  }
+
+  /**
+   * Clear the per-date override, returning the date to its natural schedule.
+   */
+  async clearException(userId: string, date: string) {
+    await this.routineRepository.deleteExceptionsForDate(userId, date);
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+  }
+
+  /**
+   * Record a routine block's status for a date.
+   *
+   * Verifies block ownership before writing the log.
+   */
+  async logBlockStatus(
+    userId: string,
+    input: {
+      blockId: string;
+      date: string;
+      status: RoutineLogStatus;
+      note?: string | null;
+    }
+  ) {
+    const block = await this.routineRepository.findBlockById(input.blockId, userId);
+    if (!block) {
+      throw new Error('Routine block not found');
+    }
+
+    return this.routineRepository.upsertLog(
+      userId,
+      input.blockId,
+      input.date,
+      { status: input.status, note: input.note ?? null }
+    );
   }
 
   /**
@@ -302,7 +478,7 @@ export class RoutineService {
       isRecurring?: boolean;
       sortOrder?: number;
     }
-  ): Promise<any> {
+  ): Promise<RoutineBlock> {
     // Verify template ownership
     const template = await this.routineRepository.findTemplateById(templateId, userId);
     if (!template) {
@@ -346,6 +522,10 @@ export class RoutineService {
       isOvernight: isOvernightBlock(input.startTime, input.endTime),
     } as Prisma.RoutineBlockCreateInput);
 
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
     return block;
   }
 
@@ -365,7 +545,7 @@ export class RoutineService {
       energyLevel?: number;
       note?: string;
     }
-  ): Promise<any> {
+  ): Promise<RoutineLog> {
     // Verify block ownership
     const block = await this.routineRepository.findBlockById(blockId, userId);
     if (!block) {
@@ -379,7 +559,11 @@ export class RoutineService {
       const [endHour = 0, endMin = 0] = data.actualEndTime.split(':').map(Number);
       const startTotalMin = startHour * 60 + startMin;
       const endTotalMin = endHour * 60 + endMin;
-      durationMinutes = endTotalMin - startTotalMin;
+      // A completion that runs past midnight (e.g. 23:30 -> 00:30) is a
+      // positive 60 minutes, not -1380. Roll the end time forward a day when
+      // it lands before the start.
+      const elapsed = endTotalMin - startTotalMin;
+      durationMinutes = elapsed < 0 ? elapsed + 24 * 60 : elapsed;
     }
 
     const log = await this.routineRepository.createLog({
@@ -396,6 +580,15 @@ export class RoutineService {
       note: data?.note,
     } as Prisma.RoutineLogCreateInput);
 
+    // Routine completion feeds routineCompletionRate on the daily score, so the
+    // score (and every consumer of it) must be recomputed for this date.
+    const { ScoringService } = await import('./scoring.service');
+    await new ScoringService().calculateDailyScore(userId, date);
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
     return log;
   }
 
@@ -407,7 +600,7 @@ export class RoutineService {
     templateId: string,
     startDate: string,
     endDate: string
-  ): Promise<any> {
+  ): Promise<RoutineAnalytics> {
     // Verify template ownership
     const template = await this.routineRepository.findTemplateWithBlocks(templateId, userId);
     if (!template) {

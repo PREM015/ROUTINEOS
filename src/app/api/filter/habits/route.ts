@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { HabitRepository } from '@/server/repositories/habit.repository';
+import { HabitService } from '@/server/services/habit.service';
 import { habitQuerySchema } from '@/schemas/habit.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -57,49 +57,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const habitRepository = new HabitRepository();
-    const userId = session.user.id;
-
-    let habits = await habitRepository.findAll(userId, {
-      status: validated.data.status,
-      tier: validated.data.tier,
-      categoryId: validated.data.categoryId,
-      includeArchived: validated.data.includeArchived,
-      sortBy: validated.data.sortBy,
-      sortOrder: validated.data.sortOrder,
-      limit: validated.data.limit,
-      offset: validated.data.offset,
+    const habits = await new HabitService().filterHabits(session.user.id, {
+      ...validated.data,
+      date: extra.data.date,
+      energy: extra.data.energy,
     });
-
-    if (validated.data.search) {
-      const q = validated.data.search.toLowerCase();
-      habits = habits.filter(
-        (habit) =>
-          habit.name.toLowerCase().includes(q) ||
-          (habit.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
-
-    if (extra.data.date) {
-      const target = new Date(`${extra.data.date}T00:00:00Z`);
-      habits = habits.filter((habit) => {
-        if (new Date(habit.startDate) > target) return false;
-        if (habit.endDate && new Date(habit.endDate) < target) return false;
-        return true;
-      });
-    }
-
-    if (extra.data.energy !== undefined) {
-      const energy = extra.data.energy;
-      const matchingIds = new Set<string>();
-      for (const habit of habits) {
-        const withLogs = await habitRepository.findWithRelations(habit.id, userId);
-        if (withLogs && withLogs.logs.some((log) => log.energyLevel === energy)) {
-          matchingIds.add(habit.id);
-        }
-      }
-      habits = habits.filter((habit) => matchingIds.has(habit.id));
-    }
 
     return NextResponse.json({
       success: true,

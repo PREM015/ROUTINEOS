@@ -1,4 +1,4 @@
-import type { HabitTier } from '@prisma/client';
+import type { HabitTier } from '@/generated/prisma';
 
 /**
  * Habit Tier Constants

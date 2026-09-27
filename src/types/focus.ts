@@ -7,7 +7,7 @@ import type {
   Project,
   Habit,
   Goal,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Focus & Time Tracking Types

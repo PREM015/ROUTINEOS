@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 
 export async function getGoalsNeedingAttention(
   userId: string,
@@ -24,3 +24,4 @@ export function buildGoalReminderMessage(goalTitle: string, daysRemaining?: numb
       : `Check on your goal "${goalTitle}".`
   };
 }
+

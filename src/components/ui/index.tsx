@@ -6,6 +6,7 @@ export * from './Input';
 export * from './Textarea';
 export * from './Select';
 export * from './Switch';
+export * from './Checkbox';
 export * from './Slider';
 export * from './Tabs';
 export * from './Spinner';

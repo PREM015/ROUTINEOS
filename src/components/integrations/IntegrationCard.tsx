@@ -14,7 +14,7 @@
  *     onOpenSettings={(p) => setSettingsProvider(p)} />
  */
 import * as React from 'react';
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 import { CheckCircle2, Link, RefreshCw, Settings, Unplug } from 'lucide-react';
 import type { IntegrationSafeView } from '@/types/integrations';
 import { apiRequest } from '@/lib/api-client';

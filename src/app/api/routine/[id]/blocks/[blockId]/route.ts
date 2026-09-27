@@ -26,8 +26,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       include: { template: true }
     });
 
-    if (!block || block.template.userId !== session.user.id || block.templateId !== id) {
-      return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
+    if (!block) {
+      return NextResponse.json({ error: "Block not found" }, { status: 404 });
+    }
+    if (block.template.userId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    if (block.templateId !== id) {
+      return NextResponse.json({
+        error: "Block belongs to a different template",
+        detail: `block.templateId=${block.templateId} does not match URL param id=${id}`,
+      }, { status: 409 });
     }
 
     const updatedBlock = await db.routineBlock.update({
@@ -52,8 +61,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       include: { template: true }
     });
 
-    if (!block || block.template.userId !== session.user.id || block.templateId !== id) {
-      return NextResponse.json({ error: "Not found or unauthorized" }, { status: 404 });
+    if (!block) {
+      return NextResponse.json({ error: "Block not found" }, { status: 404 });
+    }
+    if (block.template.userId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    if (block.templateId !== id) {
+      return NextResponse.json({
+        error: "Block belongs to a different template",
+        detail: `block.templateId=${block.templateId} does not match URL param id=${id}`,
+      }, { status: 409 });
     }
 
     await db.routineBlock.delete({

@@ -13,7 +13,7 @@
 
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
-import type { NotificationLog } from '@prisma/client';
+import type { NotificationLog } from '@/generated/prisma';
 
 interface NotificationsResponse {
   notifications: NotificationLog[];

@@ -4,6 +4,7 @@ import { HabitRepository } from '@/server/repositories/habit.repository';
 import { HabitEligibility, HabitEligibilityReason } from '@/types/habit';
 import { DEFAULT_TZ } from '@/lib/dates';
 import { isHabitScheduledForDate } from './scheduling';
+import { resolveDayTypeForDate } from '@/lib/scheduling/resolve-routine';
 
 /**
  * Habit Eligibility
@@ -17,8 +18,8 @@ export async function calculateHabitEligibility(
   userId: string,
   date: string
 ): Promise<HabitEligibility> {
-  // Get habit
-  const habit = await habitRepository.findById(habitId, userId);
+  // Get habit with day type assignments
+  const habit = await habitRepository.findById(habitId, userId, { includeDayTypeAssignments: true });
   if (!habit) {
     return {
       habitId,
@@ -110,16 +111,33 @@ export async function calculateHabitEligibility(
   // A RESCHEDULE override covering this date marks a manual ad-hoc inclusion
   // for the day (added directly to today's list rather than by frequency). It
   // overrides the schedule check below but still yields to skip/pause/NA above.
-  const manualInclusion = overrides.find(
+  const rescheduleOverride = overrides.find(
     o =>
       o.type === 'RESCHEDULE' &&
       o.startDate <= date &&
       (o.endDate === null || o.endDate === undefined || o.endDate >= date)
   );
 
+  // Check day type filtering
+  if (habit.appliesEveryDay === false && (habit as any).dayTypeAssignments && (habit as any).dayTypeAssignments.length > 0) {
+    const dayTypeInfo = await resolveDayTypeForDate(userId, date);
+    if (dayTypeInfo.dayTypeId) {
+      const hasDayTypeAssignment = (habit as any).dayTypeAssignments.some((dta: any) => dta.dayTypeId === dayTypeInfo.dayTypeId);
+      if (!hasDayTypeAssignment) {
+        return {
+          habitId,
+          date,
+          isEligible: false,
+          reason: HabitEligibilityReason.NOT_SCHEDULED,
+          source: 'DAY_TYPE_FILTER',
+        };
+      }
+    }
+  }
+
   // Check if scheduled for this date
   const scheduled = isHabitScheduledForDate(habit, date, DEFAULT_TZ);
-  if (!scheduled && !manualInclusion) {
+  if (!scheduled && !rescheduleOverride) {
     return {
       habitId,
       date,
@@ -134,8 +152,8 @@ export async function calculateHabitEligibility(
     habitId,
     date,
     isEligible: true,
-    source: manualInclusion && !scheduled ? 'MANUAL' : 'SCHEDULED',
-    ...(manualInclusion ? { override: manualInclusion } : {}),
+    source: rescheduleOverride && !scheduled ? 'MANUAL' : 'SCHEDULED',
+    ...(rescheduleOverride ? { override: rescheduleOverride } : {}),
   };
 }
 

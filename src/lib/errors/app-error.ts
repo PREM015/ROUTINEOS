@@ -3,12 +3,24 @@
  * Structured error handling with proper types
  */
 
+/**
+ * Structured detail attached to an error. Must survive `JSON.stringify` to be
+ * sent to a client, so `unknown` and non-serialisable values are not allowed.
+ */
+export type ErrorDetails =
+  | string
+  | number
+  | boolean
+  | null
+  | ErrorDetails[]
+  | { [key: string]: ErrorDetails };
+
 export class AppError extends Error {
   constructor(
     message: string,
     public code: string,
     public statusCode: number = 500,
-    public details?: any
+    public details?: ErrorDetails
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -25,7 +37,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: ErrorDetails) {
     super(message, 'VALIDATION_ERROR', 400, details);
   }
 }
@@ -55,7 +67,7 @@ export class NotFoundError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: ErrorDetails) {
     super(message, 'CONFLICT', 409, details);
   }
 }
@@ -67,7 +79,7 @@ export class RateLimitError extends AppError {
 }
 
 export class DatabaseError extends AppError {
-  constructor(message: string, details?: any) {
+  constructor(message: string, details?: ErrorDetails) {
     super(message, 'DATABASE_ERROR', 500, details);
   }
 }

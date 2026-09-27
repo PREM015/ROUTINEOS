@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 
 export async function canGenerateInsights(userId: string, db: PrismaClient): Promise<{ allowed: boolean; reason?: string }> {
   const today = new Date();
@@ -29,3 +29,4 @@ export async function recordInsightGeneration(userId: string, db: PrismaClient):
     }
   }).catch(() => null);
 }
+

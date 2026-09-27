@@ -10,7 +10,7 @@ export function calculateSleepDuration(
   const [bedHour = 0, bedMin = 0] = bedtime.split(':').map(Number);
   const [wakeHour = 0, wakeMin = 0] = wakeTime.split(':').map(Number);
 
-  let bedMinutes = bedHour * 60 + bedMin;
+  const bedMinutes = bedHour * 60 + bedMin;
   let wakeMinutes = wakeHour * 60 + wakeMin;
 
   // Handle overnight sleep

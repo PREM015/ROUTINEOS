@@ -1,4 +1,4 @@
-import type { JournalEntry, JournalRevision, Prisma } from '@prisma/client';
+import type { JournalEntry, JournalRevision, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

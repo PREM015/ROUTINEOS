@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import type { NotificationType } from '@prisma/client';
+import type { NotificationType } from '@/generated/prisma';
 
 /**
  * Notification Scheduler

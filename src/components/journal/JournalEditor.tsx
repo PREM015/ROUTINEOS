@@ -17,7 +17,7 @@
  *   <JournalEditor entry={selected} onSaved={handleSaved} onCancel={close} />
  */
 import * as React from 'react';
-import type { Tag } from '@prisma/client';
+import type { Tag } from '@/generated/prisma';
 import { Save } from 'lucide-react';
 import type { JournalEntryWithRelations } from '@/types/journal';
 import { apiRequest } from '@/lib/api-client';

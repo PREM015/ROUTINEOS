@@ -1,4 +1,4 @@
-import type { HabitTier, SleepLog } from '@prisma/client';
+import type { HabitTier, SleepLog } from '@/generated/prisma';
 import { APP_CONFIG } from '@/config/app';
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';

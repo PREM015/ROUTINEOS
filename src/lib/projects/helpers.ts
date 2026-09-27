@@ -1,4 +1,4 @@
-import type { Project, Task, ProjectStatus } from '@prisma/client';
+import type { Project, Task, ProjectStatus } from '@/generated/prisma';
 import type { ProjectHealthScore } from '@/types/projects';
 
 /**

@@ -1,4 +1,4 @@
-import type { APIKey, Prisma } from '@prisma/client';
+import type { APIKey, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -115,3 +115,4 @@ export class ApiKeyRepository extends BaseRepository {
     }
   }
 }
+

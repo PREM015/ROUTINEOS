@@ -1,8 +1,7 @@
 import { auth } from '@/lib/auth';
-import { NextRequest, NextResponse } from 'next/server';
-import { UserRepository } from '@/server/repositories/user.repository';
+import { adminService, ForbiddenError } from '@/server/services/admin.service';
 import { adminAnalyticsQuerySchema } from '@/schemas/admin.schema';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
 function toDateOnly(value: string): Date {
   const [y = '1970', m = '1', d = '1'] = value.split('-');
@@ -20,9 +19,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await new UserRepository().findById(session.user.id);
-    if (user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    try {
+      await adminService.requireAdmin(session.user.id);
+    } catch (error) {
+      if (error instanceof ForbiddenError) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      throw error;
     }
 
     const { searchParams } = new URL(request.url);
@@ -46,52 +49,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const createdAtRange = from || to ? { gte: from, lte: to } : undefined;
-
-    const [totalUsers, activeUsers, newUsers, usersByRole, totalHabits, totalGoals, completedGoals, totalFeedback, resolvedFeedback, totalChallenges, activeChallenges, totalScores] =
-      await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({
-          where: {
-            lastActivityAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-          },
-        }),
-        createdAtRange ? prisma.user.count({ where: { createdAt: createdAtRange } }) : 0,
-        prisma.user.groupBy({ by: ['role'], _count: true }),
-        prisma.habit.count(),
-        prisma.goal.count(),
-        prisma.goal.count({
-          where: {
-            status: 'COMPLETED',
-            ...(createdAtRange ? { completedAt: { gte: from, lte: to } } : {}),
-          },
-        }),
-        prisma.feedback.count(),
-        prisma.feedback.count({
-          where: { status: { in: ['RESOLVED', 'CLOSED'] } },
-        }),
-        prisma.challenge.count(),
-        prisma.challenge.count({ where: { endDate: { gte: new Date() } } }),
-        prisma.dailyScore.count(),
-      ]);
+    const analytics = await adminService.getAnalytics({ gte: from, lte: to });
 
     return NextResponse.json({
       success: true,
       data: {
         period: { from: validated.data.from ?? null, to: validated.data.to ?? null },
-        users: {
-          total: totalUsers,
-          active30d: activeUsers,
-          newInPeriod: newUsers,
-          byRole: usersByRole.map((row) => ({ role: row.role, count: row._count })),
-        },
-        content: {
-          habits: totalHabits,
-          goals: { total: totalGoals, completed: completedGoals },
-          challenges: { total: totalChallenges, active: activeChallenges },
-        },
-        feedback: { total: totalFeedback, resolved: resolvedFeedback },
-        scores: { total: totalScores },
+        ...analytics,
       },
     });
   } catch (error) {

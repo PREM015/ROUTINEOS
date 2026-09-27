@@ -2,19 +2,31 @@
 
 import { createContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { fetchWithAuth } from '@/lib/api-client';
 import { getTodayString, nowForUser } from '@/lib/dates';
+import { isDayType } from '@/constants/routine';
+import type { DayType } from '@/generated/prisma';
 
 // ─── Types (aligned with Prisma enums + API Zod schemas) ────────────────────
 
 export type HabitTier =
-  | 'GROWTH' | 'BONUS' | 'OPTIONAL' | 'EXPERIMENTAL' | 'UNDEFINED'
+  | 'NON_NEGOTIABLE' | 'GROWTH' | 'BONUS' | 'OPTIONAL' | 'EXPERIMENTAL' | 'UNDEFINED'
   | 'ALTERNATIVE' | 'SPECIAL' | 'FLEXIBLE' | 'JUST_FOR_FUN' | 'LIFESTYLE';
 export type HabitStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED' | 'COMPLETED';
 export type FrequencyType =
   | 'DAILY' | 'SPECIFIC_WEEKDAYS' | 'WEEKLY_TARGET' | 'MONTHLY_TARGET'
   | 'YEARLY_TARGET' | 'RANDOM' | 'ONE_TIME' | 'CUSTOM';
 export type LogStatus = 'COMPLETED' | 'MISSED' | 'SKIPPED' | 'NOT_APPLICABLE' | 'PARTIAL';
-export type DayType = 'NORMAL' | 'MINIMUM' | 'REST' | 'MISSED';
+
+/**
+ * How the day actually went / how much load it carried.
+ *
+ * This is NOT a routine `DayType` (WORKDAY/WEEKEND/...). It was previously named
+ * `DayType` in this file, which collided with the Prisma enum and created a
+ * sixth day-type taxonomy in circulation. The routine day type is the `DayType`
+ * imported from `@/generated/prisma` above.
+ */
+export type DayMode = 'NORMAL' | 'MINIMUM' | 'REST' | 'MISSED';
 
 export interface Habit {
   id: string;
@@ -33,6 +45,8 @@ export interface Habit {
   endDate?: string;
   reminderTime?: string;
   reminderEnabled?: boolean;
+  appliesEveryDay?: boolean;
+  dayTypeAssignments?: Array<{ dayTypeId: string }>;
   streakCount?: number;
   longestStreak?: number;
 }
@@ -49,6 +63,7 @@ export interface HabitLog {
 export interface RoutineBlock {
   id: string;
   dayType: string;
+  dayTypeId?: string;
   startTime: string;
   endTime: string;
   title: string;
@@ -60,6 +75,7 @@ export interface RoutineBlock {
   trackCompletion: boolean;
   overlapWarning?: boolean;
   energyLevel?: 'HIGH' | 'MEDIUM' | 'LOW';
+  templateId?: string;
 }
 
 export interface Goal {
@@ -79,7 +95,8 @@ export interface Goal {
 
 export interface DayMeta {
   date: string;
-  dayType: DayType;
+  /** Day *mode* (NORMAL/MINIMUM/REST/MISSED) — not the routine `DayType`. */
+  mode: DayMode;
   contextTags: string[];
   minimumDayReason?: string;
   restDayReason?: string;
@@ -99,8 +116,8 @@ interface AppContextValue {
   dataLoaded: boolean;
   dataError: string | null;
   reloadData: () => Promise<void>;
-  addHabit: (habit: Omit<Habit, 'id'>) => Promise<Habit>;
-  updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
+  addHabit: (habit: Omit<Habit, 'id'> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => Promise<Habit>;
+  updateHabit: (id: string, updates: Partial<Habit> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => Promise<void>;
   archiveHabit: (id: string) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   logHabit: (habitId: string, date: string, status: LogStatus, note?: string) => Promise<void>;
@@ -127,8 +144,8 @@ interface AppContextValue {
   // UI state
   selectedDate: string;
   setSelectedDate: (date: string) => void;
-  selectedRoutineTab: string;
-  setSelectedRoutineTab: (tab: string) => void;
+  selectedRoutineTab: DayType;
+  setSelectedRoutineTab: (tab: DayType) => void;
   undoStack: (() => void)[];
   pushUndo: (fn: () => void) => void;
   undo: () => void;
@@ -180,7 +197,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [routineBlocks, setRoutineBlocks] = useState<RoutineBlock[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dayMeta, setDayMetaMap] = useState<Record<string, DayMeta>>({});
-  const [selectedRoutineTab, setSelectedRoutineTab] = useState('WEEKDAY');
+  const [selectedRoutineTab, setSelectedRoutineTab] = useState<DayType>('WORKDAY');
   const [undoStack, setUndoStack] = useState<(() => void)[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -193,6 +210,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     frequencyValue?: string | null;     targetCount?: number | null;
     startDate?: string | Date | null; endDate?: string | Date | null;
     reminderTime?: string | null; reminderEnabled?: boolean | null;
+    appliesEveryDay?: boolean | null;
+    dayTypeAssignments?: Array<{ dayTypeId: string }> | null;
     streakCount?: number | null; longestStreak?: number | null;
   }): Habit => ({
     id: raw.id,
@@ -211,6 +230,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     endDate: raw.endDate ? String(raw.endDate).slice(0, 10) : undefined,
     reminderTime: raw.reminderTime ?? undefined,
     reminderEnabled: raw.reminderEnabled ?? undefined,
+    appliesEveryDay: raw.appliesEveryDay ?? true,
+    dayTypeAssignments: raw.dayTypeAssignments ?? [],
     streakCount: raw.streakCount ?? undefined,
     longestStreak: raw.longestStreak ?? undefined,
   }), [today]);
@@ -242,15 +263,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     color?: string | null; icon?: string | null; sortOrder?: number | null;
     trackCompletion?: boolean | null; overlapWarning?: boolean;
     energyLevel?: string | null;
-    template?: { dayType?: string } | null;
+    template?: { id?: string; dayType?: string; dayTypeId?: string } | null;
   }): RoutineBlock => ({
     id: raw.id,
-    // Server stores WORKDAY; the UI labels the tab WEEKDAY. Normalize so the
-    // filter `dayType === selectedRoutineTab` survives a refresh.
-    dayType: (() => {
-      const dt = raw.dayType ?? raw.template?.dayType ?? 'CUSTOM';
-      return dt === 'WORKDAY' ? 'WEEKDAY' : dt;
-    })(),
+    // Pass the server's DayType straight through. This used to rewrite WORKDAY to
+    // a 'WEEKDAY' pseudo-value that does not exist in the schema, while the tab
+    // strip used the real 'WORKDAY' — so selecting the Workday tab matched no
+    // blocks at all. Labels belong in the UI, not in the stored day type.
+    dayType: isDayType(raw.dayType)
+      ? raw.dayType
+      : isDayType(raw.template?.dayType)
+        ? raw.template.dayType
+        : 'CUSTOM',
+    dayTypeId: raw.template?.dayTypeId,
     startTime: raw.startTime,
     endTime: raw.endTime,
     title: raw.title ?? raw.name ?? 'Untitled block',
@@ -264,6 +289,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     energyLevel: raw.energyLevel === 'HIGH' || raw.energyLevel === 'MEDIUM' || raw.energyLevel === 'LOW'
       ? raw.energyLevel
       : undefined,
+    templateId: raw.template?.id,
   }), []);
 
   const fetchAll = useCallback(async () => {
@@ -357,8 +383,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [fetchAll]);
 
   // ── Habits ──────────────────────────────────────────────────────────────────
-  const addHabit = useCallback(async (habit: Omit<Habit, 'id'>) => {
-    const localHabit = { ...habit, id: genId() };
+  const addHabit = useCallback(async (habit: Omit<Habit, 'id'> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => {
+    const { appliesEveryDay, dayTypeIds, ...habitData } = habit;
+    const localHabit = { ...habitData, id: genId() };
     setHabits(prev => [...prev, localHabit]);
 
     if (status !== 'authenticated') {
@@ -370,19 +397,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: habit.name,
-          description: habit.description,
-          tier: habit.tier,
-          categoryId: habit.categoryId,
-          color: habit.color,
-          icon: habit.icon,
-          frequencyType: habit.frequencyType,
-          frequencyValue: habit.frequencyValue,
-          targetCount: habit.targetCount,
-          startDate: habit.startDate,
-          endDate: habit.endDate,
-          reminderTime: habit.reminderTime,
-          reminderEnabled: habit.reminderEnabled,
+          ...habitData,
+          appliesEveryDay: appliesEveryDay ?? true,
+          dayTypeIds: dayTypeIds ?? [],
         }),
       });
       const json = await throwIfNotOk(response, 'Failed to create habit') as { data: never };
@@ -397,20 +414,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [normalizeHabit, status]);
 
-  const updateHabit = useCallback(async (id: string, updates: Partial<Habit>) => {
+  const updateHabit = useCallback(async (id: string, updates: Partial<Habit> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => {
+    const { appliesEveryDay, dayTypeIds, ...fields } = updates;
     const prev = habits.find(h => h.id === id);
-    setHabits(prevList => prevList.map(h => h.id === id ? { ...h, ...updates } : h));
+    setHabits(prevList => prevList.map(h => h.id === id ? { ...h, ...fields } : h));
 
     if (status !== 'authenticated' || id.startsWith('local-')) {
       return;
     }
 
     try {
-      const { id: _omit, ...fields } = updates;
+      const { id: _omit, ...updateFields } = fields;
       const response = await fetch(`/api/habits/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(fields),
+        body: JSON.stringify({
+          ...updateFields,
+          appliesEveryDay,
+          dayTypeIds,
+        }),
       });
       const json = await throwIfNotOk(response, 'Failed to update habit') as { data: never };
       const saved = normalizeHabit(json.data);
@@ -435,7 +457,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/habits/${id}`, { method: 'DELETE' });
+      const response = await fetchWithAuth(`/api/habits/${id}`, { method: 'DELETE' });
       await throwIfNotOk(response, 'Failed to delete habit');
     } catch (error) {
       console.error('deleteHabit failed:', error);
@@ -643,9 +665,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/goals/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchWithAuth(`/api/goals/${id}`, { method: 'DELETE' });
       await throwIfNotOk(response, 'Failed to delete goal');
     } catch (error) {
       console.error('deleteGoal failed:', error);
@@ -685,13 +705,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ── Day Meta ─────────────────────────────────────────────────────────────────
   const getDayMeta = useCallback((date: string): DayMeta => {
-    return dayMeta[date] || { date, dayType: 'NORMAL', contextTags: [] };
+    return dayMeta[date] || { date, mode: 'NORMAL', contextTags: [] };
   }, [dayMeta]);
 
   const setDayMeta = useCallback((date: string, meta: Partial<DayMeta>) => {
     setDayMetaMap(prev => ({
       ...prev,
-      [date]: { ...(prev[date] || { date, dayType: 'NORMAL' as DayType, contextTags: [] }), ...meta, date },
+      [date]: { ...(prev[date] || { date, mode: 'NORMAL' as DayMode, contextTags: [] }), ...meta, date },
     }));
   }, []);
 

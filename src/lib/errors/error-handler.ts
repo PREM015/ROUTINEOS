@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AppError } from './app-error';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '@/generated/prisma';
 import { ZodError } from 'zod';
 
 /**

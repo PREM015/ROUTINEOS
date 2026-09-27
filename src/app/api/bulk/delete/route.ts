@@ -1,20 +1,12 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { HabitService } from '@/server/services/habit.service';
-import { TaskService } from '@/server/services/task.service';
-import { GoalService } from '@/server/services/goal.service';
+import { bulkService } from '@/server/services/bulk.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 const bulkDeleteSchema = z.object({
   type: z.enum(['habit', 'goal', 'task']),
   ids: z.array(z.string().min(1)).min(1).max(100),
 });
-
-interface BulkResult {
-  id: string;
-  success: boolean;
-  error?: string;
-}
 
 /**
  * POST /api/bulk/delete
@@ -36,39 +28,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = session.user.id;
     const { type, ids } = validated.data;
-
-    const habitService = new HabitService();
-    const goalService = new GoalService();
-    const taskService = new TaskService();
-
-    const results: BulkResult[] = [];
-    for (const id of ids) {
-      try {
-        if (type === 'habit') {
-          await habitService.deleteHabit(userId, id);
-        } else if (type === 'goal') {
-          await goalService.deleteGoal(userId, id);
-        } else {
-          await taskService.deleteTask(userId, id);
-        }
-        results.push({ id, success: true });
-      } catch (error) {
-        results.push({
-          id,
-          success: false,
-          error: error instanceof Error ? error.message : 'Delete failed',
-        });
-      }
-    }
-
+    const results = await bulkService.remove(session.user.id, type, ids);
     const succeeded = results.filter((r) => r.success).length;
 
     return NextResponse.json({
       success: true,
       data: { results },
-      meta: { type, total: results.length, succeeded, failed: results.length - succeeded },
+      meta: {
+        type,
+        total: results.length,
+        succeeded,
+        failed: results.length - succeeded,
+      },
     });
   } catch (error) {
     console.error('Error in bulk delete:', error);

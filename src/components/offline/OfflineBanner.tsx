@@ -52,7 +52,7 @@ export function OfflineBanner() {
 
   return (
     <Banner variant="warning">
-      You're offline. Changes will be synced when you reconnect.
+      You&apos;re offline. Changes will be synced when you reconnect.
     </Banner>
   );
 }

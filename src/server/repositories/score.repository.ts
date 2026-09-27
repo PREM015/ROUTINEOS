@@ -1,4 +1,4 @@
-import type { DailyScore, Prisma } from '@prisma/client';
+import type { DailyScore, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

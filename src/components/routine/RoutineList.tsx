@@ -179,8 +179,16 @@ export default function RoutineList() {
     setActionError(null);
     try {
       await Promise.all([
-        updateRoutineBlock(block.id, { sortOrder: peer.sortOrder }),
-        updateRoutineBlock(peer.id, { sortOrder: block.sortOrder }),
+        fetch(`/api/routine/${block.templateId}/blocks/${block.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: peer.sortOrder }),
+        }),
+        fetch(`/api/routine/${block.templateId}/blocks/${peer.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: block.sortOrder }),
+        }),
       ]);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to reorder block');

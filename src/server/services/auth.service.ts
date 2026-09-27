@@ -1,16 +1,15 @@
 import bcrypt from 'bcryptjs';
 import {
-  createHash,
   createHmac,
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
 import { z } from 'zod';
-import type { Role, User } from '@prisma/client';
+import type { Role, User } from '@/generated/prisma';
 import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { AuthTokenRepository } from '@/server/repositories/auth-token.repository';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { EmailService } from '@/server/services/email.service';
@@ -64,13 +63,6 @@ const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
  */
 function firstZodIssue(error: z.ZodError): string {
   return error.errors[0]?.message ?? 'Validation failed';
-}
-
-/**
- * One-way hash for tokens stored in the database
- */
-function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
 }
 
 /**
@@ -243,12 +235,14 @@ function buildOtpauthUrl(secret: string, email: string): string {
 
 export class AuthService {
   private userRepository: UserRepository;
+  private authTokenRepository: AuthTokenRepository;
   private auditRepository: AuditRepository;
   private streakRepository: StreakRepository;
   private emailService: EmailService;
 
   constructor() {
     this.userRepository = new UserRepository();
+    this.authTokenRepository = new AuthTokenRepository();
     this.auditRepository = new AuditRepository();
     this.streakRepository = new StreakRepository();
     this.emailService = new EmailService();
@@ -417,7 +411,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
     await this.userRepository.updatePassword(userId, passwordHash);
-    await prisma.deviceSession.deleteMany({ where: { userId } });
+    await this.userRepository.deleteAllDeviceSessions(userId);
 
     await this.auditRepository.create({
       userId,
@@ -444,9 +438,9 @@ export class AuthService {
       throw new Error(firstZodIssue(parsed.error));
     }
 
-    const tokenRow = await prisma.passwordResetToken.findUnique({
-      where: { tokenHash: hashToken(parsed.data.token) },
-    });
+    const tokenRow = await this.authTokenRepository.findResetToken(
+      parsed.data.token
+    );
     if (
       !tokenRow ||
       tokenRow.expiresAt <= new Date() ||
@@ -457,10 +451,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(parsed.data.password, 10);
     await this.userRepository.updatePassword(tokenRow.userId, passwordHash);
-    await prisma.passwordResetToken.update({
-      where: { id: tokenRow.id },
-      data: { usedAt: new Date() },
-    });
+    await this.authTokenRepository.markResetTokenUsed(tokenRow.id);
 
     await this.auditRepository.create({
       userId: tokenRow.userId,
@@ -493,13 +484,11 @@ export class AuthService {
     }
 
     const token = randomBytes(32).toString('hex');
-    await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        tokenHash: hashToken(token),
-        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
-      },
-    });
+    await this.authTokenRepository.createResetToken(
+      user.id,
+      token,
+      new Date(Date.now() + RESET_TOKEN_TTL_MS)
+    );
     await this.auditRepository.create({
       userId: user.id,
       action: 'PASSWORD_RESET_REQUESTED',
@@ -524,9 +513,9 @@ export class AuthService {
       throw new Error(firstZodIssue(parsed.error));
     }
 
-    const tokenRow = await prisma.emailVerificationToken.findUnique({
-      where: { tokenHash: hashToken(parsed.data.token) },
-    });
+    const tokenRow = await this.authTokenRepository.findVerificationToken(
+      parsed.data.token
+    );
     if (
       !tokenRow ||
       tokenRow.expiresAt <= new Date() ||
@@ -536,10 +525,7 @@ export class AuthService {
     }
 
     await this.userRepository.verifyEmail(tokenRow.userId);
-    await prisma.emailVerificationToken.update({
-      where: { id: tokenRow.id },
-      data: { usedAt: new Date() },
-    });
+    await this.authTokenRepository.markVerificationTokenUsed(tokenRow.id);
     await this.auditRepository.create({
       userId: tokenRow.userId,
       action: 'EMAIL_VERIFIED',
@@ -571,10 +557,8 @@ export class AuthService {
       throw new Error('Email is already verified');
     }
 
-    const previous = await prisma.emailVerificationToken.findFirst({
-      where: { userId: user.id, usedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
+    const previous =
+      await this.authTokenRepository.findLatestUnusedVerificationToken(user.id);
     if (previous && previous.createdAt.getTime() > Date.now() - 60_000) {
       throw new Error(
         'Please wait a moment before requesting another verification email'
@@ -693,7 +677,7 @@ export class AuthService {
     }
 
     await this.userRepository.softDelete(userId, reason);
-    await prisma.deviceSession.deleteMany({ where: { userId } });
+    await this.userRepository.deleteAllDeviceSessions(userId);
     await this.auditRepository.create({
       userId,
       action: 'ACCOUNT_DELETED',
@@ -711,26 +695,22 @@ export class AuthService {
   async logoutAll(
     userId: string
   ): Promise<{ success: boolean; revoked: number }> {
-    const result = await prisma.deviceSession.deleteMany({
-      where: { userId },
-    });
+    const revoked = await this.userRepository.deleteAllDeviceSessions(userId);
     await this.auditRepository.create({
       userId,
       action: 'LOGOUT_ALL_SESSIONS',
     });
 
-    return { success: true, revoked: result.count };
+    return { success: true, revoked };
   }
 
   private async createEmailVerificationToken(userId: string): Promise<string> {
     const token = randomBytes(32).toString('hex');
-    await prisma.emailVerificationToken.create({
-      data: {
-        userId,
-        tokenHash: hashToken(token),
-        expiresAt: new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS),
-      },
-    });
+    await this.authTokenRepository.createVerificationToken(
+      userId,
+      token,
+      new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)
+    );
     return token;
   }
 }

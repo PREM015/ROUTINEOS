@@ -1,4 +1,4 @@
-import type { DayType, RoutineLogStatus } from '@prisma/client';
+import type { DayType, RoutineLogStatus } from '@/generated/prisma';
 
 /**
  * Routine Constants
@@ -351,11 +351,6 @@ export function getEnergyLevelConfig(level: EnergyLevel): EnergyLevelConfig {
   return ENERGY_LEVEL_CONFIG[level];
 }
 
-export function getDayTypeForDate(date: Date): DayType {
-  const dayOfWeek = date.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 6 ? 'WEEKEND' : 'WORKDAY';
-}
-
 export const DAY_TYPES_ORDERED: DayType[] = [
   'WORKDAY',
   'WEEKEND',
@@ -364,3 +359,25 @@ export const DAY_TYPES_ORDERED: DayType[] = [
   'LOW_ENERGY',
   'CUSTOM',
 ];
+
+/**
+ * Canonical membership check for the `DayType` enum.
+ *
+ * This is the single place that answers "is this string a day type?". Several
+ * call sites previously carried their own inline array of literals, which is how
+ * a non-existent 'WEEKDAY' pseudo-day-type ended up being accepted by the client
+ * and the API while never existing in the schema.
+ */
+export function isDayType(value: unknown): value is DayType {
+  return typeof value === 'string' && (DAY_TYPES_ORDERED as string[]).includes(value);
+}
+
+// Map DayType enum values to DayTypeDefinition slugs
+export const ENUM_TO_SLUG: Record<DayType, string> = {
+  WORKDAY: 'work-day',
+  WEEKEND: 'weekend',
+  HOLIDAY: 'holiday',
+  EXAM_DAY: 'exam-day',
+  LOW_ENERGY: 'low-energy-day',
+  CUSTOM: 'custom',
+};

@@ -3,15 +3,25 @@
  * Detailed configuration for the scoring system
  */
 
-import type { HabitTier } from '@prisma/client';
+import type { HabitTier } from '@/generated/prisma';
 
 // ============================================================================
 // Scoring Weights
 // ============================================================================
 
 export const SCORING_WEIGHTS = {
-  // Tier weights (how much each tier contributes to total score)
+  // Tier weights (how much each tier contributes to total score).
+  //
+  // Every HabitTier MUST appear here. This table used to be typed
+  // `as Record<HabitTier, number>`, which silenced the compiler and let
+  // NON_NEGOTIABLE go missing entirely — a weight-0 tier contributes to neither
+  // the numerator nor the denominator, so non-negotiable habits were silently
+  // unscored. `satisfies` makes an omitted tier a compile error instead.
+  //
+  // UNDEFINED is deliberately 0: it marks a habit whose tier has not been
+  // decided, and such a habit must not move the score in either direction.
   tiers: {
+    NON_NEGOTIABLE: 1.5,
     GROWTH: 1.0,
     BONUS: 0.5,
     LIFESTYLE: 0.6,
@@ -22,7 +32,7 @@ export const SCORING_WEIGHTS = {
     SPECIAL: 0.5,
     JUST_FOR_FUN: 0.2,
     UNDEFINED: 0.0,
-  } as Record<HabitTier, number>,
+  } satisfies Record<HabitTier, number>,
   
   // Component weights (for overall score calculation)
   components: {
@@ -53,8 +63,12 @@ export const SCORE_BANDS = {
 // ============================================================================
 
 export const POINTS_SYSTEM = {
-  // Base points for habit completion
+  // Base points for habit completion.
+  // Every HabitTier MUST appear here — `satisfies` makes an omission a compile
+  // error rather than a silent fallback (see SCORING_WEIGHTS.tiers).
+  // UNDEFINED is 0 by design: an undecided tier earns nothing.
   habitCompletion: {
+    NON_NEGOTIABLE: 15,
     GROWTH: 10,
     BONUS: 5,
     LIFESTYLE: 5,
@@ -65,7 +79,7 @@ export const POINTS_SYSTEM = {
     SPECIAL: 5,
     JUST_FOR_FUN: 3,
     UNDEFINED: 0,
-  } as Record<HabitTier, number>,
+  } satisfies Record<HabitTier, number>,
   
   // Bonus points for streaks
   streakBonus: {
@@ -256,5 +270,3 @@ export function isCompletionRateGood(rate: number): boolean {
 export function shouldWarnLowScore(score: number): boolean {
   return score < THRESHOLDS.warnings.lowScore;
 }
-
-export { calculateCoreScore } from '@/lib/scoring/calculate-core-score';

@@ -1,4 +1,4 @@
-import type { ProductivityPattern } from '@prisma/client';
+import type { ProductivityPattern } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

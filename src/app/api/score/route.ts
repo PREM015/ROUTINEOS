@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { calculateDailyScore } from '@/lib/scoring/calculate-daily-score';
+import { ScoringService } from '@/server/services/scoring.service';
+
+const scoringService = new ScoringService();
 
 export async function GET(_req: Request) {
   try {
@@ -13,11 +14,8 @@ export async function GET(_req: Request) {
     const { searchParams } = new URL(_req.url);
     const date = searchParams.get('date') || new Date().toISOString().slice(0, 10);
 
-    const existing = await db.dailyScore.findUnique({
-      where: { userId_date: { userId: session.user.id, date } }
-    });
-
-    const score = existing ?? (await calculateDailyScore(session.user.id, date));
+    const existing = await scoringService.getDailyScore(session.user.id, date);
+    const score = existing ?? (await scoringService.calculateDailyScore(session.user.id, date));
 
     return NextResponse.json(score);
   } catch (error) {
@@ -35,7 +33,7 @@ export async function POST(_req: Request) {
 
     // Force recalculate today's score
     const date = new Date().toISOString().slice(0, 10);
-    const score = await calculateDailyScore(session.user.id, date);
+    const score = await scoringService.calculateDailyScore(session.user.id, date);
 
     return NextResponse.json(score);
   } catch (error) {

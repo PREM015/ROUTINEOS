@@ -1,10 +1,13 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@/generated/prisma';
 import prisma from '@/lib/prisma';
+import { createLogger, serializeError } from '@/lib/monitoring/logger';
 
 /**
  * Base Repository
  * Common database operations and utilities
  */
+
+const log = createLogger('repository');
 
 export abstract class BaseRepository {
   public prisma: PrismaClient;
@@ -101,9 +104,14 @@ export abstract class BaseRepository {
 
   /**
    * Handle Prisma errors
+   *
+   * Logs through the shared logger (all 44 repositories funnel their error
+   * reporting through here) and re-throws, so a failure is never swallowed.
    */
   protected handleError(error: unknown, operation: string): never {
-    console.error(`Repository error in ${operation}:`, error);
+    log.error(`Repository error in ${operation}`, {
+      error: serializeError(error),
+    });
 
     if (error instanceof Error) {
       throw error;

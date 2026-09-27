@@ -1,5 +1,12 @@
-import { HabitStatus } from '@prisma/client';
-import type { Habit, HabitLog, HabitOverride, Prisma, HabitTier } from '@prisma/client';
+import { HabitStatus } from '@/generated/prisma';
+import type {
+  Habit,
+  HabitLog,
+  HabitOverride,
+  HabitOverrideType,
+  Prisma,
+  HabitTier,
+} from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -11,10 +18,17 @@ export class HabitRepository extends BaseRepository {
   /**
    * Find habit by ID with ownership check
    */
-  async findById(habitId: string, userId: string): Promise<Habit | null> {
+  async findById(
+    habitId: string,
+    userId: string,
+    options?: { includeDayTypeAssignments?: boolean }
+  ): Promise<Habit | null> {
     try {
       return await this.prisma.habit.findFirst({
         where: { id: habitId, userId },
+        include: options?.includeDayTypeAssignments
+          ? { dayTypeAssignments: { include: { dayType: true } } }
+          : undefined,
       });
     } catch (error) {
       this.handleError(error, 'findById');
@@ -61,6 +75,7 @@ export class HabitRepository extends BaseRepository {
       sortOrder?: 'asc' | 'desc';
       limit?: number;
       offset?: number;
+      dayTypeId?: string;
     }
   ) {
     try {
@@ -87,12 +102,22 @@ export class HabitRepository extends BaseRepository {
         where.categoryId = options.categoryId;
       }
 
+      // Day type filter
+      if (options?.dayTypeId) {
+        where.dayTypeAssignments = {
+          some: { dayTypeId: options.dayTypeId },
+        };
+      }
+
       return await this.prisma.habit.findMany({
         where,
         include: {
           category: true,
           tags: {
             include: { tag: true },
+          },
+          dayTypeAssignments: {
+            include: { dayType: true },
           },
           _count: {
             select: {
@@ -406,6 +431,47 @@ export class HabitRepository extends BaseRepository {
     }
   }
 
+  /**
+   * Ids of the user's habits that have at least one log at the given energy
+   * level. Resolved in a single query rather than one lookup per habit, which
+   * is what the habit filter used to do.
+   */
+  async findIdsWithLogEnergy(userId: string, energyLevel: number): Promise<string[]> {
+    try {
+      const rows = await this.prisma.habitLog.findMany({
+        where: { userId, energyLevel },
+        select: { habitId: true },
+        distinct: ['habitId'],
+      });
+      return rows.map((row) => row.habitId);
+    } catch (error) {
+      this.handleError(error, 'findIdsWithLogEnergy');
+    }
+  }
+
+  /**
+   * Count every completed habit log for a user across all of their habits.
+   */
+  async countAllCompletedLogs(
+    userId: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<number> {
+    try {
+      const where: Prisma.HabitLogWhereInput = { userId, status: 'COMPLETED' };
+
+      if (startDate || endDate) {
+        where.date = {};
+        if (startDate) where.date.gte = startDate;
+        if (endDate) where.date.lte = endDate;
+      }
+
+      return await this.prisma.habitLog.count({ where });
+    } catch (error) {
+      this.handleError(error, 'countAllCompletedLogs');
+    }
+  }
+
   // ============================================================================
   // Habit Overrides
   // ============================================================================
@@ -480,6 +546,98 @@ export class HabitRepository extends BaseRepository {
   /**
    * Count habits by status
    */
+  /**
+   * Attach tags to a habit.
+   */
+  async addTags(habitId: string, tagIds: string[]): Promise<void> {
+    if (tagIds.length === 0) return;
+    try {
+      await this.prisma.habitTag.createMany({
+        data: tagIds.map((tagId) => ({ habitId, tagId })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.handleError(error, 'addTags');
+    }
+  }
+
+  /**
+   * Detach every tag from a habit.
+   */
+  async clearTags(habitId: string): Promise<void> {
+    try {
+      await this.prisma.habitTag.deleteMany({ where: { habitId } });
+    } catch (error) {
+      this.handleError(error, 'clearTags');
+    }
+  }
+
+  /**
+   * Assign a habit to a set of day-type definitions.
+   */
+  async addDayTypeAssignments(habitId: string, dayTypeIds: string[]): Promise<void> {
+    if (dayTypeIds.length === 0) return;
+    try {
+      await this.prisma.habitDayType.createMany({
+        data: dayTypeIds.map((dayTypeId) => ({ habitId, dayTypeId })),
+        skipDuplicates: true,
+      });
+    } catch (error) {
+      this.handleError(error, 'addDayTypeAssignments');
+    }
+  }
+
+  /**
+   * Remove every day-type assignment from a habit.
+   */
+  async clearDayTypeAssignments(habitId: string): Promise<void> {
+    try {
+      await this.prisma.habitDayType.deleteMany({ where: { habitId } });
+    } catch (error) {
+      this.handleError(error, 'clearDayTypeAssignments');
+    }
+  }
+
+  /**
+   * Remove overrides of a given type from a habit (e.g. clear PAUSE on resume).
+   */
+  async deleteOverridesByType(
+    habitId: string,
+    type: HabitOverrideType
+  ): Promise<void> {
+    try {
+      await this.prisma.habitOverride.deleteMany({ where: { habitId, type } });
+    } catch (error) {
+      this.handleError(error, 'deleteOverridesByType');
+    }
+  }
+
+  /**
+   * Delete a habit and everything that references it, in one transaction.
+   *
+   * Owning the whole cascade here keeps the service free of raw Prisma while
+   * still guaranteeing the unlink-before-delete ordering that the time-entry
+   * foreign key requires.
+   */
+  async deleteCascade(habitId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Unlink time entries first, otherwise the FK constraint fails.
+        await tx.timeEntry.updateMany({
+          where: { habitId },
+          data: { habitId: null },
+        });
+        await tx.habitLog.deleteMany({ where: { habitId } });
+        await tx.habitOverride.deleteMany({ where: { habitId } });
+        await tx.habitTag.deleteMany({ where: { habitId } });
+        await tx.habitDayType.deleteMany({ where: { habitId } });
+        await tx.habit.delete({ where: { id: habitId } });
+      });
+    } catch (error) {
+      this.handleError(error, 'deleteCascade');
+    }
+  }
+
   async countByStatus(userId: string): Promise<Record<HabitStatus, number>> {
     try {
       const counts = await this.prisma.habit.groupBy({

@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 import { IntegrationRepository } from '@/server/repositories/integration.repository';
 import { integrationUpdateSchema } from '@/schemas/integration.schema';
 import { INTEGRATIONS, getIntegrationConfig } from '@/lib/constants/integrations';

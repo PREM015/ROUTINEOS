@@ -1,4 +1,4 @@
-import type { FocusSession, Break, Prisma } from '@prisma/client';
+import type { FocusSession, Break, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -259,6 +259,27 @@ export class FocusRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'delete');
+    }
+  }
+
+  /**
+   * Count completed focus sessions for a user, optionally only those started
+   * at or after a given instant.
+   */
+  async countCompletedSessions(
+    userId: string,
+    startedAfter?: Date
+  ): Promise<number> {
+    try {
+      return await this.prisma.focusSession.count({
+        where: {
+          userId,
+          completedAt: { not: null },
+          ...(startedAfter && { startedAt: { gte: startedAfter } }),
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'countCompletedSessions');
     }
   }
 

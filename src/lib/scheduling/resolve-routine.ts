@@ -1,41 +1,96 @@
-import type { DayType } from '@/generated/prisma/client';
-import prisma from '@/lib/prisma';
+import { DayType } from '@/generated/prisma';
+import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { formatInTimeZone } from 'date-fns-tz';
 
-function assertDate(date: string): void {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(new Date(`${date}T12:00:00.000Z`).valueOf())) {
-    throw new Error('date must use YYYY-MM-DD format.');
-  }
-}
+const routineRepository = new RoutineRepository();
 
-/** The date is already expressed in the user’s timezone, so weekday detection is calendar-based. */
-export function resolveNaturalDayType(date: string, _timezone: string): DayType {
-  assertDate(date);
-  const weekday = new Date(`${date}T12:00:00.000Z`).getUTCDay();
-  return weekday === 0 || weekday === 6 ? 'WEEKEND' : 'WORKDAY';
+/**
+ * Resolves the natural day type for a date (no exception check).
+ * Used by day-mode API for displaying the natural day type.
+ *
+ * `date` is a calendar date (YYYY-MM-DD), so it is parsed as **UTC** midnight,
+ * never local midnight. Parsing it locally made the result depend on the
+ * server's timezone: on a host east of UTC (IST, CET, JST, …) `2026-10-03`
+ * became `2026-10-02T18:30Z`, and formatting that back in UTC reported Friday
+ * instead of Saturday — so a Saturday resolved to WORKDAY for every user whose
+ * requests were served by such a host.
+ */
+export function resolveNaturalDayType(date: string, timezone: string): DayType {
+  const dateObj = new Date(`${date}T00:00:00.000Z`);
+  // `i` is the ISO weekday: Monday = 1 … Sunday = 7. Sunday is 7, not 0, so it
+  // must be folded back to 0 before the weekend check — comparing against 0/6
+  // directly classified every Sunday as a WORKDAY.
+  const isoDay = Number(formatInTimeZone(dateObj, timezone, 'i'));
+  const dayOfWeek = isoDay % 7;
+  return dayOfWeek === 0 || dayOfWeek === 6 ? 'WEEKEND' : 'WORKDAY';
 }
 
 /**
- * The sole read path for a date’s routine. Callers must not query RoutineBlock
- * by day type directly: exceptions, template defaults, and block ordering stay
- * consistent everywhere this is used.
+ * Resolves the day type for a specific date, checking for RoutineException first.
+ * This is the canonical function for day-type resolution across the entire application.
  */
-export async function getRoutineForDate(userId: string, date: string, timezone: string) {
-  assertDate(date);
-  const exception = await prisma.routineException.findUnique({
-    where: { userId_date: { userId, date } },
-  });
-
-  if (exception?.templateId) {
-    return prisma.routineTemplate.findFirst({
-      where: { id: exception.templateId, userId },
-      include: { blocks: { include: { category: true }, orderBy: { sortOrder: 'asc' } } },
-    });
+export async function resolveDayTypeForDate(
+  userId: string,
+  date: string
+): Promise<{
+  dayType: DayType;
+  dayTypeId: string | null;
+  source: 'EXCEPTION' | 'NATURAL';
+  templateId: string | null;
+}> {
+  // Check for routine exception
+  const exception = await routineRepository.findException(userId, date);
+  if (exception) {
+    return {
+      dayType: exception.dayType,
+      dayTypeId: exception.dayTypeId ?? null,
+      source: 'EXCEPTION',
+      templateId: exception.templateId ?? null,
+    };
   }
 
-  const dayType = exception?.dayType ?? resolveNaturalDayType(date, timezone);
-  return prisma.routineTemplate.findFirst({
-    where: { userId, dayType, isDefault: true },
-    include: { blocks: { include: { category: true }, orderBy: { sortOrder: 'asc' } } },
-    orderBy: { updatedAt: 'desc' },
-  });
+  // Get natural day type using UTC (date is YYYY-MM-DD)
+  const dayType = resolveNaturalDayType(date, 'UTC');
+  
+  return {
+    dayType,
+    dayTypeId: null,
+    source: 'NATURAL',
+    templateId: null,
+  };
+}
+
+/**
+ * Get the slug for a DayType enum value
+ */
+export function getDayTypeSlug(dayType: DayType): string {
+  const ENUM_TO_SLUG: Record<DayType, string> = {
+    WORKDAY: 'work-day',
+    WEEKEND: 'weekend',
+    HOLIDAY: 'holiday',
+    EXAM_DAY: 'exam-day',
+    LOW_ENERGY: 'low-energy-day',
+    CUSTOM: 'custom',
+  };
+  return ENUM_TO_SLUG[dayType] ?? dayType.toLowerCase();
+}
+
+/**
+ * Find a DayTypeDefinition by slug for a user
+ */
+export async function findDayTypeDefinitionBySlug(
+  userId: string,
+  slug: string
+) {
+  return routineRepository.findDayTypeDefinitionBySlug(userId, slug);
+}
+
+/**
+ * Find a routine template by day type ID
+ */
+export async function findTemplateByDayTypeId(
+  userId: string,
+  dayTypeId: string
+) {
+  return routineRepository.findTemplateByDayTypeId(userId, dayTypeId);
 }

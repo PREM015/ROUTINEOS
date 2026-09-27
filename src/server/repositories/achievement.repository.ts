@@ -1,4 +1,4 @@
-import type { Achievement, Prisma } from '@prisma/client';
+import type { Achievement, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

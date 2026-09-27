@@ -1,12 +1,41 @@
 /**
- * Day Context System
- * Manage different day contexts and their effects
+ * Life Context System
+ *
+ * ── Pure module: no database access, no HTTP calls ───────────────────────────
+ *
+ * Everything here is a pure function over data the caller already has. The
+ * `DailyReflection` lookup lives in `LifeContextService`, which reaches it
+ * through `ReflectionRepository` — domain logic in `lib/` must not query the
+ * database directly.
+ *
+ * ── Two distinct day axes — do not conflate them ────────────────────────────
+ *
+ * 1. `DayType` (Prisma enum, 6 values: WORKDAY/WEEKEND/HOLIDAY/EXAM_DAY/
+ *    LOW_ENERGY/CUSTOM) answers **"which schedule applies?"** It is a *routine*
+ *    concern. The single source of truth for resolving it is
+ *    `lib/scheduling/resolve-routine.ts` — RoutineException override first,
+ *    then the weekday/weekend default. `lib/constants/routine.ts` only holds
+ *    display config for it; it never decides a day type.
+ *
+ * 2. `LifeContext` (this module, 8 values) answers **"what situation is the
+ *    user in, and how should they adapt?"** It is derived from the user's own
+ *    reported energy/mood/stress, not from the calendar. Values like SICK,
+ *    TRAVEL and BUSY have no `DayType` equivalent and cannot be derived from a
+ *    date, which is exactly why this axis exists separately.
+ *
+ * The two axes overlap on HOLIDAY and LOW_ENERGY, which is why this type was
+ * previously called `DayContext` — a name that invited exactly the confusion
+ * this header exists to prevent, and that collided with a since-removed
+ * hand-rolled clone of the `DayType` enum in `DayContextSelector.tsx`. The
+ * `LifeContext` name is deliberate: if you are about to reason about the
+ * schedule for a date, you want `DayType`; if you are reasoning about the
+ * person's capacity on that date, you want `LifeContext`.
  */
 
-import type { DailyReflection } from '@prisma/client';
-import prisma from '@/lib/prisma';
+import type { DailyReflection } from '@/generated/prisma';
+import { resolveNaturalDayType } from '@/lib/scheduling/resolve-routine';
 
-export type DayContext =
+export type LifeContext =
   | 'NORMAL'
   | 'COLLEGE'
   | 'EXAM'
@@ -16,8 +45,8 @@ export type DayContext =
   | 'BUSY'
   | 'HOLIDAY';
 
-export interface DayContextConfig {
-  context: DayContext;
+export interface LifeContextConfig {
+  context: LifeContext;
   label: string;
   description: string;
   color: string;
@@ -25,7 +54,7 @@ export interface DayContextConfig {
   suggestedAdjustments: string[];
 }
 
-export const DAY_CONTEXTS: Record<DayContext, DayContextConfig> = {
+export const LIFE_CONTEXTS: Record<LifeContext, LifeContextConfig> = {
   NORMAL: {
     context: 'NORMAL',
     label: 'Normal Day',
@@ -123,23 +152,39 @@ export const DAY_CONTEXTS: Record<DayContext, DayContextConfig> = {
   },
 };
 
-export function getDayContextConfig(context: DayContext): DayContextConfig {
-  return DAY_CONTEXTS[context];
+export function getLifeContextConfig(context: LifeContext): LifeContextConfig {
+  return LIFE_CONTEXTS[context];
 }
 
-export function suggestDayContext(
+/**
+ * Format a `Date` as the YYYY-MM-DD calendar string the resolvers expect.
+ */
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Suggest a life context from the user's reported vitals.
+ *
+ * Weekend detection is delegated to the canonical day-type resolver rather
+ * than re-deriving "is this a weekend?" here — previously this function mapped
+ * Sat/Sun to HOLIDAY while the routine resolver mapped the same days to
+ * WEEKEND, which is precisely the kind of silent disagreement that makes two
+ * pages show different answers for the same date.
+ */
+export function suggestLifeContext(
   energy: number | null,
   mood: number | null,
   stress: number | null,
   currentDate: Date
-): DayContext {
-  // Check if weekend
-  const dayOfWeek = currentDate.getDay();
-  if (dayOfWeek === 0 || dayOfWeek === 6) {
+): LifeContext {
+  if (resolveNaturalDayType(toDateString(currentDate), 'UTC') === 'WEEKEND') {
     return 'HOLIDAY';
   }
 
-  // Check energy and mood
   if (energy && energy <= 2) {
     return 'LOW_ENERGY';
   }
@@ -156,17 +201,18 @@ export function suggestDayContext(
 }
 
 // ============================================================================
-// Day context snapshots
+// Life context snapshots
 // ============================================================================
 
 /**
  * Normalized snapshot of a single day's context, derived from the user's
  * `DailyReflection` for that date.
  */
-export interface DayContextSnapshot {
+export interface LifeContextSnapshot {
   /** YYYY-MM-DD date the snapshot refers to. */
   date: string;
-  dayType: DayContext;
+  /** Life context (capacity axis) — NOT the routine `DayType`. */
+  lifeContext: LifeContext;
   energy: number | null;
   mood: number | null;
   stress: number | null;
@@ -179,10 +225,13 @@ export interface DayContextSnapshot {
   hasReflection: boolean;
 }
 
-function emptySnapshot(date: string, dayType: DayContext): DayContextSnapshot {
+function emptySnapshot(
+  date: string,
+  lifeContext: LifeContext
+): LifeContextSnapshot {
   return {
     date,
-    dayType,
+    lifeContext,
     energy: null,
     mood: null,
     stress: null,
@@ -196,30 +245,23 @@ function emptySnapshot(date: string, dayType: DayContext): DayContextSnapshot {
 }
 
 /**
- * Read and normalize the day context for a user and date (YYYY-MM-DD).
+ * Build the day-context snapshot for a date from an already-loaded reflection.
  *
- * Loads the user's `DailyReflection` for that date and derives the day type via
- * `suggestDayContext`. Missing reflections and transient DB errors degrade
- * gracefully to an empty (but valid) snapshot rather than throwing.
+ * Pure: the caller supplies the `DailyReflection` (or null when there is none),
+ * so this function performs no I/O. A missing reflection degrades gracefully to
+ * an empty — but still valid — snapshot rather than throwing.
+ *
+ * @see LifeContextService.getLifeContext for the database-backed entry point.
  */
-export async function getDayContext(
-  userId: string,
-  date: string
-): Promise<DayContextSnapshot> {
-  let reflection: DailyReflection | null = null;
-  try {
-    reflection = await prisma.dailyReflection.findUnique({
-      where: { userId_date: { userId, date } },
-    });
-  } catch {
-    reflection = null;
-  }
-
+export function buildLifeContextSnapshot(
+  date: string,
+  reflection: DailyReflection | null
+): LifeContextSnapshot {
   if (!reflection) {
-    return emptySnapshot(date, suggestDayContext(null, null, null, new Date()));
+    return emptySnapshot(date, suggestLifeContext(null, null, null, new Date()));
   }
 
-  const dayType = suggestDayContext(
+  const lifeContext = suggestLifeContext(
     reflection.energy,
     reflection.mood,
     reflection.stress,
@@ -228,7 +270,7 @@ export async function getDayContext(
 
   return {
     date,
-    dayType,
+    lifeContext,
     energy: reflection.energy,
     mood: reflection.mood,
     stress: reflection.stress,
@@ -236,7 +278,7 @@ export async function getDayContext(
     reflectionText: reflection.reflectionText,
     biggestWin: reflection.biggestWin,
     biggestDifficulty: reflection.biggestDifficulty,
-    suggestedAdjustments: DAY_CONTEXTS[dayType].suggestedAdjustments,
+    suggestedAdjustments: LIFE_CONTEXTS[lifeContext].suggestedAdjustments,
     hasReflection: true,
   };
 }
@@ -260,11 +302,11 @@ export function buildContextKey(date: string, timezone: string): string {
 }
 
 /**
- * Human-readable label for a day context.
+ * Human-readable label for a life context.
  *
  * @example
  * getContextLabel('LOW_ENERGY') // => "Low Energy"
  */
-export function getContextLabel(context: DayContext): string {
-  return DAY_CONTEXTS[context].label;
+export function getContextLabel(context: LifeContext): string {
+  return LIFE_CONTEXTS[context].label;
 }

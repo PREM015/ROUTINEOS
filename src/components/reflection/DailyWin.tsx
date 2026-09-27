@@ -19,7 +19,7 @@ export function DailyWin({ win, onEdit }: DailyWinProps) {
       <div className="flex items-start gap-3 pr-10">
         <div className="text-2xl pt-1">⭐</div>
         <div>
-          <h4 className="text-sm font-semibold text-yellow-800 uppercase tracking-wider mb-1">Today's Biggest Win</h4>
+          <h4 className="text-sm font-semibold text-yellow-800 uppercase tracking-wider mb-1">Today&apos;s Biggest Win</h4>
           {win ? (
             <p className="text-gray-800 leading-relaxed">{win}</p>
           ) : (

@@ -10,7 +10,7 @@
  */
 import * as React from 'react';
 import { FolderKanban } from 'lucide-react';
-import type { Project } from '@prisma/client';
+import type { Project } from '@/generated/prisma';
 import { apiRequest } from '@/lib/api-client';
 import { Button, Input, Textarea } from '@/components/ui';
 import Dialog from '@/components/ui/Dialog';

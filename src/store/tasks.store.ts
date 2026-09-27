@@ -11,7 +11,7 @@
 
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
-import type { Task } from '@prisma/client';
+import type { Task } from '@/generated/prisma';
 import type {
   CreateTaskInput,
   TaskQueryParams,

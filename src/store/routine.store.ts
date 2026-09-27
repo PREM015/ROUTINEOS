@@ -13,9 +13,10 @@
 
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
-import type { RoutineBlock, RoutineLog, RoutineTemplate } from '@prisma/client';
+import type { DayType, RoutineBlock, RoutineTemplate } from '@/generated/prisma';
 import type {
   DayRoutine,
+  ResolvedBlockLog,
   RoutineLogStatus,
 } from '@/types/routine';
 
@@ -24,15 +25,19 @@ export interface RoutineTemplateItem extends RoutineTemplate {
   _count?: { blocks: number };
 }
 
-export type BlockLog = Partial<RoutineLog>;
+/**
+ * The optimistic log this store builds locally. Matches `ResolvedBlockLog`
+ * (the subset the routine UI reads) rather than the full `RoutineLog` row,
+ * because a client-side patch has no `userId`/`date`/timestamps to fill in.
+ */
+export type BlockLog = ResolvedBlockLog;
 
-export type RoutineDayType =
-  | 'WORKDAY'
-  | 'WEEKEND'
-  | 'HOLIDAY'
-  | 'EXAM_DAY'
-  | 'LOW_ENERGY'
-  | 'CUSTOM';
+/**
+ * Alias of the Prisma `DayType` enum. This used to be a hand-rolled copy of the
+ * six enum values, which is how a non-schema 'WEEKDAY' value crept into the
+ * client alongside the real one.
+ */
+export type RoutineDayType = DayType;
 
 export interface CreateTemplateInput {
   name: string;

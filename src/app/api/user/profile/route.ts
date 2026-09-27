@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { userService } from '@/server/services/user.service';
 import { UpdateProfileSchema } from '@/schemas/user.schema';
 
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+    const user = await userService.getProfile(session.user.id);
+
+    // Project to the response shape rather than returning the whole row.
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
     });
-    return NextResponse.json(user);
   } catch (error) {
+    console.error('GET /api/user/profile error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -21,20 +28,25 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user?.id)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const json = await req.json();
     const data = UpdateProfileSchema.parse(json);
 
-    const updated = await db.user.update({
-      where: { id: session.user.id },
-      data: {
-        name: data.name,
-      },
-      select: { id: true, name: true, email: true, avatarUrl: true, role: true },
+    const updated = await userService.updateProfile(session.user.id, {
+      name: data.name,
     });
-    return NextResponse.json(updated);
+
+    return NextResponse.json({
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      avatarUrl: updated.avatarUrl,
+      role: updated.role,
+    });
   } catch (error) {
+    console.error('PUT /api/user/profile error:', error);
     return NextResponse.json({ error: 'Bad Request' }, { status: 400 });
   }
 }

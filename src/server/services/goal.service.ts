@@ -1,17 +1,198 @@
-import type { Prisma } from '@prisma/client';
+import type { GoalPriority, GoalStatus, GoalType, Prisma } from '@/generated/prisma';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import type { CreateGoalInput, UpdateGoalInput } from '@/types/goal';
+import { AchievementService } from './achievement.service';
+import { invalidateDashboard } from '@/server/cache/dashboard-cache';
+import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
+import { invalidateInsights } from '@/server/cache/insight-cache';
+import { resolveDayTypeForDate } from '@/lib/scheduling/resolve-routine';
 
 /**
  * Goal Service
  * Business logic for goal management
  */
 
+/** Filter options for {@link GoalService.listGoals}. */
+export interface ListGoalsFilters {
+  status?: GoalStatus[];
+  type?: GoalType[];
+  priority?: GoalPriority[];
+  projectId?: string;
+  overdue?: boolean;
+  dueSoon?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+  dayTypeId?: string;
+}
+
+/** Half-open UTC day window for a YYYY-MM-DD date. */
+function dayWindow(date: string): { start: Date; end: Date } {
+  const start = new Date(`${date}T00:00:00.000Z`);
+  const end = new Date(`${date}T00:00:00.000Z`);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { start, end };
+}
+
 export class GoalService {
   private goalRepository: GoalRepository;
 
   constructor() {
     this.goalRepository = new GoalRepository();
+  }
+
+  /**
+   * List goals for a user.
+   *
+   * Owns the filter composition so every caller (the API route, and any future
+   * consumer) gets identical filtering instead of each re-deriving it.
+   */
+  async listGoals(userId: string, filters: ListGoalsFilters = {}) {
+    return this.goalRepository.findAll(userId, filters);
+  }
+
+  /**
+   * Progress-log rows recorded on a given calendar date, with their goals.
+   */
+  async getProgressLogsForDate(userId: string, date: string) {
+    return this.goalRepository.findProgressLogsByDate(userId, date);
+  }
+
+  /**
+   * Canonical "goals visible for a date" read.
+   *
+   * The visibility rule lives here, not in the repository: a goal applies on a
+   * date when it is ACTIVE, its [startDate, endDate] window contains the date,
+   * and it either applies every day or is assigned to the day type resolved for
+   * that date. Day-type resolution goes through the single shared resolver, so
+   * /today, /dashboard and /goals cannot disagree about which goals apply.
+   */
+  async getVisibleGoalsForDate(userId: string, date: string) {
+    // Shared day-type resolution (RoutineException override first, then natural).
+    const resolved = await resolveDayTypeForDate(userId, date);
+    const { start, end } = dayWindow(date);
+
+    const appliesEveryDay = await this.goalRepository.findActiveInDateWindow(
+      userId,
+      start,
+      end
+    );
+    const alwaysVisible = appliesEveryDay.filter((goal) => goal.appliesEveryDay);
+
+    if (!resolved.dayTypeId) {
+      return { goals: alwaysVisible, resolved };
+    }
+
+    const dayTypeGoals = await this.goalRepository.findActiveByDayTypeId(
+      userId,
+      resolved.dayTypeId
+    );
+    const inWindow = dayTypeGoals.filter(
+      (goal) => goal.startDate < end && goal.endDate >= start
+    );
+
+    // De-duplicate: a goal can satisfy both branches.
+    const seen = new Set<string>();
+    const goals = [...alwaysVisible, ...inWindow].filter((goal) => {
+      if (seen.has(goal.id)) return false;
+      seen.add(goal.id);
+      return true;
+    });
+
+    return { goals, resolved };
+  }
+
+  /**
+   * Filter the user's goals.
+   *
+   * Owns the timeline→filter translation (the `timeline` shorthand maps onto
+   * status/overdue/dueSoon) and the free-text search, both of which used to
+   * live in the route.
+   */
+  async filterGoals(
+    userId: string,
+    filters: {
+      type?: GoalType[];
+      status?: GoalStatus[];
+      priority?: GoalPriority[];
+      timeline?: 'all' | 'active' | 'completed' | 'cancelled' | 'overdue' | 'dueSoon';
+      projectId?: string;
+      parentGoalId?: string;
+      search?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+      limit?: number;
+      offset?: number;
+    }
+  ) {
+    let statusFilter: GoalStatus | GoalStatus[] | undefined;
+    let overdue: boolean | undefined;
+    let dueSoon: boolean | undefined;
+
+    if (filters.timeline === 'overdue') {
+      overdue = true;
+    } else if (filters.timeline === 'dueSoon') {
+      dueSoon = true;
+    } else if (
+      filters.timeline === 'active' ||
+      filters.timeline === 'completed' ||
+      filters.timeline === 'cancelled'
+    ) {
+      statusFilter = filters.timeline.toUpperCase() as GoalStatus;
+    }
+
+    // An explicit status list always wins over the timeline shorthand.
+    if (filters.status?.length) {
+      statusFilter = filters.status;
+    }
+
+    let goals = await this.goalRepository.findAll(userId, {
+      status: statusFilter,
+      type: filters.type,
+      priority: filters.priority,
+      projectId: filters.projectId,
+      parentGoalId: filters.parentGoalId,
+      overdue,
+      dueSoon,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+      limit: filters.limit,
+      offset: filters.offset,
+    });
+
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      goals = goals.filter(
+        (goal) =>
+          goal.title.toLowerCase().includes(q) ||
+          (goal.description?.toLowerCase().includes(q) ?? false)
+      );
+    }
+
+    return goals;
+  }
+
+  /**
+   * Archive a goal by cancelling it.
+   *
+   * Goals have no ARCHIVED status, so "archiving" a goal means marking it
+   * CANCELLED. Exposed as a service method so the bulk endpoint does not have to
+   * reach into the repository to express the same intent.
+   */
+  async archiveGoal(userId: string, goalId: string) {
+    const goal = await this.goalRepository.findById(goalId, userId);
+    if (!goal) {
+      throw new Error('Goal not found');
+    }
+
+    await this.goalRepository.update(goalId, userId, { status: 'CANCELLED' });
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
+
+    return this.goalRepository.findWithRelations(goalId, userId);
   }
 
   /**
@@ -22,6 +203,9 @@ export class GoalService {
     if (new Date(input.endDate) <= new Date(input.startDate)) {
       throw new Error('End date must be after start date');
     }
+
+    const appliesEveryDay = input.appliesEveryDay ?? true;
+    const dayTypeIds = appliesEveryDay ? [] : (input.dayTypeIds ?? []);
 
     // Calculate initial progress percentage
     const goal = await this.goalRepository.create({
@@ -36,6 +220,7 @@ export class GoalService {
       unit: input.unit,
       startDate: input.startDate,
       endDate: input.endDate,
+      appliesEveryDay,
       project: input.projectId
         ? { connect: { id: input.projectId } }
         : undefined,
@@ -44,6 +229,9 @@ export class GoalService {
         : undefined,
       isPublic: input.isPublic || false,
     } as Prisma.GoalCreateInput);
+
+    // Assign day types (only meaningful when the goal is not every-day)
+    await this.goalRepository.addDayTypeAssignments(goal.id, userId, dayTypeIds);
 
     // Create milestones if provided
     if (input.milestones && input.milestones.length > 0) {
@@ -62,15 +250,11 @@ export class GoalService {
     }
 
     // Add tags if provided
-    if (input.tagIds && input.tagIds.length > 0) {
-      await Promise.all(
-        input.tagIds.map(tagId =>
-          this.goalRepository.prisma.goalTag.create({
-            data: { goalId: goal.id, tagId },
-          })
-        )
-      );
-    }
+    await this.goalRepository.addTags(goal.id, input.tagIds ?? []);
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
 
     return this.goalRepository.findWithRelations(goal.id, userId);
   }
@@ -101,24 +285,33 @@ export class GoalService {
           : { disconnect: true },
       }),
       ...(input.isPublic !== undefined && { isPublic: input.isPublic }),
+      ...(input.appliesEveryDay !== undefined && {
+        appliesEveryDay: input.appliesEveryDay,
+      }),
     });
 
-    // Update tags if provided
-    if (input.tagIds) {
-      await this.goalRepository.prisma.goalTag.deleteMany({
-        where: { goalId },
-      });
-
-      if (input.tagIds.length > 0) {
-        await Promise.all(
-          input.tagIds.map(tagId =>
-            this.goalRepository.prisma.goalTag.create({
-              data: { goalId, tagId },
-            })
-          )
+    // Replace day-type assignments when they are supplied
+    if (input.dayTypeIds) {
+      const appliesEveryDay = input.appliesEveryDay ?? true;
+      await this.goalRepository.clearDayTypeAssignments(goalId);
+      if (!appliesEveryDay) {
+        await this.goalRepository.addDayTypeAssignments(
+          goalId,
+          userId,
+          input.dayTypeIds
         );
       }
     }
+
+    // Update tags if provided
+    if (input.tagIds) {
+      await this.goalRepository.clearTags(goalId);
+      await this.goalRepository.addTags(goalId, input.tagIds);
+    }
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
 
     return this.goalRepository.findWithRelations(goalId, userId);
   }
@@ -156,7 +349,9 @@ export class GoalService {
       await this.goalRepository.complete(goalId, userId);
       completed = true;
 
-      // TODO: Trigger achievement
+      new AchievementService().checkForUnlocks(userId).catch(err => {
+        console.error('Failed to check achievements after goal completion:', err);
+      });
     }
 
     return {
@@ -180,8 +375,14 @@ export class GoalService {
 
     await this.goalRepository.complete(goalId, userId);
 
-    // TODO: Check for achievements
+    new AchievementService().checkForUnlocks(userId).catch(err => {
+      console.error('Failed to check achievements after goal completion:', err);
+    });
     // TODO: Trigger notification
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
 
     return this.goalRepository.findWithRelations(goalId, userId);
   }
@@ -308,6 +509,10 @@ export class GoalService {
     await this.goalRepository.delete(goalId, userId);
 
     // TODO: Audit log
+
+    invalidateDashboard(userId);
+    invalidateAnalyticsCache(userId);
+    invalidateInsights(userId);
   }
 }
 

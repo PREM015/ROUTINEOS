@@ -1,4 +1,4 @@
-import type { HabitLogStatus, HabitTier } from '@prisma/client';
+import type { HabitLogStatus, HabitTier } from '@/generated/prisma';
 import { APP_CONFIG } from '@/config/app';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';

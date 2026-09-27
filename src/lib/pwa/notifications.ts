@@ -74,7 +74,7 @@ export async function showNotification(
   if (registration?.showNotification) {
     await registration.showNotification(title, options);
   } else {
-    // eslint-disable-next-line no-new
+     
     new Notification(title, options);
   }
   return true;

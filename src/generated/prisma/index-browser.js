@@ -310,6 +310,7 @@ exports.Prisma.RoutineTemplateScalarFieldEnum = {
   name: 'name',
   description: 'description',
   dayType: 'dayType',
+  dayTypeId: 'dayTypeId',
   isDefault: 'isDefault',
   color: 'color',
   icon: 'icon',
@@ -346,6 +347,7 @@ exports.Prisma.RoutineExceptionScalarFieldEnum = {
   userId: 'userId',
   date: 'date',
   dayType: 'dayType',
+  dayTypeId: 'dayTypeId',
   templateId: 'templateId',
   note: 'note',
   reason: 'reason',
@@ -391,6 +393,7 @@ exports.Prisma.HabitScalarFieldEnum = {
   estimatedDuration: 'estimatedDuration',
   difficulty: 'difficulty',
   isPublic: 'isPublic',
+  appliesEveryDay: 'appliesEveryDay',
   streakCount: 'streakCount',
   longestStreak: 'longestStreak',
   lastCompletedDate: 'lastCompletedDate',
@@ -484,6 +487,7 @@ exports.Prisma.GoalScalarFieldEnum = {
   parentGoalId: 'parentGoalId',
   carriedOverFrom: 'carriedOverFrom',
   isPublic: 'isPublic',
+  appliesEveryDay: 'appliesEveryDay',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1102,6 +1106,36 @@ exports.Prisma.FeedbackScalarFieldEnum = {
   resolvedAt: 'resolvedAt'
 };
 
+exports.Prisma.DayTypeDefinitionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  slug: 'slug',
+  description: 'description',
+  color: 'color',
+  icon: 'icon',
+  isDefault: 'isDefault',
+  isArchived: 'isArchived',
+  sortOrder: 'sortOrder',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HabitDayTypeScalarFieldEnum = {
+  id: 'id',
+  habitId: 'habitId',
+  dayTypeId: 'dayTypeId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.GoalDayTypeScalarFieldEnum = {
+  id: 'id',
+  goalId: 'goalId',
+  dayTypeId: 'dayTypeId',
+  userId: 'userId',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.FeatureFlagScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -1554,6 +1588,9 @@ exports.Prisma.ModelName = {
   AuditLog: 'AuditLog',
   ActivityLog: 'ActivityLog',
   Feedback: 'Feedback',
+  DayTypeDefinition: 'DayTypeDefinition',
+  HabitDayType: 'HabitDayType',
+  GoalDayType: 'GoalDayType',
   FeatureFlag: 'FeatureFlag',
   APIKey: 'APIKey'
 };

@@ -5,10 +5,10 @@
 // ============================================
 
 // Models (types) - Use direct import
-import type { Achievement, User } from '@prisma/client'
+import type { Achievement, User } from '@/generated/prisma'
 
 // Enums - Use direct import (same as models in Prisma Client)
-import { AchievementType } from '@prisma/client'
+import { AchievementType } from '@/generated/prisma'
 
 // NOTE: In Prisma Client v5+, both models and enums are imported the same way!
 

@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
-import { GoalRepository } from '@/server/repositories/goal.repository';
 import { createGoalSchema } from '@/schemas/goal.schema';
+import type { GoalPriority, GoalStatus, GoalType } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -16,19 +16,20 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+    const list = (key: string) => searchParams.get(key)?.split(',').filter(Boolean);
 
-    const goalRepository = new GoalRepository();
-    const goals = await goalRepository.findAll(session.user.id, {
-      status: searchParams.get('status')?.split(',') as any,
-      type: searchParams.get('type')?.split(',') as any,
-      priority: searchParams.get('priority')?.split(',') as any,
+    const goals = await new GoalService().listGoals(session.user.id, {
+      status: list('status') as GoalStatus[] | undefined,
+      type: list('type') as GoalType[] | undefined,
+      priority: list('priority') as GoalPriority[] | undefined,
       projectId: searchParams.get('projectId') || undefined,
       overdue: searchParams.get('overdue') === 'true',
       dueSoon: searchParams.get('dueSoon') === 'true',
-      sortBy: (searchParams.get('sortBy') as any) || 'endDate',
-      sortOrder: (searchParams.get('sortOrder') as any) || 'asc',
+      sortBy: searchParams.get('sortBy') || 'endDate',
+      sortOrder: searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc',
       limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50,
       offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0,
+      dayTypeId: searchParams.get('dayTypeId') || undefined,
     });
 
     return NextResponse.json({
@@ -63,8 +64,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const goalService = new GoalService();
-    const goal = await goalService.createGoal(session.user.id, validated.data);
+    // The service owns day-type assignment; the route just forwards validated input.
+    const goal = await new GoalService().createGoal(session.user.id, {
+      ...validated.data,
+      appliesEveryDay: validated.data.appliesEveryDay ?? true,
+    });
+
+    if (!goal) {
+      return NextResponse.json({ error: 'Failed to create goal' }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true, data: goal }, { status: 201 });
   } catch (error) {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { Tag } from '@prisma/client';
+import type { Tag } from '@/generated/prisma';
 import {
   ArrowRight,
   BookOpen,

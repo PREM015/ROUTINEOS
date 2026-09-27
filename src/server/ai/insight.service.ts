@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 import { canGenerateInsights, recordInsightGeneration } from './cost-control';
 import { aggregateUserDataForAI } from './aggregator';
 import { generateInsight } from './provider';

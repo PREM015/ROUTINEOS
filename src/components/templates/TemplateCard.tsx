@@ -9,7 +9,7 @@
  * Usage:
  *   <TemplateCard template={card} onUse={(t) => useTemplate(t)} onPreview={openPreview} />
  */
-import type { Template, TemplateType } from '@prisma/client';
+import type { Template, TemplateType } from '@/generated/prisma';
 import { Clock, Eye, LayoutTemplate, Star } from 'lucide-react';
 import type { DefaultTemplate } from '@/lib/constants/templates';
 import { parseTemplateContent } from '@/lib/templates/converter';

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import type { Tag } from '@prisma/client';
+import type { Tag } from '@/generated/prisma';
 import { ArrowLeft, BookOpen, PenLine } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import type { JournalEntryWithRelations } from '@/types/journal';
@@ -83,6 +83,7 @@ export default function JournalDatePage() {
         </div>
       ) : entry ? (
         <JournalEditor
+          key={entry.id}
           entry={entry}
           availableTags={tags}
           onSaved={() => {

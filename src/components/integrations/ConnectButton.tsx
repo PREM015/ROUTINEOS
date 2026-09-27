@@ -12,7 +12,7 @@
  *   <ConnectButton provider="TRELLO" authType="apikey" onNeedApiKey={openKeyDialog} />
  */
 import * as React from 'react';
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 import { Link } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { Button } from '@/components/ui';

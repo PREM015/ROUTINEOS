@@ -1,4 +1,4 @@
-import type { FeatureFlag } from '@prisma/client';
+import type { FeatureFlag } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

@@ -1,4 +1,4 @@
-import type { AchievementType } from '@prisma/client';
+import type { AchievementType } from '@/generated/prisma';
 
 /**
  * Achievement Constants

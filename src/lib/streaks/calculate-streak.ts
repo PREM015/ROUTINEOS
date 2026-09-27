@@ -1,6 +1,7 @@
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
-import type { HabitTier } from '@prisma/client';
+import type { HabitTier } from '@/generated/prisma';
+import { THRESHOLDS } from '@/config/scoring';
 
 /**
  * Streak Calculation
@@ -122,9 +123,7 @@ export async function calculateStreak(
  * Check if reached a streak milestone
  */
 function checkStreakMilestone(currentStreak: number): number | undefined {
-  const milestones = [7, 14, 21, 30, 60, 90, 100, 180, 365];
-
-  for (const milestone of milestones) {
+  for (const milestone of THRESHOLDS.streakMilestones) {
     if (currentStreak === milestone) {
       return milestone;
     }

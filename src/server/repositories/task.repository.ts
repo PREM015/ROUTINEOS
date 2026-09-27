@@ -1,5 +1,5 @@
-import type { Task, TaskDependency, Prisma, TaskPriority } from '@prisma/client';
-import { TaskStatus } from '@prisma/client';
+import type { Task, TaskDependency, Prisma, TaskPriority } from '@/generated/prisma';
+import { TaskStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

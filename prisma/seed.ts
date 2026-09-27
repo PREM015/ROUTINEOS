@@ -883,6 +883,94 @@ async function seedRoutineTemplates(
   return { templates, blocks };
 }
 
+// ============================================================================
+// DAY TYPE DEFINITIONS
+// ============================================================================
+
+interface DayTypeSeed {
+  name: string;
+  slug: string;
+  description: string;
+  color: string;
+  icon: string;
+  sortOrder: number;
+  isDefault: boolean;
+}
+
+const DEFAULT_DAY_TYPES: DayTypeSeed[] = [
+  {
+    name: 'Work Day',
+    slug: 'work-day',
+    description: 'Standard work day routine',
+    color: '#3b82f6',
+    icon: '💼',
+    sortOrder: 0,
+    isDefault: true,
+  },
+  {
+    name: 'Weekend',
+    slug: 'weekend',
+    description: 'Weekend routine',
+    color: '#10b981',
+    icon: '🌴',
+    sortOrder: 1,
+    isDefault: true,
+  },
+  {
+    name: 'Holiday',
+    slug: 'holiday',
+    description: 'Holiday routine',
+    color: '#f59e0b',
+    icon: '🏖️',
+    sortOrder: 2,
+    isDefault: true,
+  },
+  {
+    name: 'Exam Day',
+    slug: 'exam-day',
+    description: 'Exam preparation routine',
+    color: '#8b5cf6',
+    icon: '📚',
+    sortOrder: 3,
+    isDefault: true,
+  },
+  {
+    name: 'Low Energy Day',
+    slug: 'low-energy-day',
+    description: 'Low energy recovery routine',
+    color: '#8b5cf6',
+    icon: '🛌',
+    sortOrder: 4,
+    isDefault: true,
+  },
+];
+
+async function seedDayTypeDefinitions(prisma: Db, userId: string): Promise<number> {
+  let created = 0;
+  for (const dt of DEFAULT_DAY_TYPES) {
+    const existing = await prisma.dayTypeDefinition.findUnique({
+      where: { userId_slug: { userId, slug: dt.slug } },
+    });
+    if (!existing) {
+      await prisma.dayTypeDefinition.create({
+        data: {
+          userId,
+          name: dt.name,
+          slug: dt.slug,
+          description: dt.description,
+          color: dt.color,
+          icon: dt.icon,
+          sortOrder: dt.sortOrder,
+          isDefault: dt.isDefault,
+          isArchived: false,
+        },
+      });
+      created += 1;
+    }
+  }
+  return created;
+}
+
 async function seedHabits(
   prisma: Db,
   userId: string,
@@ -1103,6 +1191,9 @@ async function main(): Promise<void> {
     console.log('📁 Categories');
     const categoryIds = await seedCategories(prisma, user.id);
 
+    console.log('📅 Day type definitions');
+    const dayTypeDefsCreated = await seedDayTypeDefinitions(prisma, user.id);
+
     console.log('⏰ Routine templates + blocks');
     const routine = await seedRoutineTemplates(prisma, user.id, categoryIds);
 
@@ -1119,6 +1210,7 @@ async function main(): Promise<void> {
     console.log('\n✨ Seed complete');
     console.log(`   User            : ${created ? 'created' : 'already existed (kept, timezone/onboarding ensured)'} — ${user.email} [${user.role}]`);
     console.log(`   Categories      : ${Object.keys(CATEGORIES).length} ready`);
+    console.log(`   Day Types       : +${dayTypeDefsCreated} created`);
     console.log(`   Routine         : +${routine.templates} templates, +${routine.blocks} blocks`);
     console.log(`   Habits          : +${habitsCreated} new (${HABITS.length} total defined), Minimum Day = ${MINIMUM_DAY_HABITS.length} items`);
     console.log(`   Projects/Goals  : +${work.projects} projects, +${work.goals} goals, +${work.milestones} milestones, +${work.tasks} tasks`);

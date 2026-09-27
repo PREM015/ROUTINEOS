@@ -1,4 +1,4 @@
-import type { Prisma, ProjectStatus } from '@prisma/client';
+import type { Prisma, ProjectStatus } from '@/generated/prisma';
 import { ProjectRepository } from '@/server/repositories/project.repository';
 import {
   createProjectSchema,

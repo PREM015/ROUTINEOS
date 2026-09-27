@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
-import type { Project, ProjectStatus } from '@prisma/client';
+import type { Project, ProjectStatus } from '@/generated/prisma';
 import type {
   CreateProjectInput,
   ProjectQueryParams,

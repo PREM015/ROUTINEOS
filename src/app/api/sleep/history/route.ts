@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { SleepRepository } from '@/server/repositories/sleep.repository';
+import { sleepService } from '@/server/services/sleep.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -24,41 +24,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sleepRepository = new SleepRepository();
-    const logs = await sleepRepository.findByRange(
+    const data = await sleepService.getSleepHistory(
       session.user.id,
       startDate,
       endDate
     );
 
-    // Calculate summary statistics
-    const validLogs = logs.filter(l => l.actualDurationMinutes !== null);
-
-    const summary = {
-      totalDays: logs.length,
-      averageDuration:
-        validLogs.length > 0
-          ? Math.round(
-              validLogs.reduce((sum, l) => sum + (l.actualDurationMinutes || 0), 0) /
-                validLogs.length
-            )
-          : 0,
-      averageQuality:
-        logs.filter(l => l.quality).length > 0
-          ? logs.reduce((sum, l) => sum + (l.quality || 0), 0) /
-            logs.filter(l => l.quality).length
-          : null,
-      totalDeficit: validLogs.reduce((sum, l) => sum + (l.deficitMinutes || 0), 0),
-      daysRested: logs.filter(l => l.feltRested).length,
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        logs,
-        summary,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching sleep history:', error);
     return NextResponse.json(

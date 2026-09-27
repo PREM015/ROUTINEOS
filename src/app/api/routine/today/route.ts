@@ -1,8 +1,7 @@
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
-import { db } from '@/lib/db';
-import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
-import { UserRepository } from '@/server/repositories/user.repository';
+import { getTodayString } from '@/lib/dates';
+import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date =
       searchParams.get('date') ||
-      getTodayString((await new UserRepository().getSettings(session.user.id))?.timezone || DEFAULT_TZ);
+      getTodayString(await new UserService().getTimezone(session.user.id));
 
     const routineService = new RoutineService();
     const routine = await routineService.getRoutineForDate(session.user.id, date);
@@ -69,21 +68,20 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
     const { blockId, date, status, note } = validated.data;
 
-    const block = await db.routineBlock.findFirst({
-      where: { id: blockId, userId },
-      select: { id: true },
-    });
-    if (!block) {
-      return NextResponse.json({ error: 'Routine block not found' }, { status: 404 });
+    try {
+      const log = await new RoutineService().logBlockStatus(userId, {
+        blockId,
+        date,
+        status,
+        note: note ?? null,
+      });
+      return NextResponse.json({ success: true, data: log }, { status: 201 });
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+      throw error;
     }
-
-    const log = await db.routineLog.upsert({
-      where: { userId_routineBlockId_date: { userId, routineBlockId: blockId, date } },
-      create: { userId, routineBlockId: blockId, date, status, note },
-      update: { status, note },
-    });
-
-    return NextResponse.json({ success: true, data: log }, { status: 201 });
   } catch (error) {
     console.error("Error logging routine block:", error);
     return NextResponse.json(

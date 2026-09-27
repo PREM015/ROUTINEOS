@@ -1,5 +1,5 @@
 import { createConnection } from 'node:net';
-import type { Achievement, Goal, Habit } from '@prisma/client';
+import type { Achievement, Goal, Habit } from '@/generated/prisma';
 
 /**
  * Email Service

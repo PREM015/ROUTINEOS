@@ -1,9 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { ExportFormat, ExportStatus, type DataExport } from '@prisma/client';
+import { ExportFormat, ExportStatus, type DataExport } from '@/generated/prisma';
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { DataExportRepository } from '@/server/repositories/data-export.repository';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { AchievementRepository } from '@/server/repositories/achievement.repository';
@@ -59,6 +59,7 @@ export class BackupService {
   private streakRepository: StreakRepository;
   private achievementRepository: AchievementRepository;
   private auditRepository: AuditRepository;
+  private dataExportRepository: DataExportRepository;
 
   constructor() {
     this.userRepository = new UserRepository();
@@ -66,6 +67,7 @@ export class BackupService {
     this.streakRepository = new StreakRepository();
     this.achievementRepository = new AchievementRepository();
     this.auditRepository = new AuditRepository();
+    this.dataExportRepository = new DataExportRepository();
   }
 
   private exportsDirFor(userId: string): string {
@@ -120,7 +122,14 @@ export class BackupService {
   async createExport(
     userId: string,
     input: CreateExportInput
-  ): Promise<{ exportId: string; downloadUrl: string; format: ExportFormat }> {
+  ): Promise<{
+    exportId: string;
+    downloadUrl: string;
+    format: ExportFormat;
+    fileUrl: string;
+    fileSize: number | null;
+    expiresAt: Date | null;
+  }> {
     const parsed = exportRequestSchema.safeParse(input);
     if (!parsed.success) {
       throw new Error(
@@ -133,16 +142,14 @@ export class BackupService {
       throw new Error('User not found');
     }
 
-    const exportRow = await prisma.dataExport.create({
-      data: {
-        userId,
-        format: parsed.data.format,
-        status: ExportStatus.PROCESSING,
-        includeAttachments: parsed.data.includeAttachments ?? false,
-        dateFrom: parsed.data.dateFrom,
-        dateTo: parsed.data.dateTo,
-        startedAt: new Date(),
-      },
+    const exportRow = await this.dataExportRepository.create({
+      user: { connect: { id: userId } },
+      format: parsed.data.format,
+      status: ExportStatus.PROCESSING,
+      includeAttachments: parsed.data.includeAttachments ?? false,
+      dateFrom: parsed.data.dateFrom,
+      dateTo: parsed.data.dateTo,
+      startedAt: new Date(),
     });
 
     try {
@@ -167,15 +174,12 @@ export class BackupService {
 
       const fileUrl = this.publicUrlFor(userId, fileName);
 
-      await prisma.dataExport.update({
-        where: { id: exportRow.id },
-        data: {
-          status: ExportStatus.COMPLETED,
-          fileUrl,
-          fileSize: fileBytes,
-          completedAt: new Date(),
-          expiresAt: new Date(Date.now() + EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
-        },
+      const completed = await this.dataExportRepository.update(exportRow.id, {
+        status: ExportStatus.COMPLETED,
+        fileUrl,
+        fileSize: fileBytes,
+        completedAt: new Date(),
+        expiresAt: new Date(Date.now() + EXPIRATION_DAYS * 24 * 60 * 60 * 1000),
       });
 
       await this.auditRepository.create({
@@ -187,18 +191,18 @@ export class BackupService {
       });
 
       return {
-        exportId: exportRow.id,
+        exportId: completed.id,
         downloadUrl: `${publicBaseUrl() ?? ''}${fileUrl}`,
         format: parsed.data.format,
+        fileUrl,
+        fileSize: completed.fileSize,
+        expiresAt: completed.expiresAt,
       };
     } catch (error) {
-      await prisma.dataExport.update({
-        where: { id: exportRow.id },
-        data: {
-          status: ExportStatus.FAILED,
-          errorMessage: error instanceof Error ? error.message : 'Export failed',
-          completedAt: new Date(),
-        },
+      await this.dataExportRepository.update(exportRow.id, {
+        status: ExportStatus.FAILED,
+        errorMessage: error instanceof Error ? error.message : 'Export failed',
+        completedAt: new Date(),
       });
       throw error;
     }
@@ -208,19 +212,14 @@ export class BackupService {
    * List all exports for a user
    */
   async getExports(userId: string): Promise<DataExport[]> {
-    return prisma.dataExport.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.dataExportRepository.findAllByUser(userId);
   }
 
   /**
    * Get a single export owned by the user
    */
   async getExport(userId: string, exportId: string): Promise<DataExport> {
-    const exportRow = await prisma.dataExport.findUnique({
-      where: { id: exportId },
-    });
+    const exportRow = await this.dataExportRepository.findById(exportId);
     if (!exportRow || exportRow.userId !== userId) {
       throw new Error('Export not found');
     }
@@ -245,7 +244,7 @@ export class BackupService {
       }
     }
 
-    await prisma.dataExport.delete({ where: { id: exportRow.id } });
+    await this.dataExportRepository.delete(exportRow.id);
     return { success: true };
   }
 }

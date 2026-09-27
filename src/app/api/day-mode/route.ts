@@ -1,19 +1,13 @@
 import { auth } from '@/lib/auth';
-import { ScoreRepository } from '@/server/repositories/score.repository';
-import { UserRepository } from '@/server/repositories/user.repository';
-import { calculateDailyScore } from '@/lib/scoring/calculate-daily-score';
-import { resolveNaturalDayType } from '@/lib/scheduling/resolve-routine';
-import prisma from '@/lib/prisma';
-import { DEFAULT_TZ } from '@/lib/dates';
+import { dayModeService } from '@/server/services/day-mode.service';
+import { dayTypeSchema } from '@/lib/validation/routine.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-
-const DAY_TYPES = ['WORKDAY', 'WEEKEND', 'HOLIDAY', 'EXAM_DAY', 'LOW_ENERGY', 'CUSTOM'] as const;
 
 const dayModeSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   mode: z.enum(['MINIMUM', 'REST', 'DAY_TYPE', 'CLEAR']).optional(),
-  dayType: z.enum(DAY_TYPES).optional(),
+  dayType: dayTypeSchema.optional(),
   reason: z.string().optional(),
   templateId: z.string().optional(),
 });
@@ -36,42 +30,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
     }
 
-    const [userRepository, scoreRepository] = [new UserRepository(), new ScoreRepository()];
-    const settings = await userRepository.getSettings(session.user.id);
-    const timezone = settings?.timezone || DEFAULT_TZ;
+    const snapshot = await dayModeService.getDayMode(session.user.id, date);
 
-    const [exception, score] = await Promise.all([
-      prisma.routineException.findUnique({
-        where: { userId_date: { userId: session.user.id, date } },
-      }),
-      scoreRepository.findByDate(session.user.id, date),
-    ]);
-
-    const naturalDayType = resolveNaturalDayType(date, timezone);
-    const dayType = exception?.dayType ?? naturalDayType;
-    const templateId = exception?.templateId ?? null;
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        date,
-        dayType,
-        naturalDayType,
-        templateId,
-        hasException: Boolean(exception),
-        exception: exception
-          ? {
-              id: exception.id,
-              dayType: exception.dayType,
-              templateId: exception.templateId,
-              reason: exception.reason,
-            }
-          : null,
-        isMinimumDay: score?.isMinimumDay ?? false,
-        isRestDay: score?.isRestDay ?? false,
-        minimumDayTemplateId: score?.minimumDayTemplateId ?? null,
-      },
-    });
+    return NextResponse.json({ success: true, data: snapshot });
   } catch (error) {
     console.error('Error fetching day mode:', error);
     return NextResponse.json(
@@ -106,92 +67,15 @@ export async function POST(request: NextRequest) {
 
     const { date, mode, dayType, reason, templateId } = validated.data;
 
-    if (mode === 'MINIMUM') {
-      const breakdown = await calculateDailyScore(session.user.id, date, {
-        isMinimumDay: true,
-        minimumDayTemplateId: templateId,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          mode: 'MINIMUM',
-          score: breakdown,
-        },
-      });
-    }
-
-    if (mode === 'REST') {
-      const scoreRepository = new ScoreRepository();
-      await scoreRepository.upsertScore(session.user.id, date, {
-        isRestDay: true,
-        restDayReason: reason ?? null,
-        totalScore: null,
-        coreScore: null,
-        growthScore: null,
-        bonusScore: null,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          mode: 'REST',
-        },
-      });
-    }
-
-    if (mode === 'CLEAR') {
-      await prisma.routineException.deleteMany({
-        where: { userId: session.user.id, date },
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: { mode: 'CLEAR', dayType: null, exception: null },
-      });
-    }
-
-    // mode === 'DAY_TYPE' (or dayType provided): persist an exception so the
-    // resolved routine for this date changes to the selected day type.
-    if (!dayType) {
-      return NextResponse.json(
-        { error: 'dayType is required for DAY_TYPE mode' },
-        { status: 400 }
-      );
-    }
-
-    const exception = await prisma.routineException.upsert({
-      where: { userId_date: { userId: session.user.id, date } },
-      create: {
-        userId: session.user.id,
-        date,
-        dayType,
-        templateId: templateId ?? null,
-        note: reason ?? null,
-        reason,
-      },
-      update: {
-        dayType,
-        templateId: templateId ?? null,
-        note: reason ?? null,
-        reason,
-      },
+    const result = await dayModeService.setDayMode(session.user.id, {
+      date,
+      mode: mode ?? 'DAY_TYPE',
+      dayType,
+      reason,
+      templateId,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        mode: 'DAY_TYPE',
-        dayType,
-        templateId: exception.templateId,
-        exception: {
-          id: exception.id,
-          dayType: exception.dayType,
-          templateId: exception.templateId,
-          reason: exception.reason,
-        },
-      },
-    });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error activating day mode:', error);
 

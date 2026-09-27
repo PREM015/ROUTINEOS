@@ -1,4 +1,4 @@
-import type { MoodLog, EnergyLog, Prisma } from '@prisma/client';
+import type { MoodLog, EnergyLog, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -317,6 +317,27 @@ export class MoodRepository extends BaseRepository {
   /**
    * Get aggregate mood and energy stats for a user in a date range
    */
+  /**
+   * Total number of mood logs for a user.
+   */
+  async countMoodLogs(userId: string): Promise<number> {
+    try {
+      return await this.prisma.moodLog.count({ where: { userId } });
+    } catch (error) {
+      this.handleError(error, 'countMoodLogs');
+    }
+  }
+
+  /**
+   * Total number of energy logs for a user.
+   */
+  async countEnergyLogs(userId: string): Promise<number> {
+    try {
+      return await this.prisma.energyLog.count({ where: { userId } });
+    } catch (error) {
+      this.handleError(error, 'countEnergyLogs');
+    }
+  }
   async getStats(
     userId: string,
     from?: DateFilter,

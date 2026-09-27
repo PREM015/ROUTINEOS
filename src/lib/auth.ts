@@ -1,6 +1,6 @@
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import NextAuth, { CredentialsSignin } from 'next-auth';
-import type { User } from 'next-auth';
+import type { Session, User } from 'next-auth';
 import type { AdapterUser } from 'next-auth/adapters';
 import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
@@ -152,11 +152,11 @@ export const authOptions = {
       token: JWT;
       user?: User | AdapterUser;
       trigger?: 'update' | 'signIn' | 'signUp';
-      session?: any;
+      session?: Session;
     }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role || 'USER';
+        token.role = 'role' in user && typeof user.role === 'string' ? user.role : 'USER';
         // Stamp absolute login time once at sign-in. This is the anchor for
         // the 6-hour absolute expiry; it never moves regardless of activity.
         token.loginAt = Date.now();
@@ -169,9 +169,11 @@ export const authOptions = {
         token.sessionVersion = dbUser?.sessionVersion ?? 0;
       }
 
-      // Handle session update
-      if (trigger === 'update' && session) {
-        token.role = session.role || token.role;
+      // Handle session update. `role` lives on `session.user`, not on
+      // `session` itself — reading `session.role` always yielded undefined and
+      // silently made this a no-op.
+      if (trigger === 'update' && session?.user?.role) {
+        token.role = session.user.role;
       }
 
       // ── Absolute 6-hour expiry (server-side enforcement) ──────────────────
@@ -201,10 +203,16 @@ export const authOptions = {
       return token;
     },
 
-    async session({ session, token }: { session: any; token: JWT }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        (session.user as any).role = token.role as string;
+        session.user.id = (token.id as string) ?? '';
+        session.user.role = (token.role as string) ?? 'USER';
+      }
+      // Expose absolute expiry to client so AutoLogout can use it without
+      // relying on the rolling `session.expires` (which NextAuth rewrites).
+      const loginAt = token.loginAt as number | undefined;
+      if (loginAt) {
+        session.absoluteExpiresAt = loginAt + 6 * 60 * 60 * 1000;
       }
       return session;
     },

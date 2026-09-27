@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import { generateWeeklyRecap } from '@/server/recap/weekly';
+import { reviewService } from '@/server/services/review.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -20,7 +19,7 @@ const weeklyReviewSchema = z.object({
 
 /**
  * GET /api/weekly-review
- * Get weekly review
+ * Get a week's review (generating recap stats when none exists yet).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -39,39 +38,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const review = await prisma.weeklyReview.findFirst({
-      where: {
-        userId: session.user.id,
-        weekStart,
-      },
-    });
+    const result = await reviewService.getWeeklyReview(session.user.id, weekStart);
 
-    // If no review exists, generate recap data
-    if (!review) {
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      const recap = await generateWeeklyRecap(
-        session.user.id,
-        weekStart,
-        weekEnd.toISOString().slice(0, 10)
-      );
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          review: null,
-          recap,
-        },
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        review,
-        recap: review.statsSnapshot ? JSON.parse(review.statsSnapshot) : null,
-      },
-    });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error fetching weekly review:', error);
     return NextResponse.json(
@@ -83,7 +52,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/weekly-review
- * Create or update weekly review
+ * Create or update a weekly review.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -102,50 +71,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { weekStart, weekEnd, ...reviewData } = validated.data;
+    const review = await reviewService.saveWeeklyReview(
+      session.user.id,
+      validated.data
+    );
 
-    // Generate recap stats
-    const recap = await generateWeeklyRecap(session.user.id, weekStart, weekEnd);
-
-    const review = await prisma.weeklyReview.upsert({
-      where: {
-        userId_weekStart: {
-          userId: session.user.id,
-          weekStart,
-        },
-      },
-      create: {
-        userId: session.user.id,
-        weekStart,
-        weekEnd,
-        statsSnapshot: JSON.stringify(recap),
-        answers: JSON.stringify(reviewData.answers),
-        biggestWins: reviewData.biggestWins,
-        challenges: reviewData.challenges,
-        lessonsLearned: reviewData.lessonsLearned,
-        nextWeekFocus: reviewData.nextWeekFocus,
-        nextWeekGoals: reviewData.nextWeekGoals ? JSON.stringify(reviewData.nextWeekGoals) : null,
-        overallSatisfaction: reviewData.overallSatisfaction,
-        energyLevel: reviewData.energyLevel,
-        stressLevel: reviewData.stressLevel,
-      },
-      update: {
-        answers: JSON.stringify(reviewData.answers),
-        biggestWins: reviewData.biggestWins,
-        challenges: reviewData.challenges,
-        lessonsLearned: reviewData.lessonsLearned,
-        nextWeekFocus: reviewData.nextWeekFocus,
-        nextWeekGoals: reviewData.nextWeekGoals ? JSON.stringify(reviewData.nextWeekGoals) : null,
-        overallSatisfaction: reviewData.overallSatisfaction,
-        energyLevel: reviewData.energyLevel,
-        stressLevel: reviewData.stressLevel,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: review,
-    });
+    return NextResponse.json({ success: true, data: review });
   } catch (error) {
     console.error('Error saving weekly review:', error);
     return NextResponse.json(

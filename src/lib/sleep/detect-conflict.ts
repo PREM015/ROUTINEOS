@@ -11,7 +11,7 @@ function timeToMinutes(timeStr: string): number {
 
 export function detectSleepConflicts(bedtime: string, wakeTime: string, routineBlocks: Array<{name: string; startTime: string; endTime: string}>): SleepConflict[] {
   const conflicts: SleepConflict[] = [];
-  let bedMins = timeToMinutes(bedtime);
+  const bedMins = timeToMinutes(bedtime);
   let wakeMins = timeToMinutes(wakeTime);
 
   // If overnight, adjust wakeMins to next day
@@ -19,7 +19,7 @@ export function detectSleepConflicts(bedtime: string, wakeTime: string, routineB
   if (isOvernight) wakeMins += 24 * 60;
 
   for (const block of routineBlocks) {
-    let blockStart = timeToMinutes(block.startTime);
+    const blockStart = timeToMinutes(block.startTime);
     let blockEnd = timeToMinutes(block.endTime);
     if (blockEnd < blockStart) {
       blockEnd += 24 * 60; // Assuming block doesn't span more than a day
@@ -27,9 +27,9 @@ export function detectSleepConflicts(bedtime: string, wakeTime: string, routineB
 
     // Check for today's sleep
     if (blockStart < wakeMins && blockEnd > bedMins) {
-      let overlapStart = Math.max(bedMins, blockStart);
-      let overlapEnd = Math.min(wakeMins, blockEnd);
-      let overlapMinutes = overlapEnd - overlapStart;
+      const overlapStart = Math.max(bedMins, blockStart);
+      const overlapEnd = Math.min(wakeMins, blockEnd);
+      const overlapMinutes = overlapEnd - overlapStart;
       
       if (overlapMinutes > 0) {
         const isBedtimeConflict = Math.abs(overlapStart - bedMins) < Math.abs(overlapEnd - wakeMins);
@@ -41,12 +41,12 @@ export function detectSleepConflicts(bedtime: string, wakeTime: string, routineB
       }
     } else if (isOvernight) {
       // Check for next day overlap
-      let nextDayStart = blockStart + 24 * 60;
-      let nextDayEnd = blockEnd + 24 * 60;
+      const nextDayStart = blockStart + 24 * 60;
+      const nextDayEnd = blockEnd + 24 * 60;
       if (nextDayStart < wakeMins && nextDayEnd > bedMins) {
-        let overlapStart = Math.max(bedMins, nextDayStart);
-        let overlapEnd = Math.min(wakeMins, nextDayEnd);
-        let overlapMinutes = overlapEnd - overlapStart;
+        const overlapStart = Math.max(bedMins, nextDayStart);
+        const overlapEnd = Math.min(wakeMins, nextDayEnd);
+        const overlapMinutes = overlapEnd - overlapStart;
         if (overlapMinutes > 0) {
           const isBedtimeConflict = Math.abs(overlapStart - bedMins) < Math.abs(overlapEnd - wakeMins);
           conflicts.push({

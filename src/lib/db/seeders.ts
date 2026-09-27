@@ -7,7 +7,7 @@
  * quotes) is seeded independently of any user.
  */
 
-import { Role, TemplateType, type Prisma } from '@prisma/client';
+import { Role, TemplateType, type Prisma } from '@/generated/prisma';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 

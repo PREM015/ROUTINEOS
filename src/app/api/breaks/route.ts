@@ -1,8 +1,6 @@
 import { auth } from '@/lib/auth';
-import { BreakRepository } from '@/server/repositories/break.repository';
-import { FocusRepository } from '@/server/repositories/focus.repository';
+import { focusService } from '@/server/services/focus.service';
 import { breakQuerySchema, createBreakSchema } from '@/schemas/focus.schema';
-import { nextBreakAt } from '@/lib/focus/break-scheduler';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -33,40 +31,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const repository = new BreakRepository();
-    const breaks = await repository.list(session.user.id, validated.data);
-    const total = await repository.count(session.user.id, validated.data);
+    const { data, meta } = await focusService.listBreaks(
+      session.user.id,
+      validated.data
+    );
 
-    let nextScheduledBreak: string | null = null;
-    try {
-      const focusRepository = new FocusRepository();
-      const active = await focusRepository.findActiveByUserId(session.user.id);
-
-      if (active) {
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-        if (active.startedAt >= startOfToday && active.startedAt < endOfToday) {
-          const next = nextBreakAt(active.startedAt, active.plannedDuration);
-          nextScheduledBreak = next ? next.toISOString() : null;
-        }
-      }
-    } catch {
-      // Scheduled-break hint is best-effort; never fail the listing request
-      nextScheduledBreak = null;
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: breaks,
-      meta: {
-        total,
-        limit: validated.data.limit,
-        offset: validated.data.offset,
-        nextScheduledBreak,
-      },
-    });
+    return NextResponse.json({ success: true, data, meta });
   } catch (error) {
     console.error('Error fetching breaks:', error);
     return NextResponse.json(
@@ -97,16 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repository = new BreakRepository();
-    const record = await repository.create(session.user.id, {
-      focusSessionId: validated.data.focusSessionId,
-      breakType: validated.data.breakType,
-      startedAt: validated.data.startedAt,
-      endedAt: validated.data.endedAt,
-      durationMinutes: validated.data.durationMinutes,
-      quality: validated.data.quality,
-      notes: validated.data.notes,
-    });
+    const record = await focusService.createBreak(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: record }, { status: 201 });
   } catch (error) {
@@ -115,7 +76,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-
     return NextResponse.json({ error: 'Failed to log break' }, { status: 500 });
   }
 }

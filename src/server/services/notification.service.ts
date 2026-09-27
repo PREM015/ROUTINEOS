@@ -1,4 +1,4 @@
-import { NotificationType, NotificationStatus, type NotificationLog } from '@prisma/client';
+import { NotificationType, NotificationStatus, type NotificationLog } from '@/generated/prisma';
 import { z } from 'zod';
 import { NotificationRepository } from '@/server/repositories/notification.repository';
 

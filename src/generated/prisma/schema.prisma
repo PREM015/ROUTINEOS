@@ -502,6 +502,8 @@ model User {
   dataExports             DataExport[]
   feedback                Feedback[]
   apiKeys                 APIKey[]
+  dayTypeDefinitions      DayTypeDefinition[]
+  goalDayTypes            GoalDayType[]
 
   @@index([email])
   @@index([isActive, isDeleted])
@@ -784,8 +786,10 @@ model RoutineTemplate {
 
   name        String
   description String?
-  dayType     DayType @default(CUSTOM)
-  isDefault   Boolean @default(false)
+  dayType     DayType            @default(CUSTOM) // KEEP for now, see migration steps
+  dayTypeId   String? // NEW — nullable during migration
+  dayTypeDef  DayTypeDefinition? @relation(fields: [dayTypeId], references: [id], onDelete: SetNull)
+  isDefault   Boolean            @default(false)
 
   color      String?
   icon       String?
@@ -803,6 +807,7 @@ model RoutineTemplate {
   @@index([userId, dayType, isDefault])
   @@index([userId, isActive])
   @@index([userId, createdAt])
+  @@index([dayTypeId])
 }
 
 model RoutineBlock {
@@ -851,8 +856,10 @@ model RoutineException {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date    String // YYYY-MM-DD
-  dayType DayType
+  date       String // YYYY-MM-DD
+  dayType    DayType // KEEP for now, see migration steps
+  dayTypeId  String? // NEW — nullable during migration
+  dayTypeDef DayTypeDefinition? @relation(fields: [dayTypeId], references: [id], onDelete: SetNull)
 
   templateId String?
   template   RoutineTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
@@ -864,6 +871,7 @@ model RoutineException {
 
   @@unique([userId, date])
   @@index([date, userId])
+  @@index([dayTypeId])
 }
 
 model RoutineLog {
@@ -942,6 +950,10 @@ model Habit {
 
   // Visibility
   isPublic Boolean @default(false)
+
+  // Day-type-specific habits (NEW)
+  appliesEveryDay    Boolean        @default(true) // NEW field
+  dayTypeAssignments HabitDayType[]
 
   // Derived/cached fields for performance
   streakCount       Int     @default(0)
@@ -1126,6 +1138,10 @@ model Goal {
 
   // Visibility
   isPublic Boolean @default(false)
+
+  // Day type specific goals
+  appliesEveryDay    Boolean       @default(true)
+  dayTypeAssignments GoalDayType[]
 
   milestones   Milestone[]
   progressLogs GoalProgress[]
@@ -2286,6 +2302,69 @@ model Feedback {
   @@index([status, createdAt])
   @@index([type, status])
   @@index([priority])
+}
+
+// ==========================================================================
+// ==========================================================================
+// DAY TYPE DEFINITIONS (Stage 1: Additive - replaces DayType enum role)
+// ==========================================================================
+
+model DayTypeDefinition {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String // "College Day", "Weekend", "Holiday", etc.
+  slug        String // normalized, e.g. "college-day" — for internal lookups
+  description String?
+  color       String?
+  icon        String?
+
+  isDefault  Boolean @default(false) // true for the 5 seeded defaults, still user-editable
+  isArchived Boolean @default(false) // soft-delete instead of hard delete
+  sortOrder  Int     @default(0)
+
+  routineTemplates  RoutineTemplate[]
+  routineExceptions RoutineException[]
+  habitAssignments  HabitDayType[]
+  goalAssignments   GoalDayType[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId, isArchived])
+  @@index([userId, sortOrder])
+}
+
+// NEW JOIN TABLE — Habit <-> DayTypeDefinition, fully separate from routine
+model HabitDayType {
+  id        String            @id @default(cuid())
+  habitId   String
+  habit     Habit             @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  dayTypeId String
+  dayType   DayTypeDefinition @relation(fields: [dayTypeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, dayTypeId])
+  @@index([dayTypeId])
+}
+
+model GoalDayType {
+  id        String            @id @default(cuid())
+  goalId    String
+  goal      Goal              @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  dayTypeId String
+  dayType   DayTypeDefinition @relation(fields: [dayTypeId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([goalId, dayTypeId])
+  @@index([dayTypeId])
+  @@index([userId])
 }
 
 // ==========================================================================

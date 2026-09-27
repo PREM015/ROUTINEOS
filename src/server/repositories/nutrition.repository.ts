@@ -1,4 +1,4 @@
-import type { NutritionEntry, Prisma } from '@prisma/client';
+import type { NutritionEntry, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

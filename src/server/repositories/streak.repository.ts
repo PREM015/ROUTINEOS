@@ -1,4 +1,4 @@
-import type { Streak, StreakMilestone, Prisma } from '@prisma/client';
+import type { Streak, StreakMilestone, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -172,6 +172,22 @@ export class StreakRepository extends BaseRepository {
   /**
    * Mark milestone celebrated
    */
+  /**
+   * Find a milestone by id, scoped to its owner.
+   */
+  async findMilestoneById(
+    milestoneId: string,
+    userId: string
+  ): Promise<StreakMilestone | null> {
+    try {
+      return await this.prisma.streakMilestone.findFirst({
+        where: { id: milestoneId, userId },
+      });
+    } catch (error) {
+      this.handleError(error, 'findMilestoneById');
+    }
+  }
+
   async celebrateMilestone(milestoneId: string): Promise<StreakMilestone> {
     try {
       return await this.prisma.streakMilestone.update({

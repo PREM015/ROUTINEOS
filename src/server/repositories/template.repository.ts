@@ -1,5 +1,5 @@
-import type { Template, RoutineTemplate, Prisma, TemplateType } from '@prisma/client';
-import { DayType } from '@prisma/client';
+import type { Template, RoutineTemplate, Prisma, TemplateType } from '@/generated/prisma';
+import { DayType } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

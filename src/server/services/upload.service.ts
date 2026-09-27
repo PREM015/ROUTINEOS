@@ -1,8 +1,8 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { Attachment } from '@prisma/client';
-import prisma from '@/lib/prisma';
+import type { Attachment } from '@/generated/prisma';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { AttachmentRepository } from '@/server/repositories/attachment.repository';
 
 /**
  * Upload Service
@@ -81,9 +81,11 @@ function extensionOf(fileName: string): string {
 
 export class UploadService {
   private userRepository: UserRepository;
+  private attachmentRepository: AttachmentRepository;
 
   constructor() {
     this.userRepository = new UserRepository();
+    this.attachmentRepository = new AttachmentRepository();
   }
 
   /**
@@ -163,17 +165,15 @@ export class UploadService {
       throw new Error('User not found');
     }
 
-    const attachment = await prisma.attachment.create({
-      data: {
-        userId,
-        entityType: input.entityType ?? 'GENERAL',
-        entityId: input.entityId ?? 'none',
-        fileName: sanitizeFileName(file.fileName),
-        fileUrl: '', // filled in below
-        fileSize: file.size,
-        mimeType: file.mimeType.toLowerCase(),
-        storageKey: input.storageKey,
-      },
+    const attachment = await this.attachmentRepository.create({
+      user: { connect: { id: userId } },
+      entityType: input.entityType ?? 'GENERAL',
+      entityId: input.entityId ?? 'none',
+      fileName: sanitizeFileName(file.fileName),
+      fileUrl: '', // filled in below
+      fileSize: file.size,
+      mimeType: file.mimeType.toLowerCase(),
+      storageKey: input.storageKey,
     });
 
     const { storageKey, publicUrl } = await this.storeFile(
@@ -182,9 +182,9 @@ export class UploadService {
       file
     );
 
-    return prisma.attachment.update({
-      where: { id: attachment.id },
-      data: { fileUrl: publicUrl, storageKey: storageKey ?? input.storageKey },
+    return this.attachmentRepository.update(attachment.id, {
+      fileUrl: publicUrl,
+      storageKey: storageKey ?? input.storageKey,
     });
   }
 
@@ -192,9 +192,7 @@ export class UploadService {
    * Fetch an attachment with an ownership check
    */
   async getAttachment(userId: string, attachmentId: string): Promise<Attachment> {
-    const attachment = await prisma.attachment.findUnique({
-      where: { id: attachmentId },
-    });
+    const attachment = await this.attachmentRepository.findById(attachmentId);
     if (!attachment || attachment.userId !== userId) {
       throw new Error('Attachment not found');
     }
@@ -220,7 +218,7 @@ export class UploadService {
       }
     }
 
-    await prisma.attachment.delete({ where: { id: attachment.id } });
+    await this.attachmentRepository.delete(attachment.id);
     return { success: true };
   }
 

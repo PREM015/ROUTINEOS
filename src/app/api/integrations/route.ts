@@ -10,7 +10,7 @@ import {
   IntegrationError,
 } from '@/lib/integrations/manager';
 import { NextRequest, NextResponse } from 'next/server';
-import type { IntegrationProvider } from '@prisma/client';
+import type { IntegrationProvider } from '@/generated/prisma';
 
 /**
  * Integrations Route

@@ -1,4 +1,4 @@
-import type { Break, Prisma } from '@prisma/client';
+import type { Break, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

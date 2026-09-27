@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { milestoneSchema } from '@/schemas/project.schema';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {

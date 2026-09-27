@@ -334,6 +334,21 @@ export type ActivityLog = $Result.DefaultSelection<Prisma.$ActivityLogPayload>
  */
 export type Feedback = $Result.DefaultSelection<Prisma.$FeedbackPayload>
 /**
+ * Model DayTypeDefinition
+ * 
+ */
+export type DayTypeDefinition = $Result.DefaultSelection<Prisma.$DayTypeDefinitionPayload>
+/**
+ * Model HabitDayType
+ * 
+ */
+export type HabitDayType = $Result.DefaultSelection<Prisma.$HabitDayTypePayload>
+/**
+ * Model GoalDayType
+ * 
+ */
+export type GoalDayType = $Result.DefaultSelection<Prisma.$GoalDayTypePayload>
+/**
  * Model FeatureFlag
  * 
  */
@@ -1679,6 +1694,36 @@ export class PrismaClient<
   get feedback(): Prisma.FeedbackDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.dayTypeDefinition`: Exposes CRUD operations for the **DayTypeDefinition** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more DayTypeDefinitions
+    * const dayTypeDefinitions = await prisma.dayTypeDefinition.findMany()
+    * ```
+    */
+  get dayTypeDefinition(): Prisma.DayTypeDefinitionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.habitDayType`: Exposes CRUD operations for the **HabitDayType** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more HabitDayTypes
+    * const habitDayTypes = await prisma.habitDayType.findMany()
+    * ```
+    */
+  get habitDayType(): Prisma.HabitDayTypeDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.goalDayType`: Exposes CRUD operations for the **GoalDayType** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more GoalDayTypes
+    * const goalDayTypes = await prisma.goalDayType.findMany()
+    * ```
+    */
+  get goalDayType(): Prisma.GoalDayTypeDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.featureFlag`: Exposes CRUD operations for the **FeatureFlag** model.
     * Example usage:
     * ```ts
@@ -2208,6 +2253,9 @@ export namespace Prisma {
     AuditLog: 'AuditLog',
     ActivityLog: 'ActivityLog',
     Feedback: 'Feedback',
+    DayTypeDefinition: 'DayTypeDefinition',
+    HabitDayType: 'HabitDayType',
+    GoalDayType: 'GoalDayType',
     FeatureFlag: 'FeatureFlag',
     APIKey: 'APIKey'
   };
@@ -2225,7 +2273,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "userSubscription" | "quote" | "userSettings" | "passwordResetToken" | "emailVerificationToken" | "category" | "tag" | "habitTag" | "goalTag" | "taskTag" | "journalEntryTag" | "journalRevision" | "routineTemplate" | "routineBlock" | "routineException" | "routineLog" | "habit" | "habitLog" | "habitOverride" | "minimumDayTemplate" | "minimumDayTemplateHabit" | "project" | "goal" | "milestone" | "goalProgress" | "task" | "taskDependency" | "sleepLog" | "sleepSession" | "moodLog" | "energyLog" | "weatherLog" | "healthMetric" | "nutritionEntry" | "dailyScore" | "dailyReflection" | "journalEntry" | "focusSession" | "break" | "timeEntry" | "productivityPattern" | "userConnection" | "challenge" | "challengeParticipant" | "automationRule" | "location" | "calendarSync" | "streak" | "streakMilestone" | "achievement" | "weeklyReview" | "monthlyReset" | "aIInsight" | "template" | "attachment" | "notificationLog" | "pushSubscription" | "integration" | "deviceSession" | "dataExport" | "auditLog" | "activityLog" | "feedback" | "featureFlag" | "aPIKey"
+      modelProps: "user" | "userSubscription" | "quote" | "userSettings" | "passwordResetToken" | "emailVerificationToken" | "category" | "tag" | "habitTag" | "goalTag" | "taskTag" | "journalEntryTag" | "journalRevision" | "routineTemplate" | "routineBlock" | "routineException" | "routineLog" | "habit" | "habitLog" | "habitOverride" | "minimumDayTemplate" | "minimumDayTemplateHabit" | "project" | "goal" | "milestone" | "goalProgress" | "task" | "taskDependency" | "sleepLog" | "sleepSession" | "moodLog" | "energyLog" | "weatherLog" | "healthMetric" | "nutritionEntry" | "dailyScore" | "dailyReflection" | "journalEntry" | "focusSession" | "break" | "timeEntry" | "productivityPattern" | "userConnection" | "challenge" | "challengeParticipant" | "automationRule" | "location" | "calendarSync" | "streak" | "streakMilestone" | "achievement" | "weeklyReview" | "monthlyReset" | "aIInsight" | "template" | "attachment" | "notificationLog" | "pushSubscription" | "integration" | "deviceSession" | "dataExport" | "auditLog" | "activityLog" | "feedback" | "dayTypeDefinition" | "habitDayType" | "goalDayType" | "featureFlag" | "aPIKey"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -6965,6 +7013,228 @@ export namespace Prisma {
           }
         }
       }
+      DayTypeDefinition: {
+        payload: Prisma.$DayTypeDefinitionPayload<ExtArgs>
+        fields: Prisma.DayTypeDefinitionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DayTypeDefinitionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DayTypeDefinitionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>
+          }
+          findFirst: {
+            args: Prisma.DayTypeDefinitionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DayTypeDefinitionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>
+          }
+          findMany: {
+            args: Prisma.DayTypeDefinitionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>[]
+          }
+          create: {
+            args: Prisma.DayTypeDefinitionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>
+          }
+          createMany: {
+            args: Prisma.DayTypeDefinitionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DayTypeDefinitionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>[]
+          }
+          delete: {
+            args: Prisma.DayTypeDefinitionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>
+          }
+          update: {
+            args: Prisma.DayTypeDefinitionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>
+          }
+          deleteMany: {
+            args: Prisma.DayTypeDefinitionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DayTypeDefinitionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.DayTypeDefinitionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>[]
+          }
+          upsert: {
+            args: Prisma.DayTypeDefinitionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DayTypeDefinitionPayload>
+          }
+          aggregate: {
+            args: Prisma.DayTypeDefinitionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDayTypeDefinition>
+          }
+          groupBy: {
+            args: Prisma.DayTypeDefinitionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DayTypeDefinitionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DayTypeDefinitionCountArgs<ExtArgs>
+            result: $Utils.Optional<DayTypeDefinitionCountAggregateOutputType> | number
+          }
+        }
+      }
+      HabitDayType: {
+        payload: Prisma.$HabitDayTypePayload<ExtArgs>
+        fields: Prisma.HabitDayTypeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.HabitDayTypeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.HabitDayTypeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>
+          }
+          findFirst: {
+            args: Prisma.HabitDayTypeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.HabitDayTypeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>
+          }
+          findMany: {
+            args: Prisma.HabitDayTypeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>[]
+          }
+          create: {
+            args: Prisma.HabitDayTypeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>
+          }
+          createMany: {
+            args: Prisma.HabitDayTypeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.HabitDayTypeCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>[]
+          }
+          delete: {
+            args: Prisma.HabitDayTypeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>
+          }
+          update: {
+            args: Prisma.HabitDayTypeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>
+          }
+          deleteMany: {
+            args: Prisma.HabitDayTypeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.HabitDayTypeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.HabitDayTypeUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>[]
+          }
+          upsert: {
+            args: Prisma.HabitDayTypeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$HabitDayTypePayload>
+          }
+          aggregate: {
+            args: Prisma.HabitDayTypeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateHabitDayType>
+          }
+          groupBy: {
+            args: Prisma.HabitDayTypeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<HabitDayTypeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.HabitDayTypeCountArgs<ExtArgs>
+            result: $Utils.Optional<HabitDayTypeCountAggregateOutputType> | number
+          }
+        }
+      }
+      GoalDayType: {
+        payload: Prisma.$GoalDayTypePayload<ExtArgs>
+        fields: Prisma.GoalDayTypeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.GoalDayTypeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.GoalDayTypeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>
+          }
+          findFirst: {
+            args: Prisma.GoalDayTypeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.GoalDayTypeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>
+          }
+          findMany: {
+            args: Prisma.GoalDayTypeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>[]
+          }
+          create: {
+            args: Prisma.GoalDayTypeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>
+          }
+          createMany: {
+            args: Prisma.GoalDayTypeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.GoalDayTypeCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>[]
+          }
+          delete: {
+            args: Prisma.GoalDayTypeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>
+          }
+          update: {
+            args: Prisma.GoalDayTypeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>
+          }
+          deleteMany: {
+            args: Prisma.GoalDayTypeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.GoalDayTypeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.GoalDayTypeUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>[]
+          }
+          upsert: {
+            args: Prisma.GoalDayTypeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$GoalDayTypePayload>
+          }
+          aggregate: {
+            args: Prisma.GoalDayTypeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateGoalDayType>
+          }
+          groupBy: {
+            args: Prisma.GoalDayTypeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<GoalDayTypeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.GoalDayTypeCountArgs<ExtArgs>
+            result: $Utils.Optional<GoalDayTypeCountAggregateOutputType> | number
+          }
+        }
+      }
       FeatureFlag: {
         payload: Prisma.$FeatureFlagPayload<ExtArgs>
         fields: Prisma.FeatureFlagFieldRefs
@@ -7300,6 +7570,9 @@ export namespace Prisma {
     auditLog?: AuditLogOmit
     activityLog?: ActivityLogOmit
     feedback?: FeedbackOmit
+    dayTypeDefinition?: DayTypeDefinitionOmit
+    habitDayType?: HabitDayTypeOmit
+    goalDayType?: GoalDayTypeOmit
     featureFlag?: FeatureFlagOmit
     aPIKey?: APIKeyOmit
   }
@@ -7436,6 +7709,8 @@ export namespace Prisma {
     dataExports: number
     feedback: number
     apiKeys: number
+    dayTypeDefinitions: number
+    goalDayTypes: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -7493,6 +7768,8 @@ export namespace Prisma {
     dataExports?: boolean | UserCountOutputTypeCountDataExportsArgs
     feedback?: boolean | UserCountOutputTypeCountFeedbackArgs
     apiKeys?: boolean | UserCountOutputTypeCountApiKeysArgs
+    dayTypeDefinitions?: boolean | UserCountOutputTypeCountDayTypeDefinitionsArgs
+    goalDayTypes?: boolean | UserCountOutputTypeCountGoalDayTypesArgs
   }
 
   // Custom InputTypes
@@ -7884,6 +8161,20 @@ export namespace Prisma {
     where?: APIKeyWhereInput
   }
 
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountDayTypeDefinitionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DayTypeDefinitionWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountGoalDayTypesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GoalDayTypeWhereInput
+  }
+
 
   /**
    * Count Type CategoryCountOutputType
@@ -8077,6 +8368,7 @@ export namespace Prisma {
    */
 
   export type HabitCountOutputType = {
+    dayTypeAssignments: number
     logs: number
     overrides: number
     minimumDayTemplates: number
@@ -8085,6 +8377,7 @@ export namespace Prisma {
   }
 
   export type HabitCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    dayTypeAssignments?: boolean | HabitCountOutputTypeCountDayTypeAssignmentsArgs
     logs?: boolean | HabitCountOutputTypeCountLogsArgs
     overrides?: boolean | HabitCountOutputTypeCountOverridesArgs
     minimumDayTemplates?: boolean | HabitCountOutputTypeCountMinimumDayTemplatesArgs
@@ -8101,6 +8394,13 @@ export namespace Prisma {
      * Select specific fields to fetch from the HabitCountOutputType
      */
     select?: HabitCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * HabitCountOutputType without action
+   */
+  export type HabitCountOutputTypeCountDayTypeAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: HabitDayTypeWhereInput
   }
 
   /**
@@ -8225,6 +8525,7 @@ export namespace Prisma {
 
   export type GoalCountOutputType = {
     subGoals: number
+    dayTypeAssignments: number
     milestones: number
     progressLogs: number
     tags: number
@@ -8234,6 +8535,7 @@ export namespace Prisma {
 
   export type GoalCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     subGoals?: boolean | GoalCountOutputTypeCountSubGoalsArgs
+    dayTypeAssignments?: boolean | GoalCountOutputTypeCountDayTypeAssignmentsArgs
     milestones?: boolean | GoalCountOutputTypeCountMilestonesArgs
     progressLogs?: boolean | GoalCountOutputTypeCountProgressLogsArgs
     tags?: boolean | GoalCountOutputTypeCountTagsArgs
@@ -8257,6 +8559,13 @@ export namespace Prisma {
    */
   export type GoalCountOutputTypeCountSubGoalsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: GoalWhereInput
+  }
+
+  /**
+   * GoalCountOutputType without action
+   */
+  export type GoalCountOutputTypeCountDayTypeAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GoalDayTypeWhereInput
   }
 
   /**
@@ -8452,6 +8761,64 @@ export namespace Prisma {
    */
   export type ChallengeCountOutputTypeCountMembersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ChallengeParticipantWhereInput
+  }
+
+
+  /**
+   * Count Type DayTypeDefinitionCountOutputType
+   */
+
+  export type DayTypeDefinitionCountOutputType = {
+    routineTemplates: number
+    routineExceptions: number
+    habitAssignments: number
+    goalAssignments: number
+  }
+
+  export type DayTypeDefinitionCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    routineTemplates?: boolean | DayTypeDefinitionCountOutputTypeCountRoutineTemplatesArgs
+    routineExceptions?: boolean | DayTypeDefinitionCountOutputTypeCountRoutineExceptionsArgs
+    habitAssignments?: boolean | DayTypeDefinitionCountOutputTypeCountHabitAssignmentsArgs
+    goalAssignments?: boolean | DayTypeDefinitionCountOutputTypeCountGoalAssignmentsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * DayTypeDefinitionCountOutputType without action
+   */
+  export type DayTypeDefinitionCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinitionCountOutputType
+     */
+    select?: DayTypeDefinitionCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * DayTypeDefinitionCountOutputType without action
+   */
+  export type DayTypeDefinitionCountOutputTypeCountRoutineTemplatesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RoutineTemplateWhereInput
+  }
+
+  /**
+   * DayTypeDefinitionCountOutputType without action
+   */
+  export type DayTypeDefinitionCountOutputTypeCountRoutineExceptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RoutineExceptionWhereInput
+  }
+
+  /**
+   * DayTypeDefinitionCountOutputType without action
+   */
+  export type DayTypeDefinitionCountOutputTypeCountHabitAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: HabitDayTypeWhereInput
+  }
+
+  /**
+   * DayTypeDefinitionCountOutputType without action
+   */
+  export type DayTypeDefinitionCountOutputTypeCountGoalAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GoalDayTypeWhereInput
   }
 
 
@@ -8878,6 +9245,8 @@ export namespace Prisma {
     dataExports?: boolean | User$dataExportsArgs<ExtArgs>
     feedback?: boolean | User$feedbackArgs<ExtArgs>
     apiKeys?: boolean | User$apiKeysArgs<ExtArgs>
+    dayTypeDefinitions?: boolean | User$dayTypeDefinitionsArgs<ExtArgs>
+    goalDayTypes?: boolean | User$goalDayTypesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -9024,6 +9393,8 @@ export namespace Prisma {
     dataExports?: boolean | User$dataExportsArgs<ExtArgs>
     feedback?: boolean | User$feedbackArgs<ExtArgs>
     apiKeys?: boolean | User$apiKeysArgs<ExtArgs>
+    dayTypeDefinitions?: boolean | User$dayTypeDefinitionsArgs<ExtArgs>
+    goalDayTypes?: boolean | User$goalDayTypesArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -9089,6 +9460,8 @@ export namespace Prisma {
       dataExports: Prisma.$DataExportPayload<ExtArgs>[]
       feedback: Prisma.$FeedbackPayload<ExtArgs>[]
       apiKeys: Prisma.$APIKeyPayload<ExtArgs>[]
+      dayTypeDefinitions: Prisma.$DayTypeDefinitionPayload<ExtArgs>[]
+      goalDayTypes: Prisma.$GoalDayTypePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -9567,6 +9940,8 @@ export namespace Prisma {
     dataExports<T extends User$dataExportsArgs<ExtArgs> = {}>(args?: Subset<T, User$dataExportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DataExportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     feedback<T extends User$feedbackArgs<ExtArgs> = {}>(args?: Subset<T, User$feedbackArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$FeedbackPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     apiKeys<T extends User$apiKeysArgs<ExtArgs> = {}>(args?: Subset<T, User$apiKeysArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$APIKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    dayTypeDefinitions<T extends User$dayTypeDefinitionsArgs<ExtArgs> = {}>(args?: Subset<T, User$dayTypeDefinitionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    goalDayTypes<T extends User$goalDayTypesArgs<ExtArgs> = {}>(args?: Subset<T, User$goalDayTypesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -11364,6 +11739,54 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: APIKeyScalarFieldEnum | APIKeyScalarFieldEnum[]
+  }
+
+  /**
+   * User.dayTypeDefinitions
+   */
+  export type User$dayTypeDefinitionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    where?: DayTypeDefinitionWhereInput
+    orderBy?: DayTypeDefinitionOrderByWithRelationInput | DayTypeDefinitionOrderByWithRelationInput[]
+    cursor?: DayTypeDefinitionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DayTypeDefinitionScalarFieldEnum | DayTypeDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * User.goalDayTypes
+   */
+  export type User$goalDayTypesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    where?: GoalDayTypeWhereInput
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    cursor?: GoalDayTypeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: GoalDayTypeScalarFieldEnum | GoalDayTypeScalarFieldEnum[]
   }
 
   /**
@@ -25353,6 +25776,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     dayType: $Enums.DayType | null
+    dayTypeId: string | null
     isDefault: boolean | null
     color: string | null
     icon: string | null
@@ -25369,6 +25793,7 @@ export namespace Prisma {
     name: string | null
     description: string | null
     dayType: $Enums.DayType | null
+    dayTypeId: string | null
     isDefault: boolean | null
     color: string | null
     icon: string | null
@@ -25385,6 +25810,7 @@ export namespace Prisma {
     name: number
     description: number
     dayType: number
+    dayTypeId: number
     isDefault: number
     color: number
     icon: number
@@ -25411,6 +25837,7 @@ export namespace Prisma {
     name?: true
     description?: true
     dayType?: true
+    dayTypeId?: true
     isDefault?: true
     color?: true
     icon?: true
@@ -25427,6 +25854,7 @@ export namespace Prisma {
     name?: true
     description?: true
     dayType?: true
+    dayTypeId?: true
     isDefault?: true
     color?: true
     icon?: true
@@ -25443,6 +25871,7 @@ export namespace Prisma {
     name?: true
     description?: true
     dayType?: true
+    dayTypeId?: true
     isDefault?: true
     color?: true
     icon?: true
@@ -25546,6 +25975,7 @@ export namespace Prisma {
     name: string
     description: string | null
     dayType: $Enums.DayType
+    dayTypeId: string | null
     isDefault: boolean
     color: string | null
     icon: string | null
@@ -25581,6 +26011,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     isDefault?: boolean
     color?: boolean
     icon?: boolean
@@ -25590,6 +26021,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineTemplate$dayTypeDefArgs<ExtArgs>
     blocks?: boolean | RoutineTemplate$blocksArgs<ExtArgs>
     exceptions?: boolean | RoutineTemplate$exceptionsArgs<ExtArgs>
     _count?: boolean | RoutineTemplateCountOutputTypeDefaultArgs<ExtArgs>
@@ -25601,6 +26033,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     isDefault?: boolean
     color?: boolean
     icon?: boolean
@@ -25610,6 +26043,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineTemplate$dayTypeDefArgs<ExtArgs>
   }, ExtArgs["result"]["routineTemplate"]>
 
   export type RoutineTemplateSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -25618,6 +26052,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     isDefault?: boolean
     color?: boolean
     icon?: boolean
@@ -25627,6 +26062,7 @@ export namespace Prisma {
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineTemplate$dayTypeDefArgs<ExtArgs>
   }, ExtArgs["result"]["routineTemplate"]>
 
   export type RoutineTemplateSelectScalar = {
@@ -25635,6 +26071,7 @@ export namespace Prisma {
     name?: boolean
     description?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     isDefault?: boolean
     color?: boolean
     icon?: boolean
@@ -25645,24 +26082,28 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type RoutineTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "description" | "dayType" | "isDefault" | "color" | "icon" | "isActive" | "archivedAt" | "estimatedDuration" | "createdAt" | "updatedAt", ExtArgs["result"]["routineTemplate"]>
+  export type RoutineTemplateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "description" | "dayType" | "dayTypeId" | "isDefault" | "color" | "icon" | "isActive" | "archivedAt" | "estimatedDuration" | "createdAt" | "updatedAt", ExtArgs["result"]["routineTemplate"]>
   export type RoutineTemplateInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineTemplate$dayTypeDefArgs<ExtArgs>
     blocks?: boolean | RoutineTemplate$blocksArgs<ExtArgs>
     exceptions?: boolean | RoutineTemplate$exceptionsArgs<ExtArgs>
     _count?: boolean | RoutineTemplateCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type RoutineTemplateIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineTemplate$dayTypeDefArgs<ExtArgs>
   }
   export type RoutineTemplateIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineTemplate$dayTypeDefArgs<ExtArgs>
   }
 
   export type $RoutineTemplatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "RoutineTemplate"
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
+      dayTypeDef: Prisma.$DayTypeDefinitionPayload<ExtArgs> | null
       blocks: Prisma.$RoutineBlockPayload<ExtArgs>[]
       exceptions: Prisma.$RoutineExceptionPayload<ExtArgs>[]
     }
@@ -25672,6 +26113,7 @@ export namespace Prisma {
       name: string
       description: string | null
       dayType: $Enums.DayType
+      dayTypeId: string | null
       isDefault: boolean
       color: string | null
       icon: string | null
@@ -26075,6 +26517,7 @@ export namespace Prisma {
   export interface Prisma__RoutineTemplateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    dayTypeDef<T extends RoutineTemplate$dayTypeDefArgs<ExtArgs> = {}>(args?: Subset<T, RoutineTemplate$dayTypeDefArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     blocks<T extends RoutineTemplate$blocksArgs<ExtArgs> = {}>(args?: Subset<T, RoutineTemplate$blocksArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RoutineBlockPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     exceptions<T extends RoutineTemplate$exceptionsArgs<ExtArgs> = {}>(args?: Subset<T, RoutineTemplate$exceptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RoutineExceptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
@@ -26111,6 +26554,7 @@ export namespace Prisma {
     readonly name: FieldRef<"RoutineTemplate", 'String'>
     readonly description: FieldRef<"RoutineTemplate", 'String'>
     readonly dayType: FieldRef<"RoutineTemplate", 'DayType'>
+    readonly dayTypeId: FieldRef<"RoutineTemplate", 'String'>
     readonly isDefault: FieldRef<"RoutineTemplate", 'Boolean'>
     readonly color: FieldRef<"RoutineTemplate", 'String'>
     readonly icon: FieldRef<"RoutineTemplate", 'String'>
@@ -26517,6 +26961,25 @@ export namespace Prisma {
      * Limit how many RoutineTemplates to delete.
      */
     limit?: number
+  }
+
+  /**
+   * RoutineTemplate.dayTypeDef
+   */
+  export type RoutineTemplate$dayTypeDefArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    where?: DayTypeDefinitionWhereInput
   }
 
   /**
@@ -27932,6 +28395,7 @@ export namespace Prisma {
     userId: string | null
     date: string | null
     dayType: $Enums.DayType | null
+    dayTypeId: string | null
     templateId: string | null
     note: string | null
     reason: string | null
@@ -27943,6 +28407,7 @@ export namespace Prisma {
     userId: string | null
     date: string | null
     dayType: $Enums.DayType | null
+    dayTypeId: string | null
     templateId: string | null
     note: string | null
     reason: string | null
@@ -27954,6 +28419,7 @@ export namespace Prisma {
     userId: number
     date: number
     dayType: number
+    dayTypeId: number
     templateId: number
     note: number
     reason: number
@@ -27967,6 +28433,7 @@ export namespace Prisma {
     userId?: true
     date?: true
     dayType?: true
+    dayTypeId?: true
     templateId?: true
     note?: true
     reason?: true
@@ -27978,6 +28445,7 @@ export namespace Prisma {
     userId?: true
     date?: true
     dayType?: true
+    dayTypeId?: true
     templateId?: true
     note?: true
     reason?: true
@@ -27989,6 +28457,7 @@ export namespace Prisma {
     userId?: true
     date?: true
     dayType?: true
+    dayTypeId?: true
     templateId?: true
     note?: true
     reason?: true
@@ -28073,6 +28542,7 @@ export namespace Prisma {
     userId: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId: string | null
     templateId: string | null
     note: string | null
     reason: string | null
@@ -28101,11 +28571,13 @@ export namespace Prisma {
     userId?: boolean
     date?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     templateId?: boolean
     note?: boolean
     reason?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineException$dayTypeDefArgs<ExtArgs>
     template?: boolean | RoutineException$templateArgs<ExtArgs>
   }, ExtArgs["result"]["routineException"]>
 
@@ -28114,11 +28586,13 @@ export namespace Prisma {
     userId?: boolean
     date?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     templateId?: boolean
     note?: boolean
     reason?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineException$dayTypeDefArgs<ExtArgs>
     template?: boolean | RoutineException$templateArgs<ExtArgs>
   }, ExtArgs["result"]["routineException"]>
 
@@ -28127,11 +28601,13 @@ export namespace Prisma {
     userId?: boolean
     date?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     templateId?: boolean
     note?: boolean
     reason?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineException$dayTypeDefArgs<ExtArgs>
     template?: boolean | RoutineException$templateArgs<ExtArgs>
   }, ExtArgs["result"]["routineException"]>
 
@@ -28140,23 +28616,27 @@ export namespace Prisma {
     userId?: boolean
     date?: boolean
     dayType?: boolean
+    dayTypeId?: boolean
     templateId?: boolean
     note?: boolean
     reason?: boolean
     createdAt?: boolean
   }
 
-  export type RoutineExceptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "date" | "dayType" | "templateId" | "note" | "reason" | "createdAt", ExtArgs["result"]["routineException"]>
+  export type RoutineExceptionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "date" | "dayType" | "dayTypeId" | "templateId" | "note" | "reason" | "createdAt", ExtArgs["result"]["routineException"]>
   export type RoutineExceptionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineException$dayTypeDefArgs<ExtArgs>
     template?: boolean | RoutineException$templateArgs<ExtArgs>
   }
   export type RoutineExceptionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineException$dayTypeDefArgs<ExtArgs>
     template?: boolean | RoutineException$templateArgs<ExtArgs>
   }
   export type RoutineExceptionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
+    dayTypeDef?: boolean | RoutineException$dayTypeDefArgs<ExtArgs>
     template?: boolean | RoutineException$templateArgs<ExtArgs>
   }
 
@@ -28164,6 +28644,7 @@ export namespace Prisma {
     name: "RoutineException"
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
+      dayTypeDef: Prisma.$DayTypeDefinitionPayload<ExtArgs> | null
       template: Prisma.$RoutineTemplatePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -28171,6 +28652,7 @@ export namespace Prisma {
       userId: string
       date: string
       dayType: $Enums.DayType
+      dayTypeId: string | null
       templateId: string | null
       note: string | null
       reason: string | null
@@ -28570,6 +29052,7 @@ export namespace Prisma {
   export interface Prisma__RoutineExceptionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    dayTypeDef<T extends RoutineException$dayTypeDefArgs<ExtArgs> = {}>(args?: Subset<T, RoutineException$dayTypeDefArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     template<T extends RoutineException$templateArgs<ExtArgs> = {}>(args?: Subset<T, RoutineException$templateArgs<ExtArgs>>): Prisma__RoutineTemplateClient<$Result.GetResult<Prisma.$RoutineTemplatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -28604,6 +29087,7 @@ export namespace Prisma {
     readonly userId: FieldRef<"RoutineException", 'String'>
     readonly date: FieldRef<"RoutineException", 'String'>
     readonly dayType: FieldRef<"RoutineException", 'DayType'>
+    readonly dayTypeId: FieldRef<"RoutineException", 'String'>
     readonly templateId: FieldRef<"RoutineException", 'String'>
     readonly note: FieldRef<"RoutineException", 'String'>
     readonly reason: FieldRef<"RoutineException", 'String'>
@@ -29006,6 +29490,25 @@ export namespace Prisma {
      * Limit how many RoutineExceptions to delete.
      */
     limit?: number
+  }
+
+  /**
+   * RoutineException.dayTypeDef
+   */
+  export type RoutineException$dayTypeDefArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    where?: DayTypeDefinitionWhereInput
   }
 
   /**
@@ -30334,6 +30837,7 @@ export namespace Prisma {
     estimatedDuration: number | null
     difficulty: number | null
     isPublic: boolean | null
+    appliesEveryDay: boolean | null
     streakCount: number | null
     longestStreak: number | null
     lastCompletedDate: string | null
@@ -30364,6 +30868,7 @@ export namespace Prisma {
     estimatedDuration: number | null
     difficulty: number | null
     isPublic: boolean | null
+    appliesEveryDay: boolean | null
     streakCount: number | null
     longestStreak: number | null
     lastCompletedDate: string | null
@@ -30394,6 +30899,7 @@ export namespace Prisma {
     estimatedDuration: number
     difficulty: number
     isPublic: number
+    appliesEveryDay: number
     streakCount: number
     longestStreak: number
     lastCompletedDate: number
@@ -30446,6 +30952,7 @@ export namespace Prisma {
     estimatedDuration?: true
     difficulty?: true
     isPublic?: true
+    appliesEveryDay?: true
     streakCount?: true
     longestStreak?: true
     lastCompletedDate?: true
@@ -30476,6 +30983,7 @@ export namespace Prisma {
     estimatedDuration?: true
     difficulty?: true
     isPublic?: true
+    appliesEveryDay?: true
     streakCount?: true
     longestStreak?: true
     lastCompletedDate?: true
@@ -30506,6 +31014,7 @@ export namespace Prisma {
     estimatedDuration?: true
     difficulty?: true
     isPublic?: true
+    appliesEveryDay?: true
     streakCount?: true
     longestStreak?: true
     lastCompletedDate?: true
@@ -30623,6 +31132,7 @@ export namespace Prisma {
     estimatedDuration: number | null
     difficulty: number | null
     isPublic: boolean
+    appliesEveryDay: boolean
     streakCount: number
     longestStreak: number
     lastCompletedDate: string | null
@@ -30672,6 +31182,7 @@ export namespace Prisma {
     estimatedDuration?: boolean
     difficulty?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: boolean
     longestStreak?: boolean
     lastCompletedDate?: boolean
@@ -30680,6 +31191,7 @@ export namespace Prisma {
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     category?: boolean | Habit$categoryArgs<ExtArgs>
+    dayTypeAssignments?: boolean | Habit$dayTypeAssignmentsArgs<ExtArgs>
     logs?: boolean | Habit$logsArgs<ExtArgs>
     overrides?: boolean | Habit$overridesArgs<ExtArgs>
     minimumDayTemplates?: boolean | Habit$minimumDayTemplatesArgs<ExtArgs>
@@ -30710,6 +31222,7 @@ export namespace Prisma {
     estimatedDuration?: boolean
     difficulty?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: boolean
     longestStreak?: boolean
     lastCompletedDate?: boolean
@@ -30742,6 +31255,7 @@ export namespace Prisma {
     estimatedDuration?: boolean
     difficulty?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: boolean
     longestStreak?: boolean
     lastCompletedDate?: boolean
@@ -30774,6 +31288,7 @@ export namespace Prisma {
     estimatedDuration?: boolean
     difficulty?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: boolean
     longestStreak?: boolean
     lastCompletedDate?: boolean
@@ -30782,10 +31297,11 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type HabitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "description" | "tier" | "status" | "categoryId" | "color" | "icon" | "frequencyType" | "frequencyValue" | "targetCount" | "startDate" | "endDate" | "archivedAt" | "reminderTime" | "reminderEnabled" | "points" | "estimatedDuration" | "difficulty" | "isPublic" | "streakCount" | "longestStreak" | "lastCompletedDate" | "completionRate" | "createdAt" | "updatedAt", ExtArgs["result"]["habit"]>
+  export type HabitOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "description" | "tier" | "status" | "categoryId" | "color" | "icon" | "frequencyType" | "frequencyValue" | "targetCount" | "startDate" | "endDate" | "archivedAt" | "reminderTime" | "reminderEnabled" | "points" | "estimatedDuration" | "difficulty" | "isPublic" | "appliesEveryDay" | "streakCount" | "longestStreak" | "lastCompletedDate" | "completionRate" | "createdAt" | "updatedAt", ExtArgs["result"]["habit"]>
   export type HabitInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     category?: boolean | Habit$categoryArgs<ExtArgs>
+    dayTypeAssignments?: boolean | Habit$dayTypeAssignmentsArgs<ExtArgs>
     logs?: boolean | Habit$logsArgs<ExtArgs>
     overrides?: boolean | Habit$overridesArgs<ExtArgs>
     minimumDayTemplates?: boolean | Habit$minimumDayTemplatesArgs<ExtArgs>
@@ -30807,6 +31323,7 @@ export namespace Prisma {
     objects: {
       user: Prisma.$UserPayload<ExtArgs>
       category: Prisma.$CategoryPayload<ExtArgs> | null
+      dayTypeAssignments: Prisma.$HabitDayTypePayload<ExtArgs>[]
       logs: Prisma.$HabitLogPayload<ExtArgs>[]
       overrides: Prisma.$HabitOverridePayload<ExtArgs>[]
       minimumDayTemplates: Prisma.$MinimumDayTemplateHabitPayload<ExtArgs>[]
@@ -30835,6 +31352,7 @@ export namespace Prisma {
       estimatedDuration: number | null
       difficulty: number | null
       isPublic: boolean
+      appliesEveryDay: boolean
       streakCount: number
       longestStreak: number
       lastCompletedDate: string | null
@@ -31237,6 +31755,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     category<T extends Habit$categoryArgs<ExtArgs> = {}>(args?: Subset<T, Habit$categoryArgs<ExtArgs>>): Prisma__CategoryClient<$Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    dayTypeAssignments<T extends Habit$dayTypeAssignmentsArgs<ExtArgs> = {}>(args?: Subset<T, Habit$dayTypeAssignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     logs<T extends Habit$logsArgs<ExtArgs> = {}>(args?: Subset<T, Habit$logsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     overrides<T extends Habit$overridesArgs<ExtArgs> = {}>(args?: Subset<T, Habit$overridesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     minimumDayTemplates<T extends Habit$minimumDayTemplatesArgs<ExtArgs> = {}>(args?: Subset<T, Habit$minimumDayTemplatesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MinimumDayTemplateHabitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -31292,6 +31811,7 @@ export namespace Prisma {
     readonly estimatedDuration: FieldRef<"Habit", 'Int'>
     readonly difficulty: FieldRef<"Habit", 'Int'>
     readonly isPublic: FieldRef<"Habit", 'Boolean'>
+    readonly appliesEveryDay: FieldRef<"Habit", 'Boolean'>
     readonly streakCount: FieldRef<"Habit", 'Int'>
     readonly longestStreak: FieldRef<"Habit", 'Int'>
     readonly lastCompletedDate: FieldRef<"Habit", 'String'>
@@ -31715,6 +32235,30 @@ export namespace Prisma {
      */
     include?: CategoryInclude<ExtArgs> | null
     where?: CategoryWhereInput
+  }
+
+  /**
+   * Habit.dayTypeAssignments
+   */
+  export type Habit$dayTypeAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    where?: HabitDayTypeWhereInput
+    orderBy?: HabitDayTypeOrderByWithRelationInput | HabitDayTypeOrderByWithRelationInput[]
+    cursor?: HabitDayTypeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: HabitDayTypeScalarFieldEnum | HabitDayTypeScalarFieldEnum[]
   }
 
   /**
@@ -37839,6 +38383,7 @@ export namespace Prisma {
     parentGoalId: string | null
     carriedOverFrom: string | null
     isPublic: boolean | null
+    appliesEveryDay: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -37862,6 +38407,7 @@ export namespace Prisma {
     parentGoalId: string | null
     carriedOverFrom: string | null
     isPublic: boolean | null
+    appliesEveryDay: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -37885,6 +38431,7 @@ export namespace Prisma {
     parentGoalId: number
     carriedOverFrom: number
     isPublic: number
+    appliesEveryDay: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -37920,6 +38467,7 @@ export namespace Prisma {
     parentGoalId?: true
     carriedOverFrom?: true
     isPublic?: true
+    appliesEveryDay?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -37943,6 +38491,7 @@ export namespace Prisma {
     parentGoalId?: true
     carriedOverFrom?: true
     isPublic?: true
+    appliesEveryDay?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -37966,6 +38515,7 @@ export namespace Prisma {
     parentGoalId?: true
     carriedOverFrom?: true
     isPublic?: true
+    appliesEveryDay?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -38076,6 +38626,7 @@ export namespace Prisma {
     parentGoalId: string | null
     carriedOverFrom: string | null
     isPublic: boolean
+    appliesEveryDay: boolean
     createdAt: Date
     updatedAt: Date
     _count: GoalCountAggregateOutputType | null
@@ -38118,12 +38669,14 @@ export namespace Prisma {
     parentGoalId?: boolean
     carriedOverFrom?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
     project?: boolean | Goal$projectArgs<ExtArgs>
     parentGoal?: boolean | Goal$parentGoalArgs<ExtArgs>
     subGoals?: boolean | Goal$subGoalsArgs<ExtArgs>
+    dayTypeAssignments?: boolean | Goal$dayTypeAssignmentsArgs<ExtArgs>
     milestones?: boolean | Goal$milestonesArgs<ExtArgs>
     progressLogs?: boolean | Goal$progressLogsArgs<ExtArgs>
     tags?: boolean | Goal$tagsArgs<ExtArgs>
@@ -38151,6 +38704,7 @@ export namespace Prisma {
     parentGoalId?: boolean
     carriedOverFrom?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -38177,6 +38731,7 @@ export namespace Prisma {
     parentGoalId?: boolean
     carriedOverFrom?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -38203,16 +38758,18 @@ export namespace Prisma {
     parentGoalId?: boolean
     carriedOverFrom?: boolean
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type GoalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "projectId" | "type" | "priority" | "status" | "title" | "description" | "targetValue" | "currentValue" | "unit" | "startDate" | "endDate" | "completedAt" | "archivedAt" | "parentGoalId" | "carriedOverFrom" | "isPublic" | "createdAt" | "updatedAt", ExtArgs["result"]["goal"]>
+  export type GoalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "projectId" | "type" | "priority" | "status" | "title" | "description" | "targetValue" | "currentValue" | "unit" | "startDate" | "endDate" | "completedAt" | "archivedAt" | "parentGoalId" | "carriedOverFrom" | "isPublic" | "appliesEveryDay" | "createdAt" | "updatedAt", ExtArgs["result"]["goal"]>
   export type GoalInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     project?: boolean | Goal$projectArgs<ExtArgs>
     parentGoal?: boolean | Goal$parentGoalArgs<ExtArgs>
     subGoals?: boolean | Goal$subGoalsArgs<ExtArgs>
+    dayTypeAssignments?: boolean | Goal$dayTypeAssignmentsArgs<ExtArgs>
     milestones?: boolean | Goal$milestonesArgs<ExtArgs>
     progressLogs?: boolean | Goal$progressLogsArgs<ExtArgs>
     tags?: boolean | Goal$tagsArgs<ExtArgs>
@@ -38238,6 +38795,7 @@ export namespace Prisma {
       project: Prisma.$ProjectPayload<ExtArgs> | null
       parentGoal: Prisma.$GoalPayload<ExtArgs> | null
       subGoals: Prisma.$GoalPayload<ExtArgs>[]
+      dayTypeAssignments: Prisma.$GoalDayTypePayload<ExtArgs>[]
       milestones: Prisma.$MilestonePayload<ExtArgs>[]
       progressLogs: Prisma.$GoalProgressPayload<ExtArgs>[]
       tags: Prisma.$GoalTagPayload<ExtArgs>[]
@@ -38263,6 +38821,7 @@ export namespace Prisma {
       parentGoalId: string | null
       carriedOverFrom: string | null
       isPublic: boolean
+      appliesEveryDay: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["goal"]>
@@ -38663,6 +39222,7 @@ export namespace Prisma {
     project<T extends Goal$projectArgs<ExtArgs> = {}>(args?: Subset<T, Goal$projectArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     parentGoal<T extends Goal$parentGoalArgs<ExtArgs> = {}>(args?: Subset<T, Goal$parentGoalArgs<ExtArgs>>): Prisma__GoalClient<$Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     subGoals<T extends Goal$subGoalsArgs<ExtArgs> = {}>(args?: Subset<T, Goal$subGoalsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    dayTypeAssignments<T extends Goal$dayTypeAssignmentsArgs<ExtArgs> = {}>(args?: Subset<T, Goal$dayTypeAssignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     milestones<T extends Goal$milestonesArgs<ExtArgs> = {}>(args?: Subset<T, Goal$milestonesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MilestonePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     progressLogs<T extends Goal$progressLogsArgs<ExtArgs> = {}>(args?: Subset<T, Goal$progressLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalProgressPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     tags<T extends Goal$tagsArgs<ExtArgs> = {}>(args?: Subset<T, Goal$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -38715,6 +39275,7 @@ export namespace Prisma {
     readonly parentGoalId: FieldRef<"Goal", 'String'>
     readonly carriedOverFrom: FieldRef<"Goal", 'String'>
     readonly isPublic: FieldRef<"Goal", 'Boolean'>
+    readonly appliesEveryDay: FieldRef<"Goal", 'Boolean'>
     readonly createdAt: FieldRef<"Goal", 'DateTime'>
     readonly updatedAt: FieldRef<"Goal", 'DateTime'>
   }
@@ -39177,6 +39738,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: GoalScalarFieldEnum | GoalScalarFieldEnum[]
+  }
+
+  /**
+   * Goal.dayTypeAssignments
+   */
+  export type Goal$dayTypeAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    where?: GoalDayTypeWhereInput
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    cursor?: GoalDayTypeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: GoalDayTypeScalarFieldEnum | GoalDayTypeScalarFieldEnum[]
   }
 
   /**
@@ -87445,6 +88030,3445 @@ export namespace Prisma {
 
 
   /**
+   * Model DayTypeDefinition
+   */
+
+  export type AggregateDayTypeDefinition = {
+    _count: DayTypeDefinitionCountAggregateOutputType | null
+    _avg: DayTypeDefinitionAvgAggregateOutputType | null
+    _sum: DayTypeDefinitionSumAggregateOutputType | null
+    _min: DayTypeDefinitionMinAggregateOutputType | null
+    _max: DayTypeDefinitionMaxAggregateOutputType | null
+  }
+
+  export type DayTypeDefinitionAvgAggregateOutputType = {
+    sortOrder: number | null
+  }
+
+  export type DayTypeDefinitionSumAggregateOutputType = {
+    sortOrder: number | null
+  }
+
+  export type DayTypeDefinitionMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    name: string | null
+    slug: string | null
+    description: string | null
+    color: string | null
+    icon: string | null
+    isDefault: boolean | null
+    isArchived: boolean | null
+    sortOrder: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DayTypeDefinitionMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    name: string | null
+    slug: string | null
+    description: string | null
+    color: string | null
+    icon: string | null
+    isDefault: boolean | null
+    isArchived: boolean | null
+    sortOrder: number | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type DayTypeDefinitionCountAggregateOutputType = {
+    id: number
+    userId: number
+    name: number
+    slug: number
+    description: number
+    color: number
+    icon: number
+    isDefault: number
+    isArchived: number
+    sortOrder: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type DayTypeDefinitionAvgAggregateInputType = {
+    sortOrder?: true
+  }
+
+  export type DayTypeDefinitionSumAggregateInputType = {
+    sortOrder?: true
+  }
+
+  export type DayTypeDefinitionMinAggregateInputType = {
+    id?: true
+    userId?: true
+    name?: true
+    slug?: true
+    description?: true
+    color?: true
+    icon?: true
+    isDefault?: true
+    isArchived?: true
+    sortOrder?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DayTypeDefinitionMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    name?: true
+    slug?: true
+    description?: true
+    color?: true
+    icon?: true
+    isDefault?: true
+    isArchived?: true
+    sortOrder?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type DayTypeDefinitionCountAggregateInputType = {
+    id?: true
+    userId?: true
+    name?: true
+    slug?: true
+    description?: true
+    color?: true
+    icon?: true
+    isDefault?: true
+    isArchived?: true
+    sortOrder?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type DayTypeDefinitionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DayTypeDefinition to aggregate.
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DayTypeDefinitions to fetch.
+     */
+    orderBy?: DayTypeDefinitionOrderByWithRelationInput | DayTypeDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DayTypeDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DayTypeDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DayTypeDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned DayTypeDefinitions
+    **/
+    _count?: true | DayTypeDefinitionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: DayTypeDefinitionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DayTypeDefinitionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DayTypeDefinitionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DayTypeDefinitionMaxAggregateInputType
+  }
+
+  export type GetDayTypeDefinitionAggregateType<T extends DayTypeDefinitionAggregateArgs> = {
+        [P in keyof T & keyof AggregateDayTypeDefinition]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDayTypeDefinition[P]>
+      : GetScalarType<T[P], AggregateDayTypeDefinition[P]>
+  }
+
+
+
+
+  export type DayTypeDefinitionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DayTypeDefinitionWhereInput
+    orderBy?: DayTypeDefinitionOrderByWithAggregationInput | DayTypeDefinitionOrderByWithAggregationInput[]
+    by: DayTypeDefinitionScalarFieldEnum[] | DayTypeDefinitionScalarFieldEnum
+    having?: DayTypeDefinitionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DayTypeDefinitionCountAggregateInputType | true
+    _avg?: DayTypeDefinitionAvgAggregateInputType
+    _sum?: DayTypeDefinitionSumAggregateInputType
+    _min?: DayTypeDefinitionMinAggregateInputType
+    _max?: DayTypeDefinitionMaxAggregateInputType
+  }
+
+  export type DayTypeDefinitionGroupByOutputType = {
+    id: string
+    userId: string
+    name: string
+    slug: string
+    description: string | null
+    color: string | null
+    icon: string | null
+    isDefault: boolean
+    isArchived: boolean
+    sortOrder: number
+    createdAt: Date
+    updatedAt: Date
+    _count: DayTypeDefinitionCountAggregateOutputType | null
+    _avg: DayTypeDefinitionAvgAggregateOutputType | null
+    _sum: DayTypeDefinitionSumAggregateOutputType | null
+    _min: DayTypeDefinitionMinAggregateOutputType | null
+    _max: DayTypeDefinitionMaxAggregateOutputType | null
+  }
+
+  type GetDayTypeDefinitionGroupByPayload<T extends DayTypeDefinitionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DayTypeDefinitionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DayTypeDefinitionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DayTypeDefinitionGroupByOutputType[P]>
+            : GetScalarType<T[P], DayTypeDefinitionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DayTypeDefinitionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    name?: boolean
+    slug?: boolean
+    description?: boolean
+    color?: boolean
+    icon?: boolean
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    routineTemplates?: boolean | DayTypeDefinition$routineTemplatesArgs<ExtArgs>
+    routineExceptions?: boolean | DayTypeDefinition$routineExceptionsArgs<ExtArgs>
+    habitAssignments?: boolean | DayTypeDefinition$habitAssignmentsArgs<ExtArgs>
+    goalAssignments?: boolean | DayTypeDefinition$goalAssignmentsArgs<ExtArgs>
+    _count?: boolean | DayTypeDefinitionCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["dayTypeDefinition"]>
+
+  export type DayTypeDefinitionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    name?: boolean
+    slug?: boolean
+    description?: boolean
+    color?: boolean
+    icon?: boolean
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["dayTypeDefinition"]>
+
+  export type DayTypeDefinitionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    name?: boolean
+    slug?: boolean
+    description?: boolean
+    color?: boolean
+    icon?: boolean
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["dayTypeDefinition"]>
+
+  export type DayTypeDefinitionSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    name?: boolean
+    slug?: boolean
+    description?: boolean
+    color?: boolean
+    icon?: boolean
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type DayTypeDefinitionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "slug" | "description" | "color" | "icon" | "isDefault" | "isArchived" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["dayTypeDefinition"]>
+  export type DayTypeDefinitionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    routineTemplates?: boolean | DayTypeDefinition$routineTemplatesArgs<ExtArgs>
+    routineExceptions?: boolean | DayTypeDefinition$routineExceptionsArgs<ExtArgs>
+    habitAssignments?: boolean | DayTypeDefinition$habitAssignmentsArgs<ExtArgs>
+    goalAssignments?: boolean | DayTypeDefinition$goalAssignmentsArgs<ExtArgs>
+    _count?: boolean | DayTypeDefinitionCountOutputTypeDefaultArgs<ExtArgs>
+  }
+  export type DayTypeDefinitionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type DayTypeDefinitionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $DayTypeDefinitionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "DayTypeDefinition"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      routineTemplates: Prisma.$RoutineTemplatePayload<ExtArgs>[]
+      routineExceptions: Prisma.$RoutineExceptionPayload<ExtArgs>[]
+      habitAssignments: Prisma.$HabitDayTypePayload<ExtArgs>[]
+      goalAssignments: Prisma.$GoalDayTypePayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      name: string
+      slug: string
+      description: string | null
+      color: string | null
+      icon: string | null
+      isDefault: boolean
+      isArchived: boolean
+      sortOrder: number
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["dayTypeDefinition"]>
+    composites: {}
+  }
+
+  type DayTypeDefinitionGetPayload<S extends boolean | null | undefined | DayTypeDefinitionDefaultArgs> = $Result.GetResult<Prisma.$DayTypeDefinitionPayload, S>
+
+  type DayTypeDefinitionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<DayTypeDefinitionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: DayTypeDefinitionCountAggregateInputType | true
+    }
+
+  export interface DayTypeDefinitionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['DayTypeDefinition'], meta: { name: 'DayTypeDefinition' } }
+    /**
+     * Find zero or one DayTypeDefinition that matches the filter.
+     * @param {DayTypeDefinitionFindUniqueArgs} args - Arguments to find a DayTypeDefinition
+     * @example
+     * // Get one DayTypeDefinition
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DayTypeDefinitionFindUniqueArgs>(args: SelectSubset<T, DayTypeDefinitionFindUniqueArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one DayTypeDefinition that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {DayTypeDefinitionFindUniqueOrThrowArgs} args - Arguments to find a DayTypeDefinition
+     * @example
+     * // Get one DayTypeDefinition
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DayTypeDefinitionFindUniqueOrThrowArgs>(args: SelectSubset<T, DayTypeDefinitionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DayTypeDefinition that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionFindFirstArgs} args - Arguments to find a DayTypeDefinition
+     * @example
+     * // Get one DayTypeDefinition
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DayTypeDefinitionFindFirstArgs>(args?: SelectSubset<T, DayTypeDefinitionFindFirstArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first DayTypeDefinition that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionFindFirstOrThrowArgs} args - Arguments to find a DayTypeDefinition
+     * @example
+     * // Get one DayTypeDefinition
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DayTypeDefinitionFindFirstOrThrowArgs>(args?: SelectSubset<T, DayTypeDefinitionFindFirstOrThrowArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more DayTypeDefinitions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all DayTypeDefinitions
+     * const dayTypeDefinitions = await prisma.dayTypeDefinition.findMany()
+     * 
+     * // Get first 10 DayTypeDefinitions
+     * const dayTypeDefinitions = await prisma.dayTypeDefinition.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const dayTypeDefinitionWithIdOnly = await prisma.dayTypeDefinition.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DayTypeDefinitionFindManyArgs>(args?: SelectSubset<T, DayTypeDefinitionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a DayTypeDefinition.
+     * @param {DayTypeDefinitionCreateArgs} args - Arguments to create a DayTypeDefinition.
+     * @example
+     * // Create one DayTypeDefinition
+     * const DayTypeDefinition = await prisma.dayTypeDefinition.create({
+     *   data: {
+     *     // ... data to create a DayTypeDefinition
+     *   }
+     * })
+     * 
+     */
+    create<T extends DayTypeDefinitionCreateArgs>(args: SelectSubset<T, DayTypeDefinitionCreateArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many DayTypeDefinitions.
+     * @param {DayTypeDefinitionCreateManyArgs} args - Arguments to create many DayTypeDefinitions.
+     * @example
+     * // Create many DayTypeDefinitions
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DayTypeDefinitionCreateManyArgs>(args?: SelectSubset<T, DayTypeDefinitionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many DayTypeDefinitions and returns the data saved in the database.
+     * @param {DayTypeDefinitionCreateManyAndReturnArgs} args - Arguments to create many DayTypeDefinitions.
+     * @example
+     * // Create many DayTypeDefinitions
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many DayTypeDefinitions and only return the `id`
+     * const dayTypeDefinitionWithIdOnly = await prisma.dayTypeDefinition.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DayTypeDefinitionCreateManyAndReturnArgs>(args?: SelectSubset<T, DayTypeDefinitionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a DayTypeDefinition.
+     * @param {DayTypeDefinitionDeleteArgs} args - Arguments to delete one DayTypeDefinition.
+     * @example
+     * // Delete one DayTypeDefinition
+     * const DayTypeDefinition = await prisma.dayTypeDefinition.delete({
+     *   where: {
+     *     // ... filter to delete one DayTypeDefinition
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DayTypeDefinitionDeleteArgs>(args: SelectSubset<T, DayTypeDefinitionDeleteArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one DayTypeDefinition.
+     * @param {DayTypeDefinitionUpdateArgs} args - Arguments to update one DayTypeDefinition.
+     * @example
+     * // Update one DayTypeDefinition
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DayTypeDefinitionUpdateArgs>(args: SelectSubset<T, DayTypeDefinitionUpdateArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more DayTypeDefinitions.
+     * @param {DayTypeDefinitionDeleteManyArgs} args - Arguments to filter DayTypeDefinitions to delete.
+     * @example
+     * // Delete a few DayTypeDefinitions
+     * const { count } = await prisma.dayTypeDefinition.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DayTypeDefinitionDeleteManyArgs>(args?: SelectSubset<T, DayTypeDefinitionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DayTypeDefinitions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many DayTypeDefinitions
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DayTypeDefinitionUpdateManyArgs>(args: SelectSubset<T, DayTypeDefinitionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more DayTypeDefinitions and returns the data updated in the database.
+     * @param {DayTypeDefinitionUpdateManyAndReturnArgs} args - Arguments to update many DayTypeDefinitions.
+     * @example
+     * // Update many DayTypeDefinitions
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more DayTypeDefinitions and only return the `id`
+     * const dayTypeDefinitionWithIdOnly = await prisma.dayTypeDefinition.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends DayTypeDefinitionUpdateManyAndReturnArgs>(args: SelectSubset<T, DayTypeDefinitionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one DayTypeDefinition.
+     * @param {DayTypeDefinitionUpsertArgs} args - Arguments to update or create a DayTypeDefinition.
+     * @example
+     * // Update or create a DayTypeDefinition
+     * const dayTypeDefinition = await prisma.dayTypeDefinition.upsert({
+     *   create: {
+     *     // ... data to create a DayTypeDefinition
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the DayTypeDefinition we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DayTypeDefinitionUpsertArgs>(args: SelectSubset<T, DayTypeDefinitionUpsertArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of DayTypeDefinitions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionCountArgs} args - Arguments to filter DayTypeDefinitions to count.
+     * @example
+     * // Count the number of DayTypeDefinitions
+     * const count = await prisma.dayTypeDefinition.count({
+     *   where: {
+     *     // ... the filter for the DayTypeDefinitions we want to count
+     *   }
+     * })
+    **/
+    count<T extends DayTypeDefinitionCountArgs>(
+      args?: Subset<T, DayTypeDefinitionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DayTypeDefinitionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a DayTypeDefinition.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DayTypeDefinitionAggregateArgs>(args: Subset<T, DayTypeDefinitionAggregateArgs>): Prisma.PrismaPromise<GetDayTypeDefinitionAggregateType<T>>
+
+    /**
+     * Group by DayTypeDefinition.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DayTypeDefinitionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DayTypeDefinitionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DayTypeDefinitionGroupByArgs['orderBy'] }
+        : { orderBy?: DayTypeDefinitionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DayTypeDefinitionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDayTypeDefinitionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the DayTypeDefinition model
+   */
+  readonly fields: DayTypeDefinitionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for DayTypeDefinition.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DayTypeDefinitionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    routineTemplates<T extends DayTypeDefinition$routineTemplatesArgs<ExtArgs> = {}>(args?: Subset<T, DayTypeDefinition$routineTemplatesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RoutineTemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    routineExceptions<T extends DayTypeDefinition$routineExceptionsArgs<ExtArgs> = {}>(args?: Subset<T, DayTypeDefinition$routineExceptionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RoutineExceptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    habitAssignments<T extends DayTypeDefinition$habitAssignmentsArgs<ExtArgs> = {}>(args?: Subset<T, DayTypeDefinition$habitAssignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    goalAssignments<T extends DayTypeDefinition$goalAssignmentsArgs<ExtArgs> = {}>(args?: Subset<T, DayTypeDefinition$goalAssignmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the DayTypeDefinition model
+   */
+  interface DayTypeDefinitionFieldRefs {
+    readonly id: FieldRef<"DayTypeDefinition", 'String'>
+    readonly userId: FieldRef<"DayTypeDefinition", 'String'>
+    readonly name: FieldRef<"DayTypeDefinition", 'String'>
+    readonly slug: FieldRef<"DayTypeDefinition", 'String'>
+    readonly description: FieldRef<"DayTypeDefinition", 'String'>
+    readonly color: FieldRef<"DayTypeDefinition", 'String'>
+    readonly icon: FieldRef<"DayTypeDefinition", 'String'>
+    readonly isDefault: FieldRef<"DayTypeDefinition", 'Boolean'>
+    readonly isArchived: FieldRef<"DayTypeDefinition", 'Boolean'>
+    readonly sortOrder: FieldRef<"DayTypeDefinition", 'Int'>
+    readonly createdAt: FieldRef<"DayTypeDefinition", 'DateTime'>
+    readonly updatedAt: FieldRef<"DayTypeDefinition", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * DayTypeDefinition findUnique
+   */
+  export type DayTypeDefinitionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * Filter, which DayTypeDefinition to fetch.
+     */
+    where: DayTypeDefinitionWhereUniqueInput
+  }
+
+  /**
+   * DayTypeDefinition findUniqueOrThrow
+   */
+  export type DayTypeDefinitionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * Filter, which DayTypeDefinition to fetch.
+     */
+    where: DayTypeDefinitionWhereUniqueInput
+  }
+
+  /**
+   * DayTypeDefinition findFirst
+   */
+  export type DayTypeDefinitionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * Filter, which DayTypeDefinition to fetch.
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DayTypeDefinitions to fetch.
+     */
+    orderBy?: DayTypeDefinitionOrderByWithRelationInput | DayTypeDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DayTypeDefinitions.
+     */
+    cursor?: DayTypeDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DayTypeDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DayTypeDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DayTypeDefinitions.
+     */
+    distinct?: DayTypeDefinitionScalarFieldEnum | DayTypeDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition findFirstOrThrow
+   */
+  export type DayTypeDefinitionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * Filter, which DayTypeDefinition to fetch.
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DayTypeDefinitions to fetch.
+     */
+    orderBy?: DayTypeDefinitionOrderByWithRelationInput | DayTypeDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for DayTypeDefinitions.
+     */
+    cursor?: DayTypeDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DayTypeDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DayTypeDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DayTypeDefinitions.
+     */
+    distinct?: DayTypeDefinitionScalarFieldEnum | DayTypeDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition findMany
+   */
+  export type DayTypeDefinitionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * Filter, which DayTypeDefinitions to fetch.
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of DayTypeDefinitions to fetch.
+     */
+    orderBy?: DayTypeDefinitionOrderByWithRelationInput | DayTypeDefinitionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing DayTypeDefinitions.
+     */
+    cursor?: DayTypeDefinitionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` DayTypeDefinitions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` DayTypeDefinitions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of DayTypeDefinitions.
+     */
+    distinct?: DayTypeDefinitionScalarFieldEnum | DayTypeDefinitionScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition create
+   */
+  export type DayTypeDefinitionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * The data needed to create a DayTypeDefinition.
+     */
+    data: XOR<DayTypeDefinitionCreateInput, DayTypeDefinitionUncheckedCreateInput>
+  }
+
+  /**
+   * DayTypeDefinition createMany
+   */
+  export type DayTypeDefinitionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many DayTypeDefinitions.
+     */
+    data: DayTypeDefinitionCreateManyInput | DayTypeDefinitionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * DayTypeDefinition createManyAndReturn
+   */
+  export type DayTypeDefinitionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * The data used to create many DayTypeDefinitions.
+     */
+    data: DayTypeDefinitionCreateManyInput | DayTypeDefinitionCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DayTypeDefinition update
+   */
+  export type DayTypeDefinitionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * The data needed to update a DayTypeDefinition.
+     */
+    data: XOR<DayTypeDefinitionUpdateInput, DayTypeDefinitionUncheckedUpdateInput>
+    /**
+     * Choose, which DayTypeDefinition to update.
+     */
+    where: DayTypeDefinitionWhereUniqueInput
+  }
+
+  /**
+   * DayTypeDefinition updateMany
+   */
+  export type DayTypeDefinitionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update DayTypeDefinitions.
+     */
+    data: XOR<DayTypeDefinitionUpdateManyMutationInput, DayTypeDefinitionUncheckedUpdateManyInput>
+    /**
+     * Filter which DayTypeDefinitions to update
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * Limit how many DayTypeDefinitions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * DayTypeDefinition updateManyAndReturn
+   */
+  export type DayTypeDefinitionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * The data used to update DayTypeDefinitions.
+     */
+    data: XOR<DayTypeDefinitionUpdateManyMutationInput, DayTypeDefinitionUncheckedUpdateManyInput>
+    /**
+     * Filter which DayTypeDefinitions to update
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * Limit how many DayTypeDefinitions to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * DayTypeDefinition upsert
+   */
+  export type DayTypeDefinitionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * The filter to search for the DayTypeDefinition to update in case it exists.
+     */
+    where: DayTypeDefinitionWhereUniqueInput
+    /**
+     * In case the DayTypeDefinition found by the `where` argument doesn't exist, create a new DayTypeDefinition with this data.
+     */
+    create: XOR<DayTypeDefinitionCreateInput, DayTypeDefinitionUncheckedCreateInput>
+    /**
+     * In case the DayTypeDefinition was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DayTypeDefinitionUpdateInput, DayTypeDefinitionUncheckedUpdateInput>
+  }
+
+  /**
+   * DayTypeDefinition delete
+   */
+  export type DayTypeDefinitionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+    /**
+     * Filter which DayTypeDefinition to delete.
+     */
+    where: DayTypeDefinitionWhereUniqueInput
+  }
+
+  /**
+   * DayTypeDefinition deleteMany
+   */
+  export type DayTypeDefinitionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which DayTypeDefinitions to delete
+     */
+    where?: DayTypeDefinitionWhereInput
+    /**
+     * Limit how many DayTypeDefinitions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * DayTypeDefinition.routineTemplates
+   */
+  export type DayTypeDefinition$routineTemplatesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RoutineTemplate
+     */
+    select?: RoutineTemplateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RoutineTemplate
+     */
+    omit?: RoutineTemplateOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RoutineTemplateInclude<ExtArgs> | null
+    where?: RoutineTemplateWhereInput
+    orderBy?: RoutineTemplateOrderByWithRelationInput | RoutineTemplateOrderByWithRelationInput[]
+    cursor?: RoutineTemplateWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RoutineTemplateScalarFieldEnum | RoutineTemplateScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition.routineExceptions
+   */
+  export type DayTypeDefinition$routineExceptionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RoutineException
+     */
+    select?: RoutineExceptionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the RoutineException
+     */
+    omit?: RoutineExceptionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RoutineExceptionInclude<ExtArgs> | null
+    where?: RoutineExceptionWhereInput
+    orderBy?: RoutineExceptionOrderByWithRelationInput | RoutineExceptionOrderByWithRelationInput[]
+    cursor?: RoutineExceptionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RoutineExceptionScalarFieldEnum | RoutineExceptionScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition.habitAssignments
+   */
+  export type DayTypeDefinition$habitAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    where?: HabitDayTypeWhereInput
+    orderBy?: HabitDayTypeOrderByWithRelationInput | HabitDayTypeOrderByWithRelationInput[]
+    cursor?: HabitDayTypeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: HabitDayTypeScalarFieldEnum | HabitDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition.goalAssignments
+   */
+  export type DayTypeDefinition$goalAssignmentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    where?: GoalDayTypeWhereInput
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    cursor?: GoalDayTypeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: GoalDayTypeScalarFieldEnum | GoalDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * DayTypeDefinition without action
+   */
+  export type DayTypeDefinitionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DayTypeDefinition
+     */
+    select?: DayTypeDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DayTypeDefinition
+     */
+    omit?: DayTypeDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DayTypeDefinitionInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model HabitDayType
+   */
+
+  export type AggregateHabitDayType = {
+    _count: HabitDayTypeCountAggregateOutputType | null
+    _min: HabitDayTypeMinAggregateOutputType | null
+    _max: HabitDayTypeMaxAggregateOutputType | null
+  }
+
+  export type HabitDayTypeMinAggregateOutputType = {
+    id: string | null
+    habitId: string | null
+    dayTypeId: string | null
+    createdAt: Date | null
+  }
+
+  export type HabitDayTypeMaxAggregateOutputType = {
+    id: string | null
+    habitId: string | null
+    dayTypeId: string | null
+    createdAt: Date | null
+  }
+
+  export type HabitDayTypeCountAggregateOutputType = {
+    id: number
+    habitId: number
+    dayTypeId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type HabitDayTypeMinAggregateInputType = {
+    id?: true
+    habitId?: true
+    dayTypeId?: true
+    createdAt?: true
+  }
+
+  export type HabitDayTypeMaxAggregateInputType = {
+    id?: true
+    habitId?: true
+    dayTypeId?: true
+    createdAt?: true
+  }
+
+  export type HabitDayTypeCountAggregateInputType = {
+    id?: true
+    habitId?: true
+    dayTypeId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type HabitDayTypeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which HabitDayType to aggregate.
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HabitDayTypes to fetch.
+     */
+    orderBy?: HabitDayTypeOrderByWithRelationInput | HabitDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: HabitDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HabitDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HabitDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned HabitDayTypes
+    **/
+    _count?: true | HabitDayTypeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: HabitDayTypeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: HabitDayTypeMaxAggregateInputType
+  }
+
+  export type GetHabitDayTypeAggregateType<T extends HabitDayTypeAggregateArgs> = {
+        [P in keyof T & keyof AggregateHabitDayType]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateHabitDayType[P]>
+      : GetScalarType<T[P], AggregateHabitDayType[P]>
+  }
+
+
+
+
+  export type HabitDayTypeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: HabitDayTypeWhereInput
+    orderBy?: HabitDayTypeOrderByWithAggregationInput | HabitDayTypeOrderByWithAggregationInput[]
+    by: HabitDayTypeScalarFieldEnum[] | HabitDayTypeScalarFieldEnum
+    having?: HabitDayTypeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: HabitDayTypeCountAggregateInputType | true
+    _min?: HabitDayTypeMinAggregateInputType
+    _max?: HabitDayTypeMaxAggregateInputType
+  }
+
+  export type HabitDayTypeGroupByOutputType = {
+    id: string
+    habitId: string
+    dayTypeId: string
+    createdAt: Date
+    _count: HabitDayTypeCountAggregateOutputType | null
+    _min: HabitDayTypeMinAggregateOutputType | null
+    _max: HabitDayTypeMaxAggregateOutputType | null
+  }
+
+  type GetHabitDayTypeGroupByPayload<T extends HabitDayTypeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<HabitDayTypeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof HabitDayTypeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], HabitDayTypeGroupByOutputType[P]>
+            : GetScalarType<T[P], HabitDayTypeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type HabitDayTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    habitId?: boolean
+    dayTypeId?: boolean
+    createdAt?: boolean
+    habit?: boolean | HabitDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["habitDayType"]>
+
+  export type HabitDayTypeSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    habitId?: boolean
+    dayTypeId?: boolean
+    createdAt?: boolean
+    habit?: boolean | HabitDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["habitDayType"]>
+
+  export type HabitDayTypeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    habitId?: boolean
+    dayTypeId?: boolean
+    createdAt?: boolean
+    habit?: boolean | HabitDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["habitDayType"]>
+
+  export type HabitDayTypeSelectScalar = {
+    id?: boolean
+    habitId?: boolean
+    dayTypeId?: boolean
+    createdAt?: boolean
+  }
+
+  export type HabitDayTypeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "habitId" | "dayTypeId" | "createdAt", ExtArgs["result"]["habitDayType"]>
+  export type HabitDayTypeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    habit?: boolean | HabitDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+  }
+  export type HabitDayTypeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    habit?: boolean | HabitDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+  }
+  export type HabitDayTypeIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    habit?: boolean | HabitDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+  }
+
+  export type $HabitDayTypePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "HabitDayType"
+    objects: {
+      habit: Prisma.$HabitPayload<ExtArgs>
+      dayType: Prisma.$DayTypeDefinitionPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      habitId: string
+      dayTypeId: string
+      createdAt: Date
+    }, ExtArgs["result"]["habitDayType"]>
+    composites: {}
+  }
+
+  type HabitDayTypeGetPayload<S extends boolean | null | undefined | HabitDayTypeDefaultArgs> = $Result.GetResult<Prisma.$HabitDayTypePayload, S>
+
+  type HabitDayTypeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<HabitDayTypeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: HabitDayTypeCountAggregateInputType | true
+    }
+
+  export interface HabitDayTypeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['HabitDayType'], meta: { name: 'HabitDayType' } }
+    /**
+     * Find zero or one HabitDayType that matches the filter.
+     * @param {HabitDayTypeFindUniqueArgs} args - Arguments to find a HabitDayType
+     * @example
+     * // Get one HabitDayType
+     * const habitDayType = await prisma.habitDayType.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends HabitDayTypeFindUniqueArgs>(args: SelectSubset<T, HabitDayTypeFindUniqueArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one HabitDayType that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {HabitDayTypeFindUniqueOrThrowArgs} args - Arguments to find a HabitDayType
+     * @example
+     * // Get one HabitDayType
+     * const habitDayType = await prisma.habitDayType.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends HabitDayTypeFindUniqueOrThrowArgs>(args: SelectSubset<T, HabitDayTypeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first HabitDayType that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeFindFirstArgs} args - Arguments to find a HabitDayType
+     * @example
+     * // Get one HabitDayType
+     * const habitDayType = await prisma.habitDayType.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends HabitDayTypeFindFirstArgs>(args?: SelectSubset<T, HabitDayTypeFindFirstArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first HabitDayType that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeFindFirstOrThrowArgs} args - Arguments to find a HabitDayType
+     * @example
+     * // Get one HabitDayType
+     * const habitDayType = await prisma.habitDayType.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends HabitDayTypeFindFirstOrThrowArgs>(args?: SelectSubset<T, HabitDayTypeFindFirstOrThrowArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more HabitDayTypes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all HabitDayTypes
+     * const habitDayTypes = await prisma.habitDayType.findMany()
+     * 
+     * // Get first 10 HabitDayTypes
+     * const habitDayTypes = await prisma.habitDayType.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const habitDayTypeWithIdOnly = await prisma.habitDayType.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends HabitDayTypeFindManyArgs>(args?: SelectSubset<T, HabitDayTypeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a HabitDayType.
+     * @param {HabitDayTypeCreateArgs} args - Arguments to create a HabitDayType.
+     * @example
+     * // Create one HabitDayType
+     * const HabitDayType = await prisma.habitDayType.create({
+     *   data: {
+     *     // ... data to create a HabitDayType
+     *   }
+     * })
+     * 
+     */
+    create<T extends HabitDayTypeCreateArgs>(args: SelectSubset<T, HabitDayTypeCreateArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many HabitDayTypes.
+     * @param {HabitDayTypeCreateManyArgs} args - Arguments to create many HabitDayTypes.
+     * @example
+     * // Create many HabitDayTypes
+     * const habitDayType = await prisma.habitDayType.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends HabitDayTypeCreateManyArgs>(args?: SelectSubset<T, HabitDayTypeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many HabitDayTypes and returns the data saved in the database.
+     * @param {HabitDayTypeCreateManyAndReturnArgs} args - Arguments to create many HabitDayTypes.
+     * @example
+     * // Create many HabitDayTypes
+     * const habitDayType = await prisma.habitDayType.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many HabitDayTypes and only return the `id`
+     * const habitDayTypeWithIdOnly = await prisma.habitDayType.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends HabitDayTypeCreateManyAndReturnArgs>(args?: SelectSubset<T, HabitDayTypeCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a HabitDayType.
+     * @param {HabitDayTypeDeleteArgs} args - Arguments to delete one HabitDayType.
+     * @example
+     * // Delete one HabitDayType
+     * const HabitDayType = await prisma.habitDayType.delete({
+     *   where: {
+     *     // ... filter to delete one HabitDayType
+     *   }
+     * })
+     * 
+     */
+    delete<T extends HabitDayTypeDeleteArgs>(args: SelectSubset<T, HabitDayTypeDeleteArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one HabitDayType.
+     * @param {HabitDayTypeUpdateArgs} args - Arguments to update one HabitDayType.
+     * @example
+     * // Update one HabitDayType
+     * const habitDayType = await prisma.habitDayType.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends HabitDayTypeUpdateArgs>(args: SelectSubset<T, HabitDayTypeUpdateArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more HabitDayTypes.
+     * @param {HabitDayTypeDeleteManyArgs} args - Arguments to filter HabitDayTypes to delete.
+     * @example
+     * // Delete a few HabitDayTypes
+     * const { count } = await prisma.habitDayType.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends HabitDayTypeDeleteManyArgs>(args?: SelectSubset<T, HabitDayTypeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more HabitDayTypes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many HabitDayTypes
+     * const habitDayType = await prisma.habitDayType.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends HabitDayTypeUpdateManyArgs>(args: SelectSubset<T, HabitDayTypeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more HabitDayTypes and returns the data updated in the database.
+     * @param {HabitDayTypeUpdateManyAndReturnArgs} args - Arguments to update many HabitDayTypes.
+     * @example
+     * // Update many HabitDayTypes
+     * const habitDayType = await prisma.habitDayType.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more HabitDayTypes and only return the `id`
+     * const habitDayTypeWithIdOnly = await prisma.habitDayType.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends HabitDayTypeUpdateManyAndReturnArgs>(args: SelectSubset<T, HabitDayTypeUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one HabitDayType.
+     * @param {HabitDayTypeUpsertArgs} args - Arguments to update or create a HabitDayType.
+     * @example
+     * // Update or create a HabitDayType
+     * const habitDayType = await prisma.habitDayType.upsert({
+     *   create: {
+     *     // ... data to create a HabitDayType
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the HabitDayType we want to update
+     *   }
+     * })
+     */
+    upsert<T extends HabitDayTypeUpsertArgs>(args: SelectSubset<T, HabitDayTypeUpsertArgs<ExtArgs>>): Prisma__HabitDayTypeClient<$Result.GetResult<Prisma.$HabitDayTypePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of HabitDayTypes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeCountArgs} args - Arguments to filter HabitDayTypes to count.
+     * @example
+     * // Count the number of HabitDayTypes
+     * const count = await prisma.habitDayType.count({
+     *   where: {
+     *     // ... the filter for the HabitDayTypes we want to count
+     *   }
+     * })
+    **/
+    count<T extends HabitDayTypeCountArgs>(
+      args?: Subset<T, HabitDayTypeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], HabitDayTypeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a HabitDayType.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends HabitDayTypeAggregateArgs>(args: Subset<T, HabitDayTypeAggregateArgs>): Prisma.PrismaPromise<GetHabitDayTypeAggregateType<T>>
+
+    /**
+     * Group by HabitDayType.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {HabitDayTypeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends HabitDayTypeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: HabitDayTypeGroupByArgs['orderBy'] }
+        : { orderBy?: HabitDayTypeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, HabitDayTypeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetHabitDayTypeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the HabitDayType model
+   */
+  readonly fields: HabitDayTypeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for HabitDayType.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__HabitDayTypeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    habit<T extends HabitDefaultArgs<ExtArgs> = {}>(args?: Subset<T, HabitDefaultArgs<ExtArgs>>): Prisma__HabitClient<$Result.GetResult<Prisma.$HabitPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    dayType<T extends DayTypeDefinitionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DayTypeDefinitionDefaultArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the HabitDayType model
+   */
+  interface HabitDayTypeFieldRefs {
+    readonly id: FieldRef<"HabitDayType", 'String'>
+    readonly habitId: FieldRef<"HabitDayType", 'String'>
+    readonly dayTypeId: FieldRef<"HabitDayType", 'String'>
+    readonly createdAt: FieldRef<"HabitDayType", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * HabitDayType findUnique
+   */
+  export type HabitDayTypeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which HabitDayType to fetch.
+     */
+    where: HabitDayTypeWhereUniqueInput
+  }
+
+  /**
+   * HabitDayType findUniqueOrThrow
+   */
+  export type HabitDayTypeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which HabitDayType to fetch.
+     */
+    where: HabitDayTypeWhereUniqueInput
+  }
+
+  /**
+   * HabitDayType findFirst
+   */
+  export type HabitDayTypeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which HabitDayType to fetch.
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HabitDayTypes to fetch.
+     */
+    orderBy?: HabitDayTypeOrderByWithRelationInput | HabitDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for HabitDayTypes.
+     */
+    cursor?: HabitDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HabitDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HabitDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of HabitDayTypes.
+     */
+    distinct?: HabitDayTypeScalarFieldEnum | HabitDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * HabitDayType findFirstOrThrow
+   */
+  export type HabitDayTypeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which HabitDayType to fetch.
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HabitDayTypes to fetch.
+     */
+    orderBy?: HabitDayTypeOrderByWithRelationInput | HabitDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for HabitDayTypes.
+     */
+    cursor?: HabitDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HabitDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HabitDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of HabitDayTypes.
+     */
+    distinct?: HabitDayTypeScalarFieldEnum | HabitDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * HabitDayType findMany
+   */
+  export type HabitDayTypeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which HabitDayTypes to fetch.
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of HabitDayTypes to fetch.
+     */
+    orderBy?: HabitDayTypeOrderByWithRelationInput | HabitDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing HabitDayTypes.
+     */
+    cursor?: HabitDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` HabitDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` HabitDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of HabitDayTypes.
+     */
+    distinct?: HabitDayTypeScalarFieldEnum | HabitDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * HabitDayType create
+   */
+  export type HabitDayTypeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * The data needed to create a HabitDayType.
+     */
+    data: XOR<HabitDayTypeCreateInput, HabitDayTypeUncheckedCreateInput>
+  }
+
+  /**
+   * HabitDayType createMany
+   */
+  export type HabitDayTypeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many HabitDayTypes.
+     */
+    data: HabitDayTypeCreateManyInput | HabitDayTypeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * HabitDayType createManyAndReturn
+   */
+  export type HabitDayTypeCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * The data used to create many HabitDayTypes.
+     */
+    data: HabitDayTypeCreateManyInput | HabitDayTypeCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * HabitDayType update
+   */
+  export type HabitDayTypeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * The data needed to update a HabitDayType.
+     */
+    data: XOR<HabitDayTypeUpdateInput, HabitDayTypeUncheckedUpdateInput>
+    /**
+     * Choose, which HabitDayType to update.
+     */
+    where: HabitDayTypeWhereUniqueInput
+  }
+
+  /**
+   * HabitDayType updateMany
+   */
+  export type HabitDayTypeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update HabitDayTypes.
+     */
+    data: XOR<HabitDayTypeUpdateManyMutationInput, HabitDayTypeUncheckedUpdateManyInput>
+    /**
+     * Filter which HabitDayTypes to update
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * Limit how many HabitDayTypes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * HabitDayType updateManyAndReturn
+   */
+  export type HabitDayTypeUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * The data used to update HabitDayTypes.
+     */
+    data: XOR<HabitDayTypeUpdateManyMutationInput, HabitDayTypeUncheckedUpdateManyInput>
+    /**
+     * Filter which HabitDayTypes to update
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * Limit how many HabitDayTypes to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * HabitDayType upsert
+   */
+  export type HabitDayTypeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * The filter to search for the HabitDayType to update in case it exists.
+     */
+    where: HabitDayTypeWhereUniqueInput
+    /**
+     * In case the HabitDayType found by the `where` argument doesn't exist, create a new HabitDayType with this data.
+     */
+    create: XOR<HabitDayTypeCreateInput, HabitDayTypeUncheckedCreateInput>
+    /**
+     * In case the HabitDayType was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<HabitDayTypeUpdateInput, HabitDayTypeUncheckedUpdateInput>
+  }
+
+  /**
+   * HabitDayType delete
+   */
+  export type HabitDayTypeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter which HabitDayType to delete.
+     */
+    where: HabitDayTypeWhereUniqueInput
+  }
+
+  /**
+   * HabitDayType deleteMany
+   */
+  export type HabitDayTypeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which HabitDayTypes to delete
+     */
+    where?: HabitDayTypeWhereInput
+    /**
+     * Limit how many HabitDayTypes to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * HabitDayType without action
+   */
+  export type HabitDayTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDayType
+     */
+    select?: HabitDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDayType
+     */
+    omit?: HabitDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDayTypeInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model GoalDayType
+   */
+
+  export type AggregateGoalDayType = {
+    _count: GoalDayTypeCountAggregateOutputType | null
+    _min: GoalDayTypeMinAggregateOutputType | null
+    _max: GoalDayTypeMaxAggregateOutputType | null
+  }
+
+  export type GoalDayTypeMinAggregateOutputType = {
+    id: string | null
+    goalId: string | null
+    dayTypeId: string | null
+    userId: string | null
+    createdAt: Date | null
+  }
+
+  export type GoalDayTypeMaxAggregateOutputType = {
+    id: string | null
+    goalId: string | null
+    dayTypeId: string | null
+    userId: string | null
+    createdAt: Date | null
+  }
+
+  export type GoalDayTypeCountAggregateOutputType = {
+    id: number
+    goalId: number
+    dayTypeId: number
+    userId: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type GoalDayTypeMinAggregateInputType = {
+    id?: true
+    goalId?: true
+    dayTypeId?: true
+    userId?: true
+    createdAt?: true
+  }
+
+  export type GoalDayTypeMaxAggregateInputType = {
+    id?: true
+    goalId?: true
+    dayTypeId?: true
+    userId?: true
+    createdAt?: true
+  }
+
+  export type GoalDayTypeCountAggregateInputType = {
+    id?: true
+    goalId?: true
+    dayTypeId?: true
+    userId?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type GoalDayTypeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which GoalDayType to aggregate.
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GoalDayTypes to fetch.
+     */
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: GoalDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GoalDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GoalDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned GoalDayTypes
+    **/
+    _count?: true | GoalDayTypeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: GoalDayTypeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: GoalDayTypeMaxAggregateInputType
+  }
+
+  export type GetGoalDayTypeAggregateType<T extends GoalDayTypeAggregateArgs> = {
+        [P in keyof T & keyof AggregateGoalDayType]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateGoalDayType[P]>
+      : GetScalarType<T[P], AggregateGoalDayType[P]>
+  }
+
+
+
+
+  export type GoalDayTypeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: GoalDayTypeWhereInput
+    orderBy?: GoalDayTypeOrderByWithAggregationInput | GoalDayTypeOrderByWithAggregationInput[]
+    by: GoalDayTypeScalarFieldEnum[] | GoalDayTypeScalarFieldEnum
+    having?: GoalDayTypeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: GoalDayTypeCountAggregateInputType | true
+    _min?: GoalDayTypeMinAggregateInputType
+    _max?: GoalDayTypeMaxAggregateInputType
+  }
+
+  export type GoalDayTypeGroupByOutputType = {
+    id: string
+    goalId: string
+    dayTypeId: string
+    userId: string
+    createdAt: Date
+    _count: GoalDayTypeCountAggregateOutputType | null
+    _min: GoalDayTypeMinAggregateOutputType | null
+    _max: GoalDayTypeMaxAggregateOutputType | null
+  }
+
+  type GetGoalDayTypeGroupByPayload<T extends GoalDayTypeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<GoalDayTypeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof GoalDayTypeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], GoalDayTypeGroupByOutputType[P]>
+            : GetScalarType<T[P], GoalDayTypeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type GoalDayTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    goalId?: boolean
+    dayTypeId?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    goal?: boolean | GoalDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["goalDayType"]>
+
+  export type GoalDayTypeSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    goalId?: boolean
+    dayTypeId?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    goal?: boolean | GoalDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["goalDayType"]>
+
+  export type GoalDayTypeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    goalId?: boolean
+    dayTypeId?: boolean
+    userId?: boolean
+    createdAt?: boolean
+    goal?: boolean | GoalDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["goalDayType"]>
+
+  export type GoalDayTypeSelectScalar = {
+    id?: boolean
+    goalId?: boolean
+    dayTypeId?: boolean
+    userId?: boolean
+    createdAt?: boolean
+  }
+
+  export type GoalDayTypeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "goalId" | "dayTypeId" | "userId" | "createdAt", ExtArgs["result"]["goalDayType"]>
+  export type GoalDayTypeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    goal?: boolean | GoalDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type GoalDayTypeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    goal?: boolean | GoalDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+  export type GoalDayTypeIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    goal?: boolean | GoalDefaultArgs<ExtArgs>
+    dayType?: boolean | DayTypeDefinitionDefaultArgs<ExtArgs>
+    user?: boolean | UserDefaultArgs<ExtArgs>
+  }
+
+  export type $GoalDayTypePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "GoalDayType"
+    objects: {
+      goal: Prisma.$GoalPayload<ExtArgs>
+      dayType: Prisma.$DayTypeDefinitionPayload<ExtArgs>
+      user: Prisma.$UserPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      goalId: string
+      dayTypeId: string
+      userId: string
+      createdAt: Date
+    }, ExtArgs["result"]["goalDayType"]>
+    composites: {}
+  }
+
+  type GoalDayTypeGetPayload<S extends boolean | null | undefined | GoalDayTypeDefaultArgs> = $Result.GetResult<Prisma.$GoalDayTypePayload, S>
+
+  type GoalDayTypeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<GoalDayTypeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: GoalDayTypeCountAggregateInputType | true
+    }
+
+  export interface GoalDayTypeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['GoalDayType'], meta: { name: 'GoalDayType' } }
+    /**
+     * Find zero or one GoalDayType that matches the filter.
+     * @param {GoalDayTypeFindUniqueArgs} args - Arguments to find a GoalDayType
+     * @example
+     * // Get one GoalDayType
+     * const goalDayType = await prisma.goalDayType.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends GoalDayTypeFindUniqueArgs>(args: SelectSubset<T, GoalDayTypeFindUniqueArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one GoalDayType that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {GoalDayTypeFindUniqueOrThrowArgs} args - Arguments to find a GoalDayType
+     * @example
+     * // Get one GoalDayType
+     * const goalDayType = await prisma.goalDayType.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends GoalDayTypeFindUniqueOrThrowArgs>(args: SelectSubset<T, GoalDayTypeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first GoalDayType that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeFindFirstArgs} args - Arguments to find a GoalDayType
+     * @example
+     * // Get one GoalDayType
+     * const goalDayType = await prisma.goalDayType.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends GoalDayTypeFindFirstArgs>(args?: SelectSubset<T, GoalDayTypeFindFirstArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first GoalDayType that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeFindFirstOrThrowArgs} args - Arguments to find a GoalDayType
+     * @example
+     * // Get one GoalDayType
+     * const goalDayType = await prisma.goalDayType.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends GoalDayTypeFindFirstOrThrowArgs>(args?: SelectSubset<T, GoalDayTypeFindFirstOrThrowArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more GoalDayTypes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all GoalDayTypes
+     * const goalDayTypes = await prisma.goalDayType.findMany()
+     * 
+     * // Get first 10 GoalDayTypes
+     * const goalDayTypes = await prisma.goalDayType.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const goalDayTypeWithIdOnly = await prisma.goalDayType.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends GoalDayTypeFindManyArgs>(args?: SelectSubset<T, GoalDayTypeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a GoalDayType.
+     * @param {GoalDayTypeCreateArgs} args - Arguments to create a GoalDayType.
+     * @example
+     * // Create one GoalDayType
+     * const GoalDayType = await prisma.goalDayType.create({
+     *   data: {
+     *     // ... data to create a GoalDayType
+     *   }
+     * })
+     * 
+     */
+    create<T extends GoalDayTypeCreateArgs>(args: SelectSubset<T, GoalDayTypeCreateArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many GoalDayTypes.
+     * @param {GoalDayTypeCreateManyArgs} args - Arguments to create many GoalDayTypes.
+     * @example
+     * // Create many GoalDayTypes
+     * const goalDayType = await prisma.goalDayType.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends GoalDayTypeCreateManyArgs>(args?: SelectSubset<T, GoalDayTypeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many GoalDayTypes and returns the data saved in the database.
+     * @param {GoalDayTypeCreateManyAndReturnArgs} args - Arguments to create many GoalDayTypes.
+     * @example
+     * // Create many GoalDayTypes
+     * const goalDayType = await prisma.goalDayType.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many GoalDayTypes and only return the `id`
+     * const goalDayTypeWithIdOnly = await prisma.goalDayType.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends GoalDayTypeCreateManyAndReturnArgs>(args?: SelectSubset<T, GoalDayTypeCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a GoalDayType.
+     * @param {GoalDayTypeDeleteArgs} args - Arguments to delete one GoalDayType.
+     * @example
+     * // Delete one GoalDayType
+     * const GoalDayType = await prisma.goalDayType.delete({
+     *   where: {
+     *     // ... filter to delete one GoalDayType
+     *   }
+     * })
+     * 
+     */
+    delete<T extends GoalDayTypeDeleteArgs>(args: SelectSubset<T, GoalDayTypeDeleteArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one GoalDayType.
+     * @param {GoalDayTypeUpdateArgs} args - Arguments to update one GoalDayType.
+     * @example
+     * // Update one GoalDayType
+     * const goalDayType = await prisma.goalDayType.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends GoalDayTypeUpdateArgs>(args: SelectSubset<T, GoalDayTypeUpdateArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more GoalDayTypes.
+     * @param {GoalDayTypeDeleteManyArgs} args - Arguments to filter GoalDayTypes to delete.
+     * @example
+     * // Delete a few GoalDayTypes
+     * const { count } = await prisma.goalDayType.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends GoalDayTypeDeleteManyArgs>(args?: SelectSubset<T, GoalDayTypeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more GoalDayTypes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many GoalDayTypes
+     * const goalDayType = await prisma.goalDayType.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends GoalDayTypeUpdateManyArgs>(args: SelectSubset<T, GoalDayTypeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more GoalDayTypes and returns the data updated in the database.
+     * @param {GoalDayTypeUpdateManyAndReturnArgs} args - Arguments to update many GoalDayTypes.
+     * @example
+     * // Update many GoalDayTypes
+     * const goalDayType = await prisma.goalDayType.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more GoalDayTypes and only return the `id`
+     * const goalDayTypeWithIdOnly = await prisma.goalDayType.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends GoalDayTypeUpdateManyAndReturnArgs>(args: SelectSubset<T, GoalDayTypeUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one GoalDayType.
+     * @param {GoalDayTypeUpsertArgs} args - Arguments to update or create a GoalDayType.
+     * @example
+     * // Update or create a GoalDayType
+     * const goalDayType = await prisma.goalDayType.upsert({
+     *   create: {
+     *     // ... data to create a GoalDayType
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the GoalDayType we want to update
+     *   }
+     * })
+     */
+    upsert<T extends GoalDayTypeUpsertArgs>(args: SelectSubset<T, GoalDayTypeUpsertArgs<ExtArgs>>): Prisma__GoalDayTypeClient<$Result.GetResult<Prisma.$GoalDayTypePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of GoalDayTypes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeCountArgs} args - Arguments to filter GoalDayTypes to count.
+     * @example
+     * // Count the number of GoalDayTypes
+     * const count = await prisma.goalDayType.count({
+     *   where: {
+     *     // ... the filter for the GoalDayTypes we want to count
+     *   }
+     * })
+    **/
+    count<T extends GoalDayTypeCountArgs>(
+      args?: Subset<T, GoalDayTypeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], GoalDayTypeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a GoalDayType.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends GoalDayTypeAggregateArgs>(args: Subset<T, GoalDayTypeAggregateArgs>): Prisma.PrismaPromise<GetGoalDayTypeAggregateType<T>>
+
+    /**
+     * Group by GoalDayType.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {GoalDayTypeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends GoalDayTypeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: GoalDayTypeGroupByArgs['orderBy'] }
+        : { orderBy?: GoalDayTypeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, GoalDayTypeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetGoalDayTypeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the GoalDayType model
+   */
+  readonly fields: GoalDayTypeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for GoalDayType.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__GoalDayTypeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    goal<T extends GoalDefaultArgs<ExtArgs> = {}>(args?: Subset<T, GoalDefaultArgs<ExtArgs>>): Prisma__GoalClient<$Result.GetResult<Prisma.$GoalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    dayType<T extends DayTypeDefinitionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, DayTypeDefinitionDefaultArgs<ExtArgs>>): Prisma__DayTypeDefinitionClient<$Result.GetResult<Prisma.$DayTypeDefinitionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the GoalDayType model
+   */
+  interface GoalDayTypeFieldRefs {
+    readonly id: FieldRef<"GoalDayType", 'String'>
+    readonly goalId: FieldRef<"GoalDayType", 'String'>
+    readonly dayTypeId: FieldRef<"GoalDayType", 'String'>
+    readonly userId: FieldRef<"GoalDayType", 'String'>
+    readonly createdAt: FieldRef<"GoalDayType", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * GoalDayType findUnique
+   */
+  export type GoalDayTypeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which GoalDayType to fetch.
+     */
+    where: GoalDayTypeWhereUniqueInput
+  }
+
+  /**
+   * GoalDayType findUniqueOrThrow
+   */
+  export type GoalDayTypeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which GoalDayType to fetch.
+     */
+    where: GoalDayTypeWhereUniqueInput
+  }
+
+  /**
+   * GoalDayType findFirst
+   */
+  export type GoalDayTypeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which GoalDayType to fetch.
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GoalDayTypes to fetch.
+     */
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for GoalDayTypes.
+     */
+    cursor?: GoalDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GoalDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GoalDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of GoalDayTypes.
+     */
+    distinct?: GoalDayTypeScalarFieldEnum | GoalDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * GoalDayType findFirstOrThrow
+   */
+  export type GoalDayTypeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which GoalDayType to fetch.
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GoalDayTypes to fetch.
+     */
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for GoalDayTypes.
+     */
+    cursor?: GoalDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GoalDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GoalDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of GoalDayTypes.
+     */
+    distinct?: GoalDayTypeScalarFieldEnum | GoalDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * GoalDayType findMany
+   */
+  export type GoalDayTypeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter, which GoalDayTypes to fetch.
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of GoalDayTypes to fetch.
+     */
+    orderBy?: GoalDayTypeOrderByWithRelationInput | GoalDayTypeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing GoalDayTypes.
+     */
+    cursor?: GoalDayTypeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` GoalDayTypes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` GoalDayTypes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of GoalDayTypes.
+     */
+    distinct?: GoalDayTypeScalarFieldEnum | GoalDayTypeScalarFieldEnum[]
+  }
+
+  /**
+   * GoalDayType create
+   */
+  export type GoalDayTypeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * The data needed to create a GoalDayType.
+     */
+    data: XOR<GoalDayTypeCreateInput, GoalDayTypeUncheckedCreateInput>
+  }
+
+  /**
+   * GoalDayType createMany
+   */
+  export type GoalDayTypeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many GoalDayTypes.
+     */
+    data: GoalDayTypeCreateManyInput | GoalDayTypeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * GoalDayType createManyAndReturn
+   */
+  export type GoalDayTypeCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * The data used to create many GoalDayTypes.
+     */
+    data: GoalDayTypeCreateManyInput | GoalDayTypeCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * GoalDayType update
+   */
+  export type GoalDayTypeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * The data needed to update a GoalDayType.
+     */
+    data: XOR<GoalDayTypeUpdateInput, GoalDayTypeUncheckedUpdateInput>
+    /**
+     * Choose, which GoalDayType to update.
+     */
+    where: GoalDayTypeWhereUniqueInput
+  }
+
+  /**
+   * GoalDayType updateMany
+   */
+  export type GoalDayTypeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update GoalDayTypes.
+     */
+    data: XOR<GoalDayTypeUpdateManyMutationInput, GoalDayTypeUncheckedUpdateManyInput>
+    /**
+     * Filter which GoalDayTypes to update
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * Limit how many GoalDayTypes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * GoalDayType updateManyAndReturn
+   */
+  export type GoalDayTypeUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * The data used to update GoalDayTypes.
+     */
+    data: XOR<GoalDayTypeUpdateManyMutationInput, GoalDayTypeUncheckedUpdateManyInput>
+    /**
+     * Filter which GoalDayTypes to update
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * Limit how many GoalDayTypes to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * GoalDayType upsert
+   */
+  export type GoalDayTypeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * The filter to search for the GoalDayType to update in case it exists.
+     */
+    where: GoalDayTypeWhereUniqueInput
+    /**
+     * In case the GoalDayType found by the `where` argument doesn't exist, create a new GoalDayType with this data.
+     */
+    create: XOR<GoalDayTypeCreateInput, GoalDayTypeUncheckedCreateInput>
+    /**
+     * In case the GoalDayType was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<GoalDayTypeUpdateInput, GoalDayTypeUncheckedUpdateInput>
+  }
+
+  /**
+   * GoalDayType delete
+   */
+  export type GoalDayTypeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+    /**
+     * Filter which GoalDayType to delete.
+     */
+    where: GoalDayTypeWhereUniqueInput
+  }
+
+  /**
+   * GoalDayType deleteMany
+   */
+  export type GoalDayTypeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which GoalDayTypes to delete
+     */
+    where?: GoalDayTypeWhereInput
+    /**
+     * Limit how many GoalDayTypes to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * GoalDayType without action
+   */
+  export type GoalDayTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the GoalDayType
+     */
+    select?: GoalDayTypeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the GoalDayType
+     */
+    omit?: GoalDayTypeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: GoalDayTypeInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model FeatureFlag
    */
 
@@ -89991,6 +94015,7 @@ export namespace Prisma {
     name: 'name',
     description: 'description',
     dayType: 'dayType',
+    dayTypeId: 'dayTypeId',
     isDefault: 'isDefault',
     color: 'color',
     icon: 'icon',
@@ -90033,6 +94058,7 @@ export namespace Prisma {
     userId: 'userId',
     date: 'date',
     dayType: 'dayType',
+    dayTypeId: 'dayTypeId',
     templateId: 'templateId',
     note: 'note',
     reason: 'reason',
@@ -90084,6 +94110,7 @@ export namespace Prisma {
     estimatedDuration: 'estimatedDuration',
     difficulty: 'difficulty',
     isPublic: 'isPublic',
+    appliesEveryDay: 'appliesEveryDay',
     streakCount: 'streakCount',
     longestStreak: 'longestStreak',
     lastCompletedDate: 'lastCompletedDate',
@@ -90195,6 +94222,7 @@ export namespace Prisma {
     parentGoalId: 'parentGoalId',
     carriedOverFrom: 'carriedOverFrom',
     isPublic: 'isPublic',
+    appliesEveryDay: 'appliesEveryDay',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -90936,6 +94964,45 @@ export namespace Prisma {
   export type FeedbackScalarFieldEnum = (typeof FeedbackScalarFieldEnum)[keyof typeof FeedbackScalarFieldEnum]
 
 
+  export const DayTypeDefinitionScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    name: 'name',
+    slug: 'slug',
+    description: 'description',
+    color: 'color',
+    icon: 'icon',
+    isDefault: 'isDefault',
+    isArchived: 'isArchived',
+    sortOrder: 'sortOrder',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type DayTypeDefinitionScalarFieldEnum = (typeof DayTypeDefinitionScalarFieldEnum)[keyof typeof DayTypeDefinitionScalarFieldEnum]
+
+
+  export const HabitDayTypeScalarFieldEnum: {
+    id: 'id',
+    habitId: 'habitId',
+    dayTypeId: 'dayTypeId',
+    createdAt: 'createdAt'
+  };
+
+  export type HabitDayTypeScalarFieldEnum = (typeof HabitDayTypeScalarFieldEnum)[keyof typeof HabitDayTypeScalarFieldEnum]
+
+
+  export const GoalDayTypeScalarFieldEnum: {
+    id: 'id',
+    goalId: 'goalId',
+    dayTypeId: 'dayTypeId',
+    userId: 'userId',
+    createdAt: 'createdAt'
+  };
+
+  export type GoalDayTypeScalarFieldEnum = (typeof GoalDayTypeScalarFieldEnum)[keyof typeof GoalDayTypeScalarFieldEnum]
+
+
   export const FeatureFlagScalarFieldEnum: {
     id: 'id',
     key: 'key',
@@ -91600,6 +95667,8 @@ export namespace Prisma {
     dataExports?: DataExportListRelationFilter
     feedback?: FeedbackListRelationFilter
     apiKeys?: APIKeyListRelationFilter
+    dayTypeDefinitions?: DayTypeDefinitionListRelationFilter
+    goalDayTypes?: GoalDayTypeListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -91685,6 +95754,8 @@ export namespace Prisma {
     dataExports?: DataExportOrderByRelationAggregateInput
     feedback?: FeedbackOrderByRelationAggregateInput
     apiKeys?: APIKeyOrderByRelationAggregateInput
+    dayTypeDefinitions?: DayTypeDefinitionOrderByRelationAggregateInput
+    goalDayTypes?: GoalDayTypeOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -91773,6 +95844,8 @@ export namespace Prisma {
     dataExports?: DataExportListRelationFilter
     feedback?: FeedbackListRelationFilter
     apiKeys?: APIKeyListRelationFilter
+    dayTypeDefinitions?: DayTypeDefinitionListRelationFilter
+    goalDayTypes?: GoalDayTypeListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -92859,6 +96932,7 @@ export namespace Prisma {
     name?: StringFilter<"RoutineTemplate"> | string
     description?: StringNullableFilter<"RoutineTemplate"> | string | null
     dayType?: EnumDayTypeFilter<"RoutineTemplate"> | $Enums.DayType
+    dayTypeId?: StringNullableFilter<"RoutineTemplate"> | string | null
     isDefault?: BoolFilter<"RoutineTemplate"> | boolean
     color?: StringNullableFilter<"RoutineTemplate"> | string | null
     icon?: StringNullableFilter<"RoutineTemplate"> | string | null
@@ -92868,6 +96942,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"RoutineTemplate"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineTemplate"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    dayTypeDef?: XOR<DayTypeDefinitionNullableScalarRelationFilter, DayTypeDefinitionWhereInput> | null
     blocks?: RoutineBlockListRelationFilter
     exceptions?: RoutineExceptionListRelationFilter
   }
@@ -92878,6 +96953,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrderInput | SortOrder
     isDefault?: SortOrder
     color?: SortOrderInput | SortOrder
     icon?: SortOrderInput | SortOrder
@@ -92887,6 +96963,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
+    dayTypeDef?: DayTypeDefinitionOrderByWithRelationInput
     blocks?: RoutineBlockOrderByRelationAggregateInput
     exceptions?: RoutineExceptionOrderByRelationAggregateInput
   }
@@ -92900,6 +96977,7 @@ export namespace Prisma {
     name?: StringFilter<"RoutineTemplate"> | string
     description?: StringNullableFilter<"RoutineTemplate"> | string | null
     dayType?: EnumDayTypeFilter<"RoutineTemplate"> | $Enums.DayType
+    dayTypeId?: StringNullableFilter<"RoutineTemplate"> | string | null
     isDefault?: BoolFilter<"RoutineTemplate"> | boolean
     color?: StringNullableFilter<"RoutineTemplate"> | string | null
     icon?: StringNullableFilter<"RoutineTemplate"> | string | null
@@ -92909,6 +96987,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"RoutineTemplate"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineTemplate"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    dayTypeDef?: XOR<DayTypeDefinitionNullableScalarRelationFilter, DayTypeDefinitionWhereInput> | null
     blocks?: RoutineBlockListRelationFilter
     exceptions?: RoutineExceptionListRelationFilter
   }, "id">
@@ -92919,6 +96998,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrderInput | SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrderInput | SortOrder
     isDefault?: SortOrder
     color?: SortOrderInput | SortOrder
     icon?: SortOrderInput | SortOrder
@@ -92943,6 +97023,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"RoutineTemplate"> | string
     description?: StringNullableWithAggregatesFilter<"RoutineTemplate"> | string | null
     dayType?: EnumDayTypeWithAggregatesFilter<"RoutineTemplate"> | $Enums.DayType
+    dayTypeId?: StringNullableWithAggregatesFilter<"RoutineTemplate"> | string | null
     isDefault?: BoolWithAggregatesFilter<"RoutineTemplate"> | boolean
     color?: StringNullableWithAggregatesFilter<"RoutineTemplate"> | string | null
     icon?: StringNullableWithAggregatesFilter<"RoutineTemplate"> | string | null
@@ -93092,11 +97173,13 @@ export namespace Prisma {
     userId?: StringFilter<"RoutineException"> | string
     date?: StringFilter<"RoutineException"> | string
     dayType?: EnumDayTypeFilter<"RoutineException"> | $Enums.DayType
+    dayTypeId?: StringNullableFilter<"RoutineException"> | string | null
     templateId?: StringNullableFilter<"RoutineException"> | string | null
     note?: StringNullableFilter<"RoutineException"> | string | null
     reason?: StringNullableFilter<"RoutineException"> | string | null
     createdAt?: DateTimeFilter<"RoutineException"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    dayTypeDef?: XOR<DayTypeDefinitionNullableScalarRelationFilter, DayTypeDefinitionWhereInput> | null
     template?: XOR<RoutineTemplateNullableScalarRelationFilter, RoutineTemplateWhereInput> | null
   }
 
@@ -93105,11 +97188,13 @@ export namespace Prisma {
     userId?: SortOrder
     date?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrderInput | SortOrder
     templateId?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
     reason?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     user?: UserOrderByWithRelationInput
+    dayTypeDef?: DayTypeDefinitionOrderByWithRelationInput
     template?: RoutineTemplateOrderByWithRelationInput
   }
 
@@ -93122,11 +97207,13 @@ export namespace Prisma {
     userId?: StringFilter<"RoutineException"> | string
     date?: StringFilter<"RoutineException"> | string
     dayType?: EnumDayTypeFilter<"RoutineException"> | $Enums.DayType
+    dayTypeId?: StringNullableFilter<"RoutineException"> | string | null
     templateId?: StringNullableFilter<"RoutineException"> | string | null
     note?: StringNullableFilter<"RoutineException"> | string | null
     reason?: StringNullableFilter<"RoutineException"> | string | null
     createdAt?: DateTimeFilter<"RoutineException"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    dayTypeDef?: XOR<DayTypeDefinitionNullableScalarRelationFilter, DayTypeDefinitionWhereInput> | null
     template?: XOR<RoutineTemplateNullableScalarRelationFilter, RoutineTemplateWhereInput> | null
   }, "id" | "userId_date">
 
@@ -93135,6 +97222,7 @@ export namespace Prisma {
     userId?: SortOrder
     date?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrderInput | SortOrder
     templateId?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
     reason?: SortOrderInput | SortOrder
@@ -93152,6 +97240,7 @@ export namespace Prisma {
     userId?: StringWithAggregatesFilter<"RoutineException"> | string
     date?: StringWithAggregatesFilter<"RoutineException"> | string
     dayType?: EnumDayTypeWithAggregatesFilter<"RoutineException"> | $Enums.DayType
+    dayTypeId?: StringNullableWithAggregatesFilter<"RoutineException"> | string | null
     templateId?: StringNullableWithAggregatesFilter<"RoutineException"> | string | null
     note?: StringNullableWithAggregatesFilter<"RoutineException"> | string | null
     reason?: StringNullableWithAggregatesFilter<"RoutineException"> | string | null
@@ -93289,6 +97378,7 @@ export namespace Prisma {
     estimatedDuration?: IntNullableFilter<"Habit"> | number | null
     difficulty?: IntNullableFilter<"Habit"> | number | null
     isPublic?: BoolFilter<"Habit"> | boolean
+    appliesEveryDay?: BoolFilter<"Habit"> | boolean
     streakCount?: IntFilter<"Habit"> | number
     longestStreak?: IntFilter<"Habit"> | number
     lastCompletedDate?: StringNullableFilter<"Habit"> | string | null
@@ -93297,6 +97387,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Habit"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     category?: XOR<CategoryNullableScalarRelationFilter, CategoryWhereInput> | null
+    dayTypeAssignments?: HabitDayTypeListRelationFilter
     logs?: HabitLogListRelationFilter
     overrides?: HabitOverrideListRelationFilter
     minimumDayTemplates?: MinimumDayTemplateHabitListRelationFilter
@@ -93326,6 +97417,7 @@ export namespace Prisma {
     estimatedDuration?: SortOrderInput | SortOrder
     difficulty?: SortOrderInput | SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     streakCount?: SortOrder
     longestStreak?: SortOrder
     lastCompletedDate?: SortOrderInput | SortOrder
@@ -93334,6 +97426,7 @@ export namespace Prisma {
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
     category?: CategoryOrderByWithRelationInput
+    dayTypeAssignments?: HabitDayTypeOrderByRelationAggregateInput
     logs?: HabitLogOrderByRelationAggregateInput
     overrides?: HabitOverrideOrderByRelationAggregateInput
     minimumDayTemplates?: MinimumDayTemplateHabitOrderByRelationAggregateInput
@@ -93366,6 +97459,7 @@ export namespace Prisma {
     estimatedDuration?: IntNullableFilter<"Habit"> | number | null
     difficulty?: IntNullableFilter<"Habit"> | number | null
     isPublic?: BoolFilter<"Habit"> | boolean
+    appliesEveryDay?: BoolFilter<"Habit"> | boolean
     streakCount?: IntFilter<"Habit"> | number
     longestStreak?: IntFilter<"Habit"> | number
     lastCompletedDate?: StringNullableFilter<"Habit"> | string | null
@@ -93374,6 +97468,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Habit"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     category?: XOR<CategoryNullableScalarRelationFilter, CategoryWhereInput> | null
+    dayTypeAssignments?: HabitDayTypeListRelationFilter
     logs?: HabitLogListRelationFilter
     overrides?: HabitOverrideListRelationFilter
     minimumDayTemplates?: MinimumDayTemplateHabitListRelationFilter
@@ -93403,6 +97498,7 @@ export namespace Prisma {
     estimatedDuration?: SortOrderInput | SortOrder
     difficulty?: SortOrderInput | SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     streakCount?: SortOrder
     longestStreak?: SortOrder
     lastCompletedDate?: SortOrderInput | SortOrder
@@ -93441,6 +97537,7 @@ export namespace Prisma {
     estimatedDuration?: IntNullableWithAggregatesFilter<"Habit"> | number | null
     difficulty?: IntNullableWithAggregatesFilter<"Habit"> | number | null
     isPublic?: BoolWithAggregatesFilter<"Habit"> | boolean
+    appliesEveryDay?: BoolWithAggregatesFilter<"Habit"> | boolean
     streakCount?: IntWithAggregatesFilter<"Habit"> | number
     longestStreak?: IntWithAggregatesFilter<"Habit"> | number
     lastCompletedDate?: StringNullableWithAggregatesFilter<"Habit"> | string | null
@@ -93908,12 +98005,14 @@ export namespace Prisma {
     parentGoalId?: StringNullableFilter<"Goal"> | string | null
     carriedOverFrom?: StringNullableFilter<"Goal"> | string | null
     isPublic?: BoolFilter<"Goal"> | boolean
+    appliesEveryDay?: BoolFilter<"Goal"> | boolean
     createdAt?: DateTimeFilter<"Goal"> | Date | string
     updatedAt?: DateTimeFilter<"Goal"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     project?: XOR<ProjectNullableScalarRelationFilter, ProjectWhereInput> | null
     parentGoal?: XOR<GoalNullableScalarRelationFilter, GoalWhereInput> | null
     subGoals?: GoalListRelationFilter
+    dayTypeAssignments?: GoalDayTypeListRelationFilter
     milestones?: MilestoneListRelationFilter
     progressLogs?: GoalProgressListRelationFilter
     tags?: GoalTagListRelationFilter
@@ -93940,12 +98039,14 @@ export namespace Prisma {
     parentGoalId?: SortOrderInput | SortOrder
     carriedOverFrom?: SortOrderInput | SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
     project?: ProjectOrderByWithRelationInput
     parentGoal?: GoalOrderByWithRelationInput
     subGoals?: GoalOrderByRelationAggregateInput
+    dayTypeAssignments?: GoalDayTypeOrderByRelationAggregateInput
     milestones?: MilestoneOrderByRelationAggregateInput
     progressLogs?: GoalProgressOrderByRelationAggregateInput
     tags?: GoalTagOrderByRelationAggregateInput
@@ -93975,12 +98076,14 @@ export namespace Prisma {
     parentGoalId?: StringNullableFilter<"Goal"> | string | null
     carriedOverFrom?: StringNullableFilter<"Goal"> | string | null
     isPublic?: BoolFilter<"Goal"> | boolean
+    appliesEveryDay?: BoolFilter<"Goal"> | boolean
     createdAt?: DateTimeFilter<"Goal"> | Date | string
     updatedAt?: DateTimeFilter<"Goal"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     project?: XOR<ProjectNullableScalarRelationFilter, ProjectWhereInput> | null
     parentGoal?: XOR<GoalNullableScalarRelationFilter, GoalWhereInput> | null
     subGoals?: GoalListRelationFilter
+    dayTypeAssignments?: GoalDayTypeListRelationFilter
     milestones?: MilestoneListRelationFilter
     progressLogs?: GoalProgressListRelationFilter
     tags?: GoalTagListRelationFilter
@@ -94007,6 +98110,7 @@ export namespace Prisma {
     parentGoalId?: SortOrderInput | SortOrder
     carriedOverFrom?: SortOrderInput | SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: GoalCountOrderByAggregateInput
@@ -94038,6 +98142,7 @@ export namespace Prisma {
     parentGoalId?: StringNullableWithAggregatesFilter<"Goal"> | string | null
     carriedOverFrom?: StringNullableWithAggregatesFilter<"Goal"> | string | null
     isPublic?: BoolWithAggregatesFilter<"Goal"> | boolean
+    appliesEveryDay?: BoolWithAggregatesFilter<"Goal"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Goal"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Goal"> | Date | string
   }
@@ -97848,6 +101953,227 @@ export namespace Prisma {
     resolvedAt?: DateTimeNullableWithAggregatesFilter<"Feedback"> | Date | string | null
   }
 
+  export type DayTypeDefinitionWhereInput = {
+    AND?: DayTypeDefinitionWhereInput | DayTypeDefinitionWhereInput[]
+    OR?: DayTypeDefinitionWhereInput[]
+    NOT?: DayTypeDefinitionWhereInput | DayTypeDefinitionWhereInput[]
+    id?: StringFilter<"DayTypeDefinition"> | string
+    userId?: StringFilter<"DayTypeDefinition"> | string
+    name?: StringFilter<"DayTypeDefinition"> | string
+    slug?: StringFilter<"DayTypeDefinition"> | string
+    description?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    color?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    icon?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    isDefault?: BoolFilter<"DayTypeDefinition"> | boolean
+    isArchived?: BoolFilter<"DayTypeDefinition"> | boolean
+    sortOrder?: IntFilter<"DayTypeDefinition"> | number
+    createdAt?: DateTimeFilter<"DayTypeDefinition"> | Date | string
+    updatedAt?: DateTimeFilter<"DayTypeDefinition"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    routineTemplates?: RoutineTemplateListRelationFilter
+    routineExceptions?: RoutineExceptionListRelationFilter
+    habitAssignments?: HabitDayTypeListRelationFilter
+    goalAssignments?: GoalDayTypeListRelationFilter
+  }
+
+  export type DayTypeDefinitionOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    slug?: SortOrder
+    description?: SortOrderInput | SortOrder
+    color?: SortOrderInput | SortOrder
+    icon?: SortOrderInput | SortOrder
+    isDefault?: SortOrder
+    isArchived?: SortOrder
+    sortOrder?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    routineTemplates?: RoutineTemplateOrderByRelationAggregateInput
+    routineExceptions?: RoutineExceptionOrderByRelationAggregateInput
+    habitAssignments?: HabitDayTypeOrderByRelationAggregateInput
+    goalAssignments?: GoalDayTypeOrderByRelationAggregateInput
+  }
+
+  export type DayTypeDefinitionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_slug?: DayTypeDefinitionUserIdSlugCompoundUniqueInput
+    AND?: DayTypeDefinitionWhereInput | DayTypeDefinitionWhereInput[]
+    OR?: DayTypeDefinitionWhereInput[]
+    NOT?: DayTypeDefinitionWhereInput | DayTypeDefinitionWhereInput[]
+    userId?: StringFilter<"DayTypeDefinition"> | string
+    name?: StringFilter<"DayTypeDefinition"> | string
+    slug?: StringFilter<"DayTypeDefinition"> | string
+    description?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    color?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    icon?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    isDefault?: BoolFilter<"DayTypeDefinition"> | boolean
+    isArchived?: BoolFilter<"DayTypeDefinition"> | boolean
+    sortOrder?: IntFilter<"DayTypeDefinition"> | number
+    createdAt?: DateTimeFilter<"DayTypeDefinition"> | Date | string
+    updatedAt?: DateTimeFilter<"DayTypeDefinition"> | Date | string
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+    routineTemplates?: RoutineTemplateListRelationFilter
+    routineExceptions?: RoutineExceptionListRelationFilter
+    habitAssignments?: HabitDayTypeListRelationFilter
+    goalAssignments?: GoalDayTypeListRelationFilter
+  }, "id" | "userId_slug">
+
+  export type DayTypeDefinitionOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    slug?: SortOrder
+    description?: SortOrderInput | SortOrder
+    color?: SortOrderInput | SortOrder
+    icon?: SortOrderInput | SortOrder
+    isDefault?: SortOrder
+    isArchived?: SortOrder
+    sortOrder?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: DayTypeDefinitionCountOrderByAggregateInput
+    _avg?: DayTypeDefinitionAvgOrderByAggregateInput
+    _max?: DayTypeDefinitionMaxOrderByAggregateInput
+    _min?: DayTypeDefinitionMinOrderByAggregateInput
+    _sum?: DayTypeDefinitionSumOrderByAggregateInput
+  }
+
+  export type DayTypeDefinitionScalarWhereWithAggregatesInput = {
+    AND?: DayTypeDefinitionScalarWhereWithAggregatesInput | DayTypeDefinitionScalarWhereWithAggregatesInput[]
+    OR?: DayTypeDefinitionScalarWhereWithAggregatesInput[]
+    NOT?: DayTypeDefinitionScalarWhereWithAggregatesInput | DayTypeDefinitionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"DayTypeDefinition"> | string
+    userId?: StringWithAggregatesFilter<"DayTypeDefinition"> | string
+    name?: StringWithAggregatesFilter<"DayTypeDefinition"> | string
+    slug?: StringWithAggregatesFilter<"DayTypeDefinition"> | string
+    description?: StringNullableWithAggregatesFilter<"DayTypeDefinition"> | string | null
+    color?: StringNullableWithAggregatesFilter<"DayTypeDefinition"> | string | null
+    icon?: StringNullableWithAggregatesFilter<"DayTypeDefinition"> | string | null
+    isDefault?: BoolWithAggregatesFilter<"DayTypeDefinition"> | boolean
+    isArchived?: BoolWithAggregatesFilter<"DayTypeDefinition"> | boolean
+    sortOrder?: IntWithAggregatesFilter<"DayTypeDefinition"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"DayTypeDefinition"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DayTypeDefinition"> | Date | string
+  }
+
+  export type HabitDayTypeWhereInput = {
+    AND?: HabitDayTypeWhereInput | HabitDayTypeWhereInput[]
+    OR?: HabitDayTypeWhereInput[]
+    NOT?: HabitDayTypeWhereInput | HabitDayTypeWhereInput[]
+    id?: StringFilter<"HabitDayType"> | string
+    habitId?: StringFilter<"HabitDayType"> | string
+    dayTypeId?: StringFilter<"HabitDayType"> | string
+    createdAt?: DateTimeFilter<"HabitDayType"> | Date | string
+    habit?: XOR<HabitScalarRelationFilter, HabitWhereInput>
+    dayType?: XOR<DayTypeDefinitionScalarRelationFilter, DayTypeDefinitionWhereInput>
+  }
+
+  export type HabitDayTypeOrderByWithRelationInput = {
+    id?: SortOrder
+    habitId?: SortOrder
+    dayTypeId?: SortOrder
+    createdAt?: SortOrder
+    habit?: HabitOrderByWithRelationInput
+    dayType?: DayTypeDefinitionOrderByWithRelationInput
+  }
+
+  export type HabitDayTypeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    habitId_dayTypeId?: HabitDayTypeHabitIdDayTypeIdCompoundUniqueInput
+    AND?: HabitDayTypeWhereInput | HabitDayTypeWhereInput[]
+    OR?: HabitDayTypeWhereInput[]
+    NOT?: HabitDayTypeWhereInput | HabitDayTypeWhereInput[]
+    habitId?: StringFilter<"HabitDayType"> | string
+    dayTypeId?: StringFilter<"HabitDayType"> | string
+    createdAt?: DateTimeFilter<"HabitDayType"> | Date | string
+    habit?: XOR<HabitScalarRelationFilter, HabitWhereInput>
+    dayType?: XOR<DayTypeDefinitionScalarRelationFilter, DayTypeDefinitionWhereInput>
+  }, "id" | "habitId_dayTypeId">
+
+  export type HabitDayTypeOrderByWithAggregationInput = {
+    id?: SortOrder
+    habitId?: SortOrder
+    dayTypeId?: SortOrder
+    createdAt?: SortOrder
+    _count?: HabitDayTypeCountOrderByAggregateInput
+    _max?: HabitDayTypeMaxOrderByAggregateInput
+    _min?: HabitDayTypeMinOrderByAggregateInput
+  }
+
+  export type HabitDayTypeScalarWhereWithAggregatesInput = {
+    AND?: HabitDayTypeScalarWhereWithAggregatesInput | HabitDayTypeScalarWhereWithAggregatesInput[]
+    OR?: HabitDayTypeScalarWhereWithAggregatesInput[]
+    NOT?: HabitDayTypeScalarWhereWithAggregatesInput | HabitDayTypeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"HabitDayType"> | string
+    habitId?: StringWithAggregatesFilter<"HabitDayType"> | string
+    dayTypeId?: StringWithAggregatesFilter<"HabitDayType"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"HabitDayType"> | Date | string
+  }
+
+  export type GoalDayTypeWhereInput = {
+    AND?: GoalDayTypeWhereInput | GoalDayTypeWhereInput[]
+    OR?: GoalDayTypeWhereInput[]
+    NOT?: GoalDayTypeWhereInput | GoalDayTypeWhereInput[]
+    id?: StringFilter<"GoalDayType"> | string
+    goalId?: StringFilter<"GoalDayType"> | string
+    dayTypeId?: StringFilter<"GoalDayType"> | string
+    userId?: StringFilter<"GoalDayType"> | string
+    createdAt?: DateTimeFilter<"GoalDayType"> | Date | string
+    goal?: XOR<GoalScalarRelationFilter, GoalWhereInput>
+    dayType?: XOR<DayTypeDefinitionScalarRelationFilter, DayTypeDefinitionWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }
+
+  export type GoalDayTypeOrderByWithRelationInput = {
+    id?: SortOrder
+    goalId?: SortOrder
+    dayTypeId?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    goal?: GoalOrderByWithRelationInput
+    dayType?: DayTypeDefinitionOrderByWithRelationInput
+    user?: UserOrderByWithRelationInput
+  }
+
+  export type GoalDayTypeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    goalId_dayTypeId?: GoalDayTypeGoalIdDayTypeIdCompoundUniqueInput
+    AND?: GoalDayTypeWhereInput | GoalDayTypeWhereInput[]
+    OR?: GoalDayTypeWhereInput[]
+    NOT?: GoalDayTypeWhereInput | GoalDayTypeWhereInput[]
+    goalId?: StringFilter<"GoalDayType"> | string
+    dayTypeId?: StringFilter<"GoalDayType"> | string
+    userId?: StringFilter<"GoalDayType"> | string
+    createdAt?: DateTimeFilter<"GoalDayType"> | Date | string
+    goal?: XOR<GoalScalarRelationFilter, GoalWhereInput>
+    dayType?: XOR<DayTypeDefinitionScalarRelationFilter, DayTypeDefinitionWhereInput>
+    user?: XOR<UserScalarRelationFilter, UserWhereInput>
+  }, "id" | "goalId_dayTypeId">
+
+  export type GoalDayTypeOrderByWithAggregationInput = {
+    id?: SortOrder
+    goalId?: SortOrder
+    dayTypeId?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+    _count?: GoalDayTypeCountOrderByAggregateInput
+    _max?: GoalDayTypeMaxOrderByAggregateInput
+    _min?: GoalDayTypeMinOrderByAggregateInput
+  }
+
+  export type GoalDayTypeScalarWhereWithAggregatesInput = {
+    AND?: GoalDayTypeScalarWhereWithAggregatesInput | GoalDayTypeScalarWhereWithAggregatesInput[]
+    OR?: GoalDayTypeScalarWhereWithAggregatesInput[]
+    NOT?: GoalDayTypeScalarWhereWithAggregatesInput | GoalDayTypeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"GoalDayType"> | string
+    goalId?: StringWithAggregatesFilter<"GoalDayType"> | string
+    dayTypeId?: StringWithAggregatesFilter<"GoalDayType"> | string
+    userId?: StringWithAggregatesFilter<"GoalDayType"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"GoalDayType"> | Date | string
+  }
+
   export type FeatureFlagWhereInput = {
     AND?: FeatureFlagWhereInput | FeatureFlagWhereInput[]
     OR?: FeatureFlagWhereInput[]
@@ -98107,6 +102433,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -98192,6 +102520,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserUpdateInput = {
@@ -98277,6 +102607,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -98362,6 +102694,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -99569,6 +103903,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineTemplatesInput
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineTemplatesInput
     blocks?: RoutineBlockCreateNestedManyWithoutTemplateInput
     exceptions?: RoutineExceptionCreateNestedManyWithoutTemplateInput
   }
@@ -99579,6 +103914,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     dayType?: $Enums.DayType
+    dayTypeId?: string | null
     isDefault?: boolean
     color?: string | null
     icon?: string | null
@@ -99605,6 +103941,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineTemplatesNestedInput
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineTemplatesNestedInput
     blocks?: RoutineBlockUpdateManyWithoutTemplateNestedInput
     exceptions?: RoutineExceptionUpdateManyWithoutTemplateNestedInput
   }
@@ -99615,6 +103952,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     isDefault?: BoolFieldUpdateOperationsInput | boolean
     color?: NullableStringFieldUpdateOperationsInput | string | null
     icon?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99633,6 +103971,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     dayType?: $Enums.DayType
+    dayTypeId?: string | null
     isDefault?: boolean
     color?: string | null
     icon?: string | null
@@ -99664,6 +104003,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     isDefault?: BoolFieldUpdateOperationsInput | boolean
     color?: NullableStringFieldUpdateOperationsInput | string | null
     icon?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99830,6 +104170,7 @@ export namespace Prisma {
     reason?: string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineExceptionsInput
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineExceptionsInput
     template?: RoutineTemplateCreateNestedOneWithoutExceptionsInput
   }
 
@@ -99838,6 +104179,7 @@ export namespace Prisma {
     userId: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId?: string | null
     templateId?: string | null
     note?: string | null
     reason?: string | null
@@ -99852,6 +104194,7 @@ export namespace Prisma {
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineExceptionsNestedInput
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineExceptionsNestedInput
     template?: RoutineTemplateUpdateOneWithoutExceptionsNestedInput
   }
 
@@ -99860,6 +104203,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     date?: StringFieldUpdateOperationsInput | string
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     templateId?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
@@ -99871,6 +104215,7 @@ export namespace Prisma {
     userId: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId?: string | null
     templateId?: string | null
     note?: string | null
     reason?: string | null
@@ -99891,6 +104236,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     date?: StringFieldUpdateOperationsInput | string
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     templateId?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
@@ -100034,6 +104380,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -100042,6 +104389,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
@@ -100071,12 +104419,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
@@ -100104,6 +104454,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -100112,6 +104463,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
@@ -100141,12 +104493,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
@@ -100176,6 +104530,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -100204,6 +104559,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -100234,6 +104590,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -100727,12 +105084,14 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -100759,9 +105118,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -100785,12 +105146,14 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -100817,9 +105180,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -100846,6 +105211,7 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -100866,6 +105232,7 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -100889,6 +105256,7 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -105172,6 +109540,226 @@ export namespace Prisma {
     resolvedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type DayTypeDefinitionCreateInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutDayTypeDefinitionsInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUncheckedCreateInput = {
+    id?: string
+    userId: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutDayTypeDefinitionsNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionCreateManyInput = {
+    id?: string
+    userId: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type DayTypeDefinitionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDayTypeCreateInput = {
+    id?: string
+    createdAt?: Date | string
+    habit: HabitCreateNestedOneWithoutDayTypeAssignmentsInput
+    dayType: DayTypeDefinitionCreateNestedOneWithoutHabitAssignmentsInput
+  }
+
+  export type HabitDayTypeUncheckedCreateInput = {
+    id?: string
+    habitId: string
+    dayTypeId: string
+    createdAt?: Date | string
+  }
+
+  export type HabitDayTypeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    habit?: HabitUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput
+    dayType?: DayTypeDefinitionUpdateOneRequiredWithoutHabitAssignmentsNestedInput
+  }
+
+  export type HabitDayTypeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    habitId?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDayTypeCreateManyInput = {
+    id?: string
+    habitId: string
+    dayTypeId: string
+    createdAt?: Date | string
+  }
+
+  export type HabitDayTypeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDayTypeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    habitId?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeCreateInput = {
+    id?: string
+    createdAt?: Date | string
+    goal: GoalCreateNestedOneWithoutDayTypeAssignmentsInput
+    dayType: DayTypeDefinitionCreateNestedOneWithoutGoalAssignmentsInput
+    user: UserCreateNestedOneWithoutGoalDayTypesInput
+  }
+
+  export type GoalDayTypeUncheckedCreateInput = {
+    id?: string
+    goalId: string
+    dayTypeId: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type GoalDayTypeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    goal?: GoalUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput
+    dayType?: DayTypeDefinitionUpdateOneRequiredWithoutGoalAssignmentsNestedInput
+    user?: UserUpdateOneRequiredWithoutGoalDayTypesNestedInput
+  }
+
+  export type GoalDayTypeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    goalId?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeCreateManyInput = {
+    id?: string
+    goalId: string
+    dayTypeId: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type GoalDayTypeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    goalId?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type FeatureFlagCreateInput = {
     id?: string
     key: string
@@ -105782,6 +110370,18 @@ export namespace Prisma {
     none?: APIKeyWhereInput
   }
 
+  export type DayTypeDefinitionListRelationFilter = {
+    every?: DayTypeDefinitionWhereInput
+    some?: DayTypeDefinitionWhereInput
+    none?: DayTypeDefinitionWhereInput
+  }
+
+  export type GoalDayTypeListRelationFilter = {
+    every?: GoalDayTypeWhereInput
+    some?: GoalDayTypeWhereInput
+    none?: GoalDayTypeWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -105996,6 +110596,14 @@ export namespace Prisma {
   }
 
   export type APIKeyOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DayTypeDefinitionOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type GoalDayTypeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -106913,12 +111521,18 @@ export namespace Prisma {
     not?: NestedEnumDayTypeFilter<$PrismaModel> | $Enums.DayType
   }
 
+  export type DayTypeDefinitionNullableScalarRelationFilter = {
+    is?: DayTypeDefinitionWhereInput | null
+    isNot?: DayTypeDefinitionWhereInput | null
+  }
+
   export type RoutineTemplateCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
     name?: SortOrder
     description?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrder
     isDefault?: SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -106939,6 +111553,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrder
     isDefault?: SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -106955,6 +111570,7 @@ export namespace Prisma {
     name?: SortOrder
     description?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrder
     isDefault?: SortOrder
     color?: SortOrder
     icon?: SortOrder
@@ -107075,6 +111691,7 @@ export namespace Prisma {
     userId?: SortOrder
     date?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrder
     templateId?: SortOrder
     note?: SortOrder
     reason?: SortOrder
@@ -107086,6 +111703,7 @@ export namespace Prisma {
     userId?: SortOrder
     date?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrder
     templateId?: SortOrder
     note?: SortOrder
     reason?: SortOrder
@@ -107097,6 +111715,7 @@ export namespace Prisma {
     userId?: SortOrder
     date?: SortOrder
     dayType?: SortOrder
+    dayTypeId?: SortOrder
     templateId?: SortOrder
     note?: SortOrder
     reason?: SortOrder
@@ -107228,10 +111847,20 @@ export namespace Prisma {
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
   }
 
+  export type HabitDayTypeListRelationFilter = {
+    every?: HabitDayTypeWhereInput
+    some?: HabitDayTypeWhereInput
+    none?: HabitDayTypeWhereInput
+  }
+
   export type MinimumDayTemplateHabitListRelationFilter = {
     every?: MinimumDayTemplateHabitWhereInput
     some?: MinimumDayTemplateHabitWhereInput
     none?: MinimumDayTemplateHabitWhereInput
+  }
+
+  export type HabitDayTypeOrderByRelationAggregateInput = {
+    _count?: SortOrder
   }
 
   export type MinimumDayTemplateHabitOrderByRelationAggregateInput = {
@@ -107260,6 +111889,7 @@ export namespace Prisma {
     estimatedDuration?: SortOrder
     difficulty?: SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     streakCount?: SortOrder
     longestStreak?: SortOrder
     lastCompletedDate?: SortOrder
@@ -107300,6 +111930,7 @@ export namespace Prisma {
     estimatedDuration?: SortOrder
     difficulty?: SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     streakCount?: SortOrder
     longestStreak?: SortOrder
     lastCompletedDate?: SortOrder
@@ -107330,6 +111961,7 @@ export namespace Prisma {
     estimatedDuration?: SortOrder
     difficulty?: SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     streakCount?: SortOrder
     longestStreak?: SortOrder
     lastCompletedDate?: SortOrder
@@ -107773,6 +112405,7 @@ export namespace Prisma {
     parentGoalId?: SortOrder
     carriedOverFrom?: SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -107801,6 +112434,7 @@ export namespace Prisma {
     parentGoalId?: SortOrder
     carriedOverFrom?: SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -107824,6 +112458,7 @@ export namespace Prisma {
     parentGoalId?: SortOrder
     carriedOverFrom?: SortOrder
     isPublic?: SortOrder
+    appliesEveryDay?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -110483,6 +115118,124 @@ export namespace Prisma {
     _max?: NestedEnumFeedbackStatusFilter<$PrismaModel>
   }
 
+  export type DayTypeDefinitionUserIdSlugCompoundUniqueInput = {
+    userId: string
+    slug: string
+  }
+
+  export type DayTypeDefinitionCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    slug?: SortOrder
+    description?: SortOrder
+    color?: SortOrder
+    icon?: SortOrder
+    isDefault?: SortOrder
+    isArchived?: SortOrder
+    sortOrder?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DayTypeDefinitionAvgOrderByAggregateInput = {
+    sortOrder?: SortOrder
+  }
+
+  export type DayTypeDefinitionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    slug?: SortOrder
+    description?: SortOrder
+    color?: SortOrder
+    icon?: SortOrder
+    isDefault?: SortOrder
+    isArchived?: SortOrder
+    sortOrder?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DayTypeDefinitionMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    name?: SortOrder
+    slug?: SortOrder
+    description?: SortOrder
+    color?: SortOrder
+    icon?: SortOrder
+    isDefault?: SortOrder
+    isArchived?: SortOrder
+    sortOrder?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type DayTypeDefinitionSumOrderByAggregateInput = {
+    sortOrder?: SortOrder
+  }
+
+  export type DayTypeDefinitionScalarRelationFilter = {
+    is?: DayTypeDefinitionWhereInput
+    isNot?: DayTypeDefinitionWhereInput
+  }
+
+  export type HabitDayTypeHabitIdDayTypeIdCompoundUniqueInput = {
+    habitId: string
+    dayTypeId: string
+  }
+
+  export type HabitDayTypeCountOrderByAggregateInput = {
+    id?: SortOrder
+    habitId?: SortOrder
+    dayTypeId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type HabitDayTypeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    habitId?: SortOrder
+    dayTypeId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type HabitDayTypeMinOrderByAggregateInput = {
+    id?: SortOrder
+    habitId?: SortOrder
+    dayTypeId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GoalDayTypeGoalIdDayTypeIdCompoundUniqueInput = {
+    goalId: string
+    dayTypeId: string
+  }
+
+  export type GoalDayTypeCountOrderByAggregateInput = {
+    id?: SortOrder
+    goalId?: SortOrder
+    dayTypeId?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GoalDayTypeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    goalId?: SortOrder
+    dayTypeId?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type GoalDayTypeMinOrderByAggregateInput = {
+    id?: SortOrder
+    goalId?: SortOrder
+    dayTypeId?: SortOrder
+    userId?: SortOrder
+    createdAt?: SortOrder
+  }
+
   export type FeatureFlagCountOrderByAggregateInput = {
     id?: SortOrder
     key?: SortOrder
@@ -110984,6 +115737,20 @@ export namespace Prisma {
     connect?: APIKeyWhereUniqueInput | APIKeyWhereUniqueInput[]
   }
 
+  export type DayTypeDefinitionCreateNestedManyWithoutUserInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutUserInput, DayTypeDefinitionUncheckedCreateWithoutUserInput> | DayTypeDefinitionCreateWithoutUserInput[] | DayTypeDefinitionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutUserInput | DayTypeDefinitionCreateOrConnectWithoutUserInput[]
+    createMany?: DayTypeDefinitionCreateManyUserInputEnvelope
+    connect?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+  }
+
+  export type GoalDayTypeCreateNestedManyWithoutUserInput = {
+    create?: XOR<GoalDayTypeCreateWithoutUserInput, GoalDayTypeUncheckedCreateWithoutUserInput> | GoalDayTypeCreateWithoutUserInput[] | GoalDayTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutUserInput | GoalDayTypeCreateOrConnectWithoutUserInput[]
+    createMany?: GoalDayTypeCreateManyUserInputEnvelope
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+  }
+
   export type UserSettingsUncheckedCreateNestedOneWithoutUserInput = {
     create?: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
     connectOrCreate?: UserSettingsCreateOrConnectWithoutUserInput
@@ -111378,6 +116145,20 @@ export namespace Prisma {
     connectOrCreate?: APIKeyCreateOrConnectWithoutUserInput | APIKeyCreateOrConnectWithoutUserInput[]
     createMany?: APIKeyCreateManyUserInputEnvelope
     connect?: APIKeyWhereUniqueInput | APIKeyWhereUniqueInput[]
+  }
+
+  export type DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutUserInput, DayTypeDefinitionUncheckedCreateWithoutUserInput> | DayTypeDefinitionCreateWithoutUserInput[] | DayTypeDefinitionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutUserInput | DayTypeDefinitionCreateOrConnectWithoutUserInput[]
+    createMany?: DayTypeDefinitionCreateManyUserInputEnvelope
+    connect?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+  }
+
+  export type GoalDayTypeUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<GoalDayTypeCreateWithoutUserInput, GoalDayTypeUncheckedCreateWithoutUserInput> | GoalDayTypeCreateWithoutUserInput[] | GoalDayTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutUserInput | GoalDayTypeCreateOrConnectWithoutUserInput[]
+    createMany?: GoalDayTypeCreateManyUserInputEnvelope
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -112198,6 +116979,34 @@ export namespace Prisma {
     deleteMany?: APIKeyScalarWhereInput | APIKeyScalarWhereInput[]
   }
 
+  export type DayTypeDefinitionUpdateManyWithoutUserNestedInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutUserInput, DayTypeDefinitionUncheckedCreateWithoutUserInput> | DayTypeDefinitionCreateWithoutUserInput[] | DayTypeDefinitionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutUserInput | DayTypeDefinitionCreateOrConnectWithoutUserInput[]
+    upsert?: DayTypeDefinitionUpsertWithWhereUniqueWithoutUserInput | DayTypeDefinitionUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: DayTypeDefinitionCreateManyUserInputEnvelope
+    set?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    disconnect?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    delete?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    connect?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    update?: DayTypeDefinitionUpdateWithWhereUniqueWithoutUserInput | DayTypeDefinitionUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: DayTypeDefinitionUpdateManyWithWhereWithoutUserInput | DayTypeDefinitionUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: DayTypeDefinitionScalarWhereInput | DayTypeDefinitionScalarWhereInput[]
+  }
+
+  export type GoalDayTypeUpdateManyWithoutUserNestedInput = {
+    create?: XOR<GoalDayTypeCreateWithoutUserInput, GoalDayTypeUncheckedCreateWithoutUserInput> | GoalDayTypeCreateWithoutUserInput[] | GoalDayTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutUserInput | GoalDayTypeCreateOrConnectWithoutUserInput[]
+    upsert?: GoalDayTypeUpsertWithWhereUniqueWithoutUserInput | GoalDayTypeUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: GoalDayTypeCreateManyUserInputEnvelope
+    set?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    disconnect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    delete?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    update?: GoalDayTypeUpdateWithWhereUniqueWithoutUserInput | GoalDayTypeUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: GoalDayTypeUpdateManyWithWhereWithoutUserInput | GoalDayTypeUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+  }
+
   export type UserSettingsUncheckedUpdateOneWithoutUserNestedInput = {
     create?: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
     connectOrCreate?: UserSettingsCreateOrConnectWithoutUserInput
@@ -112984,6 +117793,34 @@ export namespace Prisma {
     deleteMany?: APIKeyScalarWhereInput | APIKeyScalarWhereInput[]
   }
 
+  export type DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutUserInput, DayTypeDefinitionUncheckedCreateWithoutUserInput> | DayTypeDefinitionCreateWithoutUserInput[] | DayTypeDefinitionUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutUserInput | DayTypeDefinitionCreateOrConnectWithoutUserInput[]
+    upsert?: DayTypeDefinitionUpsertWithWhereUniqueWithoutUserInput | DayTypeDefinitionUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: DayTypeDefinitionCreateManyUserInputEnvelope
+    set?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    disconnect?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    delete?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    connect?: DayTypeDefinitionWhereUniqueInput | DayTypeDefinitionWhereUniqueInput[]
+    update?: DayTypeDefinitionUpdateWithWhereUniqueWithoutUserInput | DayTypeDefinitionUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: DayTypeDefinitionUpdateManyWithWhereWithoutUserInput | DayTypeDefinitionUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: DayTypeDefinitionScalarWhereInput | DayTypeDefinitionScalarWhereInput[]
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<GoalDayTypeCreateWithoutUserInput, GoalDayTypeUncheckedCreateWithoutUserInput> | GoalDayTypeCreateWithoutUserInput[] | GoalDayTypeUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutUserInput | GoalDayTypeCreateOrConnectWithoutUserInput[]
+    upsert?: GoalDayTypeUpsertWithWhereUniqueWithoutUserInput | GoalDayTypeUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: GoalDayTypeCreateManyUserInputEnvelope
+    set?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    disconnect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    delete?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    update?: GoalDayTypeUpdateWithWhereUniqueWithoutUserInput | GoalDayTypeUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: GoalDayTypeUpdateManyWithWhereWithoutUserInput | GoalDayTypeUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+  }
+
   export type UserCreateNestedOneWithoutSubscriptionInput = {
     create?: XOR<UserCreateWithoutSubscriptionInput, UserUncheckedCreateWithoutSubscriptionInput>
     connectOrCreate?: UserCreateOrConnectWithoutSubscriptionInput
@@ -113592,6 +118429,12 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type DayTypeDefinitionCreateNestedOneWithoutRoutineTemplatesInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutRoutineTemplatesInput, DayTypeDefinitionUncheckedCreateWithoutRoutineTemplatesInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutRoutineTemplatesInput
+    connect?: DayTypeDefinitionWhereUniqueInput
+  }
+
   export type RoutineBlockCreateNestedManyWithoutTemplateInput = {
     create?: XOR<RoutineBlockCreateWithoutTemplateInput, RoutineBlockUncheckedCreateWithoutTemplateInput> | RoutineBlockCreateWithoutTemplateInput[] | RoutineBlockUncheckedCreateWithoutTemplateInput[]
     connectOrCreate?: RoutineBlockCreateOrConnectWithoutTemplateInput | RoutineBlockCreateOrConnectWithoutTemplateInput[]
@@ -113630,6 +118473,16 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutRoutineTemplatesInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRoutineTemplatesInput, UserUpdateWithoutRoutineTemplatesInput>, UserUncheckedUpdateWithoutRoutineTemplatesInput>
+  }
+
+  export type DayTypeDefinitionUpdateOneWithoutRoutineTemplatesNestedInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutRoutineTemplatesInput, DayTypeDefinitionUncheckedCreateWithoutRoutineTemplatesInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutRoutineTemplatesInput
+    upsert?: DayTypeDefinitionUpsertWithoutRoutineTemplatesInput
+    disconnect?: DayTypeDefinitionWhereInput | boolean
+    delete?: DayTypeDefinitionWhereInput | boolean
+    connect?: DayTypeDefinitionWhereUniqueInput
+    update?: XOR<XOR<DayTypeDefinitionUpdateToOneWithWhereWithoutRoutineTemplatesInput, DayTypeDefinitionUpdateWithoutRoutineTemplatesInput>, DayTypeDefinitionUncheckedUpdateWithoutRoutineTemplatesInput>
   }
 
   export type RoutineBlockUpdateManyWithoutTemplateNestedInput = {
@@ -113780,6 +118633,12 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type DayTypeDefinitionCreateNestedOneWithoutRoutineExceptionsInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutRoutineExceptionsInput, DayTypeDefinitionUncheckedCreateWithoutRoutineExceptionsInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutRoutineExceptionsInput
+    connect?: DayTypeDefinitionWhereUniqueInput
+  }
+
   export type RoutineTemplateCreateNestedOneWithoutExceptionsInput = {
     create?: XOR<RoutineTemplateCreateWithoutExceptionsInput, RoutineTemplateUncheckedCreateWithoutExceptionsInput>
     connectOrCreate?: RoutineTemplateCreateOrConnectWithoutExceptionsInput
@@ -113792,6 +118651,16 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutRoutineExceptionsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRoutineExceptionsInput, UserUpdateWithoutRoutineExceptionsInput>, UserUncheckedUpdateWithoutRoutineExceptionsInput>
+  }
+
+  export type DayTypeDefinitionUpdateOneWithoutRoutineExceptionsNestedInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutRoutineExceptionsInput, DayTypeDefinitionUncheckedCreateWithoutRoutineExceptionsInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutRoutineExceptionsInput
+    upsert?: DayTypeDefinitionUpsertWithoutRoutineExceptionsInput
+    disconnect?: DayTypeDefinitionWhereInput | boolean
+    delete?: DayTypeDefinitionWhereInput | boolean
+    connect?: DayTypeDefinitionWhereUniqueInput
+    update?: XOR<XOR<DayTypeDefinitionUpdateToOneWithWhereWithoutRoutineExceptionsInput, DayTypeDefinitionUpdateWithoutRoutineExceptionsInput>, DayTypeDefinitionUncheckedUpdateWithoutRoutineExceptionsInput>
   }
 
   export type RoutineTemplateUpdateOneWithoutExceptionsNestedInput = {
@@ -113848,6 +118717,13 @@ export namespace Prisma {
     connect?: CategoryWhereUniqueInput
   }
 
+  export type HabitDayTypeCreateNestedManyWithoutHabitInput = {
+    create?: XOR<HabitDayTypeCreateWithoutHabitInput, HabitDayTypeUncheckedCreateWithoutHabitInput> | HabitDayTypeCreateWithoutHabitInput[] | HabitDayTypeUncheckedCreateWithoutHabitInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutHabitInput | HabitDayTypeCreateOrConnectWithoutHabitInput[]
+    createMany?: HabitDayTypeCreateManyHabitInputEnvelope
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+  }
+
   export type HabitLogCreateNestedManyWithoutHabitInput = {
     create?: XOR<HabitLogCreateWithoutHabitInput, HabitLogUncheckedCreateWithoutHabitInput> | HabitLogCreateWithoutHabitInput[] | HabitLogUncheckedCreateWithoutHabitInput[]
     connectOrCreate?: HabitLogCreateOrConnectWithoutHabitInput | HabitLogCreateOrConnectWithoutHabitInput[]
@@ -113881,6 +118757,13 @@ export namespace Prisma {
     connectOrCreate?: TimeEntryCreateOrConnectWithoutHabitInput | TimeEntryCreateOrConnectWithoutHabitInput[]
     createMany?: TimeEntryCreateManyHabitInputEnvelope
     connect?: TimeEntryWhereUniqueInput | TimeEntryWhereUniqueInput[]
+  }
+
+  export type HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput = {
+    create?: XOR<HabitDayTypeCreateWithoutHabitInput, HabitDayTypeUncheckedCreateWithoutHabitInput> | HabitDayTypeCreateWithoutHabitInput[] | HabitDayTypeUncheckedCreateWithoutHabitInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutHabitInput | HabitDayTypeCreateOrConnectWithoutHabitInput[]
+    createMany?: HabitDayTypeCreateManyHabitInputEnvelope
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
   }
 
   export type HabitLogUncheckedCreateNestedManyWithoutHabitInput = {
@@ -113956,6 +118839,20 @@ export namespace Prisma {
     update?: XOR<XOR<CategoryUpdateToOneWithWhereWithoutHabitsInput, CategoryUpdateWithoutHabitsInput>, CategoryUncheckedUpdateWithoutHabitsInput>
   }
 
+  export type HabitDayTypeUpdateManyWithoutHabitNestedInput = {
+    create?: XOR<HabitDayTypeCreateWithoutHabitInput, HabitDayTypeUncheckedCreateWithoutHabitInput> | HabitDayTypeCreateWithoutHabitInput[] | HabitDayTypeUncheckedCreateWithoutHabitInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutHabitInput | HabitDayTypeCreateOrConnectWithoutHabitInput[]
+    upsert?: HabitDayTypeUpsertWithWhereUniqueWithoutHabitInput | HabitDayTypeUpsertWithWhereUniqueWithoutHabitInput[]
+    createMany?: HabitDayTypeCreateManyHabitInputEnvelope
+    set?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    disconnect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    delete?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    update?: HabitDayTypeUpdateWithWhereUniqueWithoutHabitInput | HabitDayTypeUpdateWithWhereUniqueWithoutHabitInput[]
+    updateMany?: HabitDayTypeUpdateManyWithWhereWithoutHabitInput | HabitDayTypeUpdateManyWithWhereWithoutHabitInput[]
+    deleteMany?: HabitDayTypeScalarWhereInput | HabitDayTypeScalarWhereInput[]
+  }
+
   export type HabitLogUpdateManyWithoutHabitNestedInput = {
     create?: XOR<HabitLogCreateWithoutHabitInput, HabitLogUncheckedCreateWithoutHabitInput> | HabitLogCreateWithoutHabitInput[] | HabitLogUncheckedCreateWithoutHabitInput[]
     connectOrCreate?: HabitLogCreateOrConnectWithoutHabitInput | HabitLogCreateOrConnectWithoutHabitInput[]
@@ -114024,6 +118921,20 @@ export namespace Prisma {
     update?: TimeEntryUpdateWithWhereUniqueWithoutHabitInput | TimeEntryUpdateWithWhereUniqueWithoutHabitInput[]
     updateMany?: TimeEntryUpdateManyWithWhereWithoutHabitInput | TimeEntryUpdateManyWithWhereWithoutHabitInput[]
     deleteMany?: TimeEntryScalarWhereInput | TimeEntryScalarWhereInput[]
+  }
+
+  export type HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput = {
+    create?: XOR<HabitDayTypeCreateWithoutHabitInput, HabitDayTypeUncheckedCreateWithoutHabitInput> | HabitDayTypeCreateWithoutHabitInput[] | HabitDayTypeUncheckedCreateWithoutHabitInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutHabitInput | HabitDayTypeCreateOrConnectWithoutHabitInput[]
+    upsert?: HabitDayTypeUpsertWithWhereUniqueWithoutHabitInput | HabitDayTypeUpsertWithWhereUniqueWithoutHabitInput[]
+    createMany?: HabitDayTypeCreateManyHabitInputEnvelope
+    set?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    disconnect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    delete?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    update?: HabitDayTypeUpdateWithWhereUniqueWithoutHabitInput | HabitDayTypeUpdateWithWhereUniqueWithoutHabitInput[]
+    updateMany?: HabitDayTypeUpdateManyWithWhereWithoutHabitInput | HabitDayTypeUpdateManyWithWhereWithoutHabitInput[]
+    deleteMany?: HabitDayTypeScalarWhereInput | HabitDayTypeScalarWhereInput[]
   }
 
   export type HabitLogUncheckedUpdateManyWithoutHabitNestedInput = {
@@ -114433,6 +119344,13 @@ export namespace Prisma {
     connect?: GoalWhereUniqueInput | GoalWhereUniqueInput[]
   }
 
+  export type GoalDayTypeCreateNestedManyWithoutGoalInput = {
+    create?: XOR<GoalDayTypeCreateWithoutGoalInput, GoalDayTypeUncheckedCreateWithoutGoalInput> | GoalDayTypeCreateWithoutGoalInput[] | GoalDayTypeUncheckedCreateWithoutGoalInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutGoalInput | GoalDayTypeCreateOrConnectWithoutGoalInput[]
+    createMany?: GoalDayTypeCreateManyGoalInputEnvelope
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+  }
+
   export type MilestoneCreateNestedManyWithoutGoalInput = {
     create?: XOR<MilestoneCreateWithoutGoalInput, MilestoneUncheckedCreateWithoutGoalInput> | MilestoneCreateWithoutGoalInput[] | MilestoneUncheckedCreateWithoutGoalInput[]
     connectOrCreate?: MilestoneCreateOrConnectWithoutGoalInput | MilestoneCreateOrConnectWithoutGoalInput[]
@@ -114473,6 +119391,13 @@ export namespace Prisma {
     connectOrCreate?: GoalCreateOrConnectWithoutParentGoalInput | GoalCreateOrConnectWithoutParentGoalInput[]
     createMany?: GoalCreateManyParentGoalInputEnvelope
     connect?: GoalWhereUniqueInput | GoalWhereUniqueInput[]
+  }
+
+  export type GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput = {
+    create?: XOR<GoalDayTypeCreateWithoutGoalInput, GoalDayTypeUncheckedCreateWithoutGoalInput> | GoalDayTypeCreateWithoutGoalInput[] | GoalDayTypeUncheckedCreateWithoutGoalInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutGoalInput | GoalDayTypeCreateOrConnectWithoutGoalInput[]
+    createMany?: GoalDayTypeCreateManyGoalInputEnvelope
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
   }
 
   export type MilestoneUncheckedCreateNestedManyWithoutGoalInput = {
@@ -114560,6 +119485,20 @@ export namespace Prisma {
     deleteMany?: GoalScalarWhereInput | GoalScalarWhereInput[]
   }
 
+  export type GoalDayTypeUpdateManyWithoutGoalNestedInput = {
+    create?: XOR<GoalDayTypeCreateWithoutGoalInput, GoalDayTypeUncheckedCreateWithoutGoalInput> | GoalDayTypeCreateWithoutGoalInput[] | GoalDayTypeUncheckedCreateWithoutGoalInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutGoalInput | GoalDayTypeCreateOrConnectWithoutGoalInput[]
+    upsert?: GoalDayTypeUpsertWithWhereUniqueWithoutGoalInput | GoalDayTypeUpsertWithWhereUniqueWithoutGoalInput[]
+    createMany?: GoalDayTypeCreateManyGoalInputEnvelope
+    set?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    disconnect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    delete?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    update?: GoalDayTypeUpdateWithWhereUniqueWithoutGoalInput | GoalDayTypeUpdateWithWhereUniqueWithoutGoalInput[]
+    updateMany?: GoalDayTypeUpdateManyWithWhereWithoutGoalInput | GoalDayTypeUpdateManyWithWhereWithoutGoalInput[]
+    deleteMany?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+  }
+
   export type MilestoneUpdateManyWithoutGoalNestedInput = {
     create?: XOR<MilestoneCreateWithoutGoalInput, MilestoneUncheckedCreateWithoutGoalInput> | MilestoneCreateWithoutGoalInput[] | MilestoneUncheckedCreateWithoutGoalInput[]
     connectOrCreate?: MilestoneCreateOrConnectWithoutGoalInput | MilestoneCreateOrConnectWithoutGoalInput[]
@@ -114642,6 +119581,20 @@ export namespace Prisma {
     update?: GoalUpdateWithWhereUniqueWithoutParentGoalInput | GoalUpdateWithWhereUniqueWithoutParentGoalInput[]
     updateMany?: GoalUpdateManyWithWhereWithoutParentGoalInput | GoalUpdateManyWithWhereWithoutParentGoalInput[]
     deleteMany?: GoalScalarWhereInput | GoalScalarWhereInput[]
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput = {
+    create?: XOR<GoalDayTypeCreateWithoutGoalInput, GoalDayTypeUncheckedCreateWithoutGoalInput> | GoalDayTypeCreateWithoutGoalInput[] | GoalDayTypeUncheckedCreateWithoutGoalInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutGoalInput | GoalDayTypeCreateOrConnectWithoutGoalInput[]
+    upsert?: GoalDayTypeUpsertWithWhereUniqueWithoutGoalInput | GoalDayTypeUpsertWithWhereUniqueWithoutGoalInput[]
+    createMany?: GoalDayTypeCreateManyGoalInputEnvelope
+    set?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    disconnect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    delete?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    update?: GoalDayTypeUpdateWithWhereUniqueWithoutGoalInput | GoalDayTypeUpdateWithWhereUniqueWithoutGoalInput[]
+    updateMany?: GoalDayTypeUpdateManyWithWhereWithoutGoalInput | GoalDayTypeUpdateManyWithWhereWithoutGoalInput[]
+    deleteMany?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
   }
 
   export type MilestoneUncheckedUpdateManyWithoutGoalNestedInput = {
@@ -115856,6 +120809,258 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutFeedbackInput, UserUpdateWithoutFeedbackInput>, UserUncheckedUpdateWithoutFeedbackInput>
   }
 
+  export type UserCreateNestedOneWithoutDayTypeDefinitionsInput = {
+    create?: XOR<UserCreateWithoutDayTypeDefinitionsInput, UserUncheckedCreateWithoutDayTypeDefinitionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutDayTypeDefinitionsInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type RoutineTemplateCreateNestedManyWithoutDayTypeDefInput = {
+    create?: XOR<RoutineTemplateCreateWithoutDayTypeDefInput, RoutineTemplateUncheckedCreateWithoutDayTypeDefInput> | RoutineTemplateCreateWithoutDayTypeDefInput[] | RoutineTemplateUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineTemplateCreateOrConnectWithoutDayTypeDefInput | RoutineTemplateCreateOrConnectWithoutDayTypeDefInput[]
+    createMany?: RoutineTemplateCreateManyDayTypeDefInputEnvelope
+    connect?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+  }
+
+  export type RoutineExceptionCreateNestedManyWithoutDayTypeDefInput = {
+    create?: XOR<RoutineExceptionCreateWithoutDayTypeDefInput, RoutineExceptionUncheckedCreateWithoutDayTypeDefInput> | RoutineExceptionCreateWithoutDayTypeDefInput[] | RoutineExceptionUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineExceptionCreateOrConnectWithoutDayTypeDefInput | RoutineExceptionCreateOrConnectWithoutDayTypeDefInput[]
+    createMany?: RoutineExceptionCreateManyDayTypeDefInputEnvelope
+    connect?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+  }
+
+  export type HabitDayTypeCreateNestedManyWithoutDayTypeInput = {
+    create?: XOR<HabitDayTypeCreateWithoutDayTypeInput, HabitDayTypeUncheckedCreateWithoutDayTypeInput> | HabitDayTypeCreateWithoutDayTypeInput[] | HabitDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutDayTypeInput | HabitDayTypeCreateOrConnectWithoutDayTypeInput[]
+    createMany?: HabitDayTypeCreateManyDayTypeInputEnvelope
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+  }
+
+  export type GoalDayTypeCreateNestedManyWithoutDayTypeInput = {
+    create?: XOR<GoalDayTypeCreateWithoutDayTypeInput, GoalDayTypeUncheckedCreateWithoutDayTypeInput> | GoalDayTypeCreateWithoutDayTypeInput[] | GoalDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutDayTypeInput | GoalDayTypeCreateOrConnectWithoutDayTypeInput[]
+    createMany?: GoalDayTypeCreateManyDayTypeInputEnvelope
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+  }
+
+  export type RoutineTemplateUncheckedCreateNestedManyWithoutDayTypeDefInput = {
+    create?: XOR<RoutineTemplateCreateWithoutDayTypeDefInput, RoutineTemplateUncheckedCreateWithoutDayTypeDefInput> | RoutineTemplateCreateWithoutDayTypeDefInput[] | RoutineTemplateUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineTemplateCreateOrConnectWithoutDayTypeDefInput | RoutineTemplateCreateOrConnectWithoutDayTypeDefInput[]
+    createMany?: RoutineTemplateCreateManyDayTypeDefInputEnvelope
+    connect?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+  }
+
+  export type RoutineExceptionUncheckedCreateNestedManyWithoutDayTypeDefInput = {
+    create?: XOR<RoutineExceptionCreateWithoutDayTypeDefInput, RoutineExceptionUncheckedCreateWithoutDayTypeDefInput> | RoutineExceptionCreateWithoutDayTypeDefInput[] | RoutineExceptionUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineExceptionCreateOrConnectWithoutDayTypeDefInput | RoutineExceptionCreateOrConnectWithoutDayTypeDefInput[]
+    createMany?: RoutineExceptionCreateManyDayTypeDefInputEnvelope
+    connect?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+  }
+
+  export type HabitDayTypeUncheckedCreateNestedManyWithoutDayTypeInput = {
+    create?: XOR<HabitDayTypeCreateWithoutDayTypeInput, HabitDayTypeUncheckedCreateWithoutDayTypeInput> | HabitDayTypeCreateWithoutDayTypeInput[] | HabitDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutDayTypeInput | HabitDayTypeCreateOrConnectWithoutDayTypeInput[]
+    createMany?: HabitDayTypeCreateManyDayTypeInputEnvelope
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+  }
+
+  export type GoalDayTypeUncheckedCreateNestedManyWithoutDayTypeInput = {
+    create?: XOR<GoalDayTypeCreateWithoutDayTypeInput, GoalDayTypeUncheckedCreateWithoutDayTypeInput> | GoalDayTypeCreateWithoutDayTypeInput[] | GoalDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutDayTypeInput | GoalDayTypeCreateOrConnectWithoutDayTypeInput[]
+    createMany?: GoalDayTypeCreateManyDayTypeInputEnvelope
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+  }
+
+  export type UserUpdateOneRequiredWithoutDayTypeDefinitionsNestedInput = {
+    create?: XOR<UserCreateWithoutDayTypeDefinitionsInput, UserUncheckedCreateWithoutDayTypeDefinitionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutDayTypeDefinitionsInput
+    upsert?: UserUpsertWithoutDayTypeDefinitionsInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutDayTypeDefinitionsInput, UserUpdateWithoutDayTypeDefinitionsInput>, UserUncheckedUpdateWithoutDayTypeDefinitionsInput>
+  }
+
+  export type RoutineTemplateUpdateManyWithoutDayTypeDefNestedInput = {
+    create?: XOR<RoutineTemplateCreateWithoutDayTypeDefInput, RoutineTemplateUncheckedCreateWithoutDayTypeDefInput> | RoutineTemplateCreateWithoutDayTypeDefInput[] | RoutineTemplateUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineTemplateCreateOrConnectWithoutDayTypeDefInput | RoutineTemplateCreateOrConnectWithoutDayTypeDefInput[]
+    upsert?: RoutineTemplateUpsertWithWhereUniqueWithoutDayTypeDefInput | RoutineTemplateUpsertWithWhereUniqueWithoutDayTypeDefInput[]
+    createMany?: RoutineTemplateCreateManyDayTypeDefInputEnvelope
+    set?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    disconnect?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    delete?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    connect?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    update?: RoutineTemplateUpdateWithWhereUniqueWithoutDayTypeDefInput | RoutineTemplateUpdateWithWhereUniqueWithoutDayTypeDefInput[]
+    updateMany?: RoutineTemplateUpdateManyWithWhereWithoutDayTypeDefInput | RoutineTemplateUpdateManyWithWhereWithoutDayTypeDefInput[]
+    deleteMany?: RoutineTemplateScalarWhereInput | RoutineTemplateScalarWhereInput[]
+  }
+
+  export type RoutineExceptionUpdateManyWithoutDayTypeDefNestedInput = {
+    create?: XOR<RoutineExceptionCreateWithoutDayTypeDefInput, RoutineExceptionUncheckedCreateWithoutDayTypeDefInput> | RoutineExceptionCreateWithoutDayTypeDefInput[] | RoutineExceptionUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineExceptionCreateOrConnectWithoutDayTypeDefInput | RoutineExceptionCreateOrConnectWithoutDayTypeDefInput[]
+    upsert?: RoutineExceptionUpsertWithWhereUniqueWithoutDayTypeDefInput | RoutineExceptionUpsertWithWhereUniqueWithoutDayTypeDefInput[]
+    createMany?: RoutineExceptionCreateManyDayTypeDefInputEnvelope
+    set?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    disconnect?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    delete?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    connect?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    update?: RoutineExceptionUpdateWithWhereUniqueWithoutDayTypeDefInput | RoutineExceptionUpdateWithWhereUniqueWithoutDayTypeDefInput[]
+    updateMany?: RoutineExceptionUpdateManyWithWhereWithoutDayTypeDefInput | RoutineExceptionUpdateManyWithWhereWithoutDayTypeDefInput[]
+    deleteMany?: RoutineExceptionScalarWhereInput | RoutineExceptionScalarWhereInput[]
+  }
+
+  export type HabitDayTypeUpdateManyWithoutDayTypeNestedInput = {
+    create?: XOR<HabitDayTypeCreateWithoutDayTypeInput, HabitDayTypeUncheckedCreateWithoutDayTypeInput> | HabitDayTypeCreateWithoutDayTypeInput[] | HabitDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutDayTypeInput | HabitDayTypeCreateOrConnectWithoutDayTypeInput[]
+    upsert?: HabitDayTypeUpsertWithWhereUniqueWithoutDayTypeInput | HabitDayTypeUpsertWithWhereUniqueWithoutDayTypeInput[]
+    createMany?: HabitDayTypeCreateManyDayTypeInputEnvelope
+    set?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    disconnect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    delete?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    update?: HabitDayTypeUpdateWithWhereUniqueWithoutDayTypeInput | HabitDayTypeUpdateWithWhereUniqueWithoutDayTypeInput[]
+    updateMany?: HabitDayTypeUpdateManyWithWhereWithoutDayTypeInput | HabitDayTypeUpdateManyWithWhereWithoutDayTypeInput[]
+    deleteMany?: HabitDayTypeScalarWhereInput | HabitDayTypeScalarWhereInput[]
+  }
+
+  export type GoalDayTypeUpdateManyWithoutDayTypeNestedInput = {
+    create?: XOR<GoalDayTypeCreateWithoutDayTypeInput, GoalDayTypeUncheckedCreateWithoutDayTypeInput> | GoalDayTypeCreateWithoutDayTypeInput[] | GoalDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutDayTypeInput | GoalDayTypeCreateOrConnectWithoutDayTypeInput[]
+    upsert?: GoalDayTypeUpsertWithWhereUniqueWithoutDayTypeInput | GoalDayTypeUpsertWithWhereUniqueWithoutDayTypeInput[]
+    createMany?: GoalDayTypeCreateManyDayTypeInputEnvelope
+    set?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    disconnect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    delete?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    update?: GoalDayTypeUpdateWithWhereUniqueWithoutDayTypeInput | GoalDayTypeUpdateWithWhereUniqueWithoutDayTypeInput[]
+    updateMany?: GoalDayTypeUpdateManyWithWhereWithoutDayTypeInput | GoalDayTypeUpdateManyWithWhereWithoutDayTypeInput[]
+    deleteMany?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+  }
+
+  export type RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefNestedInput = {
+    create?: XOR<RoutineTemplateCreateWithoutDayTypeDefInput, RoutineTemplateUncheckedCreateWithoutDayTypeDefInput> | RoutineTemplateCreateWithoutDayTypeDefInput[] | RoutineTemplateUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineTemplateCreateOrConnectWithoutDayTypeDefInput | RoutineTemplateCreateOrConnectWithoutDayTypeDefInput[]
+    upsert?: RoutineTemplateUpsertWithWhereUniqueWithoutDayTypeDefInput | RoutineTemplateUpsertWithWhereUniqueWithoutDayTypeDefInput[]
+    createMany?: RoutineTemplateCreateManyDayTypeDefInputEnvelope
+    set?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    disconnect?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    delete?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    connect?: RoutineTemplateWhereUniqueInput | RoutineTemplateWhereUniqueInput[]
+    update?: RoutineTemplateUpdateWithWhereUniqueWithoutDayTypeDefInput | RoutineTemplateUpdateWithWhereUniqueWithoutDayTypeDefInput[]
+    updateMany?: RoutineTemplateUpdateManyWithWhereWithoutDayTypeDefInput | RoutineTemplateUpdateManyWithWhereWithoutDayTypeDefInput[]
+    deleteMany?: RoutineTemplateScalarWhereInput | RoutineTemplateScalarWhereInput[]
+  }
+
+  export type RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefNestedInput = {
+    create?: XOR<RoutineExceptionCreateWithoutDayTypeDefInput, RoutineExceptionUncheckedCreateWithoutDayTypeDefInput> | RoutineExceptionCreateWithoutDayTypeDefInput[] | RoutineExceptionUncheckedCreateWithoutDayTypeDefInput[]
+    connectOrCreate?: RoutineExceptionCreateOrConnectWithoutDayTypeDefInput | RoutineExceptionCreateOrConnectWithoutDayTypeDefInput[]
+    upsert?: RoutineExceptionUpsertWithWhereUniqueWithoutDayTypeDefInput | RoutineExceptionUpsertWithWhereUniqueWithoutDayTypeDefInput[]
+    createMany?: RoutineExceptionCreateManyDayTypeDefInputEnvelope
+    set?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    disconnect?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    delete?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    connect?: RoutineExceptionWhereUniqueInput | RoutineExceptionWhereUniqueInput[]
+    update?: RoutineExceptionUpdateWithWhereUniqueWithoutDayTypeDefInput | RoutineExceptionUpdateWithWhereUniqueWithoutDayTypeDefInput[]
+    updateMany?: RoutineExceptionUpdateManyWithWhereWithoutDayTypeDefInput | RoutineExceptionUpdateManyWithWhereWithoutDayTypeDefInput[]
+    deleteMany?: RoutineExceptionScalarWhereInput | RoutineExceptionScalarWhereInput[]
+  }
+
+  export type HabitDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput = {
+    create?: XOR<HabitDayTypeCreateWithoutDayTypeInput, HabitDayTypeUncheckedCreateWithoutDayTypeInput> | HabitDayTypeCreateWithoutDayTypeInput[] | HabitDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: HabitDayTypeCreateOrConnectWithoutDayTypeInput | HabitDayTypeCreateOrConnectWithoutDayTypeInput[]
+    upsert?: HabitDayTypeUpsertWithWhereUniqueWithoutDayTypeInput | HabitDayTypeUpsertWithWhereUniqueWithoutDayTypeInput[]
+    createMany?: HabitDayTypeCreateManyDayTypeInputEnvelope
+    set?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    disconnect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    delete?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    connect?: HabitDayTypeWhereUniqueInput | HabitDayTypeWhereUniqueInput[]
+    update?: HabitDayTypeUpdateWithWhereUniqueWithoutDayTypeInput | HabitDayTypeUpdateWithWhereUniqueWithoutDayTypeInput[]
+    updateMany?: HabitDayTypeUpdateManyWithWhereWithoutDayTypeInput | HabitDayTypeUpdateManyWithWhereWithoutDayTypeInput[]
+    deleteMany?: HabitDayTypeScalarWhereInput | HabitDayTypeScalarWhereInput[]
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput = {
+    create?: XOR<GoalDayTypeCreateWithoutDayTypeInput, GoalDayTypeUncheckedCreateWithoutDayTypeInput> | GoalDayTypeCreateWithoutDayTypeInput[] | GoalDayTypeUncheckedCreateWithoutDayTypeInput[]
+    connectOrCreate?: GoalDayTypeCreateOrConnectWithoutDayTypeInput | GoalDayTypeCreateOrConnectWithoutDayTypeInput[]
+    upsert?: GoalDayTypeUpsertWithWhereUniqueWithoutDayTypeInput | GoalDayTypeUpsertWithWhereUniqueWithoutDayTypeInput[]
+    createMany?: GoalDayTypeCreateManyDayTypeInputEnvelope
+    set?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    disconnect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    delete?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    connect?: GoalDayTypeWhereUniqueInput | GoalDayTypeWhereUniqueInput[]
+    update?: GoalDayTypeUpdateWithWhereUniqueWithoutDayTypeInput | GoalDayTypeUpdateWithWhereUniqueWithoutDayTypeInput[]
+    updateMany?: GoalDayTypeUpdateManyWithWhereWithoutDayTypeInput | GoalDayTypeUpdateManyWithWhereWithoutDayTypeInput[]
+    deleteMany?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+  }
+
+  export type HabitCreateNestedOneWithoutDayTypeAssignmentsInput = {
+    create?: XOR<HabitCreateWithoutDayTypeAssignmentsInput, HabitUncheckedCreateWithoutDayTypeAssignmentsInput>
+    connectOrCreate?: HabitCreateOrConnectWithoutDayTypeAssignmentsInput
+    connect?: HabitWhereUniqueInput
+  }
+
+  export type DayTypeDefinitionCreateNestedOneWithoutHabitAssignmentsInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutHabitAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutHabitAssignmentsInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutHabitAssignmentsInput
+    connect?: DayTypeDefinitionWhereUniqueInput
+  }
+
+  export type HabitUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput = {
+    create?: XOR<HabitCreateWithoutDayTypeAssignmentsInput, HabitUncheckedCreateWithoutDayTypeAssignmentsInput>
+    connectOrCreate?: HabitCreateOrConnectWithoutDayTypeAssignmentsInput
+    upsert?: HabitUpsertWithoutDayTypeAssignmentsInput
+    connect?: HabitWhereUniqueInput
+    update?: XOR<XOR<HabitUpdateToOneWithWhereWithoutDayTypeAssignmentsInput, HabitUpdateWithoutDayTypeAssignmentsInput>, HabitUncheckedUpdateWithoutDayTypeAssignmentsInput>
+  }
+
+  export type DayTypeDefinitionUpdateOneRequiredWithoutHabitAssignmentsNestedInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutHabitAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutHabitAssignmentsInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutHabitAssignmentsInput
+    upsert?: DayTypeDefinitionUpsertWithoutHabitAssignmentsInput
+    connect?: DayTypeDefinitionWhereUniqueInput
+    update?: XOR<XOR<DayTypeDefinitionUpdateToOneWithWhereWithoutHabitAssignmentsInput, DayTypeDefinitionUpdateWithoutHabitAssignmentsInput>, DayTypeDefinitionUncheckedUpdateWithoutHabitAssignmentsInput>
+  }
+
+  export type GoalCreateNestedOneWithoutDayTypeAssignmentsInput = {
+    create?: XOR<GoalCreateWithoutDayTypeAssignmentsInput, GoalUncheckedCreateWithoutDayTypeAssignmentsInput>
+    connectOrCreate?: GoalCreateOrConnectWithoutDayTypeAssignmentsInput
+    connect?: GoalWhereUniqueInput
+  }
+
+  export type DayTypeDefinitionCreateNestedOneWithoutGoalAssignmentsInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutGoalAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutGoalAssignmentsInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutGoalAssignmentsInput
+    connect?: DayTypeDefinitionWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutGoalDayTypesInput = {
+    create?: XOR<UserCreateWithoutGoalDayTypesInput, UserUncheckedCreateWithoutGoalDayTypesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutGoalDayTypesInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type GoalUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput = {
+    create?: XOR<GoalCreateWithoutDayTypeAssignmentsInput, GoalUncheckedCreateWithoutDayTypeAssignmentsInput>
+    connectOrCreate?: GoalCreateOrConnectWithoutDayTypeAssignmentsInput
+    upsert?: GoalUpsertWithoutDayTypeAssignmentsInput
+    connect?: GoalWhereUniqueInput
+    update?: XOR<XOR<GoalUpdateToOneWithWhereWithoutDayTypeAssignmentsInput, GoalUpdateWithoutDayTypeAssignmentsInput>, GoalUncheckedUpdateWithoutDayTypeAssignmentsInput>
+  }
+
+  export type DayTypeDefinitionUpdateOneRequiredWithoutGoalAssignmentsNestedInput = {
+    create?: XOR<DayTypeDefinitionCreateWithoutGoalAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutGoalAssignmentsInput>
+    connectOrCreate?: DayTypeDefinitionCreateOrConnectWithoutGoalAssignmentsInput
+    upsert?: DayTypeDefinitionUpsertWithoutGoalAssignmentsInput
+    connect?: DayTypeDefinitionWhereUniqueInput
+    update?: XOR<XOR<DayTypeDefinitionUpdateToOneWithWhereWithoutGoalAssignmentsInput, DayTypeDefinitionUpdateWithoutGoalAssignmentsInput>, DayTypeDefinitionUncheckedUpdateWithoutGoalAssignmentsInput>
+  }
+
+  export type UserUpdateOneRequiredWithoutGoalDayTypesNestedInput = {
+    create?: XOR<UserCreateWithoutGoalDayTypesInput, UserUncheckedCreateWithoutGoalDayTypesInput>
+    connectOrCreate?: UserCreateOrConnectWithoutGoalDayTypesInput
+    upsert?: UserUpsertWithoutGoalDayTypesInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutGoalDayTypesInput, UserUpdateWithoutGoalDayTypesInput>, UserUncheckedUpdateWithoutGoalDayTypesInput>
+  }
+
   export type UserCreateNestedOneWithoutApiKeysInput = {
     create?: XOR<UserCreateWithoutApiKeysInput, UserUncheckedCreateWithoutApiKeysInput>
     connectOrCreate?: UserCreateOrConnectWithoutApiKeysInput
@@ -116925,6 +122130,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineTemplatesInput
     blocks?: RoutineBlockCreateNestedManyWithoutTemplateInput
     exceptions?: RoutineExceptionCreateNestedManyWithoutTemplateInput
   }
@@ -116934,6 +122140,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     dayType?: $Enums.DayType
+    dayTypeId?: string | null
     isDefault?: boolean
     color?: string | null
     icon?: string | null
@@ -117015,6 +122222,7 @@ export namespace Prisma {
     note?: string | null
     reason?: string | null
     createdAt?: Date | string
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineExceptionsInput
     template?: RoutineTemplateCreateNestedOneWithoutExceptionsInput
   }
 
@@ -117022,6 +122230,7 @@ export namespace Prisma {
     id?: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId?: string | null
     templateId?: string | null
     note?: string | null
     reason?: string | null
@@ -117100,6 +122309,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -117107,6 +122317,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
@@ -117135,12 +122346,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
@@ -117280,11 +122493,13 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -117310,9 +122525,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -119005,6 +124222,76 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DayTypeDefinitionCreateWithoutUserInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUncheckedCreateWithoutUserInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionCreateOrConnectWithoutUserInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    create: XOR<DayTypeDefinitionCreateWithoutUserInput, DayTypeDefinitionUncheckedCreateWithoutUserInput>
+  }
+
+  export type DayTypeDefinitionCreateManyUserInputEnvelope = {
+    data: DayTypeDefinitionCreateManyUserInput | DayTypeDefinitionCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type GoalDayTypeCreateWithoutUserInput = {
+    id?: string
+    createdAt?: Date | string
+    goal: GoalCreateNestedOneWithoutDayTypeAssignmentsInput
+    dayType: DayTypeDefinitionCreateNestedOneWithoutGoalAssignmentsInput
+  }
+
+  export type GoalDayTypeUncheckedCreateWithoutUserInput = {
+    id?: string
+    goalId: string
+    dayTypeId: string
+    createdAt?: Date | string
+  }
+
+  export type GoalDayTypeCreateOrConnectWithoutUserInput = {
+    where: GoalDayTypeWhereUniqueInput
+    create: XOR<GoalDayTypeCreateWithoutUserInput, GoalDayTypeUncheckedCreateWithoutUserInput>
+  }
+
+  export type GoalDayTypeCreateManyUserInputEnvelope = {
+    data: GoalDayTypeCreateManyUserInput | GoalDayTypeCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
   export type UserSettingsUpsertWithoutUserInput = {
     update: XOR<UserSettingsUpdateWithoutUserInput, UserSettingsUncheckedUpdateWithoutUserInput>
     create: XOR<UserSettingsCreateWithoutUserInput, UserSettingsUncheckedCreateWithoutUserInput>
@@ -119273,6 +124560,7 @@ export namespace Prisma {
     name?: StringFilter<"RoutineTemplate"> | string
     description?: StringNullableFilter<"RoutineTemplate"> | string | null
     dayType?: EnumDayTypeFilter<"RoutineTemplate"> | $Enums.DayType
+    dayTypeId?: StringNullableFilter<"RoutineTemplate"> | string | null
     isDefault?: BoolFilter<"RoutineTemplate"> | boolean
     color?: StringNullableFilter<"RoutineTemplate"> | string | null
     icon?: StringNullableFilter<"RoutineTemplate"> | string | null
@@ -119347,6 +124635,7 @@ export namespace Prisma {
     userId?: StringFilter<"RoutineException"> | string
     date?: StringFilter<"RoutineException"> | string
     dayType?: EnumDayTypeFilter<"RoutineException"> | $Enums.DayType
+    dayTypeId?: StringNullableFilter<"RoutineException"> | string | null
     templateId?: StringNullableFilter<"RoutineException"> | string | null
     note?: StringNullableFilter<"RoutineException"> | string | null
     reason?: StringNullableFilter<"RoutineException"> | string | null
@@ -119430,6 +124719,7 @@ export namespace Prisma {
     estimatedDuration?: IntNullableFilter<"Habit"> | number | null
     difficulty?: IntNullableFilter<"Habit"> | number | null
     isPublic?: BoolFilter<"Habit"> | boolean
+    appliesEveryDay?: BoolFilter<"Habit"> | boolean
     streakCount?: IntFilter<"Habit"> | number
     longestStreak?: IntFilter<"Habit"> | number
     lastCompletedDate?: StringNullableFilter<"Habit"> | string | null
@@ -119573,6 +124863,7 @@ export namespace Prisma {
     parentGoalId?: StringNullableFilter<"Goal"> | string | null
     carriedOverFrom?: StringNullableFilter<"Goal"> | string | null
     isPublic?: BoolFilter<"Goal"> | boolean
+    appliesEveryDay?: BoolFilter<"Goal"> | boolean
     createdAt?: DateTimeFilter<"Goal"> | Date | string
     updatedAt?: DateTimeFilter<"Goal"> | Date | string
   }
@@ -121047,6 +126338,67 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"APIKey"> | Date | string
   }
 
+  export type DayTypeDefinitionUpsertWithWhereUniqueWithoutUserInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    update: XOR<DayTypeDefinitionUpdateWithoutUserInput, DayTypeDefinitionUncheckedUpdateWithoutUserInput>
+    create: XOR<DayTypeDefinitionCreateWithoutUserInput, DayTypeDefinitionUncheckedCreateWithoutUserInput>
+  }
+
+  export type DayTypeDefinitionUpdateWithWhereUniqueWithoutUserInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    data: XOR<DayTypeDefinitionUpdateWithoutUserInput, DayTypeDefinitionUncheckedUpdateWithoutUserInput>
+  }
+
+  export type DayTypeDefinitionUpdateManyWithWhereWithoutUserInput = {
+    where: DayTypeDefinitionScalarWhereInput
+    data: XOR<DayTypeDefinitionUpdateManyMutationInput, DayTypeDefinitionUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type DayTypeDefinitionScalarWhereInput = {
+    AND?: DayTypeDefinitionScalarWhereInput | DayTypeDefinitionScalarWhereInput[]
+    OR?: DayTypeDefinitionScalarWhereInput[]
+    NOT?: DayTypeDefinitionScalarWhereInput | DayTypeDefinitionScalarWhereInput[]
+    id?: StringFilter<"DayTypeDefinition"> | string
+    userId?: StringFilter<"DayTypeDefinition"> | string
+    name?: StringFilter<"DayTypeDefinition"> | string
+    slug?: StringFilter<"DayTypeDefinition"> | string
+    description?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    color?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    icon?: StringNullableFilter<"DayTypeDefinition"> | string | null
+    isDefault?: BoolFilter<"DayTypeDefinition"> | boolean
+    isArchived?: BoolFilter<"DayTypeDefinition"> | boolean
+    sortOrder?: IntFilter<"DayTypeDefinition"> | number
+    createdAt?: DateTimeFilter<"DayTypeDefinition"> | Date | string
+    updatedAt?: DateTimeFilter<"DayTypeDefinition"> | Date | string
+  }
+
+  export type GoalDayTypeUpsertWithWhereUniqueWithoutUserInput = {
+    where: GoalDayTypeWhereUniqueInput
+    update: XOR<GoalDayTypeUpdateWithoutUserInput, GoalDayTypeUncheckedUpdateWithoutUserInput>
+    create: XOR<GoalDayTypeCreateWithoutUserInput, GoalDayTypeUncheckedCreateWithoutUserInput>
+  }
+
+  export type GoalDayTypeUpdateWithWhereUniqueWithoutUserInput = {
+    where: GoalDayTypeWhereUniqueInput
+    data: XOR<GoalDayTypeUpdateWithoutUserInput, GoalDayTypeUncheckedUpdateWithoutUserInput>
+  }
+
+  export type GoalDayTypeUpdateManyWithWhereWithoutUserInput = {
+    where: GoalDayTypeScalarWhereInput
+    data: XOR<GoalDayTypeUpdateManyMutationInput, GoalDayTypeUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type GoalDayTypeScalarWhereInput = {
+    AND?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+    OR?: GoalDayTypeScalarWhereInput[]
+    NOT?: GoalDayTypeScalarWhereInput | GoalDayTypeScalarWhereInput[]
+    id?: StringFilter<"GoalDayType"> | string
+    goalId?: StringFilter<"GoalDayType"> | string
+    dayTypeId?: StringFilter<"GoalDayType"> | string
+    userId?: StringFilter<"GoalDayType"> | string
+    createdAt?: DateTimeFilter<"GoalDayType"> | Date | string
+  }
+
   export type UserCreateWithoutSubscriptionInput = {
     id?: string
     name?: string | null
@@ -121129,6 +126481,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSubscriptionInput = {
@@ -121213,6 +126567,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSubscriptionInput = {
@@ -121313,6 +126669,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSubscriptionInput = {
@@ -121397,6 +126755,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutQuotesInput = {
@@ -121481,6 +126841,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutQuotesInput = {
@@ -121565,6 +126927,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutQuotesInput = {
@@ -121665,6 +127029,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutQuotesInput = {
@@ -121749,6 +127115,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSettingsInput = {
@@ -121833,6 +127201,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSettingsInput = {
@@ -121917,6 +127287,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSettingsInput = {
@@ -122017,6 +127389,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSettingsInput = {
@@ -122101,6 +127475,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutPasswordResetTokensInput = {
@@ -122185,6 +127561,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
@@ -122269,6 +127647,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutPasswordResetTokensInput = {
@@ -122369,6 +127749,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
@@ -122453,6 +127835,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutEmailVerificationTokensInput = {
@@ -122537,6 +127921,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutEmailVerificationTokensInput = {
@@ -122621,6 +128007,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutEmailVerificationTokensInput = {
@@ -122721,6 +128109,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEmailVerificationTokensInput = {
@@ -122805,6 +128195,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutCategoriesInput = {
@@ -122889,6 +128281,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutCategoriesInput = {
@@ -122973,6 +128367,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutCategoriesInput = {
@@ -123000,6 +128396,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -123007,6 +128404,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
@@ -123035,12 +128433,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
@@ -123311,6 +128711,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCategoriesInput = {
@@ -123395,6 +128797,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type HabitUpsertWithWhereUniqueWithoutCategoryInput = {
@@ -123543,6 +128947,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutTagsInput = {
@@ -123627,6 +129033,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutTagsInput = {
@@ -123807,6 +129215,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTagsInput = {
@@ -123891,6 +129301,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type HabitTagUpsertWithWhereUniqueWithoutTagInput = {
@@ -124013,6 +129425,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -124021,6 +129434,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
@@ -124049,12 +129463,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
@@ -124126,6 +129542,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -124134,6 +129551,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
@@ -124162,12 +129580,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
@@ -124225,12 +129645,14 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     timeEntries?: TimeEntryCreateNestedManyWithoutGoalInput
@@ -124256,9 +129678,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutGoalInput
@@ -124326,12 +129750,14 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     timeEntries?: TimeEntryUpdateManyWithoutGoalNestedInput
@@ -124357,9 +129783,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     timeEntries?: TimeEntryUncheckedUpdateManyWithoutGoalNestedInput
@@ -124846,6 +130274,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutJournalRevisionsInput = {
@@ -124930,6 +130360,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutJournalRevisionsInput = {
@@ -125075,6 +130507,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutJournalRevisionsInput = {
@@ -125159,6 +130593,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutRoutineTemplatesInput = {
@@ -125243,6 +130679,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRoutineTemplatesInput = {
@@ -125327,11 +130765,54 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRoutineTemplatesInput = {
     where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutRoutineTemplatesInput, UserUncheckedCreateWithoutRoutineTemplatesInput>
+  }
+
+  export type DayTypeDefinitionCreateWithoutRoutineTemplatesInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutDayTypeDefinitionsInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUncheckedCreateWithoutRoutineTemplatesInput = {
+    id?: string
+    userId: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionCreateOrConnectWithoutRoutineTemplatesInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    create: XOR<DayTypeDefinitionCreateWithoutRoutineTemplatesInput, DayTypeDefinitionUncheckedCreateWithoutRoutineTemplatesInput>
   }
 
   export type RoutineBlockCreateWithoutTemplateInput = {
@@ -125394,6 +130875,7 @@ export namespace Prisma {
     reason?: string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineExceptionsInput
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineExceptionsInput
   }
 
   export type RoutineExceptionUncheckedCreateWithoutTemplateInput = {
@@ -125401,6 +130883,7 @@ export namespace Prisma {
     userId: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId?: string | null
     note?: string | null
     reason?: string | null
     createdAt?: Date | string
@@ -125509,6 +130992,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRoutineTemplatesInput = {
@@ -125593,6 +131078,55 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type DayTypeDefinitionUpsertWithoutRoutineTemplatesInput = {
+    update: XOR<DayTypeDefinitionUpdateWithoutRoutineTemplatesInput, DayTypeDefinitionUncheckedUpdateWithoutRoutineTemplatesInput>
+    create: XOR<DayTypeDefinitionCreateWithoutRoutineTemplatesInput, DayTypeDefinitionUncheckedCreateWithoutRoutineTemplatesInput>
+    where?: DayTypeDefinitionWhereInput
+  }
+
+  export type DayTypeDefinitionUpdateToOneWithWhereWithoutRoutineTemplatesInput = {
+    where?: DayTypeDefinitionWhereInput
+    data: XOR<DayTypeDefinitionUpdateWithoutRoutineTemplatesInput, DayTypeDefinitionUncheckedUpdateWithoutRoutineTemplatesInput>
+  }
+
+  export type DayTypeDefinitionUpdateWithoutRoutineTemplatesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutDayTypeDefinitionsNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateWithoutRoutineTemplatesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
   }
 
   export type RoutineBlockUpsertWithWhereUniqueWithoutTemplateInput = {
@@ -125709,6 +131243,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRoutineBlocksInput = {
@@ -125793,6 +131329,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRoutineBlocksInput = {
@@ -125814,6 +131352,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineTemplatesInput
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineTemplatesInput
     exceptions?: RoutineExceptionCreateNestedManyWithoutTemplateInput
   }
 
@@ -125823,6 +131362,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     dayType?: $Enums.DayType
+    dayTypeId?: string | null
     isDefault?: boolean
     color?: string | null
     icon?: string | null
@@ -126013,6 +131553,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRoutineBlocksInput = {
@@ -126097,6 +131639,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type RoutineTemplateUpsertWithoutBlocksInput = {
@@ -126124,6 +131668,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineTemplatesNestedInput
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineTemplatesNestedInput
     exceptions?: RoutineExceptionUpdateManyWithoutTemplateNestedInput
   }
 
@@ -126133,6 +131678,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     isDefault?: BoolFieldUpdateOperationsInput | boolean
     color?: NullableStringFieldUpdateOperationsInput | string | null
     icon?: NullableStringFieldUpdateOperationsInput | string | null
@@ -126287,6 +131833,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRoutineExceptionsInput = {
@@ -126371,11 +131919,54 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRoutineExceptionsInput = {
     where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutRoutineExceptionsInput, UserUncheckedCreateWithoutRoutineExceptionsInput>
+  }
+
+  export type DayTypeDefinitionCreateWithoutRoutineExceptionsInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutDayTypeDefinitionsInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUncheckedCreateWithoutRoutineExceptionsInput = {
+    id?: string
+    userId: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+    goalAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionCreateOrConnectWithoutRoutineExceptionsInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    create: XOR<DayTypeDefinitionCreateWithoutRoutineExceptionsInput, DayTypeDefinitionUncheckedCreateWithoutRoutineExceptionsInput>
   }
 
   export type RoutineTemplateCreateWithoutExceptionsInput = {
@@ -126392,6 +131983,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineTemplatesInput
+    dayTypeDef?: DayTypeDefinitionCreateNestedOneWithoutRoutineTemplatesInput
     blocks?: RoutineBlockCreateNestedManyWithoutTemplateInput
   }
 
@@ -126401,6 +131993,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     dayType?: $Enums.DayType
+    dayTypeId?: string | null
     isDefault?: boolean
     color?: string | null
     icon?: string | null
@@ -126510,6 +132103,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRoutineExceptionsInput = {
@@ -126594,6 +132189,55 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type DayTypeDefinitionUpsertWithoutRoutineExceptionsInput = {
+    update: XOR<DayTypeDefinitionUpdateWithoutRoutineExceptionsInput, DayTypeDefinitionUncheckedUpdateWithoutRoutineExceptionsInput>
+    create: XOR<DayTypeDefinitionCreateWithoutRoutineExceptionsInput, DayTypeDefinitionUncheckedCreateWithoutRoutineExceptionsInput>
+    where?: DayTypeDefinitionWhereInput
+  }
+
+  export type DayTypeDefinitionUpdateToOneWithWhereWithoutRoutineExceptionsInput = {
+    where?: DayTypeDefinitionWhereInput
+    data: XOR<DayTypeDefinitionUpdateWithoutRoutineExceptionsInput, DayTypeDefinitionUncheckedUpdateWithoutRoutineExceptionsInput>
+  }
+
+  export type DayTypeDefinitionUpdateWithoutRoutineExceptionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutDayTypeDefinitionsNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateWithoutRoutineExceptionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
   }
 
   export type RoutineTemplateUpsertWithoutExceptionsInput = {
@@ -126621,6 +132265,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineTemplatesNestedInput
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineTemplatesNestedInput
     blocks?: RoutineBlockUpdateManyWithoutTemplateNestedInput
   }
 
@@ -126630,6 +132275,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     isDefault?: BoolFieldUpdateOperationsInput | boolean
     color?: NullableStringFieldUpdateOperationsInput | string | null
     icon?: NullableStringFieldUpdateOperationsInput | string | null
@@ -126770,6 +132416,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutRoutineLogsInput = {
@@ -126854,6 +132502,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutRoutineLogsInput = {
@@ -127007,6 +132657,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutRoutineLogsInput = {
@@ -127091,6 +132743,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutHabitsInput = {
@@ -127175,6 +132829,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutHabitsInput = {
@@ -127259,6 +132915,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutHabitsInput = {
@@ -127303,6 +132961,28 @@ export namespace Prisma {
   export type CategoryCreateOrConnectWithoutHabitsInput = {
     where: CategoryWhereUniqueInput
     create: XOR<CategoryCreateWithoutHabitsInput, CategoryUncheckedCreateWithoutHabitsInput>
+  }
+
+  export type HabitDayTypeCreateWithoutHabitInput = {
+    id?: string
+    createdAt?: Date | string
+    dayType: DayTypeDefinitionCreateNestedOneWithoutHabitAssignmentsInput
+  }
+
+  export type HabitDayTypeUncheckedCreateWithoutHabitInput = {
+    id?: string
+    dayTypeId: string
+    createdAt?: Date | string
+  }
+
+  export type HabitDayTypeCreateOrConnectWithoutHabitInput = {
+    where: HabitDayTypeWhereUniqueInput
+    create: XOR<HabitDayTypeCreateWithoutHabitInput, HabitDayTypeUncheckedCreateWithoutHabitInput>
+  }
+
+  export type HabitDayTypeCreateManyHabitInputEnvelope = {
+    data: HabitDayTypeCreateManyHabitInput | HabitDayTypeCreateManyHabitInput[]
+    skipDuplicates?: boolean
   }
 
   export type HabitLogCreateWithoutHabitInput = {
@@ -127558,6 +133238,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutHabitsInput = {
@@ -127642,6 +133324,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type CategoryUpsertWithoutHabitsInput = {
@@ -127687,6 +133371,32 @@ export namespace Prisma {
     routineBlocks?: RoutineBlockUncheckedUpdateManyWithoutCategoryNestedInput
     focusSessions?: FocusSessionUncheckedUpdateManyWithoutCategoryNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutCategoryNestedInput
+  }
+
+  export type HabitDayTypeUpsertWithWhereUniqueWithoutHabitInput = {
+    where: HabitDayTypeWhereUniqueInput
+    update: XOR<HabitDayTypeUpdateWithoutHabitInput, HabitDayTypeUncheckedUpdateWithoutHabitInput>
+    create: XOR<HabitDayTypeCreateWithoutHabitInput, HabitDayTypeUncheckedCreateWithoutHabitInput>
+  }
+
+  export type HabitDayTypeUpdateWithWhereUniqueWithoutHabitInput = {
+    where: HabitDayTypeWhereUniqueInput
+    data: XOR<HabitDayTypeUpdateWithoutHabitInput, HabitDayTypeUncheckedUpdateWithoutHabitInput>
+  }
+
+  export type HabitDayTypeUpdateManyWithWhereWithoutHabitInput = {
+    where: HabitDayTypeScalarWhereInput
+    data: XOR<HabitDayTypeUpdateManyMutationInput, HabitDayTypeUncheckedUpdateManyWithoutHabitInput>
+  }
+
+  export type HabitDayTypeScalarWhereInput = {
+    AND?: HabitDayTypeScalarWhereInput | HabitDayTypeScalarWhereInput[]
+    OR?: HabitDayTypeScalarWhereInput[]
+    NOT?: HabitDayTypeScalarWhereInput | HabitDayTypeScalarWhereInput[]
+    id?: StringFilter<"HabitDayType"> | string
+    habitId?: StringFilter<"HabitDayType"> | string
+    dayTypeId?: StringFilter<"HabitDayType"> | string
+    createdAt?: DateTimeFilter<"HabitDayType"> | Date | string
   }
 
   export type HabitLogUpsertWithWhereUniqueWithoutHabitInput = {
@@ -127799,6 +133509,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -127807,6 +133518,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
     tags?: HabitTagCreateNestedManyWithoutHabitInput
@@ -127835,12 +133547,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
     tags?: HabitTagUncheckedCreateNestedManyWithoutHabitInput
@@ -127934,6 +133648,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutHabitLogsInput = {
@@ -128018,6 +133734,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutHabitLogsInput = {
@@ -128056,6 +133774,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -128064,6 +133783,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
     tags?: HabitTagUpdateManyWithoutHabitNestedInput
@@ -128092,12 +133812,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
     tags?: HabitTagUncheckedUpdateManyWithoutHabitNestedInput
@@ -128197,6 +133919,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutHabitLogsInput = {
@@ -128281,6 +134005,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type HabitCreateWithoutOverridesInput = {
@@ -128303,6 +134029,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -128311,6 +134038,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
     tags?: HabitTagCreateNestedManyWithoutHabitInput
@@ -128339,12 +134067,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
     tags?: HabitTagUncheckedCreateNestedManyWithoutHabitInput
@@ -128438,6 +134168,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutHabitOverridesInput = {
@@ -128522,6 +134254,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutHabitOverridesInput = {
@@ -128560,6 +134294,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -128568,6 +134303,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
     tags?: HabitTagUpdateManyWithoutHabitNestedInput
@@ -128596,12 +134332,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
     tags?: HabitTagUncheckedUpdateManyWithoutHabitNestedInput
@@ -128701,6 +134439,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutHabitOverridesInput = {
@@ -128785,6 +134525,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutMinimumDayTemplatesInput = {
@@ -128869,6 +134611,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutMinimumDayTemplatesInput = {
@@ -128953,6 +134697,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutMinimumDayTemplatesInput = {
@@ -129075,6 +134821,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutMinimumDayTemplatesInput = {
@@ -129159,6 +134907,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type MinimumDayTemplateHabitUpsertWithWhereUniqueWithoutTemplateInput = {
@@ -129222,6 +134972,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -129230,6 +134981,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     tags?: HabitTagCreateNestedManyWithoutHabitInput
@@ -129258,12 +135010,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     tags?: HabitTagUncheckedCreateNestedManyWithoutHabitInput
@@ -129337,6 +135091,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -129345,6 +135100,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     tags?: HabitTagUpdateManyWithoutHabitNestedInput
@@ -129373,12 +135129,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     tags?: HabitTagUncheckedUpdateManyWithoutHabitNestedInput
@@ -129467,6 +135225,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutProjectsInput = {
@@ -129551,6 +135311,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutProjectsInput = {
@@ -129613,11 +135375,13 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -129643,9 +135407,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -129856,6 +135622,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProjectsInput = {
@@ -129940,6 +135708,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type CategoryUpsertWithoutProjectsInput = {
@@ -130117,6 +135887,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutGoalsInput = {
@@ -130201,6 +135973,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutGoalsInput = {
@@ -130271,11 +136045,13 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -130302,8 +136078,10 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -130332,11 +136110,13 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -130362,9 +136142,11 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -130379,6 +136161,30 @@ export namespace Prisma {
 
   export type GoalCreateManyParentGoalInputEnvelope = {
     data: GoalCreateManyParentGoalInput | GoalCreateManyParentGoalInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type GoalDayTypeCreateWithoutGoalInput = {
+    id?: string
+    createdAt?: Date | string
+    dayType: DayTypeDefinitionCreateNestedOneWithoutGoalAssignmentsInput
+    user: UserCreateNestedOneWithoutGoalDayTypesInput
+  }
+
+  export type GoalDayTypeUncheckedCreateWithoutGoalInput = {
+    id?: string
+    dayTypeId: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type GoalDayTypeCreateOrConnectWithoutGoalInput = {
+    where: GoalDayTypeWhereUniqueInput
+    create: XOR<GoalDayTypeCreateWithoutGoalInput, GoalDayTypeUncheckedCreateWithoutGoalInput>
+  }
+
+  export type GoalDayTypeCreateManyGoalInputEnvelope = {
+    data: GoalDayTypeCreateManyGoalInput | GoalDayTypeCreateManyGoalInput[]
     skipDuplicates?: boolean
   }
 
@@ -130655,6 +136461,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutGoalsInput = {
@@ -130739,6 +136547,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ProjectUpsertWithoutGoalsInput = {
@@ -130821,11 +136631,13 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -130852,8 +136664,10 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -130875,6 +136689,22 @@ export namespace Prisma {
   export type GoalUpdateManyWithWhereWithoutParentGoalInput = {
     where: GoalScalarWhereInput
     data: XOR<GoalUpdateManyMutationInput, GoalUncheckedUpdateManyWithoutParentGoalInput>
+  }
+
+  export type GoalDayTypeUpsertWithWhereUniqueWithoutGoalInput = {
+    where: GoalDayTypeWhereUniqueInput
+    update: XOR<GoalDayTypeUpdateWithoutGoalInput, GoalDayTypeUncheckedUpdateWithoutGoalInput>
+    create: XOR<GoalDayTypeCreateWithoutGoalInput, GoalDayTypeUncheckedCreateWithoutGoalInput>
+  }
+
+  export type GoalDayTypeUpdateWithWhereUniqueWithoutGoalInput = {
+    where: GoalDayTypeWhereUniqueInput
+    data: XOR<GoalDayTypeUpdateWithoutGoalInput, GoalDayTypeUncheckedUpdateWithoutGoalInput>
+  }
+
+  export type GoalDayTypeUpdateManyWithWhereWithoutGoalInput = {
+    where: GoalDayTypeScalarWhereInput
+    data: XOR<GoalDayTypeUpdateManyMutationInput, GoalDayTypeUncheckedUpdateManyWithoutGoalInput>
   }
 
   export type MilestoneUpsertWithWhereUniqueWithoutGoalInput = {
@@ -131001,12 +136831,14 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
     timeEntries?: TimeEntryCreateNestedManyWithoutGoalInput
@@ -131032,9 +136864,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
     timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutGoalInput
@@ -131073,12 +136907,14 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
     timeEntries?: TimeEntryUpdateManyWithoutGoalNestedInput
@@ -131104,9 +136940,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
     timeEntries?: TimeEntryUncheckedUpdateManyWithoutGoalNestedInput
@@ -131129,12 +136967,14 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
     timeEntries?: TimeEntryCreateNestedManyWithoutGoalInput
@@ -131160,9 +137000,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
     timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutGoalInput
@@ -131201,12 +137043,14 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
     timeEntries?: TimeEntryUpdateManyWithoutGoalNestedInput
@@ -131232,9 +137076,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
     timeEntries?: TimeEntryUncheckedUpdateManyWithoutGoalNestedInput
@@ -131323,6 +137169,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutTasksInput = {
@@ -131407,6 +137255,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutTasksInput = {
@@ -131477,12 +137327,14 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -131508,9 +137360,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -131786,6 +137640,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTasksInput = {
@@ -131870,6 +137726,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ProjectUpsertWithoutTasksInput = {
@@ -131952,12 +137810,14 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -131983,9 +137843,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -132430,6 +138292,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSleepLogsInput = {
@@ -132514,6 +138378,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSleepLogsInput = {
@@ -132614,6 +138480,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSleepLogsInput = {
@@ -132698,6 +138566,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutSleepSessionsInput = {
@@ -132782,6 +138652,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutSleepSessionsInput = {
@@ -132866,6 +138738,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutSleepSessionsInput = {
@@ -132966,6 +138840,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSleepSessionsInput = {
@@ -133050,6 +138926,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutMoodLogsInput = {
@@ -133134,6 +139012,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutMoodLogsInput = {
@@ -133218,6 +139098,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutMoodLogsInput = {
@@ -133318,6 +139200,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutMoodLogsInput = {
@@ -133402,6 +139286,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutEnergyLogsInput = {
@@ -133486,6 +139372,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutEnergyLogsInput = {
@@ -133570,6 +139458,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutEnergyLogsInput = {
@@ -133670,6 +139560,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEnergyLogsInput = {
@@ -133754,6 +139646,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutWeatherLogsInput = {
@@ -133838,6 +139732,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWeatherLogsInput = {
@@ -133922,6 +139818,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWeatherLogsInput = {
@@ -134022,6 +139920,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWeatherLogsInput = {
@@ -134106,6 +140006,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutHealthMetricsInput = {
@@ -134190,6 +140092,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutHealthMetricsInput = {
@@ -134274,6 +140178,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutHealthMetricsInput = {
@@ -134374,6 +140280,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutHealthMetricsInput = {
@@ -134458,6 +140366,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutNutritionEntriesInput = {
@@ -134542,6 +140452,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutNutritionEntriesInput = {
@@ -134626,6 +140538,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutNutritionEntriesInput = {
@@ -134726,6 +140640,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutNutritionEntriesInput = {
@@ -134810,6 +140726,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutDailyScoresInput = {
@@ -134894,6 +140812,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDailyScoresInput = {
@@ -134978,6 +140898,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDailyScoresInput = {
@@ -135078,6 +141000,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDailyScoresInput = {
@@ -135162,6 +141086,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutDailyReflectionsInput = {
@@ -135246,6 +141172,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDailyReflectionsInput = {
@@ -135330,6 +141258,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDailyReflectionsInput = {
@@ -135430,6 +141360,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDailyReflectionsInput = {
@@ -135514,6 +141446,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutJournalEntriesInput = {
@@ -135598,6 +141532,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutJournalEntriesInput = {
@@ -135682,6 +141618,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutJournalEntriesInput = {
@@ -135828,6 +141766,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutJournalEntriesInput = {
@@ -135912,6 +141852,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type JournalEntryTagUpsertWithWhereUniqueWithoutEntryInput = {
@@ -136028,6 +141970,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutFocusSessionsInput = {
@@ -136112,6 +142056,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutFocusSessionsInput = {
@@ -136285,6 +142231,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFocusSessionsInput = {
@@ -136369,6 +142317,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type CategoryUpsertWithoutFocusSessionsInput = {
@@ -136514,6 +142464,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutBreaksInput = {
@@ -136598,6 +142550,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutBreaksInput = {
@@ -136749,6 +142703,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBreaksInput = {
@@ -136833,6 +142789,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type FocusSessionUpsertWithoutBreaksInput = {
@@ -136974,6 +142932,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutTimeEntriesInput = {
@@ -137058,6 +143018,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutTimeEntriesInput = {
@@ -137132,6 +143094,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -137140,6 +143103,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutHabitsInput
     category?: CategoryCreateNestedOneWithoutHabitsInput
+    dayTypeAssignments?: HabitDayTypeCreateNestedManyWithoutHabitInput
     logs?: HabitLogCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
@@ -137168,12 +143132,14 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
     completionRate?: number | null
     createdAt?: Date | string
     updatedAt?: Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutHabitInput
     logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
     overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
@@ -137201,12 +143167,14 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutGoalsInput
     project?: ProjectCreateNestedOneWithoutGoalsInput
     parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
     subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeCreateNestedManyWithoutGoalInput
     milestones?: MilestoneCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
     tags?: GoalTagCreateNestedManyWithoutGoalInput
@@ -137232,9 +143200,11 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    dayTypeAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutGoalInput
     milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
     progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
     tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
@@ -137339,6 +143309,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTimeEntriesInput = {
@@ -137423,6 +143395,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ProjectUpsertWithoutTimeEntriesInput = {
@@ -137509,6 +143483,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -137517,6 +143492,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
@@ -137545,12 +143521,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
@@ -137584,12 +143562,14 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -137615,9 +143595,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -137706,6 +143688,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutProductivityPatternsInput = {
@@ -137790,6 +143774,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutProductivityPatternsInput = {
@@ -137890,6 +143876,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutProductivityPatternsInput = {
@@ -137974,6 +143962,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutConnectionsInput = {
@@ -138058,6 +144048,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutConnectionsInput = {
@@ -138142,6 +144134,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutConnectionsInput = {
@@ -138231,6 +144225,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutFollowersInput = {
@@ -138315,6 +144311,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutFollowersInput = {
@@ -138415,6 +144413,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutConnectionsInput = {
@@ -138499,6 +144499,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserUpsertWithoutFollowersInput = {
@@ -138594,6 +144596,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFollowersInput = {
@@ -138678,6 +144682,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutChallengesInput = {
@@ -138762,6 +144768,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutChallengesInput = {
@@ -138846,6 +144854,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutChallengesInput = {
@@ -138972,6 +144982,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChallengesInput = {
@@ -139056,6 +145068,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type ChallengeParticipantUpsertWithWhereUniqueWithoutChallengeInput = {
@@ -139189,6 +145203,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutChallengeParticipationsInput = {
@@ -139273,6 +145289,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutChallengeParticipationsInput = {
@@ -139412,6 +145430,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutChallengeParticipationsInput = {
@@ -139496,6 +145516,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAutomationRulesInput = {
@@ -139580,6 +145602,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAutomationRulesInput = {
@@ -139664,6 +145688,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAutomationRulesInput = {
@@ -139764,6 +145790,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAutomationRulesInput = {
@@ -139848,6 +145876,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutLocationsInput = {
@@ -139932,6 +145962,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutLocationsInput = {
@@ -140016,6 +146048,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutLocationsInput = {
@@ -140116,6 +146150,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLocationsInput = {
@@ -140200,6 +146236,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutCalendarSyncsInput = {
@@ -140284,6 +146322,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutCalendarSyncsInput = {
@@ -140368,6 +146408,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutCalendarSyncsInput = {
@@ -140468,6 +146510,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCalendarSyncsInput = {
@@ -140552,6 +146596,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutStreakInput = {
@@ -140636,6 +146682,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutStreakInput = {
@@ -140720,6 +146768,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutStreakInput = {
@@ -140820,6 +146870,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutStreakInput = {
@@ -140904,6 +146956,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutStreakMilestonesInput = {
@@ -140988,6 +147042,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutStreakMilestonesInput = {
@@ -141072,6 +147128,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutStreakMilestonesInput = {
@@ -141172,6 +147230,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutStreakMilestonesInput = {
@@ -141256,6 +147316,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAchievementsInput = {
@@ -141340,6 +147402,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAchievementsInput = {
@@ -141424,6 +147488,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAchievementsInput = {
@@ -141524,6 +147590,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAchievementsInput = {
@@ -141608,6 +147676,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutWeeklyReviewsInput = {
@@ -141692,6 +147762,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutWeeklyReviewsInput = {
@@ -141776,6 +147848,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutWeeklyReviewsInput = {
@@ -141876,6 +147950,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutWeeklyReviewsInput = {
@@ -141960,6 +148036,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutMonthlyResetsInput = {
@@ -142044,6 +148122,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutMonthlyResetsInput = {
@@ -142128,6 +148208,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutMonthlyResetsInput = {
@@ -142228,6 +148310,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutMonthlyResetsInput = {
@@ -142312,6 +148396,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAiInsightsInput = {
@@ -142396,6 +148482,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAiInsightsInput = {
@@ -142480,6 +148568,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAiInsightsInput = {
@@ -142580,6 +148670,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAiInsightsInput = {
@@ -142664,6 +148756,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutTemplatesInput = {
@@ -142748,6 +148842,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutTemplatesInput = {
@@ -142832,6 +148928,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutTemplatesInput = {
@@ -142932,6 +149030,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutTemplatesInput = {
@@ -143016,6 +149116,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAttachmentsInput = {
@@ -143100,6 +149202,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAttachmentsInput = {
@@ -143184,6 +149288,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAttachmentsInput = {
@@ -143284,6 +149390,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAttachmentsInput = {
@@ -143368,6 +149476,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutNotificationLogsInput = {
@@ -143452,6 +149562,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutNotificationLogsInput = {
@@ -143536,6 +149648,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutNotificationLogsInput = {
@@ -143636,6 +149750,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutNotificationLogsInput = {
@@ -143720,6 +149836,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutPushSubscriptionsInput = {
@@ -143804,6 +149922,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutPushSubscriptionsInput = {
@@ -143888,6 +150008,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutPushSubscriptionsInput = {
@@ -143988,6 +150110,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutPushSubscriptionsInput = {
@@ -144072,6 +150196,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutIntegrationsInput = {
@@ -144156,6 +150282,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutIntegrationsInput = {
@@ -144240,6 +150368,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutIntegrationsInput = {
@@ -144340,6 +150470,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutIntegrationsInput = {
@@ -144424,6 +150556,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutDeviceSessionsInput = {
@@ -144508,6 +150642,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDeviceSessionsInput = {
@@ -144592,6 +150728,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDeviceSessionsInput = {
@@ -144692,6 +150830,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDeviceSessionsInput = {
@@ -144776,6 +150916,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutDataExportsInput = {
@@ -144860,6 +151002,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutDataExportsInput = {
@@ -144944,6 +151088,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutDataExportsInput = {
@@ -145044,6 +151190,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDataExportsInput = {
@@ -145128,6 +151276,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutAuditLogsInput = {
@@ -145212,6 +151362,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -145296,6 +151448,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -145396,6 +151550,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAuditLogsInput = {
@@ -145480,6 +151636,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutActivityLogsInput = {
@@ -145564,6 +151722,8 @@ export namespace Prisma {
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutActivityLogsInput = {
@@ -145648,6 +151808,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutActivityLogsInput = {
@@ -145748,6 +151910,8 @@ export namespace Prisma {
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutActivityLogsInput = {
@@ -145832,6 +151996,8 @@ export namespace Prisma {
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutFeedbackInput = {
@@ -145916,6 +152082,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutFeedbackInput = {
@@ -146000,6 +152168,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutFeedbackInput = {
@@ -146100,6 +152270,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFeedbackInput = {
@@ -146184,6 +152356,1388 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserCreateWithoutDayTypeDefinitionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionCreateNestedOneWithoutUserInput
+    quotes?: QuoteCreateNestedManyWithoutUserInput
+    categories?: CategoryCreateNestedManyWithoutUserInput
+    tags?: TagCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogCreateNestedManyWithoutUserInput
+    habits?: HabitCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateCreateNestedManyWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    projects?: ProjectCreateNestedManyWithoutUserInput
+    tasks?: TaskCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
+    breaks?: BreakCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightCreateNestedManyWithoutUserInput
+    streak?: StreakCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneCreateNestedManyWithoutUserInput
+    achievements?: AchievementCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetCreateNestedManyWithoutUserInput
+    challenges?: ChallengeCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantCreateNestedManyWithoutUserInput
+    connections?: UserConnectionCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleCreateNestedManyWithoutUserInput
+    locations?: LocationCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenCreateNestedManyWithoutUserInput
+    templates?: TemplateCreateNestedManyWithoutUserInput
+    attachments?: AttachmentCreateNestedManyWithoutUserInput
+    integrations?: IntegrationCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
+    dataExports?: DataExportCreateNestedManyWithoutUserInput
+    feedback?: FeedbackCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutDayTypeDefinitionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
+    quotes?: QuoteUncheckedCreateNestedManyWithoutUserInput
+    categories?: CategoryUncheckedCreateNestedManyWithoutUserInput
+    tags?: TagUncheckedCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockUncheckedCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogUncheckedCreateNestedManyWithoutUserInput
+    habits?: HabitUncheckedCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedCreateNestedManyWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
+    breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternUncheckedCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreUncheckedCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightUncheckedCreateNestedManyWithoutUserInput
+    streak?: StreakUncheckedCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneUncheckedCreateNestedManyWithoutUserInput
+    achievements?: AchievementUncheckedCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewUncheckedCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetUncheckedCreateNestedManyWithoutUserInput
+    challenges?: ChallengeUncheckedCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantUncheckedCreateNestedManyWithoutUserInput
+    connections?: UserConnectionUncheckedCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionUncheckedCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleUncheckedCreateNestedManyWithoutUserInput
+    locations?: LocationUncheckedCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncUncheckedCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogUncheckedCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogUncheckedCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutUserInput
+    attachments?: AttachmentUncheckedCreateNestedManyWithoutUserInput
+    integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
+    dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
+    feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutDayTypeDefinitionsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutDayTypeDefinitionsInput, UserUncheckedCreateWithoutDayTypeDefinitionsInput>
+  }
+
+  export type RoutineTemplateCreateWithoutDayTypeDefInput = {
+    id?: string
+    name: string
+    description?: string | null
+    dayType?: $Enums.DayType
+    isDefault?: boolean
+    color?: string | null
+    icon?: string | null
+    isActive?: boolean
+    archivedAt?: Date | string | null
+    estimatedDuration?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutRoutineTemplatesInput
+    blocks?: RoutineBlockCreateNestedManyWithoutTemplateInput
+    exceptions?: RoutineExceptionCreateNestedManyWithoutTemplateInput
+  }
+
+  export type RoutineTemplateUncheckedCreateWithoutDayTypeDefInput = {
+    id?: string
+    userId: string
+    name: string
+    description?: string | null
+    dayType?: $Enums.DayType
+    isDefault?: boolean
+    color?: string | null
+    icon?: string | null
+    isActive?: boolean
+    archivedAt?: Date | string | null
+    estimatedDuration?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    blocks?: RoutineBlockUncheckedCreateNestedManyWithoutTemplateInput
+    exceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutTemplateInput
+  }
+
+  export type RoutineTemplateCreateOrConnectWithoutDayTypeDefInput = {
+    where: RoutineTemplateWhereUniqueInput
+    create: XOR<RoutineTemplateCreateWithoutDayTypeDefInput, RoutineTemplateUncheckedCreateWithoutDayTypeDefInput>
+  }
+
+  export type RoutineTemplateCreateManyDayTypeDefInputEnvelope = {
+    data: RoutineTemplateCreateManyDayTypeDefInput | RoutineTemplateCreateManyDayTypeDefInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RoutineExceptionCreateWithoutDayTypeDefInput = {
+    id?: string
+    date: string
+    dayType: $Enums.DayType
+    note?: string | null
+    reason?: string | null
+    createdAt?: Date | string
+    user: UserCreateNestedOneWithoutRoutineExceptionsInput
+    template?: RoutineTemplateCreateNestedOneWithoutExceptionsInput
+  }
+
+  export type RoutineExceptionUncheckedCreateWithoutDayTypeDefInput = {
+    id?: string
+    userId: string
+    date: string
+    dayType: $Enums.DayType
+    templateId?: string | null
+    note?: string | null
+    reason?: string | null
+    createdAt?: Date | string
+  }
+
+  export type RoutineExceptionCreateOrConnectWithoutDayTypeDefInput = {
+    where: RoutineExceptionWhereUniqueInput
+    create: XOR<RoutineExceptionCreateWithoutDayTypeDefInput, RoutineExceptionUncheckedCreateWithoutDayTypeDefInput>
+  }
+
+  export type RoutineExceptionCreateManyDayTypeDefInputEnvelope = {
+    data: RoutineExceptionCreateManyDayTypeDefInput | RoutineExceptionCreateManyDayTypeDefInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type HabitDayTypeCreateWithoutDayTypeInput = {
+    id?: string
+    createdAt?: Date | string
+    habit: HabitCreateNestedOneWithoutDayTypeAssignmentsInput
+  }
+
+  export type HabitDayTypeUncheckedCreateWithoutDayTypeInput = {
+    id?: string
+    habitId: string
+    createdAt?: Date | string
+  }
+
+  export type HabitDayTypeCreateOrConnectWithoutDayTypeInput = {
+    where: HabitDayTypeWhereUniqueInput
+    create: XOR<HabitDayTypeCreateWithoutDayTypeInput, HabitDayTypeUncheckedCreateWithoutDayTypeInput>
+  }
+
+  export type HabitDayTypeCreateManyDayTypeInputEnvelope = {
+    data: HabitDayTypeCreateManyDayTypeInput | HabitDayTypeCreateManyDayTypeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type GoalDayTypeCreateWithoutDayTypeInput = {
+    id?: string
+    createdAt?: Date | string
+    goal: GoalCreateNestedOneWithoutDayTypeAssignmentsInput
+    user: UserCreateNestedOneWithoutGoalDayTypesInput
+  }
+
+  export type GoalDayTypeUncheckedCreateWithoutDayTypeInput = {
+    id?: string
+    goalId: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type GoalDayTypeCreateOrConnectWithoutDayTypeInput = {
+    where: GoalDayTypeWhereUniqueInput
+    create: XOR<GoalDayTypeCreateWithoutDayTypeInput, GoalDayTypeUncheckedCreateWithoutDayTypeInput>
+  }
+
+  export type GoalDayTypeCreateManyDayTypeInputEnvelope = {
+    data: GoalDayTypeCreateManyDayTypeInput | GoalDayTypeCreateManyDayTypeInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutDayTypeDefinitionsInput = {
+    update: XOR<UserUpdateWithoutDayTypeDefinitionsInput, UserUncheckedUpdateWithoutDayTypeDefinitionsInput>
+    create: XOR<UserCreateWithoutDayTypeDefinitionsInput, UserUncheckedCreateWithoutDayTypeDefinitionsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutDayTypeDefinitionsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutDayTypeDefinitionsInput, UserUncheckedUpdateWithoutDayTypeDefinitionsInput>
+  }
+
+  export type UserUpdateWithoutDayTypeDefinitionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUpdateManyWithoutUserNestedInput
+    categories?: CategoryUpdateManyWithoutUserNestedInput
+    tags?: TagUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUpdateManyWithoutUserNestedInput
+    habits?: HabitUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUpdateManyWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    projects?: ProjectUpdateManyWithoutUserNestedInput
+    tasks?: TaskUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
+    breaks?: BreakUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUpdateManyWithoutUserNestedInput
+    streak?: StreakUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUpdateManyWithoutUserNestedInput
+    locations?: LocationUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUpdateManyWithoutUserNestedInput
+    templates?: TemplateUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutDayTypeDefinitionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUncheckedUpdateManyWithoutUserNestedInput
+    categories?: CategoryUncheckedUpdateManyWithoutUserNestedInput
+    tags?: TagUncheckedUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUncheckedUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUncheckedUpdateManyWithoutUserNestedInput
+    habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedUpdateManyWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
+    breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUncheckedUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUncheckedUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUncheckedUpdateManyWithoutUserNestedInput
+    streak?: StreakUncheckedUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUncheckedUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUncheckedUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUncheckedUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUncheckedUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUncheckedUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUncheckedUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUncheckedUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUncheckedUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUncheckedUpdateManyWithoutUserNestedInput
+    locations?: LocationUncheckedUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUncheckedUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUncheckedUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUncheckedUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type RoutineTemplateUpsertWithWhereUniqueWithoutDayTypeDefInput = {
+    where: RoutineTemplateWhereUniqueInput
+    update: XOR<RoutineTemplateUpdateWithoutDayTypeDefInput, RoutineTemplateUncheckedUpdateWithoutDayTypeDefInput>
+    create: XOR<RoutineTemplateCreateWithoutDayTypeDefInput, RoutineTemplateUncheckedCreateWithoutDayTypeDefInput>
+  }
+
+  export type RoutineTemplateUpdateWithWhereUniqueWithoutDayTypeDefInput = {
+    where: RoutineTemplateWhereUniqueInput
+    data: XOR<RoutineTemplateUpdateWithoutDayTypeDefInput, RoutineTemplateUncheckedUpdateWithoutDayTypeDefInput>
+  }
+
+  export type RoutineTemplateUpdateManyWithWhereWithoutDayTypeDefInput = {
+    where: RoutineTemplateScalarWhereInput
+    data: XOR<RoutineTemplateUpdateManyMutationInput, RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefInput>
+  }
+
+  export type RoutineExceptionUpsertWithWhereUniqueWithoutDayTypeDefInput = {
+    where: RoutineExceptionWhereUniqueInput
+    update: XOR<RoutineExceptionUpdateWithoutDayTypeDefInput, RoutineExceptionUncheckedUpdateWithoutDayTypeDefInput>
+    create: XOR<RoutineExceptionCreateWithoutDayTypeDefInput, RoutineExceptionUncheckedCreateWithoutDayTypeDefInput>
+  }
+
+  export type RoutineExceptionUpdateWithWhereUniqueWithoutDayTypeDefInput = {
+    where: RoutineExceptionWhereUniqueInput
+    data: XOR<RoutineExceptionUpdateWithoutDayTypeDefInput, RoutineExceptionUncheckedUpdateWithoutDayTypeDefInput>
+  }
+
+  export type RoutineExceptionUpdateManyWithWhereWithoutDayTypeDefInput = {
+    where: RoutineExceptionScalarWhereInput
+    data: XOR<RoutineExceptionUpdateManyMutationInput, RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefInput>
+  }
+
+  export type HabitDayTypeUpsertWithWhereUniqueWithoutDayTypeInput = {
+    where: HabitDayTypeWhereUniqueInput
+    update: XOR<HabitDayTypeUpdateWithoutDayTypeInput, HabitDayTypeUncheckedUpdateWithoutDayTypeInput>
+    create: XOR<HabitDayTypeCreateWithoutDayTypeInput, HabitDayTypeUncheckedCreateWithoutDayTypeInput>
+  }
+
+  export type HabitDayTypeUpdateWithWhereUniqueWithoutDayTypeInput = {
+    where: HabitDayTypeWhereUniqueInput
+    data: XOR<HabitDayTypeUpdateWithoutDayTypeInput, HabitDayTypeUncheckedUpdateWithoutDayTypeInput>
+  }
+
+  export type HabitDayTypeUpdateManyWithWhereWithoutDayTypeInput = {
+    where: HabitDayTypeScalarWhereInput
+    data: XOR<HabitDayTypeUpdateManyMutationInput, HabitDayTypeUncheckedUpdateManyWithoutDayTypeInput>
+  }
+
+  export type GoalDayTypeUpsertWithWhereUniqueWithoutDayTypeInput = {
+    where: GoalDayTypeWhereUniqueInput
+    update: XOR<GoalDayTypeUpdateWithoutDayTypeInput, GoalDayTypeUncheckedUpdateWithoutDayTypeInput>
+    create: XOR<GoalDayTypeCreateWithoutDayTypeInput, GoalDayTypeUncheckedCreateWithoutDayTypeInput>
+  }
+
+  export type GoalDayTypeUpdateWithWhereUniqueWithoutDayTypeInput = {
+    where: GoalDayTypeWhereUniqueInput
+    data: XOR<GoalDayTypeUpdateWithoutDayTypeInput, GoalDayTypeUncheckedUpdateWithoutDayTypeInput>
+  }
+
+  export type GoalDayTypeUpdateManyWithWhereWithoutDayTypeInput = {
+    where: GoalDayTypeScalarWhereInput
+    data: XOR<GoalDayTypeUpdateManyMutationInput, GoalDayTypeUncheckedUpdateManyWithoutDayTypeInput>
+  }
+
+  export type HabitCreateWithoutDayTypeAssignmentsInput = {
+    id?: string
+    name: string
+    description?: string | null
+    tier?: $Enums.HabitTier
+    status?: $Enums.HabitStatus
+    color?: string | null
+    icon?: string | null
+    frequencyType: $Enums.HabitFrequencyType
+    frequencyValue?: string | null
+    targetCount?: number | null
+    startDate?: Date | string
+    endDate?: Date | string | null
+    archivedAt?: Date | string | null
+    reminderTime?: string | null
+    reminderEnabled?: boolean
+    points?: number | null
+    estimatedDuration?: number | null
+    difficulty?: number | null
+    isPublic?: boolean
+    appliesEveryDay?: boolean
+    streakCount?: number
+    longestStreak?: number
+    lastCompletedDate?: string | null
+    completionRate?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutHabitsInput
+    category?: CategoryCreateNestedOneWithoutHabitsInput
+    logs?: HabitLogCreateNestedManyWithoutHabitInput
+    overrides?: HabitOverrideCreateNestedManyWithoutHabitInput
+    minimumDayTemplates?: MinimumDayTemplateHabitCreateNestedManyWithoutHabitInput
+    tags?: HabitTagCreateNestedManyWithoutHabitInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutHabitInput
+  }
+
+  export type HabitUncheckedCreateWithoutDayTypeAssignmentsInput = {
+    id?: string
+    userId: string
+    name: string
+    description?: string | null
+    tier?: $Enums.HabitTier
+    status?: $Enums.HabitStatus
+    categoryId?: string | null
+    color?: string | null
+    icon?: string | null
+    frequencyType: $Enums.HabitFrequencyType
+    frequencyValue?: string | null
+    targetCount?: number | null
+    startDate?: Date | string
+    endDate?: Date | string | null
+    archivedAt?: Date | string | null
+    reminderTime?: string | null
+    reminderEnabled?: boolean
+    points?: number | null
+    estimatedDuration?: number | null
+    difficulty?: number | null
+    isPublic?: boolean
+    appliesEveryDay?: boolean
+    streakCount?: number
+    longestStreak?: number
+    lastCompletedDate?: string | null
+    completionRate?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    logs?: HabitLogUncheckedCreateNestedManyWithoutHabitInput
+    overrides?: HabitOverrideUncheckedCreateNestedManyWithoutHabitInput
+    minimumDayTemplates?: MinimumDayTemplateHabitUncheckedCreateNestedManyWithoutHabitInput
+    tags?: HabitTagUncheckedCreateNestedManyWithoutHabitInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutHabitInput
+  }
+
+  export type HabitCreateOrConnectWithoutDayTypeAssignmentsInput = {
+    where: HabitWhereUniqueInput
+    create: XOR<HabitCreateWithoutDayTypeAssignmentsInput, HabitUncheckedCreateWithoutDayTypeAssignmentsInput>
+  }
+
+  export type DayTypeDefinitionCreateWithoutHabitAssignmentsInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutDayTypeDefinitionsInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutDayTypeDefInput
+    goalAssignments?: GoalDayTypeCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUncheckedCreateWithoutHabitAssignmentsInput = {
+    id?: string
+    userId: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutDayTypeDefInput
+    goalAssignments?: GoalDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionCreateOrConnectWithoutHabitAssignmentsInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    create: XOR<DayTypeDefinitionCreateWithoutHabitAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutHabitAssignmentsInput>
+  }
+
+  export type HabitUpsertWithoutDayTypeAssignmentsInput = {
+    update: XOR<HabitUpdateWithoutDayTypeAssignmentsInput, HabitUncheckedUpdateWithoutDayTypeAssignmentsInput>
+    create: XOR<HabitCreateWithoutDayTypeAssignmentsInput, HabitUncheckedCreateWithoutDayTypeAssignmentsInput>
+    where?: HabitWhereInput
+  }
+
+  export type HabitUpdateToOneWithWhereWithoutDayTypeAssignmentsInput = {
+    where?: HabitWhereInput
+    data: XOR<HabitUpdateWithoutDayTypeAssignmentsInput, HabitUncheckedUpdateWithoutDayTypeAssignmentsInput>
+  }
+
+  export type HabitUpdateWithoutDayTypeAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    tier?: EnumHabitTierFieldUpdateOperationsInput | $Enums.HabitTier
+    status?: EnumHabitStatusFieldUpdateOperationsInput | $Enums.HabitStatus
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    frequencyType?: EnumHabitFrequencyTypeFieldUpdateOperationsInput | $Enums.HabitFrequencyType
+    frequencyValue?: NullableStringFieldUpdateOperationsInput | string | null
+    targetCount?: NullableIntFieldUpdateOperationsInput | number | null
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    reminderEnabled?: BoolFieldUpdateOperationsInput | boolean
+    points?: NullableFloatFieldUpdateOperationsInput | number | null
+    estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
+    difficulty?: NullableIntFieldUpdateOperationsInput | number | null
+    isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
+    streakCount?: IntFieldUpdateOperationsInput | number
+    longestStreak?: IntFieldUpdateOperationsInput | number
+    lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
+    completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutHabitsNestedInput
+    category?: CategoryUpdateOneWithoutHabitsNestedInput
+    logs?: HabitLogUpdateManyWithoutHabitNestedInput
+    overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
+    minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
+    tags?: HabitTagUpdateManyWithoutHabitNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutHabitNestedInput
+  }
+
+  export type HabitUncheckedUpdateWithoutDayTypeAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    tier?: EnumHabitTierFieldUpdateOperationsInput | $Enums.HabitTier
+    status?: EnumHabitStatusFieldUpdateOperationsInput | $Enums.HabitStatus
+    categoryId?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    frequencyType?: EnumHabitFrequencyTypeFieldUpdateOperationsInput | $Enums.HabitFrequencyType
+    frequencyValue?: NullableStringFieldUpdateOperationsInput | string | null
+    targetCount?: NullableIntFieldUpdateOperationsInput | number | null
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    reminderTime?: NullableStringFieldUpdateOperationsInput | string | null
+    reminderEnabled?: BoolFieldUpdateOperationsInput | boolean
+    points?: NullableFloatFieldUpdateOperationsInput | number | null
+    estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
+    difficulty?: NullableIntFieldUpdateOperationsInput | number | null
+    isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
+    streakCount?: IntFieldUpdateOperationsInput | number
+    longestStreak?: IntFieldUpdateOperationsInput | number
+    lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
+    completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
+    overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
+    minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
+    tags?: HabitTagUncheckedUpdateManyWithoutHabitNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutHabitNestedInput
+  }
+
+  export type DayTypeDefinitionUpsertWithoutHabitAssignmentsInput = {
+    update: XOR<DayTypeDefinitionUpdateWithoutHabitAssignmentsInput, DayTypeDefinitionUncheckedUpdateWithoutHabitAssignmentsInput>
+    create: XOR<DayTypeDefinitionCreateWithoutHabitAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutHabitAssignmentsInput>
+    where?: DayTypeDefinitionWhereInput
+  }
+
+  export type DayTypeDefinitionUpdateToOneWithWhereWithoutHabitAssignmentsInput = {
+    where?: DayTypeDefinitionWhereInput
+    data: XOR<DayTypeDefinitionUpdateWithoutHabitAssignmentsInput, DayTypeDefinitionUncheckedUpdateWithoutHabitAssignmentsInput>
+  }
+
+  export type DayTypeDefinitionUpdateWithoutHabitAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutDayTypeDefinitionsNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutDayTypeDefNestedInput
+    goalAssignments?: GoalDayTypeUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateWithoutHabitAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    goalAssignments?: GoalDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type GoalCreateWithoutDayTypeAssignmentsInput = {
+    id?: string
+    type: $Enums.GoalType
+    priority?: $Enums.GoalPriority
+    status?: $Enums.GoalStatus
+    title: string
+    description?: string | null
+    targetValue: number
+    currentValue?: number
+    unit?: string | null
+    startDate: Date | string
+    endDate: Date | string
+    completedAt?: Date | string | null
+    archivedAt?: Date | string | null
+    carriedOverFrom?: string | null
+    isPublic?: boolean
+    appliesEveryDay?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutGoalsInput
+    project?: ProjectCreateNestedOneWithoutGoalsInput
+    parentGoal?: GoalCreateNestedOneWithoutSubGoalsInput
+    subGoals?: GoalCreateNestedManyWithoutParentGoalInput
+    milestones?: MilestoneCreateNestedManyWithoutGoalInput
+    progressLogs?: GoalProgressCreateNestedManyWithoutGoalInput
+    tags?: GoalTagCreateNestedManyWithoutGoalInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutGoalInput
+    tasks?: TaskCreateNestedManyWithoutGoalInput
+  }
+
+  export type GoalUncheckedCreateWithoutDayTypeAssignmentsInput = {
+    id?: string
+    userId: string
+    projectId?: string | null
+    type: $Enums.GoalType
+    priority?: $Enums.GoalPriority
+    status?: $Enums.GoalStatus
+    title: string
+    description?: string | null
+    targetValue: number
+    currentValue?: number
+    unit?: string | null
+    startDate: Date | string
+    endDate: Date | string
+    completedAt?: Date | string | null
+    archivedAt?: Date | string | null
+    parentGoalId?: string | null
+    carriedOverFrom?: string | null
+    isPublic?: boolean
+    appliesEveryDay?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    subGoals?: GoalUncheckedCreateNestedManyWithoutParentGoalInput
+    milestones?: MilestoneUncheckedCreateNestedManyWithoutGoalInput
+    progressLogs?: GoalProgressUncheckedCreateNestedManyWithoutGoalInput
+    tags?: GoalTagUncheckedCreateNestedManyWithoutGoalInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutGoalInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutGoalInput
+  }
+
+  export type GoalCreateOrConnectWithoutDayTypeAssignmentsInput = {
+    where: GoalWhereUniqueInput
+    create: XOR<GoalCreateWithoutDayTypeAssignmentsInput, GoalUncheckedCreateWithoutDayTypeAssignmentsInput>
+  }
+
+  export type DayTypeDefinitionCreateWithoutGoalAssignmentsInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutDayTypeDefinitionsInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionUncheckedCreateWithoutGoalAssignmentsInput = {
+    id?: string
+    userId: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutDayTypeDefInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutDayTypeDefInput
+    habitAssignments?: HabitDayTypeUncheckedCreateNestedManyWithoutDayTypeInput
+  }
+
+  export type DayTypeDefinitionCreateOrConnectWithoutGoalAssignmentsInput = {
+    where: DayTypeDefinitionWhereUniqueInput
+    create: XOR<DayTypeDefinitionCreateWithoutGoalAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutGoalAssignmentsInput>
+  }
+
+  export type UserCreateWithoutGoalDayTypesInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionCreateNestedOneWithoutUserInput
+    quotes?: QuoteCreateNestedManyWithoutUserInput
+    categories?: CategoryCreateNestedManyWithoutUserInput
+    tags?: TagCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogCreateNestedManyWithoutUserInput
+    habits?: HabitCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateCreateNestedManyWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    projects?: ProjectCreateNestedManyWithoutUserInput
+    tasks?: TaskCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
+    breaks?: BreakCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightCreateNestedManyWithoutUserInput
+    streak?: StreakCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneCreateNestedManyWithoutUserInput
+    achievements?: AchievementCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetCreateNestedManyWithoutUserInput
+    challenges?: ChallengeCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantCreateNestedManyWithoutUserInput
+    connections?: UserConnectionCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleCreateNestedManyWithoutUserInput
+    locations?: LocationCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenCreateNestedManyWithoutUserInput
+    templates?: TemplateCreateNestedManyWithoutUserInput
+    attachments?: AttachmentCreateNestedManyWithoutUserInput
+    integrations?: IntegrationCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
+    dataExports?: DataExportCreateNestedManyWithoutUserInput
+    feedback?: FeedbackCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutGoalDayTypesInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
+    quotes?: QuoteUncheckedCreateNestedManyWithoutUserInput
+    categories?: CategoryUncheckedCreateNestedManyWithoutUserInput
+    tags?: TagUncheckedCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockUncheckedCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogUncheckedCreateNestedManyWithoutUserInput
+    habits?: HabitUncheckedCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedCreateNestedManyWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
+    weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
+    breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternUncheckedCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreUncheckedCreateNestedManyWithoutUserInput
+    aiInsights?: AIInsightUncheckedCreateNestedManyWithoutUserInput
+    streak?: StreakUncheckedCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneUncheckedCreateNestedManyWithoutUserInput
+    achievements?: AchievementUncheckedCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewUncheckedCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetUncheckedCreateNestedManyWithoutUserInput
+    challenges?: ChallengeUncheckedCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantUncheckedCreateNestedManyWithoutUserInput
+    connections?: UserConnectionUncheckedCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionUncheckedCreateNestedManyWithoutFollowingInput
+    automationRules?: AutomationRuleUncheckedCreateNestedManyWithoutUserInput
+    locations?: LocationUncheckedCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncUncheckedCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogUncheckedCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogUncheckedCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutUserInput
+    attachments?: AttachmentUncheckedCreateNestedManyWithoutUserInput
+    integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
+    dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
+    feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutGoalDayTypesInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutGoalDayTypesInput, UserUncheckedCreateWithoutGoalDayTypesInput>
+  }
+
+  export type GoalUpsertWithoutDayTypeAssignmentsInput = {
+    update: XOR<GoalUpdateWithoutDayTypeAssignmentsInput, GoalUncheckedUpdateWithoutDayTypeAssignmentsInput>
+    create: XOR<GoalCreateWithoutDayTypeAssignmentsInput, GoalUncheckedCreateWithoutDayTypeAssignmentsInput>
+    where?: GoalWhereInput
+  }
+
+  export type GoalUpdateToOneWithWhereWithoutDayTypeAssignmentsInput = {
+    where?: GoalWhereInput
+    data: XOR<GoalUpdateWithoutDayTypeAssignmentsInput, GoalUncheckedUpdateWithoutDayTypeAssignmentsInput>
+  }
+
+  export type GoalUpdateWithoutDayTypeAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: EnumGoalTypeFieldUpdateOperationsInput | $Enums.GoalType
+    priority?: EnumGoalPriorityFieldUpdateOperationsInput | $Enums.GoalPriority
+    status?: EnumGoalStatusFieldUpdateOperationsInput | $Enums.GoalStatus
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    targetValue?: FloatFieldUpdateOperationsInput | number
+    currentValue?: FloatFieldUpdateOperationsInput | number
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
+    isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutGoalsNestedInput
+    project?: ProjectUpdateOneWithoutGoalsNestedInput
+    parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
+    subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    milestones?: MilestoneUpdateManyWithoutGoalNestedInput
+    progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
+    tags?: GoalTagUpdateManyWithoutGoalNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutGoalNestedInput
+    tasks?: TaskUpdateManyWithoutGoalNestedInput
+  }
+
+  export type GoalUncheckedUpdateWithoutDayTypeAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: EnumGoalTypeFieldUpdateOperationsInput | $Enums.GoalType
+    priority?: EnumGoalPriorityFieldUpdateOperationsInput | $Enums.GoalPriority
+    status?: EnumGoalStatusFieldUpdateOperationsInput | $Enums.GoalStatus
+    title?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    targetValue?: FloatFieldUpdateOperationsInput | number
+    currentValue?: FloatFieldUpdateOperationsInput | number
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    startDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    endDate?: DateTimeFieldUpdateOperationsInput | Date | string
+    completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
+    carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
+    isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
+    progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
+    tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutGoalNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutGoalNestedInput
+  }
+
+  export type DayTypeDefinitionUpsertWithoutGoalAssignmentsInput = {
+    update: XOR<DayTypeDefinitionUpdateWithoutGoalAssignmentsInput, DayTypeDefinitionUncheckedUpdateWithoutGoalAssignmentsInput>
+    create: XOR<DayTypeDefinitionCreateWithoutGoalAssignmentsInput, DayTypeDefinitionUncheckedCreateWithoutGoalAssignmentsInput>
+    where?: DayTypeDefinitionWhereInput
+  }
+
+  export type DayTypeDefinitionUpdateToOneWithWhereWithoutGoalAssignmentsInput = {
+    where?: DayTypeDefinitionWhereInput
+    data: XOR<DayTypeDefinitionUpdateWithoutGoalAssignmentsInput, DayTypeDefinitionUncheckedUpdateWithoutGoalAssignmentsInput>
+  }
+
+  export type DayTypeDefinitionUpdateWithoutGoalAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutDayTypeDefinitionsNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateWithoutGoalAssignmentsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type UserUpsertWithoutGoalDayTypesInput = {
+    update: XOR<UserUpdateWithoutGoalDayTypesInput, UserUncheckedUpdateWithoutGoalDayTypesInput>
+    create: XOR<UserCreateWithoutGoalDayTypesInput, UserUncheckedCreateWithoutGoalDayTypesInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutGoalDayTypesInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutGoalDayTypesInput, UserUncheckedUpdateWithoutGoalDayTypesInput>
+  }
+
+  export type UserUpdateWithoutGoalDayTypesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUpdateManyWithoutUserNestedInput
+    categories?: CategoryUpdateManyWithoutUserNestedInput
+    tags?: TagUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUpdateManyWithoutUserNestedInput
+    habits?: HabitUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUpdateManyWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    projects?: ProjectUpdateManyWithoutUserNestedInput
+    tasks?: TaskUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
+    breaks?: BreakUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUpdateManyWithoutUserNestedInput
+    streak?: StreakUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUpdateManyWithoutUserNestedInput
+    locations?: LocationUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUpdateManyWithoutUserNestedInput
+    templates?: TemplateUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutGoalDayTypesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    quotes?: QuoteUncheckedUpdateManyWithoutUserNestedInput
+    categories?: CategoryUncheckedUpdateManyWithoutUserNestedInput
+    tags?: TagUncheckedUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUncheckedUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUncheckedUpdateManyWithoutUserNestedInput
+    habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedUpdateManyWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
+    weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
+    breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUncheckedUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUncheckedUpdateManyWithoutUserNestedInput
+    aiInsights?: AIInsightUncheckedUpdateManyWithoutUserNestedInput
+    streak?: StreakUncheckedUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUncheckedUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUncheckedUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUncheckedUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUncheckedUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUncheckedUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUncheckedUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUncheckedUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUncheckedUpdateManyWithoutFollowingNestedInput
+    automationRules?: AutomationRuleUncheckedUpdateManyWithoutUserNestedInput
+    locations?: LocationUncheckedUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUncheckedUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUncheckedUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUncheckedUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type UserCreateWithoutApiKeysInput = {
@@ -146268,6 +153822,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
     dataExports?: DataExportCreateNestedManyWithoutUserInput
     feedback?: FeedbackCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
   }
 
   export type UserUncheckedCreateWithoutApiKeysInput = {
@@ -146352,6 +153908,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
     dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
     feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
   }
 
   export type UserCreateOrConnectWithoutApiKeysInput = {
@@ -146452,6 +154010,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
     dataExports?: DataExportUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
   }
 
   export type UserUncheckedUpdateWithoutApiKeysInput = {
@@ -146536,6 +154096,8 @@ export namespace Prisma {
     deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
     dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
     feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type QuoteCreateManyUserInput = {
@@ -146578,6 +154140,7 @@ export namespace Prisma {
     name: string
     description?: string | null
     dayType?: $Enums.DayType
+    dayTypeId?: string | null
     isDefault?: boolean
     color?: string | null
     icon?: string | null
@@ -146612,6 +154175,7 @@ export namespace Prisma {
     id?: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId?: string | null
     templateId?: string | null
     note?: string | null
     reason?: string | null
@@ -146655,6 +154219,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -146718,6 +154283,7 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -147321,6 +154887,27 @@ export namespace Prisma {
     updatedAt?: Date | string
   }
 
+  export type DayTypeDefinitionCreateManyUserInput = {
+    id?: string
+    name: string
+    slug: string
+    description?: string | null
+    color?: string | null
+    icon?: string | null
+    isDefault?: boolean
+    isArchived?: boolean
+    sortOrder?: number
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type GoalDayTypeCreateManyUserInput = {
+    id?: string
+    goalId: string
+    dayTypeId: string
+    createdAt?: Date | string
+  }
+
   export type QuoteUpdateWithoutUserInput = {
     id?: StringFieldUpdateOperationsInput | string
     text?: StringFieldUpdateOperationsInput | string
@@ -147455,6 +155042,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineTemplatesNestedInput
     blocks?: RoutineBlockUpdateManyWithoutTemplateNestedInput
     exceptions?: RoutineExceptionUpdateManyWithoutTemplateNestedInput
   }
@@ -147464,6 +155052,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     isDefault?: BoolFieldUpdateOperationsInput | boolean
     color?: NullableStringFieldUpdateOperationsInput | string | null
     icon?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147481,6 +155070,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     isDefault?: BoolFieldUpdateOperationsInput | boolean
     color?: NullableStringFieldUpdateOperationsInput | string | null
     icon?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147560,6 +155150,7 @@ export namespace Prisma {
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineExceptionsNestedInput
     template?: RoutineTemplateUpdateOneWithoutExceptionsNestedInput
   }
 
@@ -147567,6 +155158,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     date?: StringFieldUpdateOperationsInput | string
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     templateId?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147577,6 +155169,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     date?: StringFieldUpdateOperationsInput | string
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     templateId?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147651,6 +155244,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147658,6 +155252,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     category?: CategoryUpdateOneWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
@@ -147686,12 +155281,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
@@ -147720,6 +155317,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -147857,11 +155455,13 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -147887,9 +155487,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -147915,6 +155517,7 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -149738,6 +157341,77 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type DayTypeDefinitionUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineTemplates?: RoutineTemplateUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefNestedInput
+    habitAssignments?: HabitDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+    goalAssignments?: GoalDayTypeUncheckedUpdateManyWithoutDayTypeNestedInput
+  }
+
+  export type DayTypeDefinitionUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    isArchived?: BoolFieldUpdateOperationsInput | boolean
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    goal?: GoalUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput
+    dayType?: DayTypeDefinitionUpdateOneRequiredWithoutGoalAssignmentsNestedInput
+  }
+
+  export type GoalDayTypeUncheckedUpdateWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    goalId?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyWithoutUserInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    goalId?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type HabitCreateManyCategoryInput = {
     id?: string
     userId: string
@@ -149759,6 +157433,7 @@ export namespace Prisma {
     estimatedDuration?: number | null
     difficulty?: number | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     streakCount?: number
     longestStreak?: number
     lastCompletedDate?: string | null
@@ -149847,6 +157522,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -149854,6 +157530,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutHabitsNestedInput
+    dayTypeAssignments?: HabitDayTypeUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUpdateManyWithoutHabitNestedInput
@@ -149882,12 +157559,14 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
     completionRate?: NullableFloatFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayTypeAssignments?: HabitDayTypeUncheckedUpdateManyWithoutHabitNestedInput
     logs?: HabitLogUncheckedUpdateManyWithoutHabitNestedInput
     overrides?: HabitOverrideUncheckedUpdateManyWithoutHabitNestedInput
     minimumDayTemplates?: MinimumDayTemplateHabitUncheckedUpdateManyWithoutHabitNestedInput
@@ -149916,6 +157595,7 @@ export namespace Prisma {
     estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
     difficulty?: NullableIntFieldUpdateOperationsInput | number | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     streakCount?: IntFieldUpdateOperationsInput | number
     longestStreak?: IntFieldUpdateOperationsInput | number
     lastCompletedDate?: NullableStringFieldUpdateOperationsInput | string | null
@@ -150219,6 +157899,7 @@ export namespace Prisma {
     userId: string
     date: string
     dayType: $Enums.DayType
+    dayTypeId?: string | null
     note?: string | null
     reason?: string | null
     createdAt?: Date | string
@@ -150294,6 +157975,7 @@ export namespace Prisma {
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineExceptionsNestedInput
+    dayTypeDef?: DayTypeDefinitionUpdateOneWithoutRoutineExceptionsNestedInput
   }
 
   export type RoutineExceptionUncheckedUpdateWithoutTemplateInput = {
@@ -150301,6 +157983,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     date?: StringFieldUpdateOperationsInput | string
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -150311,6 +157994,7 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     date?: StringFieldUpdateOperationsInput | string
     dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    dayTypeId?: NullableStringFieldUpdateOperationsInput | string | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -150380,6 +158064,12 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type HabitDayTypeCreateManyHabitInput = {
+    id?: string
+    dayTypeId: string
+    createdAt?: Date | string
+  }
+
   export type HabitLogCreateManyHabitInput = {
     id?: string
     userId: string
@@ -150433,6 +158123,24 @@ export namespace Prisma {
     tags?: string | null
     isAutomatic?: boolean
     createdAt?: Date | string
+  }
+
+  export type HabitDayTypeUpdateWithoutHabitInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayType?: DayTypeDefinitionUpdateOneRequiredWithoutHabitAssignmentsNestedInput
+  }
+
+  export type HabitDayTypeUncheckedUpdateWithoutHabitInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDayTypeUncheckedUpdateManyWithoutHabitInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type HabitLogUpdateWithoutHabitInput = {
@@ -150642,6 +158350,7 @@ export namespace Prisma {
     parentGoalId?: string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -150698,11 +158407,13 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     parentGoal?: GoalUpdateOneWithoutSubGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -150728,9 +158439,11 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -150756,6 +158469,7 @@ export namespace Prisma {
     parentGoalId?: NullableStringFieldUpdateOperationsInput | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -150894,8 +158608,16 @@ export namespace Prisma {
     archivedAt?: Date | string | null
     carriedOverFrom?: string | null
     isPublic?: boolean
+    appliesEveryDay?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
+  }
+
+  export type GoalDayTypeCreateManyGoalInput = {
+    id?: string
+    dayTypeId: string
+    userId: string
+    createdAt?: Date | string
   }
 
   export type MilestoneCreateManyGoalInput = {
@@ -150975,11 +158697,13 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutGoalsNestedInput
     project?: ProjectUpdateOneWithoutGoalsNestedInput
     subGoals?: GoalUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUpdateManyWithoutGoalNestedInput
@@ -151005,9 +158729,11 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     subGoals?: GoalUncheckedUpdateManyWithoutParentGoalNestedInput
+    dayTypeAssignments?: GoalDayTypeUncheckedUpdateManyWithoutGoalNestedInput
     milestones?: MilestoneUncheckedUpdateManyWithoutGoalNestedInput
     progressLogs?: GoalProgressUncheckedUpdateManyWithoutGoalNestedInput
     tags?: GoalTagUncheckedUpdateManyWithoutGoalNestedInput
@@ -151033,8 +158759,30 @@ export namespace Prisma {
     archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     carriedOverFrom?: NullableStringFieldUpdateOperationsInput | string | null
     isPublic?: BoolFieldUpdateOperationsInput | boolean
+    appliesEveryDay?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUpdateWithoutGoalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    dayType?: DayTypeDefinitionUpdateOneRequiredWithoutGoalAssignmentsNestedInput
+    user?: UserUpdateOneRequiredWithoutGoalDayTypesNestedInput
+  }
+
+  export type GoalDayTypeUncheckedUpdateWithoutGoalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyWithoutGoalInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    dayTypeId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type MilestoneUpdateWithoutGoalInput = {
@@ -151506,6 +159254,170 @@ export namespace Prisma {
     joinedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     progress?: FloatFieldUpdateOperationsInput | number
     rank?: NullableIntFieldUpdateOperationsInput | number | null
+  }
+
+  export type RoutineTemplateCreateManyDayTypeDefInput = {
+    id?: string
+    userId: string
+    name: string
+    description?: string | null
+    dayType?: $Enums.DayType
+    isDefault?: boolean
+    color?: string | null
+    icon?: string | null
+    isActive?: boolean
+    archivedAt?: Date | string | null
+    estimatedDuration?: number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RoutineExceptionCreateManyDayTypeDefInput = {
+    id?: string
+    userId: string
+    date: string
+    dayType: $Enums.DayType
+    templateId?: string | null
+    note?: string | null
+    reason?: string | null
+    createdAt?: Date | string
+  }
+
+  export type HabitDayTypeCreateManyDayTypeInput = {
+    id?: string
+    habitId: string
+    createdAt?: Date | string
+  }
+
+  export type GoalDayTypeCreateManyDayTypeInput = {
+    id?: string
+    goalId: string
+    userId: string
+    createdAt?: Date | string
+  }
+
+  export type RoutineTemplateUpdateWithoutDayTypeDefInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRoutineTemplatesNestedInput
+    blocks?: RoutineBlockUpdateManyWithoutTemplateNestedInput
+    exceptions?: RoutineExceptionUpdateManyWithoutTemplateNestedInput
+  }
+
+  export type RoutineTemplateUncheckedUpdateWithoutDayTypeDefInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    blocks?: RoutineBlockUncheckedUpdateManyWithoutTemplateNestedInput
+    exceptions?: RoutineExceptionUncheckedUpdateManyWithoutTemplateNestedInput
+  }
+
+  export type RoutineTemplateUncheckedUpdateManyWithoutDayTypeDefInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    isDefault?: BoolFieldUpdateOperationsInput | boolean
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    archivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    estimatedDuration?: NullableIntFieldUpdateOperationsInput | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RoutineExceptionUpdateWithoutDayTypeDefInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    date?: StringFieldUpdateOperationsInput | string
+    dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRoutineExceptionsNestedInput
+    template?: RoutineTemplateUpdateOneWithoutExceptionsNestedInput
+  }
+
+  export type RoutineExceptionUncheckedUpdateWithoutDayTypeDefInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    date?: StringFieldUpdateOperationsInput | string
+    dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    templateId?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RoutineExceptionUncheckedUpdateManyWithoutDayTypeDefInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    date?: StringFieldUpdateOperationsInput | string
+    dayType?: EnumDayTypeFieldUpdateOperationsInput | $Enums.DayType
+    templateId?: NullableStringFieldUpdateOperationsInput | string | null
+    note?: NullableStringFieldUpdateOperationsInput | string | null
+    reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDayTypeUpdateWithoutDayTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    habit?: HabitUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput
+  }
+
+  export type HabitDayTypeUncheckedUpdateWithoutDayTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    habitId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDayTypeUncheckedUpdateManyWithoutDayTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    habitId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUpdateWithoutDayTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    goal?: GoalUpdateOneRequiredWithoutDayTypeAssignmentsNestedInput
+    user?: UserUpdateOneRequiredWithoutGoalDayTypesNestedInput
+  }
+
+  export type GoalDayTypeUncheckedUpdateWithoutDayTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    goalId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type GoalDayTypeUncheckedUpdateManyWithoutDayTypeInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    goalId?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
 

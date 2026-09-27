@@ -1,6 +1,5 @@
-import type { User, UserSettings } from '@prisma/client';
+import type { User, UserSettings } from '@/generated/prisma';
 import { z } from 'zod';
-import prisma from '@/lib/prisma';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
@@ -210,17 +209,7 @@ export class UserService {
     const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 100);
     const term = query.trim();
 
-    const users = await prisma.user.findMany({
-      where: {
-        isDeleted: false,
-        OR: [
-          { name: { contains: term, mode: 'insensitive' } },
-          { displayName: { contains: term, mode: 'insensitive' } },
-          { email: { contains: term, mode: 'insensitive' } },
-        ],
-      },
-      take: safeLimit,
-    });
+    const users = await this.userRepository.search(term, safeLimit);
 
     return users.map(toSafeUser);
   }
@@ -234,10 +223,7 @@ export class UserService {
       throw new Error('User not found');
     }
 
-    const sessions = await prisma.deviceSession.findMany({
-      where: { userId },
-      orderBy: { lastActiveAt: 'desc' },
-    });
+    const sessions = await this.userRepository.listDeviceSessions(userId);
 
     const now = Date.now();
     return sessions.map((s) => ({
@@ -264,16 +250,12 @@ export class UserService {
       throw new Error('User not found');
     }
 
-    const session = await prisma.deviceSession.findUnique({
-        where: { id: sessionId },
-      });
+    const session = await this.userRepository.findDeviceSessionById(sessionId);
     if (!session || session.userId !== userId) {
       throw new Error('Session not found');
     }
 
-    await prisma.deviceSession.delete({
-      where: { id: sessionId },
-    });
+    await this.userRepository.deleteDeviceSession(sessionId);
 
     return { success: true, message: 'Session revoked' };
   }
@@ -332,3 +314,4 @@ export class UserService {
 }
 
 export const userService = new UserService();
+

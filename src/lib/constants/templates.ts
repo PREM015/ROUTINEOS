@@ -1,4 +1,4 @@
-import type { TemplateType } from '@prisma/client';
+import type { TemplateType } from '@/generated/prisma';
 import type { DefaultRoutineBlock } from '../../constants/routine';
 
 /**

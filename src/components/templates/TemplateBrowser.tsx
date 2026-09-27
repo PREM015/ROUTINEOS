@@ -11,7 +11,7 @@
  */
 import * as React from 'react';
 import { Search, Sparkles } from 'lucide-react';
-import type { Template, TemplateType } from '@prisma/client';
+import type { Template, TemplateType } from '@/generated/prisma';
 import { DEFAULT_TEMPLATES } from '@/lib/constants/templates';
 import { apiRequest } from '@/lib/api-client';
 import { EmptyState, Input, Spinner } from '@/components/ui';
@@ -77,7 +77,7 @@ export default function TemplateBrowser({ onApplied, className }: TemplateBrowse
     });
   }, [templates, category, search]);
 
-  const useTemplate = async (template: TemplateCardData) => {
+  const applyTemplate = async (template: TemplateCardData) => {
     if (applyingId) return;
     setApplyingId(template.id);
     setApplied(null);
@@ -157,7 +157,7 @@ export default function TemplateBrowser({ onApplied, className }: TemplateBrowse
             <TemplateCard
               key={template.id}
               template={template}
-              onUse={(t) => void useTemplate(t)}
+              onUse={(t) => void applyTemplate(t)}
               onPreview={setPreview}
             />
           ))}
@@ -170,7 +170,7 @@ export default function TemplateBrowser({ onApplied, className }: TemplateBrowse
           if (!next) setPreview(null);
         }}
         template={preview}
-        onUse={(template) => void useTemplate(template)}
+        onUse={(template) => void applyTemplate(template)}
       />
     </div>
   );

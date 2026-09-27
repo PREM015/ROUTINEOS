@@ -1,4 +1,4 @@
-import type { HealthMetric, Prisma } from '@prisma/client';
+import type { HealthMetric, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

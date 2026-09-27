@@ -1,4 +1,4 @@
-import type { Prisma, SleepLog } from '@prisma/client';
+import type { Prisma, SleepLog } from '@/generated/prisma';
 import { format, parseISO, subDays } from 'date-fns';
 import { SleepRepository } from '../repositories/sleep.repository';
 import { UserRepository } from '../repositories/user.repository';
@@ -107,13 +107,57 @@ export class SleepService {
     };
   }
 
+  /**
+   * Average duration across the days that actually recorded one.
+   *
+   * Days with no `actualDurationMinutes` are excluded from both numerator and
+   * denominator — dividing by every logged day (as this used to) under-reports
+   * the average whenever a night was missed.
+   */
   async getSleepStats(userId: string, startDate: string, endDate: string) {
     const logs = await this.sleepRepository.findByRange(userId, startDate, endDate);
-    if (!logs.length) return null;
+    const valid = logs.filter((l) => l.actualDurationMinutes !== null);
+    if (valid.length === 0) return null;
 
-    const avgDuration =
-      logs.reduce((acc, l) => acc + (l.actualDurationMinutes || 0), 0) / logs.length;
-    return { avgDuration, logsCount: logs.length };
+    const total = valid.reduce((acc, l) => acc + (l.actualDurationMinutes || 0), 0);
+    return { avgDuration: total / valid.length, logsCount: valid.length };
+  }
+
+  /**
+   * Sleep logs for a date range plus the summary shown alongside them.
+   *
+   * This is the single implementation of the sleep-history summary;
+   * `/api/sleep/history` used to compute its own, slightly different version
+   * inline (and divided by all logged days rather than only the ones with a
+   * recorded duration).
+   */
+  async getSleepHistory(userId: string, startDate: string, endDate: string) {
+    const logs = await this.sleepRepository.findByRange(userId, startDate, endDate);
+
+    const validLogs = logs.filter((l) => l.actualDurationMinutes !== null);
+    const qualityLogs = logs.filter((l) => l.quality !== null && l.quality !== undefined);
+
+    const summary = {
+      totalDays: logs.length,
+      averageDuration:
+        validLogs.length > 0
+          ? Math.round(
+              validLogs.reduce((sum, l) => sum + (l.actualDurationMinutes || 0), 0) /
+                validLogs.length
+            )
+          : 0,
+      averageQuality:
+        qualityLogs.length > 0
+          ? Math.round(
+              (qualityLogs.reduce((sum, l) => sum + (l.quality || 0), 0) /
+                qualityLogs.length) * 100
+            ) / 100
+          : null,
+      totalDeficit: validLogs.reduce((sum, l) => sum + (l.deficitMinutes || 0), 0),
+      daysRested: logs.filter((l) => l.feltRested).length,
+    };
+
+    return { logs, summary };
   }
 
   async detectConflicts(_userId: string, _sleepStart: string, _sleepEnd: string) {

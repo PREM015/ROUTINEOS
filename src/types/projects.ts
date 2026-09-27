@@ -11,7 +11,7 @@ import type {
   GoalPriority,
   TaskStatus,
   TaskPriority,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Project & Task Management Types

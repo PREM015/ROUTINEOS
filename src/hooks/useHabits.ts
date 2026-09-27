@@ -9,7 +9,7 @@ import type {
   LogHabitData,
   TodayHabitItem,
 } from '@/store/habits.store';
-import type { HabitLog } from '@prisma/client';
+import type { HabitLog } from '@/generated/prisma';
 import type { CreateHabitInput, UpdateHabitInput } from '@/schemas/habit.schema';
 
 /**

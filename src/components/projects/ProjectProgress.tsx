@@ -9,7 +9,7 @@
  *   <ProjectProgress project={project} milestones={milestones} goals={projectGoals} />
  */
 import { CircleCheck, Circle, Flag, FolderKanban, Target } from 'lucide-react';
-import type { Milestone, Goal } from '@prisma/client';
+import type { Milestone, Goal } from '@/generated/prisma';
 import type { ProjectItem } from '@/store/projects.store';
 import { formatDate, getPercentageColor } from '@/lib/utils';
 import { Badge, Card, Progress } from '@/components/ui';

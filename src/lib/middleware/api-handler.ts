@@ -1,23 +1,32 @@
 import { NextRequest } from 'next/server';
+import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { ZodSchema } from 'zod';
 import { handleApiError } from '@/lib/errors/error-handler';
 import { apiSuccess } from '@/lib/api-response';
 import { AuthError } from '@/lib/errors/app-error';
 
-type ApiHandlerOptions = {
+type ApiHandlerOptions<Body> = {
   requireAuth?: boolean;
   requireAdmin?: boolean;
-  validateBody?: ZodSchema;
+  validateBody?: ZodSchema<Body>;
 };
 
-type ApiHandlerFunction<T = any> = (
+/** Next.js App Router dynamic-route params (`{ id: string }` and friends). */
+export type RouteParams = Record<string, string | string[] | undefined>;
+
+/** `auth()` returns null when the caller is anonymous. */
+type AuthenticatedSession = Session | null;
+
+type ApiHandlerContext<Body> = {
+  session: AuthenticatedSession;
+  body: Body;
+  params: RouteParams | undefined;
+};
+
+type ApiHandlerFunction<T, Body> = (
   req: NextRequest,
-  context: {
-    session: any;
-    body?: any;
-    params?: any;
-  }
+  context: ApiHandlerContext<Body>
 ) => Promise<T>;
 
 /**
@@ -27,16 +36,15 @@ type ApiHandlerFunction<T = any> = (
  * - Error handling
  * - Response wrapping
  */
-export function createApiHandler<T = any>(
-  handler: ApiHandlerFunction<T>,
-  options: ApiHandlerOptions = {}
+export function createApiHandler<T, Body = void>(
+  handler: ApiHandlerFunction<T, Body>,
+  options: ApiHandlerOptions<Body> = {}
 ) {
-  return async (req: NextRequest, { params }: { params?: any } = {}) => {
+  return async (req: NextRequest, { params }: { params?: RouteParams | Promise<RouteParams> } = {}) => {
     try {
       // Authentication
-      const session = options.requireAuth || options.requireAdmin 
-        ? await auth()
-        : null;
+      const session: AuthenticatedSession =
+        options.requireAuth || options.requireAdmin ? await auth() : null;
 
       if (options.requireAuth && !session?.user?.id) {
         throw new AuthError('You must be logged in to access this resource');
@@ -46,10 +54,11 @@ export function createApiHandler<T = any>(
         throw new AuthError('Admin access required');
       }
 
-      // Body validation
-      let body;
+      // Body validation. Without a schema there is nothing to parse, so the
+      // body stays undefined rather than reading an unread stream.
+      let body: Body = undefined as Body;
       if (options.validateBody && ['POST', 'PUT', 'PATCH'].includes(req.method || '')) {
-        const json = await req.json();
+        const json: unknown = await req.json();
         body = options.validateBody.parse(json);
       }
 
@@ -69,13 +78,19 @@ export function createApiHandler<T = any>(
 /**
  * Shorthand for authenticated routes
  */
-export function createAuthHandler<T = any>(handler: ApiHandlerFunction<T>, validateBody?: ZodSchema) {
+export function createAuthHandler<T, Body = void>(
+  handler: ApiHandlerFunction<T, Body>,
+  validateBody?: ZodSchema<Body>
+) {
   return createApiHandler(handler, { requireAuth: true, validateBody });
 }
 
 /**
  * Shorthand for admin-only routes
  */
-export function createAdminHandler<T = any>(handler: ApiHandlerFunction<T>, validateBody?: ZodSchema) {
+export function createAdminHandler<T, Body = void>(
+  handler: ApiHandlerFunction<T, Body>,
+  validateBody?: ZodSchema<Body>
+) {
   return createApiHandler(handler, { requireAdmin: true, validateBody });
 }

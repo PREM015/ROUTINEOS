@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
-import { importHabits, importGoals } from '@/server/data/importer';
+import { importService } from '@/server/services/import.service';
 import { importPayloadSchema } from '@/lib/validation/import.schema';
-
-const inactive = new Set(['projects', 'tasks', 'journalEntries', 'sleepLogs']);
 
 /**
  * POST /api/import
@@ -16,12 +13,8 @@ const inactive = new Set(['projects', 'tasks', 'journalEntries', 'sleepLogs']);
  *   - authenticates via the shared auth() session guard;
  *   - validates the whole body with the shared zod schema and rejects with
  *     400 + flattened details on mismatch (never persists unvalidated data);
- *   - delegates persistence to the importer's two real entry points —
- *     `importHabits` + `importGoals` — the only collections the importer
- *     genuinely materializes (upsert by natural key, scoped to the user);
- *   - counts *skipped* from the validated payload itself: the collections
- *     present-but-not-persisted (projects/tasks/journal/sleep) become a real
- *     number, never fabricated, never silently dropped;
+ *   - delegates persistence to ImportService, which owns the Prisma client
+ *     handle the importer needs and reports imported/skipped counts;
  *   - responds with the standard `{ success: true, data }` envelope.
  *
  * Import is entity-merge, never wipe: nothing is ever deleted.
@@ -42,26 +35,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let imported = 0;
-    imported += await importHabits(
+    const result = await importService.importUserData(
       session.user.id,
-      validated.data.habits ?? [],
-      prisma
-    );
-    imported += await importGoals(
-      session.user.id,
-      validated.data.goals ?? [],
-      prisma
+      validated.data
     );
 
-    // Collections the importer does not persist, counted from the validated
-    // payload so skipped is always a real number.
-    const skipped = [...inactive].reduce((total, key) => {
-      const entries = validated.data[key as keyof typeof validated.data];
-      return total + (Array.isArray(entries) ? entries.length : 0);
-    }, 0);
-
-    return NextResponse.json({ success: true, data: { imported, skipped } });
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Import failed:', error);
     return NextResponse.json(

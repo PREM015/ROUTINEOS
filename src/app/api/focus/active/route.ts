@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth';
-import { FocusRepository } from '@/server/repositories/focus.repository';
-import { getFocusSessionStatus } from '@/types/focus';
+import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
 
 /**
@@ -14,29 +13,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const repository = new FocusRepository();
-    const active = await repository.findActiveByUserId(session.user.id);
+    const data = await focusService.getActiveSession(session.user.id);
 
-    if (!active) {
-      return NextResponse.json({ success: true, data: null });
-    }
-
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-
-    // Only sessions started today count as the "current" active session
-    if (active.startedAt < startOfToday || active.startedAt >= endOfToday) {
-      return NextResponse.json({ success: true, data: null });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...active,
-        status: getFocusSessionStatus(active),
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching active focus session:', error);
     return NextResponse.json(

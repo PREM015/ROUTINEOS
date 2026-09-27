@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@/generated/prisma';
 
 export async function getHabitsNeedingReminder(
   userId: string,
@@ -25,3 +25,4 @@ export async function markReminderSent(habitId: string, date: string, db: Prisma
     data: { habitId, date, sentAt: new Date() }
   });
 }
+

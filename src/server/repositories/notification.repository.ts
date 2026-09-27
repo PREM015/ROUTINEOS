@@ -1,5 +1,5 @@
-import type { NotificationLog, Prisma, NotificationType } from '@prisma/client';
-import { NotificationStatus } from '@prisma/client';
+import type { NotificationLog, Prisma, NotificationType } from '@/generated/prisma';
+import { NotificationStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

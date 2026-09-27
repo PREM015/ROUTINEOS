@@ -6,7 +6,7 @@ import type {
   NutritionEntry,
   SleepLog,
   WeatherCondition,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Wellness & Health Tracking Types

@@ -24,7 +24,7 @@ import AddHabitModal from '@/components/habits/AddHabitModal';
 import { runAchievementCheck } from '@/store/achievement.store';
 import { cn } from '@/lib/utils';
 import { EASE } from '@/lib/motion';
-import type { HabitTier, HabitLogStatus } from '@prisma/client';
+import type { HabitTier, HabitLogStatus } from '@/generated/prisma';
 import { HABIT_TIER_CONFIG, HABIT_TIERS_ORDERED } from '@/constants/habit-tiers';
 
 interface TodayHabit {

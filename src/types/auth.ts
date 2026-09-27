@@ -1,4 +1,4 @@
-import type { User, Role, DeviceType } from '@prisma/client';
+import type { User, Role, DeviceType } from '@/generated/prisma';
 
 /**
  * Authentication and Authorization Types

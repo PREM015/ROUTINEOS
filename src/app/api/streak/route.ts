@@ -1,6 +1,8 @@
 import { auth } from '@/lib/auth';
-import { StreakRepository } from '@/server/repositories/streak.repository';
+import { AchievementService } from '@/server/services/achievement.service';
 import { NextRequest, NextResponse } from 'next/server';
+
+const achievementService = new AchievementService();
 
 /**
  * GET /api/streak
@@ -13,26 +15,9 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const streakRepository = new StreakRepository();
-    let streak = await streakRepository.findByUserId(session.user.id);
+    const data = await achievementService.getStreakWithMilestones(session.user.id);
 
-    // Create streak if doesn't exist
-    if (!streak) {
-      streak = await streakRepository.create(session.user.id);
-    }
-
-    // Get uncelebrated milestones
-    const milestones = await streakRepository.getUncelebratedMilestones(
-      session.user.id
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...streak,
-        uncelebratedMilestones: milestones,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching streak:', error);
     return NextResponse.json(

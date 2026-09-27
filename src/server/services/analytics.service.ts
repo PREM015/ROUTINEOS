@@ -1,4 +1,4 @@
-import type { HabitTier } from '@prisma/client';
+import type { HabitTier } from '@/generated/prisma';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';

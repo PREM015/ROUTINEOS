@@ -1,6 +1,5 @@
 import type { NextRequest } from 'next/server';
 import type { ZodSchema } from 'zod';
-import { ZodError } from 'zod';
 import { ValidationError } from '@/lib/errors/app-error';
 
 /**
@@ -15,10 +14,20 @@ import { ValidationError } from '@/lib/errors/app-error';
 export function validateBody<T>(schema: ZodSchema<T>, body: unknown): T {
   const result = schema.safeParse(body);
   if (!result.success) {
-    throw new ValidationError(
-      'Validation failed',
-      (result.error as ZodError).flatten()
+    const { formErrors, fieldErrors } = result.error.flatten();
+
+    // `fieldErrors` is `Record<string, string[] | undefined>`; `undefined`
+    // entries would be dropped by `JSON.stringify` anyway, so they are
+    // filtered out here to keep the payload an honest, serialisable structure.
+    const fields: Record<string, string[]> = {};
+    const entries = Object.entries(
+      fieldErrors as Record<string, string[] | undefined>
     );
+    for (const [field, messages] of entries) {
+      if (messages) fields[field] = [...messages];
+    }
+
+    throw new ValidationError('Validation failed', { formErrors, fieldErrors: fields });
   }
   return result.data;
 }

@@ -1,20 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { QuoteService, FALLBACK_QUOTE } from '@/server/services/quote.service';
 import { z } from 'zod';
 
-const DEFAULT_QUOTES = [
-  { text: 'The secret of getting ahead is getting started.', author: 'Mark Twain' },
-  { text: 'Small steps every day create a life you can be proud of.', author: 'Daily Progress' },
-  { text: 'You do not need to be perfect. You only need to keep showing up.', author: 'RoutineOS' },
-  { text: 'Consistency compounds quietly, but it changes everything.', author: 'Momentum' },
-];
-
-const FALLBACK_QUOTE = {
-  id: 'default',
-  text: 'The secret of getting ahead is getting started.',
-  author: 'Mark Twain',
-};
+const quoteService = new QuoteService();
 
 const randomQuerySchema = z.object({
   exclude: z.string().min(1).optional(),
@@ -47,39 +36,15 @@ export async function GET(request: Request) {
       );
     }
 
-    const { exclude, scope } = validated.data;
-    const userId = session.user.id;
-
-    const where =
-      scope === 'mine'
-        ? { userId }
-        : {
-            OR: [{ userId }, { isPublic: true }],
-          };
-
-    const quotes = await prisma.quote.findMany({
-      where,
-      select: { id: true, text: true, author: true },
+    const pick = await quoteService.getRandomQuote(session.user.id, {
+      exclude: validated.data.exclude,
+      scope: validated.data.scope,
     });
 
-    const pool = exclude ? quotes.filter((q) => q.id !== exclude) : quotes;
-    // If excluding emptied a non-empty pool, allow the excluded one again
-    // rather than repeating nothing.
-    const effective = pool.length > 0 ? pool : quotes;
-
-    if (effective.length === 0) {
-      const fallback = DEFAULT_QUOTES[Math.floor(Math.random() * DEFAULT_QUOTES.length)] ?? FALLBACK_QUOTE;
-      return NextResponse.json({
-        success: true,
-        data: { id: 'default', ...fallback },
-      });
-    }
-
-    const pick = effective[Math.floor(Math.random() * effective.length)] ?? FALLBACK_QUOTE;
-
     return NextResponse.json({ success: true, data: pick });
-  } catch (error) {
-    console.error('Error fetching random quote:', error);
+  } catch {
+    // Never surface an error to the widget — it is decorative.
+    console.error('Error fetching random quote');
     return NextResponse.json({ success: true, data: FALLBACK_QUOTE });
   }
 }

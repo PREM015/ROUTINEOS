@@ -5,10 +5,11 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   label?: string;
   error?: string;
   options: { value: string; label: string }[];
+  placeholder?: string;
 }
 
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className = '', label, error, options, ...props }, ref) => {
+  ({ className = '', label, error, options, placeholder, ...props }, ref) => {
     return (
       <div className="w-full">
         {label && <label className="block text-sm font-medium text-foreground mb-1.5">{label}</label>}
@@ -17,6 +18,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           {...props}
         >
+          {placeholder && <option value="" disabled>{placeholder}</option>}
           {options.map(opt => <option key={opt.value} value={opt.value} className="bg-card">{opt.label}</option>)}
         </select>
         {error && <p className="mt-1.5 text-sm text-destructive">{error}</p>}

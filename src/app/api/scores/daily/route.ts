@@ -1,7 +1,9 @@
 import { auth } from '@/lib/auth';
-import { ScoreRepository } from '@/server/repositories/score.repository';
+import { ScoringService } from '@/server/services/scoring.service';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
+
+const scoringService = new ScoringService();
 
 const dateRangeSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -31,8 +33,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const scoreRepository = new ScoreRepository();
-    const scores = await scoreRepository.findByRange(
+    const scores = await scoringService.getDailyScoreRange(
       session.user.id,
       validated.data.startDate,
       validated.data.endDate

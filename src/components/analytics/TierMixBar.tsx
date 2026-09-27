@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import type { AnalyticsTierMix } from '@/types/analytics';
-import type { HabitTier } from '@prisma/client';
+import type { HabitTier } from '@/generated/prisma';
 
 interface TierMixBarProps {
   tierMix: AnalyticsTierMix[];

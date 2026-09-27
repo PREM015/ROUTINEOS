@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/api-client';
 import HabitScheduleEditor from '@/components/habits/HabitScheduleEditor';
 import HabitHistory from '@/components/habits/HabitHistory';
 import HabitFrictionCard from '@/components/habits/HabitFrictionCard';
@@ -57,6 +58,12 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    setHabit(initialHabit);
+    setEditName(initialHabit.name);
+    setEditDescription(initialHabit.description ?? '');
+  }, [initialHabit]);
 
   // ── Inline save ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -124,7 +131,7 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
     setActionLoading('delete');
     setError(null);
     try {
-      const res = await fetch(`/api/habits/${habit.id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/habits/${habit.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete habit');
       router.push('/habits');
     } catch (err) {

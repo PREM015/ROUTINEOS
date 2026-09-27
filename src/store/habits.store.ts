@@ -10,7 +10,7 @@
 
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
-import type { Habit, Category, Tag, HabitLog, HabitLogStatus } from '@prisma/client';
+import type { Habit, Category, Tag, HabitLog, HabitLogStatus } from '@/generated/prisma';
 import type {
   CreateHabitInput,
   HabitQueryParams,

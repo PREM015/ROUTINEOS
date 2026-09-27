@@ -6,7 +6,7 @@
  * payloads consumers (notification, email, UI) need. No DB access.
  */
 
-import type { AchievementType } from '@prisma/client';
+import type { AchievementType } from '@/generated/prisma';
 import type {
   AchievementCategory,
   AchievementDefinitionConfig,

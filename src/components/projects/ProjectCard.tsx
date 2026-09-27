@@ -8,7 +8,7 @@
  *   <ProjectCard project={project} onSelect={() => open(project.id)} />
  */
 import { CalendarDays, CheckSquare, Target } from 'lucide-react';
-import type { ProjectStatus } from '@prisma/client';
+import type { ProjectStatus } from '@/generated/prisma';
 import type { ProjectItem } from '@/store/projects.store';
 import { formatDate, getPercentageColor } from '@/lib/utils';
 import { Badge, Card, Progress } from '@/components/ui';

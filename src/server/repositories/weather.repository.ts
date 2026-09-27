@@ -1,4 +1,4 @@
-import type { WeatherLog, WeatherCondition, Prisma } from '@prisma/client';
+import type { WeatherLog, WeatherCondition, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

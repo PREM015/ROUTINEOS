@@ -11,7 +11,7 @@
  *   <TagManager />
  */
 import { useEffect, useState } from 'react';
-import type { Tag } from '@prisma/client';
+import type { Tag } from '@/generated/prisma';
 import { Plus, Tags } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { Button, Card, EmptyState, Input, Spinner } from '@/components/ui';

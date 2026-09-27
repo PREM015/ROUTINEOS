@@ -1,6 +1,9 @@
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { adminService, ForbiddenError } from '@/server/services/admin.service';
+import type { Role } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+
+const ROLES = ['USER', 'ADMIN', 'MODERATOR'] as const;
 
 /**
  * GET /api/admin/users
@@ -13,72 +16,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify admin role
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true },
-    });
-
-    if (user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    try {
+      await adminService.requireAdmin(session.user.id);
+    } catch (error) {
+      if (error instanceof ForbiddenError) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      throw error;
     }
 
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const role = searchParams.get('role');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const roleParam = searchParams.get('role');
+    const role = ROLES.includes(roleParam as (typeof ROLES)[number])
+      ? (roleParam as Role)
+      : undefined;
 
-    const where: any = {};
-
-    if (search) {
-      where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (role) {
-      where.role = role;
-    }
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          emailVerified: true,
-          createdAt: true,
-          lastActivityAt: true,
-          isActive: true,
-          isDeleted: true,
-          _count: {
-            select: {
-              habits: true,
-              goals: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.user.count({ where }),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      data: users,
-      meta: {
-        total,
-        limit,
-        offset,
-        hasMore: offset + limit < total,
-      },
+    const { users, meta } = await adminService.listUsers({
+      search: searchParams.get('search') ?? undefined,
+      role,
+      limit: Number.parseInt(searchParams.get('limit') || '50', 10),
+      offset: Number.parseInt(searchParams.get('offset') || '0', 10),
     });
+
+    return NextResponse.json({ success: true, data: users, meta });
   } catch (error) {
     console.error('Error fetching users:', error);
     return NextResponse.json(

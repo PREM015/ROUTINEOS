@@ -1,4 +1,4 @@
-import type { Attachment } from '@prisma/client';
+import type { Attachment, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -70,6 +70,61 @@ export class AttachmentRepository extends BaseRepository {
       this.handleError(error, 'deleteAllByUser');
     }
   }
+
+  /**
+   * Create an attachment row.
+   */
+  async create(data: Prisma.AttachmentCreateInput): Promise<Attachment> {
+    try {
+      return await this.prisma.attachment.create({ data });
+    } catch (error) {
+      this.handleError(error, 'create');
+    }
+  }
+
+  /**
+   * Find an attachment by id, unscoped — callers must verify `userId`.
+   */
+  async findById(attachmentId: string): Promise<Attachment | null> {
+    try {
+      return await this.prisma.attachment.findUnique({
+        where: { id: attachmentId },
+      });
+    } catch (error) {
+      this.handleError(error, 'findById');
+    }
+  }
+
+  /**
+   * Update an attachment row.
+   */
+  async update(
+    attachmentId: string,
+    data: Prisma.AttachmentUpdateInput
+  ): Promise<Attachment> {
+    try {
+      return await this.prisma.attachment.update({
+        where: { id: attachmentId },
+        data,
+      });
+    } catch (error) {
+      this.handleError(error, 'update');
+    }
+  }
+
+  /**
+   * Delete a single attachment row.
+   */
+  async delete(attachmentId: string): Promise<Attachment> {
+    try {
+      return await this.prisma.attachment.delete({
+        where: { id: attachmentId },
+      });
+    } catch (error) {
+      this.handleError(error, 'delete');
+    }
+  }
 }
 
 export const attachmentRepository = new AttachmentRepository();
+

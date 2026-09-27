@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { backupService } from '@/server/services/backup.service';
-import { ExportFormat, ExportStatus, type DataExport } from '@prisma/client';
+import { ExportFormat, ExportStatus, type DataExport } from '@/generated/prisma';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';

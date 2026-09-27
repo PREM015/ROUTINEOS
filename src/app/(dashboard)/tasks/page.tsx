@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { TaskPriority, TaskStatus } from '@prisma/client';
+import type { TaskPriority, TaskStatus } from '@/generated/prisma';
 import { CalendarDays, CheckCircle2, Circle, ListTodo, Plus } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';

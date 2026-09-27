@@ -80,7 +80,7 @@ export function calculateCurrentStreak(
     activeSet.has(d) || (restCountsInStreak && restDates.has(d));
 
   let current = 0;
-  let cursor = today;
+  const cursor = today;
 
   // Allow the streak to start from "today" even without a log today.
   for (let dayCursor = cursor, slack = graceDays; ; dayCursor = previousDay(dayCursor)) {

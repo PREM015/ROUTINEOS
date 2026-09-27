@@ -1,4 +1,4 @@
-import type { DailyScore } from '@prisma/client';
+import type { DailyScore } from '@/generated/prisma';
 
 /**
  * Scoring System Types
@@ -351,19 +351,6 @@ export function getGradeFromPercentage(percentage: number): ScoreGrade {
 
 export function getGradeInfo(grade: ScoreGrade): ScoreGradeInfo {
   return SCORE_GRADES[grade];
-}
-
-export function calculateTotalScore(
-  coreScore: number,
-  growthScore: number,
-  bonusScore: number,
-  weights: { nonNeg: number; growth: number; bonus: number }
-): number {
-  return (
-    coreScore * weights.nonNeg +
-    growthScore * weights.growth +
-    bonusScore * weights.bonus
-  );
 }
 
 // ============================================================================

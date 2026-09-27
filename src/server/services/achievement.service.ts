@@ -7,8 +7,7 @@
  * so the unlock flow is thin and reusable by other services.
  */
 
-import type { Achievement } from '@prisma/client';
-import prisma from '@/lib/prisma';
+import type { Achievement, StreakMilestone } from '@/generated/prisma';
 import { THRESHOLDS } from '@/config/scoring';
 import {
   buildUnlockEvent,
@@ -24,6 +23,8 @@ import { StreakRepository } from '@/server/repositories/streak.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { JournalRepository } from '@/server/repositories/journal.repository';
+import { HabitRepository } from '@/server/repositories/habit.repository';
+import { MoodRepository } from '@/server/repositories/mood.repository';
 import { notificationService } from '@/server/services/notification.service';
 
 const EPOCH = '2000-01-01';
@@ -59,16 +60,13 @@ async function buildWorldState(userId: string): Promise<AchievementWorldState> {
 
   const [totalHabitLogs, moodCount, energyCount, lateEveningCount, focusStats, journalDates] =
     await Promise.all([
-      prisma.habitLog.count({ where: { userId, status: 'COMPLETED' } }),
-      prisma.moodLog.count({ where: { userId } }),
-      prisma.energyLog.count({ where: { userId } }),
-      prisma.focusSession.count({
-        where: {
-          userId,
-          completedAt: { not: null },
-          startedAt: { gte: new Date(`${today}T20:00:00.000Z`) },
-        },
-      }),
+      new HabitRepository().countAllCompletedLogs(userId),
+      new MoodRepository().countMoodLogs(userId),
+      new MoodRepository().countEnergyLogs(userId),
+      new FocusRepository().countCompletedSessions(
+        userId,
+        new Date(`${today}T20:00:00.000Z`)
+      ),
       new FocusRepository().getStats(userId),
       new JournalRepository().getStreakData(userId),
     ]);
@@ -174,6 +172,78 @@ export class AchievementService {
     }
 
     return unlockedEvents;
+  }
+
+  /**
+   * The user's streak, created on first access, plus any milestones they have
+   * not celebrated yet.
+   */
+  async getStreakWithMilestones(userId: string) {
+    const streakRepository = new StreakRepository();
+    let streak = await streakRepository.findByUserId(userId);
+
+    if (!streak) {
+      streak = await streakRepository.create(userId);
+    }
+
+    const milestones = await streakRepository.getUncelebratedMilestones(userId);
+
+    return { ...streak, uncelebratedMilestones: milestones };
+  }
+
+  /**
+   * Record a celebration for a streak milestone, scoped to its owner.
+   *
+   * @throws when the milestone does not exist or belongs to someone else.
+   */
+  async celebrateMilestone(
+    userId: string,
+    milestoneId: string
+  ): Promise<{ type: 'milestone'; milestone: StreakMilestone }> {
+    const milestone = await new StreakRepository().findMilestoneById(
+      milestoneId,
+      userId
+    );
+    if (!milestone) {
+      throw new Error('Streak milestone not found');
+    }
+
+    const updated = await new StreakRepository().celebrateMilestone(milestone.id);
+
+    await new AuditRepository().createActivity({
+      userId,
+      action: 'MILESTONE_CELEBRATED',
+      entityType: 'streakMilestone',
+      entityId: milestone.id,
+      description: `Celebrated ${milestone.milestoneDays}-day streak milestone`,
+    });
+
+    return { type: 'milestone', milestone: updated };
+  }
+
+  /**
+   * Record a celebration for an unlocked achievement, scoped to its owner.
+   *
+   * @throws when the achievement does not exist or is not unlocked by this user.
+   */
+  async celebrateAchievement(
+    userId: string,
+    achievementId: string
+  ): Promise<{ type: 'achievement'; achievement: Achievement }> {
+    const achievement = await this.repository.findById(userId, achievementId);
+    if (!achievement) {
+      throw new Error('Achievement not found');
+    }
+
+    await new AuditRepository().createActivity({
+      userId,
+      action: 'ACHIEVEMENT_CELEBRATED',
+      entityType: 'achievement',
+      entityId: achievement.id,
+      description: `Celebrated achievement: ${achievement.title}`,
+    });
+
+    return { type: 'achievement', achievement };
   }
 }
 

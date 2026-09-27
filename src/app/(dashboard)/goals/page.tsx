@@ -231,7 +231,7 @@ export default function GoalsPage() {
         </p>
       )}
 
-      <div className="flex gap-1 mb-6 bg-card border border-border rounded-xl p-1 w-fit" role="tablist" aria-label="Goal filter">
+      <div className="flex flex-wrap gap-1 mb-6 bg-card border border-border rounded-xl p-1" role="tablist" aria-label="Goal filter">
         {([
           { value: 'DAILY', label: 'Daily' },
           { value: 'LONG_TERM', label: 'Long-term' },
@@ -242,7 +242,7 @@ export default function GoalsPage() {
             role="tab"
             aria-selected={tab === t.value}
             onClick={() => setTab(t.value)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
               tab === t.value ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -271,7 +271,7 @@ export default function GoalsPage() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
             {visible.map((goal) => (
               <GoalCard

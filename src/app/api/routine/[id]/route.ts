@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { dayTypeSchema } from "@/lib/validation/routine.schema";
 import { z } from "zod";
 
 const updateTemplateSchema = z.object({
   name: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
   isDefault: z.boolean().optional(),
-  dayType: z.enum(['WORKDAY', 'WEEKEND', 'HOLIDAY', 'CUSTOM']).optional()
+  dayType: dayTypeSchema.optional()
 });
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

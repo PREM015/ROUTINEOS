@@ -1,4 +1,4 @@
-import type { FocusSession } from '@prisma/client';
+import type { FocusSession } from '@/generated/prisma';
 
 /**
  * Focus analytics helpers.

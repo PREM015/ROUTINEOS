@@ -9,7 +9,7 @@ import type {
   HabitOverrideType,
   Category,
   Tag,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 export type {
   Habit,
@@ -22,7 +22,7 @@ export type {
   HabitOverrideType,
   Category,
   Tag,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Habit Management Types
@@ -93,6 +93,8 @@ export interface CreateHabitInput {
   difficulty?: number;
   isPublic?: boolean;
   tagIds?: string[];
+  appliesEveryDay?: boolean;
+  dayTypeIds?: string[];
 }
 
 export interface UpdateHabitInput {
@@ -115,6 +117,8 @@ export interface UpdateHabitInput {
   difficulty?: number;
   isPublic?: boolean;
   tagIds?: string[];
+  appliesEveryDay?: boolean;
+  dayTypeIds?: string[];
 }
 
 export interface CreateHabitResponse {
@@ -216,7 +220,7 @@ export interface HabitEligibility {
   reason?: HabitEligibilityReason;
   override?: HabitOverride;
   /** How the habit landed on a given day: by its schedule or added manually. */
-  source?: 'SCHEDULED' | 'MANUAL';
+  source?: 'SCHEDULED' | 'MANUAL' | 'DAY_TYPE_FILTER';
 }
 
 export enum HabitEligibilityReason {

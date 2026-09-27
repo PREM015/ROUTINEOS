@@ -1,15 +1,5 @@
 'use client';
 
-/**
- * TodayDayType — set and visibly display today's DayType.
- *
- * Loads the current day type from GET /api/day-mode (an explicit
- * RoutineException takes precedence, otherwise the natural weekday/weekend),
- * lets the user switch to any of the six DayType values (persisted as a
- * RoutineException so routine resolution actually changes), and offers a
- * "reset" back to the natural schedule.
- */
-
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarDays, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -17,14 +7,15 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Collapsible } from '@/components/ui/Collapsible';
-import DayContextSelector, { type DayContext } from '@/components/context/DayContextSelector';
+import DayContextSelector from '@/components/context/DayContextSelector';
 import { DAY_TYPE_CONFIG } from '@/constants/routine';
 import { cn } from '@/lib/utils';
-import type { DayType } from '@prisma/client';
+import type { DayType } from '@/generated/prisma';
 
 interface TodayDayTypeProps {
   date: string;
   className?: string;
+  resolvedDayType?: string;
 }
 
 interface DayModeResponse {
@@ -42,7 +33,7 @@ interface DayModeResponse {
   isRestDay: boolean;
 }
 
-export function TodayDayType({ date, className }: TodayDayTypeProps) {
+export function TodayDayType({ date, className, resolvedDayType }: TodayDayTypeProps) {
   const [mode, setMode] = useState<DayModeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,7 +59,7 @@ export function TodayDayType({ date, className }: TodayDayTypeProps) {
     fetchMode();
   }, [fetchMode]);
 
-  async function selectDayType(next: DayContext) {
+  async function selectDayType(next: DayType) {
     if (!mode || saving) return;
     setSaving(true);
     setError(null);
@@ -110,6 +101,11 @@ export function TodayDayType({ date, className }: TodayDayTypeProps) {
     }
   }
 
+  // Use resolved day type from parent if available, otherwise fall back to fetched mode
+  const effectiveDayType = resolvedDayType ?? mode?.dayType ?? null;
+  const current = effectiveDayType ? DAY_TYPE_CONFIG[effectiveDayType as keyof typeof DAY_TYPE_CONFIG] : null;
+  const isNatural = mode ? !mode.hasException : true;
+
   if (loading) {
     return (
       <Card className={cn('p-5', className)} aria-busy="true" aria-label="Loading day type">
@@ -118,9 +114,6 @@ export function TodayDayType({ date, className }: TodayDayTypeProps) {
     );
   }
 
-  const current = mode?.dayType ? DAY_TYPE_CONFIG[mode.dayType] : null;
-  const isNatural = mode ? !mode.hasException : true;
-
   return (
     <Card className={cn('p-5', className)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -128,7 +121,7 @@ export function TodayDayType({ date, className }: TodayDayTypeProps) {
           <CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />
           <h2 className="text-sm font-semibold text-muted-foreground">Day Type</h2>
         </div>
-        {mode && current && (
+        {effectiveDayType && current && (
           <Badge
             variant="primary"
             className="flex items-center gap-1.5 border border-primary/30 text-foreground"

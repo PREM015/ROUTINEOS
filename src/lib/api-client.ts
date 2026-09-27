@@ -112,3 +112,20 @@ export async function apiRequest<T>(
 
   return json as T;
 }
+
+/** Simple fetch wrapper that throws on non-ok responses */
+export async function fetchWithAuth(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response> {
+  const response = await fetch(path, {
+    ...options,
+    credentials: 'include',
+    cache: 'no-store',
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+  return response;
+}

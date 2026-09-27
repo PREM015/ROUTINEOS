@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Modal, Input, Select, Button } from '@/components/ui';
+import React, { useState, useEffect } from 'react';
+import { Modal, Input, Select, Button, Checkbox } from '@/components/ui';
 import { useApp, type Habit, type HabitTier, type FrequencyType } from '@/context/AppContext';
+import { fetchWithAuth } from '@/lib/api-client';
+import type { DayTypeDefinition } from '@/types/routine';
+
 
 interface EditHabitModalProps {
   habit: Habit | null;
@@ -10,6 +13,7 @@ interface EditHabitModalProps {
 }
 
 const TIERS: Array<{ label: string; value: HabitTier }> = [
+  { label: 'Core (Non-Negotiable)', value: 'NON_NEGOTIABLE' },
   { label: 'Growth', value: 'GROWTH' },
   { label: 'Bonus', value: 'BONUS' },
   { label: 'Lifestyle', value: 'LIFESTYLE' },
@@ -64,10 +68,41 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
   const [reminderTime, setReminderTime] = useState(habit.reminderTime ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appliesEveryDay, setAppliesEveryDay] = useState(habit.appliesEveryDay ?? true);
+  const [dayTypeIds, setDayTypeIds] = useState<string[]>(habit.dayTypeAssignments?.map(dta => dta.dayTypeId) || []);
+  const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
+  const [dayTypesLoading, setDayTypesLoading] = useState(true);
+
+  // Fetch day types on mount
+  useEffect(() => {
+    loadDayTypes();
+  }, []);
+
+  const loadDayTypes = async () => {
+    try {
+      setDayTypesLoading(true);
+      const res = await fetchWithAuth('/api/day-types');
+      if (res.ok) {
+        const json = await res.json();
+        const data: DayTypeDefinition[] = json.data || [];
+        setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
+      }
+    } catch (error) {
+      console.error('Failed to load day types:', error);
+    } finally {
+      setDayTypesLoading(false);
+    }
+  };
 
   const toggleWeekday = (value: string) => {
     setWeekdays((prev) =>
       prev.includes(value) ? prev.filter((d) => d !== value) : [...prev, value]
+    );
+  };
+
+  const toggleDayType = (dayTypeId: string) => {
+    setDayTypeIds(prev => 
+      prev.includes(dayTypeId) ? prev.filter(d => d !== dayTypeId) : [...prev, dayTypeId]
     );
   };
 
@@ -84,6 +119,10 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
       if (frequencyType === 'SPECIFIC_WEEKDAYS' && weekdays.length === 0) {
         throw new Error('Pick at least one weekday');
       }
+      if (!appliesEveryDay && dayTypeIds.length === 0) {
+        throw new Error('Pick at least one day type');
+      }
+
       await updateHabit(habit.id, {
         name: name.trim(),
         description: description.trim() || undefined,
@@ -99,6 +138,8 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
         targetCount: parsedTarget,
         reminderTime: reminderTime || undefined,
         reminderEnabled: Boolean(reminderTime),
+        appliesEveryDay,
+        dayTypeIds: appliesEveryDay ? [] : dayTypeIds,
       });
       onClose();
     } catch (err) {
@@ -109,7 +150,7 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <Input label="Habit Name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
 
         <div>
@@ -124,7 +165,7 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select label="Tier" value={tier} onChange={(e) => setTier(e.target.value as HabitTier)} options={TIERS} />
           <Select label="Frequency" value={frequencyType} onChange={(e) => setFrequencyType(e.target.value as FrequencyType)} options={FREQUENCIES} />
         </div>
@@ -156,10 +197,57 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
           <Input label="Target count" type="number" min={1} value={targetCount} onChange={(e) => setTargetCount(e.target.value)} />
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Day Type Assignment */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={appliesEveryDay}
+              onCheckedChange={setAppliesEveryDay}
+              label="Applies every day (global habit)"
+            />
+          </div>
+          {!appliesEveryDay && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-foreground">
+                Assign to day types
+              </label>
+              {dayTypesLoading ? (
+                <div className="flex gap-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-10 w-24 animate-pulse bg-muted rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {dayTypes.map(dt => (
+                    <button
+                      key={dt.id}
+                      type="button"
+                      onClick={() => toggleDayType(dt.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                        dayTypeIds.includes(dt.id)
+                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-600 dark:text-emerald-300'
+                          : 'bg-muted/50 border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                      style={dt.color ? { borderColor: dt.color } : undefined}
+                    >
+                      {dt.icon && <span style={{ color: dt.color ?? undefined }} className="mr-1">{dt.icon}</span>}
+                      {dt.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!dayTypesLoading && dayTypes.length === 0 && (
+                <p className="text-xs text-muted-foreground">No day types available. Create one in Routine settings.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <span className="block text-sm font-medium mb-2 text-foreground">Colour</span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {COLORS.map((c) => (
                 <button
                   key={c}
@@ -178,9 +266,9 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
 
         {error && <p role="alert" className="text-sm text-red-500 dark:text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={!name.trim() || submitting}>
+        <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
+          <Button type="submit" variant="primary" disabled={!name.trim() || submitting} className="flex-1">
             {submitting ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>

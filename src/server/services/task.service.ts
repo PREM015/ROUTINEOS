@@ -1,5 +1,5 @@
-import type { Task } from '@prisma/client';
-import { TaskPriority } from '@prisma/client';
+import type { Task } from '@/generated/prisma';
+import { TaskPriority } from '@/generated/prisma';
 import { TaskRepository } from '@/server/repositories/task.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { ProjectRepository } from '@/server/repositories/project.repository';

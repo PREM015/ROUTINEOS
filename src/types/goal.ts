@@ -7,7 +7,7 @@ import type {
   GoalStatus,
   Project,
   Tag,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 export type {
   Goal,
@@ -18,7 +18,7 @@ export type {
   GoalStatus,
   Project,
   Tag,
-} from '@prisma/client';
+} from '@/generated/prisma';
 
 /**
  * Goal Management Types
@@ -97,6 +97,8 @@ export interface CreateGoalInput {
     targetValue?: number;
     dueDate?: Date;
   }>;
+  appliesEveryDay?: boolean;
+  dayTypeIds?: string[];
 }
 
 export interface UpdateGoalInput {
@@ -114,6 +116,8 @@ export interface UpdateGoalInput {
   parentGoalId?: string | null;
   isPublic?: boolean;
   tagIds?: string[];
+  appliesEveryDay?: boolean;
+  dayTypeIds?: string[];
 }
 
 export interface CreateGoalResponse {

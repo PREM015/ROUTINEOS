@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import type { TaskPriority, TaskStatus } from '@prisma/client';
+import type { TaskPriority, TaskStatus } from '@/generated/prisma';
 import { ArrowLeft, CalendarDays, GitBranch, ListTree, Tag, Trash2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';

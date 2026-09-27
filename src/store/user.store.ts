@@ -10,7 +10,7 @@
 import { create } from 'zustand';
 import { apiRequest } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth.store';
-import type { UserSettings } from '@prisma/client';
+import type { UserSettings } from '@/generated/prisma';
 import type { UpdateProfileInput, UserStats } from '@/types/auth';
 
 export interface UserProfile {
@@ -30,8 +30,21 @@ export interface UserProfile {
 
 export type SettingsPatch = Partial<Record<keyof UserSettings, unknown>>;
 
+/**
+ * Envelope from the **public** `GET /api/users/[id]/profile`. The `profile` half
+ * is intentionally narrower than {@link UserProfile} (no timezone /
+ * preferredLanguage / role), so it must never be written into the store's
+ * full-profile slot — only `stats` is taken from it.
+ */
 interface ProfileEnvelope {
-  profile: UserProfile;
+  profile: {
+    id: string;
+    name: string | null;
+    displayName: string | null;
+    bio: string | null;
+    avatarUrl: string | null;
+    createdAt: string;
+  };
   stats: UserStats;
 }
 
@@ -150,9 +163,10 @@ export const useUserStore = create<UserState>()((set, _get) => ({
         `/api/users/${userId}/profile`
       );
       set({
-        profile: data.profile,
         stats: data.stats,
-        isOnboarded: Boolean(data.profile.onboardingCompletedAt),
+        // The public endpoint's `profile` is deliberately narrower than the
+        // signed-in profile, so it is not merged into store state. `isOnboarded`
+        // likewise comes from `getProfile()` (`/api/auth/me`), not from here.
         loading: false,
       });
       return data.stats;

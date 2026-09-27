@@ -1,4 +1,4 @@
-import type { DailyScore, EnergyLog, MoodLog } from '@prisma/client';
+import type { DailyScore, EnergyLog, MoodLog } from '@/generated/prisma';
 import { fromZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { DailyBreakdown, dailyBreakdown } from '@/server/analytics/daily';
 import { WeeklySummary, weeklySummary } from '@/server/analytics/weekly';
@@ -468,7 +468,7 @@ export class RecapService {
     range: PeriodRange
   ): Promise<RecapExtras['linkedReview']> {
     if (period === 'week') {
-      const review = await this.reviewRepository.findByWeek(userId, range.start);
+      const review = await this.reviewRepository.findReviewByWeek(userId, range.start);
       if (!review) return null;
       return {
         kind: 'weekly' as const,
@@ -482,7 +482,7 @@ export class RecapService {
     }
     if (period === 'month') {
       const month = range.start.slice(0, 7);
-      const reset = await this.reviewRepository.findMonthly(userId, month);
+      const reset = await this.reviewRepository.findMonthlyByMonth(userId, month);
       if (!reset) return null;
       return {
         kind: 'monthly' as const,

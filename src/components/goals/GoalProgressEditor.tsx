@@ -1,9 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 export interface GoalProgressEditorProps { goal: { id: string; title: string; targetValue: number; currentValue: number; unit?: string }; onSave: (value: number, note?: string) => void; onCancel: () => void; }
 export default function GoalProgressEditor({ goal, onSave, onCancel }: GoalProgressEditorProps) {
   const [val, setVal] = useState(goal.currentValue.toString());
   const [note, setNote] = useState('');
+
+  // Re-sync when the selected goal changes (prevents stale values when
+  // switching between goals while the editor stays mounted).
+  useEffect(() => {
+    setVal(goal.currentValue.toString());
+    setNote('');
+  }, [goal.id, goal.currentValue]);
+
   return (
     <div className="p-4 border rounded shadow-sm bg-gray-50 max-w-sm">
       <h3 className="font-semibold mb-2">{goal.title}</h3>

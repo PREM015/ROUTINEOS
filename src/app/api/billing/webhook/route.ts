@@ -2,8 +2,10 @@ import {
   subscriptionRepository,
   type UpsertSubscriptionData,
 } from '@/server/repositories/subscription.repository';
-import type { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
+import type { SubscriptionPlan, SubscriptionStatus } from '@/generated/prisma';
+import { verifyStripeSignature } from '@/lib/billing/verify-webhook-signature';
 import { NextRequest, NextResponse } from 'next/server';
+import type Stripe from 'stripe';
 
 const SUBSCRIPTION_STATUS_MAP: Record<string, SubscriptionStatus> = {
   active: 'ACTIVE',
@@ -34,17 +36,18 @@ interface StripeSubscriptionObject {
   };
 }
 
-interface StripeWebhookPayload {
-  data?: { object?: StripeSubscriptionObject };
-}
-
 const MONTH_SECONDS = 30 * 24 * 60 * 60;
 
 /**
  * POST /api/billing/webhook
- * Handle a Stripe-style billing webhook. The raw request body is parsed
- * as JSON and used to upsert the user's subscription. Signature presence
- * is verified but the webhook secret is not re-validated.
+ * Handle a Stripe billing webhook.
+ *
+ * SECURITY: the `stripe-signature` header is cryptographically verified
+ * against `STRIPE_WEBHOOK_SECRET` over the **raw** request body before the
+ * payload is parsed or trusted in any way. Without that check any unauthenticated
+ * caller could forge a payload and grant themselves an arbitrary plan, so
+ * verification fails closed — a payload that is not verified is never parsed
+ * and never reaches the database.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -56,18 +59,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Must be the raw body: parsing first would invalidate the signature.
     const rawBody = await request.text();
-    let payload: StripeWebhookPayload = {};
-    try {
-      payload = JSON.parse(rawBody) as StripeWebhookPayload;
-    } catch {
+
+    const verification = verifyStripeSignature(rawBody, signature);
+    if (!verification.ok) {
+      if (verification.reason === 'NOT_CONFIGURED') {
+        // Server misconfiguration, not a client error. Fail closed either way.
+        console.error(
+          '[billing/webhook] STRIPE_WEBHOOK_SECRET is not set — rejecting webhook'
+        );
+        return NextResponse.json(
+          { error: 'Webhook signature verification is not configured' },
+          { status: 500 }
+        );
+      }
       return NextResponse.json(
-        { error: 'Invalid JSON payload' },
+        { error: 'Invalid stripe-signature' },
         { status: 400 }
       );
     }
 
-    const object = payload.data?.object;
+    const event: Stripe.Event = verification.event;
+    const object = event.data?.object as unknown as
+      | StripeSubscriptionObject
+      | undefined;
+
     if (!object || typeof object !== 'object') {
       return NextResponse.json(
         { error: 'Invalid webhook payload' },

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Mount } from '@/components/motion/Mount';
-import type { GoalPriority, GoalType } from '@prisma/client';
+import type { GoalPriority, GoalType } from '@/generated/prisma';
 
 interface TodayGoal {
   id: string;
@@ -19,6 +19,8 @@ interface TodayGoal {
   targetValue: number;
   unit: string | null;
   endDate: string;
+  appliesEveryDay: boolean;
+  loggedToday: number | null;
 }
 
 interface TodayGoalsProps {
@@ -43,24 +45,21 @@ export function TodayGoals({ date }: TodayGoalsProps) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/goals?status=ACTIVE&limit=50');
+      const res = await fetch(`/api/goals/today?date=${date}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to load goals');
 
       if (data.success) {
-        // Daily goals first (today's check-off), then the rest. Top 5.
+        // Goals already filtered by eligibility (day type, schedule, etc.)
         const list: TodayGoal[] = Array.isArray(data.data) ? data.data : [];
-        const sorted = [...list].sort((a, b) =>
-          a.type === 'DAILY' && b.type !== 'DAILY' ? -1 : b.type === 'DAILY' && a.type !== 'DAILY' ? 1 : 0
-        );
-        setGoals(sorted.slice(0, 5));
+        setGoals(list.slice(0, 5));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load goals');
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [date]);
 
   // Initial data fetch when the date changes.

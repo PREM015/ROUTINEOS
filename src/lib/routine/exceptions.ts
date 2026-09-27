@@ -1,7 +1,6 @@
-import type { DayType, RoutineException } from '@prisma/client';
+import type { DayType, Prisma, RoutineException } from '@/generated/prisma';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
-import { prisma } from '@/lib/prisma';
-import { getDayTypeForDate } from '@/constants/routine';
+import { resolveNaturalDayType } from '@/lib/scheduling/resolve-routine';
 import { ConflictError } from '@/lib/errors/app-error';
 
 /**
@@ -23,8 +22,7 @@ export interface CreateRoutineExceptionInput {
  * The implied day type for a date when no explicit exception exists.
  */
 export function defaultDayTypeForDate(date: string): DayType {
-  const parsed = new Date(`${date}T12:00:00`);
-  return getDayTypeForDate(parsed);
+  return resolveNaturalDayType(date, 'UTC');
 }
 
 /**
@@ -44,15 +42,8 @@ export async function listRoutineExceptions(
   userId: string,
   startDate: string,
   endDate: string
-): Promise<RoutineException[]> {
-  return prisma.routineException.findMany({
-    where: {
-      userId,
-      date: { gte: startDate, lte: endDate },
-    },
-    include: { template: true },
-    orderBy: { date: 'asc' },
-  });
+): Promise<Prisma.RoutineExceptionGetPayload<{ include: { template: true } }>[]> {
+  return routineRepository.findExceptionsByRange(userId, startDate, endDate);
 }
 
 /**

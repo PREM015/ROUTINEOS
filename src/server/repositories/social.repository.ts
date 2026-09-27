@@ -1,4 +1,4 @@
-import type { User, UserConnection } from '@prisma/client';
+import type { User, UserConnection } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**

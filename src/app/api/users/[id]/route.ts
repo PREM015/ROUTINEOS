@@ -1,4 +1,6 @@
 import { UserRepository } from '@/server/repositories/user.repository';
+import { RateLimiter } from '@/lib/middleware/rate-limit';
+import { RateLimitError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -6,18 +8,36 @@ interface RouteContext {
 }
 
 /**
+ * Public profiles are intentionally unauthenticated — the leaderboard reads
+ * other users' profiles. That makes this route an enumeration oracle unless it
+ * is constrained, so it is rate-limited per client IP.
+ *
+ * Deliberately NOT exposed: `role` (privilege information), `timezone` and
+ * `preferredLanguage` (locale / approximate-location signals),
+ * `onboardingCompletedAt` (an account-age signal useful for fingerprinting) and
+ * `email`. Aggregate stats are intentionally kept — the leaderboard renders
+ * them — but they are coarse counts, not raw records.
+ */
+const publicProfileLimiter = new RateLimiter({
+  max: 30,
+  windowMs: 60_000,
+  keyPrefix: 'public-user',
+});
+
+/**
  * GET /api/users/[id]
  * Fetch a public profile with only safe, publicly visible fields.
  */
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
+    publicProfileLimiter.check(publicProfileLimiter.keyFor(request));
+
     const { id } = await context.params;
     if (typeof id !== 'string' || id.length === 0) {
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
     }
 
-    const userRepository = new UserRepository();
-    const user = await userRepository.findById(id);
+    const user = await new UserRepository().findById(id);
     if (!user || user.isDeleted || !user.isActive) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -30,14 +50,13 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         displayName: user.displayName,
         bio: user.bio,
         avatarUrl: user.avatarUrl,
-        timezone: user.timezone,
-        preferredLanguage: user.preferredLanguage,
-        role: user.role,
-        onboardingCompletedAt: user.onboardingCompletedAt,
         createdAt: user.createdAt,
       },
     });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
     console.error('Error fetching public profile:', error);
 
     if (error instanceof Error) {

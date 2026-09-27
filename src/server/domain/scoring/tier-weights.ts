@@ -33,10 +33,10 @@ export type { HabitTier };
 /**
  * Default per-bucket weights.
  * @example
- * DEFAULT_TIER_WEIGHTS // => { weightNonNeg: 1, weightGrowth: 1, weightBonus: 0.5 }
+ * DEFAULT_TIER_WEIGHTS // => { weightNonNeg: 1.5, weightGrowth: 1, weightBonus: 0.5 }
  */
 export const DEFAULT_TIER_WEIGHTS: TierWeights = {
-  weightNonNeg: 1,
+  weightNonNeg: SCORING_WEIGHTS.tiers.NON_NEGOTIABLE ?? 1,
   weightGrowth: SCORING_WEIGHTS.tiers.GROWTH ?? 1,
   weightBonus: SCORING_WEIGHTS.tiers.BONUS ?? 0.5,
 };
@@ -56,6 +56,8 @@ export const DEFAULT_TIER_WEIGHTS: TierWeights = {
  */
 export function categorizeTier(tier: HabitTier): ScoreBucket {
   switch (tier) {
+    case 'NON_NEGOTIABLE':
+      return 'nonNeg';
     case 'GROWTH':
       return 'growth';
     case 'BONUS':

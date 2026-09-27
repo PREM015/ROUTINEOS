@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { GoalRepository } from '@/server/repositories/goal.repository';
-import type { GoalStatus, GoalType, GoalPriority } from '@prisma/client';
+import { GoalService } from '@/server/services/goal.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 const goalFilterSchema = z.object({
@@ -70,51 +69,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const goalRepository = new GoalRepository();
-    const userId = session.user.id;
-
-    let statusFilter: GoalStatus | GoalStatus[] | undefined;
-    let overdue: boolean | undefined;
-    let dueSoon: boolean | undefined;
-
-    if (validated.data.timeline === 'overdue') {
-      overdue = true;
-    } else if (validated.data.timeline === 'dueSoon') {
-      dueSoon = true;
-    } else if (
-      validated.data.timeline === 'active' ||
-      validated.data.timeline === 'completed' ||
-      validated.data.timeline === 'cancelled'
-    ) {
-      statusFilter = validated.data.timeline.toUpperCase() as GoalStatus;
-    }
-
-    if (validated.data.status?.length) {
-      statusFilter = validated.data.status as GoalStatus[];
-    }
-
-    let goals = await goalRepository.findAll(userId, {
-      status: statusFilter,
-      type: validated.data.type as GoalType[] | undefined,
-      priority: validated.data.priority as GoalPriority[] | undefined,
-      projectId: validated.data.projectId,
-      parentGoalId: validated.data.parentGoalId,
-      overdue,
-      dueSoon,
-      sortBy: validated.data.sortBy,
-      sortOrder: validated.data.sortOrder,
-      limit: validated.data.limit,
-      offset: validated.data.offset,
-    });
-
-    if (validated.data.search) {
-      const q = validated.data.search.toLowerCase();
-      goals = goals.filter(
-        (goal) =>
-          goal.title.toLowerCase().includes(q) ||
-          (goal.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
+    const goals = await new GoalService().filterGoals(session.user.id, validated.data);
 
     return NextResponse.json({
       success: true,

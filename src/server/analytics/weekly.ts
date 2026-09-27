@@ -1,4 +1,4 @@
-import type { HabitTier, SleepLog } from '@prisma/client';
+import type { HabitTier, SleepLog } from '@/generated/prisma';
 import { addDays } from 'date-fns';
 import { APP_CONFIG } from '@/config/app';
 import { GoalRepository } from '@/server/repositories/goal.repository';

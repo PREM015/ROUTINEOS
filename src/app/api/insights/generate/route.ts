@@ -1,7 +1,5 @@
 import { auth } from '@/lib/auth';
-import { aggregateUserDataForAI, validateDataSize } from '@/server/ai/aggregator';
-import { generateInsight, estimateCost } from '@/server/ai/provider';
-import prisma from '@/lib/prisma';
+import { insightGenerationService } from '@/server/services/insight.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -36,67 +34,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { period, startDate, endDate } = validated.data;
-
-    // Check for existing insight
-    const existing = await prisma.aIInsight.findFirst({
-      where: {
-        userId: session.user.id,
-        period,
-        startDate,
-        endDate,
-      },
-    });
-
-    if (existing) {
-      return NextResponse.json({
-        success: true,
-        data: existing,
-        cached: true,
-      });
-    }
-
-    // Aggregate data
-    const data = await aggregateUserDataForAI(session.user.id, startDate, endDate);
-
-    // Validate data size
-    const validation = validateDataSize(data);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { error: `Data too large: ${validation.size.toFixed(2)}KB (max 50KB)` },
-        { status: 400 }
-      );
-    }
-
-    // Generate insight
-    const insight = await generateInsight(data, period);
-
-    // Calculate cost
-    const cost = estimateCost(insight.tokensUsed, insight.model);
-
-    // Save insight
-    const saved = await prisma.aIInsight.create({
-      data: {
-        userId: session.user.id,
-        period,
-        startDate,
-        endDate,
-        dataSnapshot: JSON.stringify(data),
-        model: insight.model,
-        tokensUsed: insight.tokensUsed,
-        summary: insight.summary,
-        wins: insight.wins.join('\n'),
-        patterns: insight.patterns.join('\n'),
-        concerns: insight.concerns.join('\n'),
-        suggestions: insight.suggestions.join('\n'),
-        nextPeriodFocus: insight.nextPeriodFocus,
-      },
+    const result = await insightGenerationService.generate(session.user.id, {
+      period: validated.data.period,
+      startDate: validated.data.startDate,
+      endDate: validated.data.endDate,
     });
 
     return NextResponse.json({
       success: true,
-      data: saved,
-      cost: cost.toFixed(4),
+      data: result.insight,
+      cached: result.cached,
+      cost: result.cost,
     });
   } catch (error) {
     console.error('Error generating insight:', error);

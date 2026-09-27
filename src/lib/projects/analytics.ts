@@ -1,4 +1,4 @@
-import type { Project, Task, Goal, TimeEntry } from '@prisma/client';
+import type { Project, Task, Goal, TimeEntry } from '@/generated/prisma';
 import type { ProjectAnalytics, ProjectHealthScore } from '@/types/projects';
 import { computeHealthScore, completionRate } from './helpers';
 

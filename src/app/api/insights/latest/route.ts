@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import prisma from '@/lib/prisma';
+import { insightReadService } from '@/server/services/insight.service';
+import type { InsightPeriod } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -9,18 +10,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') as 'DAILY' | 'WEEKLY' | 'MONTHLY' | null;
+    const period = new URL(request.url).searchParams.get('period') as
+      | InsightPeriod
+      | null;
 
-    const where: any = { userId: session.user.id };
-    if (period) {
-      where.period = period;
-    }
-
-    const insight = await prisma.aIInsight.findFirst({
-      where,
-      orderBy: { generatedAt: 'desc' },
-    });
+    const insight = await insightReadService.getLatestInsight(
+      session.user.id,
+      period ?? undefined
+    );
 
     return NextResponse.json({
       success: true,

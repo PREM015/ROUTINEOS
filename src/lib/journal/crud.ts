@@ -1,4 +1,4 @@
-import type { JournalRevision, Prisma } from '@prisma/client';
+import type { JournalRevision, Prisma } from '@/generated/prisma';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import {
   createJournalEntrySchema,

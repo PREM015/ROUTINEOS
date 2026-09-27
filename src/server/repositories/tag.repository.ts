@@ -1,4 +1,4 @@
-import type { Tag } from '@prisma/client';
+import type { Tag } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 import {
   colorForTagName,

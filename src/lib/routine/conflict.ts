@@ -99,9 +99,9 @@ function hasTimeOverlap(
   const [start2Hour = 0, start2Min = 0] = start2.split(':').map(Number);
   const [end2Hour = 0, end2Min = 0] = end2.split(':').map(Number);
   
-  let start1Minutes = start1Hour * 60 + start1Min;
+  const start1Minutes = start1Hour * 60 + start1Min;
   let end1Minutes = end1Hour * 60 + end1Min;
-  let start2Minutes = start2Hour * 60 + start2Min;
+  const start2Minutes = start2Hour * 60 + start2Min;
   let end2Minutes = end2Hour * 60 + end2Min;
   
   // Handle overnight blocks
@@ -122,7 +122,7 @@ function calculateDuration(startTime: string, endTime: string): number {
   const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
   const [endHour = 0, endMin = 0] = endTime.split(':').map(Number);
   
-  let startMinutes = startHour * 60 + startMin;
+  const startMinutes = startHour * 60 + startMin;
   let endMinutes = endHour * 60 + endMin;
   
   if (endMinutes <= startMinutes) {

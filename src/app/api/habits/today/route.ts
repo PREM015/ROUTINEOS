@@ -1,11 +1,11 @@
 import { auth } from '@/lib/auth';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { HabitService } from '@/server/services/habit.service';
-import { calculateHabitEligibility } from '@/lib/habits/eligibility';
-import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
-import { UserRepository } from '@/server/repositories/user.repository';
+import { getTodayString } from '@/lib/dates';
+import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+
+const habitService = new HabitService();
 
 /**
  * GET /api/habits/today
@@ -20,56 +20,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userRepository = new UserRepository();
     const { searchParams } = new URL(request.url);
     const date =
       searchParams.get('date') ||
-      getTodayString((await userRepository.getSettings(session.user.id))?.timezone || DEFAULT_TZ);
+      getTodayString(await new UserService().getTimezone(session.user.id));
 
-    const habitRepository = new HabitRepository();
+    const data = await habitService.getHabitsForDate(session.user.id, date);
 
-    // Get all active habits
-    const habits = await habitRepository.findAll(session.user.id, {
-      status: 'ACTIVE',
-    });
-
-    // Get today's logs
-    const logs = await habitRepository.findLogsByDate(session.user.id, date);
-    const logMap = new Map(logs.map(log => [log.habitId, log]));
-
-    // Check eligibility and build response
-    const todayHabits = await Promise.all(
-      habits.map(async (habit) => {
-        const eligibility = await calculateHabitEligibility(
-          habit.id,
-          session.user.id,
-          date
-        );
-
-        return {
-          id: habit.id,
-          name: habit.name,
-          tier: habit.tier,
-          color: habit.color,
-          icon: habit.icon,
-          estimatedDuration: habit.estimatedDuration,
-          targetCount: habit.targetCount,
-          category: habit.category,
-          isEligible: eligibility.isEligible,
-          eligibilityReason: eligibility.isEligible ? undefined : eligibility.reason,
-          source: eligibility.source,
-          log: logMap.get(habit.id) || null,
-        };
-      })
-    );
-
-    // Filter to only eligible habits
-    const eligibleHabits = todayHabits.filter(h => h.isEligible);
-
-    return NextResponse.json({
-      success: true,
-      data: eligibleHabits,
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching today\'s habits:', error);
     return NextResponse.json(
