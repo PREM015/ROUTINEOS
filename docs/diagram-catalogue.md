@@ -137,8 +137,8 @@ been generated for real. The committed set (3, 6, 7, 10) is complete; the scorin
 | ID | Diagram | File | Status |
 |---|---|---|---|
 | 35 | Scoring weight breakdown | `scoring-weight-breakdown.html` | **delivered** — 9/9, no overflow |
-| 37 | Achievement evaluation | — | next |
-| 45 | Routine log to score recalc | — | queued |
+| 37 | Achievement evaluation | `achievement-evaluation.html` | **delivered** — 9/9, no overflow |
+| 45 | Routine log to score recalc | — | next |
 | 69 | Daily score cron | — | queued |
 | 78–84 | Analytics & reporting (7) | — | queued |
 
@@ -158,6 +158,11 @@ Historical scores are unaffected unless a user had explicitly set `weightNonNeg`
 - **Inter-stage gaps are ~51px.** A rendered label is ~56px wide, so it cannot sit on a horizontal
   flow *and* dodge a diagonal in the same gap. Put such labels **below the line** (`labelAt` y ≈ 200)
   rather than shifting x, which then collides with the source node.
+- **Workflow (v2) caps at 3 lanes.** Four lanes validated and delivered 9/9 but rendered at
+  scrollHeight 1156. Workflow **ignores `meta.viewBox`** entirely — setting 560/500/440 all failed
+  validation, because it validates against its own computed lane geometry. Lane count is the only
+  height lever. Use `schema_version: 2`, `lanes` + `phases` + `mainPath`, node `width: 132`.
+- Fold side-effect detail into a node `sublabel`/`tag` rather than giving it its own lane.
 - **PowerShell gotcha:** `-match` / `if ($s -match ...)` tests for *any* occurrence in the string, so
   a nested sub-check's `"ok": true` makes a *failed* deliver look successful. Always extract the
   **first** match: `[regex]::Match($s,'\A[\s\S]*?"ok": (true|false)')`.
