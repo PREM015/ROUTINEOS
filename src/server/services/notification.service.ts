@@ -276,6 +276,7 @@ export class NotificationService {
       limit,
       DISPATCH_EXCLUDED_TYPES,
       options.userId,
+      DISPATCH_MAX_RETRIES,
     );
     result.claimed = due.length;
 
@@ -344,7 +345,19 @@ export class NotificationService {
             url: notification.actionUrl ?? undefined,
           });
           if (push.sent > 0) channels.push = true;
-          if (push.failed > 0) failures.push(`${push.failed} push subscription(s) failed`);
+          /**
+           * The actual reason from `pushService` carries the diagnosis — a VAPID
+           * mismatch, a dead subscription, an expired endpoint. Collapsing it to
+           * "1 push subscription(s) failed" is why a real delivery failure was
+           * invisible and had to be reproduced out-of-band to diagnose.
+           */
+          if (push.failed > 0) {
+            failures.push(
+              push.reason
+                ? `${push.failed} push subscription(s) failed: ${push.reason}`
+                : `${push.failed} push subscription(s) failed`
+            );
+          }
         } catch (error) {
           failures.push(error instanceof Error ? error.message : 'push threw');
         }

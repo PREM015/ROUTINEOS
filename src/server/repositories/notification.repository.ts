@@ -263,7 +263,19 @@ export class NotificationRepository extends BaseRepository {
   ): Promise<number> {
     try {
       const result = await this.prisma.notificationLog.updateMany({
-        where: { id: notificationId, userId, status: NotificationStatus.PENDING },
+        where: {
+          id: notificationId,
+          userId,
+          /**
+           * Must accept PENDING **and** a retryable FAILED row.
+           *
+           * `findDueForDispatch` now re-selects FAILED rows that are still under
+           * the retry budget. If this guard stayed `PENDING` only, such a row
+           * would be re-pushed on every tick and never transition to SENT — an
+           * unbounded duplicate loop, since the send happens before this call.
+           */
+          status: { in: [NotificationStatus.PENDING, NotificationStatus.FAILED] },
+        },
         data: {
           status: NotificationStatus.SENT,
           sentAt: new Date(),
@@ -302,14 +314,33 @@ export class NotificationRepository extends BaseRepository {
      * one person's page load cannot trigger a system-wide dispatch.
      */
     userId?: string,
+    /** Rows in FAILED status below this retry count are re-selected. */
+    maxRetries?: number,
   ): Promise<DispatchCandidate[]> {
     try {
       return await this.prisma.notificationLog.findMany({
         where: {
-          status: NotificationStatus.PENDING,
           scheduledFor: { lte: before },
           ...(userId ? { userId } : {}),
           ...(excludeTypes.length > 0 ? { type: { notIn: excludeTypes } } : {}),
+          /**
+           * A previous run selected only `status: PENDING`. Combined with
+           * `markFailed` writing `status: FAILED`, that made a single transient
+           * push error permanently lose the notification: the row was never
+           * selected again, and `markFailed`'s own `retryCount < maxRetries`
+           * guard could never fire because nothing re-selected the row.
+           *
+           * So FAILED rows are re-selected here while they are still under the
+           * retry budget. Together with the guard in `markFailed` this gives a
+           * real bounded retry instead of either unbounded retrying or no
+           * retrying at all.
+           */
+          OR: [
+            { status: NotificationStatus.PENDING },
+            ...(maxRetries === undefined
+              ? []
+              : [{ status: NotificationStatus.FAILED, retryCount: { lt: maxRetries } }]),
+          ],
         },
         select: {
           id: true,
@@ -371,7 +402,8 @@ export class NotificationRepository extends BaseRepository {
         where: {
           id: notificationId,
           userId,
-          status: NotificationStatus.PENDING,
+          // Accepts PENDING or a retryable FAILED row, matching `markSent`.
+          status: { in: [NotificationStatus.PENDING, NotificationStatus.FAILED] },
           retryCount: { lt: maxRetries },
         },
         data: {
