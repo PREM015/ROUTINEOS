@@ -1,8 +1,8 @@
 import prisma from '@/lib/prisma';
 import { NotificationType } from '@/generated/prisma';
-import { addDays, startOfDay, differenceInMinutes } from 'date-fns';
+import { differenceInMinutes } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import { DEFAULT_TZ, getTodayString } from '@/lib/dates';
+import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
 
 /**
  * Notification Scheduler
@@ -182,106 +182,94 @@ async function getNotificationPreferences(
  * Calculate the next occurrence of a routine block
  * based on the template's dayType and current time
  */
+/**
+ * The next occurrence of a routine block, as an **absolute instant**.
+ *
+ * ## The bug this replaces
+ *
+ * This used to do:
+ *
+ *     const now = toZonedTime(new Date(), timezone);
+ *     const target = new Date(startOfDay(now));
+ *     target.setHours(hours, minutes, 0, 0);   // <-- wrong
+ *
+ * `toZonedTime` returns a `Date` whose *system-local* fields read as the target
+ * zone's wall clock, but Prisma persists the underlying timestamp. On a server
+ * running in UTC that turned an 18:00 Asia/Kolkata block into `18:00Z`, which is
+ * **23:30 IST** — a routine reminder arriving five and a half hours late, every
+ * time. The same mistake was in `scheduleDailyReminder` and has been fixed there
+ * too.
+ *
+ * ## The fix
+ *
+ * Work entirely in the user's local calendar (a `YYYY-MM-DD` string plus the
+ * block's wall-clock `HH:mm`), then convert once with `fromZonedTime`, which is
+ * the correct inverse. Every comparison is against the real current time, so the
+ * 24-hour window and "not in the past" checks are also correct.
+ *
+ * @param startTime  The block's start as wall-clock `HH:mm`.
+ * @param isOvernight True when the block runs past midnight (e.g. Sleep 00:00-06:00).
+ * @param dayType    The template's day type, used to pick a matching weekday.
+ * @param timezone   The user's IANA zone.
+ * @param now        Real current time. Injectable for testing.
+ */
 function getNextOccurrence(
-  startTime: string, // "HH:mm"
+  startTime: string,
   isOvernight: boolean,
-  dayType: string, // "WORKDAY", "WEEKEND", "HOLIDAY", etc.
-  currentDate: Date
+  dayType: string,
+  timezone: string,
+  now: Date = new Date()
 ): Date | null {
-  const [hours, minutes] = startTime.split(':').map(Number);
-  if (hours === undefined || minutes === undefined) return null;
+  const match = /^(\d{2}):(\d{2})$/.exec(startTime.trim());
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
 
-  const now = currentDate;
+  const dayTypeKey = dayType as 'WORKDAY' | 'WEEKEND' | 'HOLIDAY' | 'EXAM_DAY' | 'LOW_ENERGY' | 'CUSTOM';
 
-  // Determine if today matches the dayType
-  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5; // Monday-Sunday
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
-
-  let matchesDayType = false;
-
-  switch (dayType) {
-    case 'WORKDAY':
-      matchesDayType = isWeekday;
-      break;
-    case 'WEEKEND':
-      matchesDayType = isWeekend;
-      break;
-    case 'HOLIDAY':
-      // Holidays are not automatically detected; treat as custom
-      matchesDayType = true;
-      break;
-    case 'EXAM_DAY':
-      matchesDayType = true; // Would need exam day definitions
-      break;
-    case 'LOW_ENERGY':
-      matchesDayType = true; // Would need low energy day definitions
-      break;
-    case 'CUSTOM':
-    default:
-      matchesDayType = true;
-      break;
-  }
-
-  if (!matchesDayType) {
-    // Skip to next matching day
-    let daysAhead = 1;
-    while (daysAhead < 7) {
-      const checkDate = addDays(now, daysAhead);
-      const checkDayOfWeek = checkDate.getDay();
-      const checkIsWeekday = checkDayOfWeek >= 1 && checkDayOfWeek <= 5;
-      const checkIsWeekend = checkDayOfWeek === 0 || checkDayOfWeek === 6;
-
-      let checkMatches = false;
-      if (dayType === 'WORKDAY') checkMatches = checkIsWeekday;
-      else if (dayType === 'WEEKEND') checkMatches = checkIsWeekend;
-      else checkMatches = true;
-
-      if (checkMatches) {
-        // Set the time on the found date
-        const result = new Date(checkDate);
-        result.setHours(hours, minutes, 0, 0);
-        return result;
+  /** Does this local date's weekday satisfy the template's day type? */
+  const dayMatches = (localDate: string): boolean => {
+    switch (dayTypeKey) {
+      case 'WORKDAY': {
+        const d = weekdayOfLocalDate(localDate);
+        return d >= 1 && d <= 5;
       }
-      daysAhead++;
-    }
-    return null;
-  }
-
-  // Today matches the dayType - check if the time has already passed today
-  const todayDate = startOfDay(now);
-  const targetToday = new Date(todayDate);
-  targetToday.setHours(hours, minutes, 0, 0);
-
-  // If the time has already passed today and it's not overnight, schedule for next matching day
-  if (!isOvernight && now > targetToday) {
-    // Search forward for the next matching day
-    let daysAhead = 1;
-    while (daysAhead < 7) {
-      const checkDate = addDays(now, daysAhead);
-      const checkDayOfWeek = checkDate.getDay();
-      const checkIsWeekday = checkDayOfWeek >= 1 && checkDayOfWeek <= 5;
-      const checkIsWeekend = checkDayOfWeek === 0 || checkDayOfWeek === 6;
-
-      let checkMatches = false;
-      if (dayType === 'WORKDAY') checkMatches = checkIsWeekday;
-      else if (dayType === 'WEEKEND') checkMatches = checkIsWeekend;
-      else checkMatches = true;
-
-      if (checkMatches) {
-        const result = new Date(startOfDay(checkDate));
-        result.setHours(hours, minutes, 0, 0);
-        return result;
+      case 'WEEKEND': {
+        const d = weekdayOfLocalDate(localDate);
+        return d === 0 || d === 6;
       }
-      daysAhead++;
+      // Holidays / exam days / low energy / custom are not auto-derived, so the
+      // template is treated as applying to any day, matching the old switch.
+      default:
+        return true;
     }
-    return null;
+  };
+
+  // Walk the user's next 8 local days, starting with today.
+  let localDate = getTodayString(timezone);
+  for (let dayOffset = 0; dayOffset < 8; dayOffset += 1) {
+    if (dayMatches(localDate)) {
+      const instant = fromZonedTime(
+        `${localDate}T${startTime.trim()}:00.000`,
+        timezone
+      );
+
+      // For an overnight block whose start has already passed today, the next
+      // meaningful occurrence is tomorrow's — which the loop reaches anyway.
+      if (instant.getTime() > now.getTime() || (dayOffset === 0 && isOvernight && instant.getTime() > now.getTime())) {
+        return instant;
+      }
+    }
+    localDate = shiftCalendarDay(localDate, 1);
   }
 
-  // Time has not passed today OR it's overnight - schedule for today
-  const result = new Date(todayDate);
-  result.setHours(hours, minutes, 0, 0);
-  return result;
+  return null;
+}
+
+/** Day of week (0 = Sunday) for a `YYYY-MM-DD` string, without timezone maths. */
+function weekdayOfLocalDate(localDate: string): number {
+  return new Date(`${localDate}T00:00:00.000Z`).getUTCDay();
 }
 
 /**
@@ -302,9 +290,10 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
       return 0;
     }
 
-    // Get user's timezone
+    // Get user's timezone. `now` is the REAL current time, never a
+    // `toZonedTime` copy — comparisons below must be absolute-instant based.
     const timezone = preferences?.timezone ?? (await getUserTimezone(userId));
-    const now = toZonedTime(new Date(), timezone);
+    const now = new Date();
 
     // How long before a block starts the reminder should be delivered. 0 means
     // "at start time". Read from settings; was previously hardcoded to 0 with
@@ -349,11 +338,12 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
       if (seenBlocks.has(blockKey)) continue;
       seenBlocks.add(blockKey);
 
-      // Calculate next occurrence
+      // Calculate next occurrence (an absolute instant in the user's timezone)
       const nextOccurrence = getNextOccurrence(
         block.startTime,
         block.isOvernight,
         block.template.dayType,
+        timezone,
         now
       );
 

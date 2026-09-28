@@ -49,6 +49,12 @@ seed.log
 dev.log
 *.log
 
+# Throwaway verification scripts written by the agent. These query the real
+# database and are only meaningful for a single run, so they must never reach
+# the repository. The directory is created on demand and deleted afterwards.
+.tmp-agent-verify/
+*.tmp-agent-verify
+
 # test + coverage output
 coverage/
 playwright-report/
