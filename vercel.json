@@ -27,20 +27,10 @@
     {
       "path": "/api/cron/generate-insights",
       "schedule": "0 2 * * 0"
-    },
-    {
-      "path": "/api/cron/schedule-routine-notifications",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/dispatch-notifications",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/run-automations",
-      "schedule": "0 * * * *"
     }
   ],
+
+  "//crons": "Hobby allows ONLY once-per-day cron expressions. The previous entries at */5 * * * *, */15 * * * * and 0 * * * * made every deployment fail with 'Hobby accounts are limited to daily cron jobs'. High-frequency notification scheduling now runs from .github/workflows/notification-scheduler.yml, which is free for a public repository, so those three entries were removed. The two remaining jobs are daily and weekly. If this project is ever upgraded to Pro they can be re-added here as a redundant second driver.",
 
   "headers": [
     {

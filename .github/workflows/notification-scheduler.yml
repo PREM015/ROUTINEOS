@@ -71,36 +71,17 @@ jobs:
           echo "Add it under Settings -> Secrets and variables -> Actions -> Secrets."
           exit 1
 
-      # Order matters.
-      #   1. sleep-notifications  - creates the bedtime prompt. SLEEP_PROMPT is
-      #                             excluded from the generic dispatcher, and
-      #                             this step pushes it immediately.
-      #   2. schedule-routine-*   - queues rows for routine blocks, the daily
-      #                             nudge, per-habit and per-goal reminders.
-      #   3. dispatch-*           - sends everything now due, so a reminder
-      #                             created in step 2 fires in the same tick
-      #                             instead of waiting another 5 minutes.
+      # ONE call processes EVERYTHING that is due: sleep prompts, the routine /
+      # daily / habit / goal / task producers, then the dispatcher.
       #
-      # `continue-on-error` so one failing step does not skip the dispatch that
-      # would clear the backlog.
-
-      - name: Sleep prompts
+      # The endpoint is safe to run as often as you like and safe to run late —
+      # it selects everything with `scheduledFor <= now` — so a delayed or missed
+      # tick produces a LATE notification, never a lost one.
+      #
+      # No secret is echoed: the response body is a JSON summary of counts.
+      - name: Notification tick
         continue-on-error: true
         run: |
-          curl -sS --max-time 30 --fail-with-body \
+          curl -sS --max-time 120 --fail-with-body \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${BASE_URL}/api/cron/sleep-notifications"
-
-      - name: Schedule routine, habit and goal reminders
-        continue-on-error: true
-        run: |
-          curl -sS --max-time 60 --fail-with-body \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${BASE_URL}/api/cron/schedule-routine-notifications"
-
-      - name: Dispatch due notifications
-        continue-on-error: true
-        run: |
-          curl -sS --max-time 60 --fail-with-body \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${BASE_URL}/api/cron/dispatch-notifications"
+            "${BASE_URL}/api/cron/notification-tick"
