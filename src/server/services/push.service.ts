@@ -18,6 +18,26 @@ export interface PushPayload {
   data?: Record<string, unknown>;
 }
 
+/**
+ * Coerce `VAPID_SUBJECT` into something the Web Push spec accepts.
+ *
+ * The spec requires the contact to be a `mailto:` URI or an `https:` URL. People
+ * naturally set `VAPID_SUBJECT=someone@example.com`, and `web-push` then throws
+ * `Vapid subject is not a valid URL`, which — because this runs in a constructor
+ * on a module-level singleton — used to fail the whole build.
+ *
+ * So a bare email is upgraded to `mailto:someone@example.com` rather than
+ * rejected. Anything already valid is passed through untouched.
+ */
+function normaliseVapidSubject(raw: string | undefined): string {
+  const value = raw?.trim();
+  if (!value) return 'mailto:dev@routineos.example';
+  if (/^mailto:/i.test(value) || /^https?:/i.test(value)) return value;
+  // Looks like a bare email address.
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) return `mailto:${value}`;
+  return value;
+}
+
 interface SendResult {
   sent: number;
   failed: number;
@@ -35,19 +55,50 @@ interface SendResult {
 export class PushService {
   private pushSubscriptionRepository: PushSubscriptionRepository;
   private vapidConfigured = false;
+  /** Why VAPID could not be configured, for diagnostics. Never throws. */
+  private vapidError: string | null = null;
 
   constructor() {
     this.pushSubscriptionRepository = new PushSubscriptionRepository();
     this.configureVapid();
   }
 
+  /**
+   * Configure VAPID.
+   *
+   * ## Why this must never throw
+   *
+   * This runs in the constructor, and `pushService` is a module-level singleton
+   * that routes import transitively. `webpush.setVapidDetails` throws when the
+   * subject is not a valid URL/`mailto:` URI, and it also throws on malformed
+   * keys. Because that happened at import time, a single malformed
+   * `VAPID_SUBJECT` took down **the entire Next.js build**:
+   *
+   *   Failed to collect configuration for /api/achievements/celebrate
+   *   [cause]: Error: Vapid subject is not a valid URL. someone@example.com
+   *
+   * A push misconfiguration should degrade push, not the whole application.
+   * Failures are now recorded in `vapidError` and surfaced through
+   * `/api/push/test` and `sendToUser`, which already return a `reason`.
+   */
   private configureVapid(): void {
     const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;
-    const subject = process.env.VAPID_SUBJECT ?? 'mailto:dev@routineos.example';
-    if (publicKey && privateKey) {
-      webpush.setVapidDetails(subject, publicKey, privateKey);
+
+    if (!publicKey || !privateKey) {
+      this.vapidError =
+        'VAPID keys are missing. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.';
+      return;
+    }
+
+    try {
+      webpush.setVapidDetails(normaliseVapidSubject(process.env.VAPID_SUBJECT), publicKey, privateKey);
       this.vapidConfigured = true;
+      this.vapidError = null;
+    } catch (error) {
+      this.vapidConfigured = false;
+      this.vapidError = error instanceof Error ? error.message : 'Invalid VAPID configuration';
+      console.error('[PUSH] VAPID configuration rejected:', this.vapidError);
     }
   }
 
@@ -69,8 +120,9 @@ export class PushService {
         sent: 0,
         failed: 0,
         reason:
+          this.vapidError ??
           'Push is not configured server-side. NEXT_PUBLIC_VAPID_PUBLIC_KEY and ' +
-          'VAPID_PRIVATE_KEY must both be set.',
+            'VAPID_PRIVATE_KEY must both be set.',
       };
     }
 
