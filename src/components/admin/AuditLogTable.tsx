@@ -7,13 +7,46 @@ import { Badge } from '@/components/ui/Badge';
 export function AuditLogTable() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- server log shape varies; used loosely in the admin table
   const [logs, setLogs] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/admin/audit-log')
-      .then(res => res.json())
-      .then(data => setLogs(data.logs || []))
-      .catch(console.error);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setError(null);
+        const res = await fetch('/api/admin/audit-log');
+        if (!res.ok) {
+          throw new Error(`Could not load the audit log (status ${res.status})`);
+        }
+        const data = await res.json();
+        if (cancelled) return;
+        if (!data.success) {
+          throw new Error(data.error || 'Could not load the audit log');
+        }
+        // The route returns the `{ success, data }` envelope. This read
+        // `data.logs`, which is always undefined, so the table silently
+        // rendered empty on every load regardless of what the API returned.
+        setLogs(Array.isArray(data.data) ? data.data : []);
+      } catch (err) {
+        if (cancelled) return;
+        setError(
+          err instanceof Error ? err.message : 'Could not load the audit log'
+        );
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  if (error) {
+    return (
+      <div>
+        <p role="alert" className="text-sm text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">

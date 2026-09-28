@@ -2,90 +2,46 @@
 
 /**
  * Settings — Habits
- * Habit reminder preferences. Reads the current values from
- * GET /api/users/[id]/settings (owner-only) and writes changes via
- * PUT /api/settings; the write route returns a plain envelope so failures
- * (e.g. maintenance) surface as an error banner.
+ *
+ * Habit/goal reminder defaults. These four columns (`dailyReminder`,
+ * `dailyReminderTime`, `habitReminders`, `goalReminders`) were previously also
+ * owned by `/settings/notifications`, which defaulted the time to `'20:00'`
+ * while this page defaulted it to `'09:00'` — two owners, one column, two
+ * different fallbacks.
+ *
+ * This page now:
+ *   - reads and writes through the shared settings store, so it cannot disagree
+ *     with the notifications page about the same row;
+ *   - uses the same `'20:00'` default as the producer in
+ *     `notifications/scheduler.ts`;
+ *   - sends `null` for a cleared time field instead of `''`, which the
+ *     `HH:mm` validation regex used to reject with a 400.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, ShieldAlert } from 'lucide-react';
-import { apiRequest, ApiError } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { BellRing, CheckCircle2, ShieldAlert, Target } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSettings } from '@/hooks/useSettings';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Skeleton } from '@/components/ui/Skeleton';
 
-interface HabitsSettingsRow {
-  dailyReminder: boolean;
-  dailyReminderTime: string | null;
-  habitReminders: boolean;
-  goalReminders: boolean;
-}
+/** Matches `scheduleDailyReminder` in `src/server/notifications/scheduler.ts`. */
+const DEFAULT_DAILY_REMINDER_TIME = '20:00';
 
 export default function HabitsSettingsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  const [settings, setSettings] = useState<HabitsSettingsRow>({
-    dailyReminder: true,
-    dailyReminderTime: '09:00',
-    habitReminders: true,
-    goalReminders: true,
-  });
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading } = useAuth();
+  const { settings, loading, save, patchLocal, saving, error } = useSettings();
   const [saved, setSaved] = useState(false);
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
-  const load = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await apiRequest<HabitsSettingsRow>(`/api/users/${user.id}/settings`);
-      setSettings({
-        dailyReminder: data.dailyReminder ?? true,
-        dailyReminderTime: data.dailyReminderTime ?? '09:00',
-        habitReminders: data.habitReminders ?? true,
-        goalReminders: data.goalReminders ?? true,
-      });
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Failed to load habit settings.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    void load();
-  }, [load]);
-
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await apiRequest('/api/settings', {
-        method: 'PUT',
-        body: {
-          dailyReminder: settings.dailyReminder,
-          dailyReminderTime: settings.dailyReminderTime,
-          habitReminders: settings.habitReminders,
-          goalReminders: settings.goalReminders,
-        },
-      });
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1600);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save habit settings.');
-    } finally {
-      setSaving(false);
-    }
-  };
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSaved(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
 
   if (isLoading) {
     return (
@@ -98,24 +54,38 @@ export default function HabitsSettingsPage() {
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
     return (
       <main className="container mx-auto max-w-2xl px-4 py-16">
         <Card>
           <div className="p-8 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-amber-500" />
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
-            <a
+            <Link
               href="/login"
               className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary light-sweep glow-neon px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </Card>
       </main>
     );
   }
+
+  const persist = async () => {
+    if (!settings) return;
+    const result = await save({
+      habitReminders: settings.habitReminders,
+      goalReminders: settings.goalReminders,
+      dailyReminder: settings.dailyReminder,
+      // `null` clears the column. Sending '' failed the HH:mm regex and
+      // returned a 400, so the time could never be cleared.
+      dailyReminderTime:
+        settings.dailyReminderTime?.trim() || DEFAULT_DAILY_REMINDER_TIME,
+    });
+    if (result) setSaved(true);
+  };
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-8">
@@ -126,67 +96,93 @@ export default function HabitsSettingsPage() {
         </p>
       </div>
 
-      {loadError && (
-        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-          {loadError}
-        </div>
-      )}
-
-      <Card>
-        <div className="p-6">
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-1/2" />
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <Switch
-                checked={settings.habitReminders}
-                onChange={(checked) => setSettings({ ...settings, habitReminders: checked })}
-                label="Habit reminders"
-              />
-              <Switch
-                checked={settings.goalReminders}
-                onChange={(checked) => setSettings({ ...settings, goalReminders: checked })}
-                label="Goal reminders"
-              />
-              <Switch
-                checked={settings.dailyReminder}
-                onChange={(checked) => setSettings({ ...settings, dailyReminder: checked })}
-                label="Daily summary reminder"
-              />
-              <div>
-                <Input
-                  label="Daily reminder time"
-                  type="time"
-                  value={settings.dailyReminderTime ?? ''}
-                  onChange={(event) => setSettings({ ...settings, dailyReminderTime: event.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-              {error}
-            </div>
-          )}
-
-          <div className="mt-6 flex items-center gap-3">
-            <Button onClick={() => void save()} isLoading={saving} disabled={loading}>
-              Save changes
-            </Button>
-            {saved && (
-              <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                Saved
-              </span>
-            )}
+      <div className="space-y-6">
+        <Card>
+          <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+            <BellRing className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h2 className="text-lg font-bold">Reminders</h2>
           </div>
-        </div>
-      </Card>
+          <div className="space-y-5 p-6">
+            {loading || !settings ? (
+              <>
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-1/2" />
+              </>
+            ) : (
+              <>
+                <Switch
+                  label="Habit reminders"
+                  description="Deliver a reminder for habits that are due today."
+                  checked={settings.habitReminders}
+                  onChange={(checked) => patchLocal({ habitReminders: checked })}
+                />
+                <Switch
+                  label="Goal check-ins"
+                  description="Nudge you when a goal check-in is overdue."
+                  checked={settings.goalReminders}
+                  onChange={(checked) => patchLocal({ goalReminders: checked })}
+                />
+                <Switch
+                  label="Daily summary reminder"
+                  description="A single nudge each day to log your habits."
+                  checked={settings.dailyReminder}
+                  onChange={(checked) => patchLocal({ dailyReminder: checked })}
+                />
+                <div className="max-w-xs">
+                  <Input
+                    label="Daily reminder time"
+                    type="time"
+                    value={settings.dailyReminderTime ?? ''}
+                    disabled={!settings.dailyReminder}
+                    onChange={(event) =>
+                      patchLocal({ dailyReminderTime: event.target.value || null })
+                    }
+                    helperText={`Defaults to ${DEFAULT_DAILY_REMINDER_TIME} in your local timezone.`}
+                  />
+                </div>
+              </>
+            )}
+
+            {error && (
+              <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={() => void persist()} isLoading={saving} disabled={loading || !settings}>
+                Save changes
+              </Button>
+              {saved && (
+                <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                  Saved
+                </span>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="p-6">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" aria-hidden="true" />
+              <h2 className="text-lg font-bold">Delivery channels</h2>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Choose which channels these reminders are sent through (email,
+              push, quiet hours) on the Notifications page.
+            </p>
+            <Link
+              href="/settings/notifications"
+              className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+            >
+              Notification settings
+            </Link>
+          </div>
+        </Card>
+      </div>
     </main>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button, Checkbox } from '@/components/ui';
 import { useApp, type HabitTier, type FrequencyType } from '@/context/AppContext';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import type { DayTypeDefinition } from '@/types/routine';
 import { fetchWithAuth } from '@/lib/api-client';
 
@@ -43,6 +43,7 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 
 export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
   const { addHabit } = useApp();
+  const { today: userToday } = useUserTimezone();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tier, setTier] = useState<HabitTier>('GROWTH');
@@ -57,6 +58,7 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
   const [dayTypeIds, setDayTypeIds] = useState<string[]>([]);
   const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
   const [dayTypesLoading, setDayTypesLoading] = useState(true);
+  const [dayTypesError, setDayTypesError] = useState<string | null>(null);
 
   // Fetch day types on mount
   useEffect(() => {
@@ -68,14 +70,23 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
   const loadDayTypes = async () => {
     try {
       setDayTypesLoading(true);
-      const res = await fetchWithAuth('/api/day-types');
-      if (res.ok) {
-        const json = await res.json();
-        const data: DayTypeDefinition[] = json.data || [];
-        setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
+      setDayTypesError(null);
+      const res = await fetchWithAuth('/api/day-types?active=true');
+      if (!res.ok) {
+        throw new Error(`Could not load day types (status ${res.status})`);
       }
+      const json = await res.json();
+      const data: DayTypeDefinition[] = json.data || [];
+      setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
     } catch (error) {
-      console.error('Failed to load day types:', error);
+      // Reported rather than swallowed. This previously reached only
+      // `console.error`, so a failed request rendered the picker as an empty
+      // list reading "No day types available" — indistinguishable from a user
+      // who has created none. Selecting "specific day types" then left
+      // `dayTypeIds` empty and the save was rejected with no explanation of why.
+      setDayTypesError(
+        error instanceof Error ? error.message : 'Could not load day types'
+      );
     } finally {
       setDayTypesLoading(false);
     }
@@ -126,7 +137,13 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
         throw new Error('Reminder time must be HH:mm');
       }
       if (!appliesEveryDay && dayTypeIds.length === 0) {
-        throw new Error('Pick at least one day type');
+        // Name the cause: with a failed day-type load the picker is empty, so
+        // "Pick at least one day type" is unachievable and unexplained.
+        throw new Error(
+          dayTypesError
+            ? `Could not load day types, so none can be selected. ${dayTypesError}`
+            : 'Pick at least one day type'
+        );
       }
 
       await addHabit({
@@ -143,7 +160,7 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
               ? String(parsedTarget ?? 1)
               : undefined,
         targetCount: parsedTarget,
-        startDate: getTodayString(),
+        startDate: userToday,
         reminderTime: reminderTime || undefined,
         reminderEnabled: Boolean(reminderTime),
         appliesEveryDay,
@@ -259,6 +276,19 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
                     <div key={i} className="h-10 w-24 animate-pulse bg-muted rounded-lg" />
                   ))}
                 </div>
+              ) : dayTypesError ? (
+                <div>
+                  <p role="alert" className="text-xs text-destructive">
+                    {dayTypesError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void loadDayTypes()}
+                    className="mt-1 text-xs font-semibold text-primary hover:underline"
+                  >
+                    Try again
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {dayTypes.map(dt => (
@@ -279,7 +309,7 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
                   ))}
                 </div>
               )}
-              {!dayTypesLoading && dayTypes.length === 0 && (
+              {!dayTypesLoading && !dayTypesError && dayTypes.length === 0 && (
                 <p className="text-xs text-muted-foreground">No day types available. Create one in Routine settings.</p>
               )}
             </div>

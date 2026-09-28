@@ -97,7 +97,9 @@ function toGoalData(userId: string, goal: ImportGoalInput): Prisma.GoalUnchecked
   };
 
   if (goal.description !== undefined) data.description = goal.description;
-  if (goal.priority !== undefined) data.priority = goal.priority;
+  // `priority` is nullable so the Edit modal can clear it; fall back to the
+  // column default rather than writing null to a non-nullable column.
+  if (goal.priority != null) data.priority = goal.priority;
   if (goal.currentValue !== undefined) data.currentValue = goal.currentValue;
   if (goal.unit !== undefined) data.unit = goal.unit;
   if (goal.status !== undefined) data.status = goal.status;

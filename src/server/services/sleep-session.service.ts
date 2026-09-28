@@ -139,11 +139,16 @@ export class SleepSessionService {
     if (hasActive || hasLog) return false;
 
     const autoStartMinutes = settings.sleepAutoStartAfterMinutes ?? 15;
+    const autoStartEnabled = settings.sleepAutoStartEnabled !== false;
+    // When auto-start is off, the prompt copy must not promise it will happen.
+    const autoStartCopy = autoStartEnabled
+      ? ` Sleep will start automatically in ${autoStartMinutes} minutes unless you say "Not yet".`
+      : ' Tap to start sleep tracking when you are ready.';
     const created = await notificationService
       .createNotification(userId, {
         type: NotificationType.SLEEP_PROMPT,
         title: 'Time to sleep',
-        body: `Your target bedtime is ${targetBedtime}. Sleep will start automatically in ${autoStartMinutes} minutes unless you say "Not yet".`,
+        body: `Your target bedtime is ${targetBedtime}.${autoStartCopy}`,
         relatedEntityId: promptKey,
         scheduledFor: now,
         status: NotificationStatus.PENDING,
@@ -154,7 +159,7 @@ export class SleepSessionService {
       await pushService
         .notify(userId, {
           title: 'Time to sleep',
-          body: `Your target bedtime is ${targetBedtime}. Sleep will start automatically in ${autoStartMinutes} minutes unless you say "Not yet".`,
+          body: `Your target bedtime is ${targetBedtime}.${autoStartCopy}`,
           url: '/today',
           actions: [
             { action: 'sleep-start', title: 'Yes, start sleep' },
@@ -179,7 +184,10 @@ export class SleepSessionService {
     const prompt = pending[0] ?? null;
     if (!prompt) return null;
 
-    const autoStartMinutes = settings?.sleepAutoStartAfterMinutes ?? 15;
+    const autoStartEnabled = settings?.sleepAutoStartEnabled !== false;
+    const autoStartMinutes = autoStartEnabled
+      ? (settings?.sleepAutoStartAfterMinutes ?? 15)
+      : 0;
     const autoStartMs = autoStartMinutes * 60000;
     return {
       id: prompt.id,
@@ -205,9 +213,14 @@ export class SleepSessionService {
     const settings = await this.getSettings(userId);
     const timezone = settings?.timezone || DEFAULT_TZ;
 
-    await this.ensureSleepPrompt(userId, settings, now);
-
-    const [active, prompt, todayLog] = await Promise.all([
+    // `ensureSleepPrompt` was awaited *before* the reads, so every poll ran
+    // serially: settings → prompt-existence count → (maybe) active+log check →
+    // (maybe) insert + push send → then the three reads. It is a side effect
+    // that does not feed the reads, so it now runs alongside them. A prompt
+    // created by this call surfaces on the next poll (≤15s) rather than
+    // blocking the response.
+    const [, active, prompt, todayLog] = await Promise.all([
+      this.ensureSleepPrompt(userId, settings, now),
       this.sessionRepository.findActive(userId),
       this.promptView(userId, now, settings),
       this.sleepRepository.findByDate(userId, getTodayString(timezone)),
@@ -419,6 +432,10 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
         settings.userId,
         [NotificationType.SLEEP_PROMPT]
       );
+      // "Start sleep automatically" was previously ignored here: the cron
+      // auto-started a session off `sleepAutoStartAfterMinutes` no matter what
+      // the switch said, so turning it off only hid the minutes input in the UI.
+      if (settings.sleepAutoStartEnabled === false) continue;
       const autoStartMinutes = settings.sleepAutoStartAfterMinutes ?? 15;
       const autoStartMs = autoStartMinutes * 60000;
 

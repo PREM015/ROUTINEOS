@@ -7,6 +7,7 @@ import {
   calculateCurrentStreak,
   daysUntilMilestone,
   nextStreakMilestone,
+  isStreakActiveDay,
 } from '@/server/domain/streak/streak-calculator';
 import type { DateRange, StreakAnalytics } from '@/types/analytics';
 
@@ -29,9 +30,10 @@ function addDays(dateStr: string, days: number): string {
   return new Date(toMs(dateStr) + days * MS_PER_DAY).toISOString().slice(0, 10);
 }
 
-function isActiveDate(score: { coreScore: number | null; isMinimumDay: boolean }): boolean {
-  return score.isMinimumDay === true || score.coreScore !== null;
-}
+// The "does this day count toward a streak" rule now lives in the streak
+// domain and is shared with the write path, so the streak shown here and the
+// streak stored on the `Streak` row cannot disagree.
+const isActiveDate = isStreakActiveDay;
 
 interface ContiguousRun {
   start: string;
@@ -60,7 +62,9 @@ function contiguousRuns(activeDates: string[]): ContiguousRun[] {
  * For each milestone length, the date the user first reached that many
  * consecutive active days within the range.
  */
-function milestonesFromRuns(runs: ContiguousRun[]): Array<{ type: string; days: number; reachedDate: string }> {
+function milestonesFromRuns(
+  runs: ContiguousRun[],
+): Array<{ type: string; days: number; reachedDate: string }> {
   const milestones: Array<{ type: string; days: number; reachedDate: string }> = [];
   for (const milestoneDays of STREAK_MILESTONES) {
     for (const run of runs) {
@@ -84,47 +88,45 @@ export async function streakAnalytics(userId: string, range: DateRange): Promise
     streakRepository.getUncelebratedMilestones(userId),
   ]);
 
-  const activeDates = scores
-    .filter(score => isActiveDate(score))
-    .map(score => score.date);
-  const restDates = new Set(scores.filter(score => score.isRestDay).map(score => score.date));
+  const activeDates = scores.filter((score) => isActiveDate(score)).map((score) => score.date);
+  const restDates = new Set(scores.filter((score) => score.isRestDay).map((score) => score.date));
 
   const current = calculateCurrentStreak(activeDates, range.endDate, { restDates });
   const longest = calculateLongestStreak(activeDates, { restDates });
   const longestCore = calculateLongestStreak(
-    scores.filter(score => score.coreScore !== null).map(score => score.date),
-    { restDates }
+    scores.filter((score) => score.coreScore !== null).map((score) => score.date),
+    { restDates },
   );
   const longestGrowth = calculateLongestStreak(
-    scores.filter(score => score.growthScore !== null).map(score => score.date),
-    { restDates }
+    scores.filter((score) => score.growthScore !== null).map((score) => score.date),
+    { restDates },
   );
   const longestMinimum = calculateLongestStreak(
-    scores.filter(score => score.isMinimumDay).map(score => score.date),
-    { restDates }
+    scores.filter((score) => score.isMinimumDay).map((score) => score.date),
+    { restDates },
   );
 
   const completedDays = activeDates.length;
-  const minimumDays = scores.filter(score => score.isMinimumDay).length;
-  const restDays = scores.filter(score => score.isRestDay).length;
+  const minimumDays = scores.filter((score) => score.isMinimumDay).length;
+  const restDays = scores.filter((score) => score.isRestDay).length;
   const perfectDays = scores.filter(
-    score => score.totalScore !== null && score.totalScore >= THRESHOLDS.achievements.perfectDay
+    (score) => score.totalScore !== null && score.totalScore >= THRESHOLDS.achievements.perfectDay,
   ).length;
 
   const milestoneUncelebrated = new Set(
     uncelebratedMilestones
-      .filter(milestone => milestone.streakType === 'current')
-      .map(milestone => milestone.milestoneDays)
+      .filter((milestone) => milestone.streakType === 'current')
+      .map((milestone) => milestone.milestoneDays),
   );
 
-  const milestones = milestonesFromRuns(contiguousRuns(activeDates)).map(milestone => ({
+  const milestones = milestonesFromRuns(contiguousRuns(activeDates)).map((milestone) => ({
     type: milestone.type,
     days: milestone.days,
     reachedDate: milestone.reachedDate,
     celebrated: !milestoneUncelebrated.has(milestone.days),
   }));
 
-  const timeline = scores.map(score => ({
+  const timeline = scores.map((score) => ({
     date: score.date,
     hasStreak: isActiveDate(score),
     isMinimumDay: score.isMinimumDay,

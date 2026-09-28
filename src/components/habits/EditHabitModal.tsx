@@ -72,6 +72,7 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
   const [dayTypeIds, setDayTypeIds] = useState<string[]>(habit.dayTypeAssignments?.map(dta => dta.dayTypeId) || []);
   const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
   const [dayTypesLoading, setDayTypesLoading] = useState(true);
+  const [dayTypesError, setDayTypesError] = useState<string | null>(null);
 
   // Fetch day types on mount
   useEffect(() => {
@@ -81,14 +82,22 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
   const loadDayTypes = async () => {
     try {
       setDayTypesLoading(true);
-      const res = await fetchWithAuth('/api/day-types');
-      if (res.ok) {
-        const json = await res.json();
-        const data: DayTypeDefinition[] = json.data || [];
-        setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
+      setDayTypesError(null);
+      const res = await fetchWithAuth('/api/day-types?active=true');
+      if (!res.ok) {
+        throw new Error(`Could not load day types (status ${res.status})`);
       }
+      const json = await res.json();
+      const data: DayTypeDefinition[] = json.data || [];
+      setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
     } catch (error) {
-      console.error('Failed to load day types:', error);
+      // Previously `console.error` only, so a failure rendered as an empty
+      // picker indistinguishable from "you have no day types" — and editing a
+      // habit that *did* have day-type assignments would then silently drop
+      // them on save, because the ids could not be shown as selected.
+      setDayTypesError(
+        error instanceof Error ? error.message : 'Could not load day types'
+      );
     } finally {
       setDayTypesLoading(false);
     }
@@ -125,18 +134,23 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
 
       await updateHabit(habit.id, {
         name: name.trim(),
-        description: description.trim() || undefined,
+        // `null` rather than `undefined` for every field the form can empty.
+        // `JSON.stringify` drops undefined keys, so the request never carried
+        // them and the server's `!== undefined` guards left the old values in
+        // place. In particular a stale `frequencyValue` ("1,3,5") survived
+        // switching to DAILY and then crashed the Schedule tab's JSON.parse.
+        description: description.trim() || null,
         tier,
-        color,
+        color: color || null,
         frequencyType,
         frequencyValue:
           frequencyType === 'SPECIFIC_WEEKDAYS'
             ? [...weekdays].sort().join(',')
             : frequencyType === 'WEEKLY_TARGET' || frequencyType === 'MONTHLY_TARGET'
               ? String(parsedTarget ?? 1)
-              : undefined,
-        targetCount: parsedTarget,
-        reminderTime: reminderTime || undefined,
+              : null,
+        targetCount: parsedTarget ?? null,
+        reminderTime: reminderTime || null,
         reminderEnabled: Boolean(reminderTime),
         appliesEveryDay,
         dayTypeIds: appliesEveryDay ? [] : dayTypeIds,
@@ -217,6 +231,20 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
                     <div key={i} className="h-10 w-24 animate-pulse bg-muted rounded-lg" />
                   ))}
                 </div>
+              ) : dayTypesError ? (
+                <div>
+                  <p role="alert" className="text-xs text-destructive">
+                    {dayTypesError}. Your existing day-type assignments are
+                    hidden until this loads — saving now would clear them.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void loadDayTypes()}
+                    className="mt-1 text-xs font-semibold text-primary hover:underline"
+                  >
+                    Try again
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {dayTypes.map(dt => (
@@ -237,7 +265,7 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
                   ))}
                 </div>
               )}
-              {!dayTypesLoading && dayTypes.length === 0 && (
+              {!dayTypesLoading && !dayTypesError && dayTypes.length === 0 && (
                 <p className="text-xs text-muted-foreground">No day types available. Create one in Routine settings.</p>
               )}
             </div>

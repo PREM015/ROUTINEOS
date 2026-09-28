@@ -1,0 +1,516 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import AddHabitModal from '@/components/habits/AddHabitModal';
+import EditHabitModal from '@/components/habits/EditHabitModal';
+import { useApp, type Habit } from '@/context/AppContext';
+import { getFrequencyLabel } from '@/lib/habits/frequency';
+import type { DayTypeDefinition } from '@/types/routine';
+import { getTodayString } from '@/lib/dates';
+import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, RotateCcw, CheckCircle2, Circle, Flame, TrendingUp, Filter } from 'lucide-react';
+import { Button, EmptyState, Select } from '@/components/ui';
+import { cn } from '@/lib/utils';
+import { fetchWithAuth } from '@/lib/api-client';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+
+
+type TabType = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+type TierType = 'GROWTH' | 'BONUS' | 'LIFESTYLE';
+
+const TIER_LABELS: Record<TierType, string> = {
+  GROWTH: 'Core Habits',
+  BONUS: 'Growth Habits',
+  LIFESTYLE: 'Lifestyle Habits',
+};
+const OTHER_TIERS = ['NON_NEGOTIABLE', 'FLEXIBLE', 'OPTIONAL', 'EXPERIMENTAL', 'ALTERNATIVE', 'SPECIAL', 'JUST_FOR_FUN', 'UNDEFINED'];
+
+interface HealthRow {
+  habitId: string;
+  name: string;
+  completionRate: number | null;
+  longestStreak: number;
+  health: 'HEALTHY' | 'AT_RISK' | 'UNHEALTHY' | 'NO_DATA';
+}
+
+const HEALTH_BAR: Record<HealthRow['health'], string> = {
+  HEALTHY: 'bg-emerald-500',
+  AT_RISK: 'bg-amber-500',
+  UNHEALTHY: 'bg-red-500',
+  NO_DATA: 'bg-muted',
+};
+
+export default function HabitsPage() {
+  const {
+    habits, updateHabit, archiveHabit, restoreHabit, deleteHabit,
+    getLogForDate, logHabit, selectedDate,
+  } = useApp();
+  const { timezone } = useUserTimezone();
+  const [tab, setTab] = useState<TabType>('ACTIVE');
+  const [dayTypeFilter, setDayTypeFilter] = useState<string | null>(null); // null = "All Days"
+  const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
+  const [dayTypesLoading, setDayTypesLoading] = useState(true);
+  /** Day-type filter could not load; the dropdown is unusable until it does. */
+  const [loadError, setLoadError] = useState<string | null>(null);
+  /** 28-day health metrics could not load; the columns are blank until they do. */
+  const [healthError, setHealthError] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Habit | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Habit | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [healthData, setHealthData] = useState<HealthRow[]>([]);
+
+  const today = selectedDate || getTodayString(timezone);
+
+  // Fetch day types on mount
+  useEffect(() => {
+    loadDayTypes();
+  }, []);
+
+  const loadDayTypes = async () => {
+    try {
+      setDayTypesLoading(true);
+      setLoadError(null);
+      const res = await fetchWithAuth('/api/day-types?active=true');
+      if (!res.ok) {
+        throw new Error(`Could not load day types (status ${res.status})`);
+      }
+      const json = await res.json();
+      const data: DayTypeDefinition[] = json.data || [];
+      setDayTypes(data.filter((dt: DayTypeDefinition) => !dt.isArchived));
+    } catch (error) {
+      // Previously `console.error` only. A failure left the day-type filter
+      // dropdown showing just "All Days" with no indication that filtering was
+      // even unavailable, so the user could not tell a broken request from a
+      // deliberately unfiltered list.
+      setLoadError(
+        error instanceof Error ? error.message : 'Could not load day types'
+      );
+    } finally {
+      setDayTypesLoading(false);
+    }
+  };
+
+  const fetchHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/habits/health?days=28');
+      if (!res.ok) {
+        throw new Error(`Could not load habit health (status ${res.status})`);
+      }
+      const data = await res.json();
+      if (data.success) {
+        setHealthData(data.data.habits as HealthRow[]);
+        setHealthError(null);
+      } else {
+        setHealthError(data.error || 'Could not load habit health');
+      }
+    } catch (err) {
+      // The empty `catch` here meant the 28-day health columns silently
+      // disappeared from every row with no message at all.
+      setHealthError(
+        err instanceof Error ? err.message : 'Could not load habit health'
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    fetchHealth();
+  }, [fetchHealth]);
+
+  const healthByHabit = useMemo(
+    () => new Map(healthData.map(h => [h.habitId, h])),
+    [healthData]
+  );
+
+  const healthSummary = useMemo(() => {
+    const withRate = healthData.filter(h => h.completionRate !== null);
+    const overall = withRate.length
+      ? Math.round(withRate.reduce((s, h) => s + (h.completionRate as number), 0) / withRate.length)
+      : null;
+    return {
+      overall,
+      healthy: healthData.filter(h => h.health === 'HEALTHY').length,
+      atRisk: healthData.filter(h => h.health === 'AT_RISK').length,
+      unhealthy: healthData.filter(h => h.health === 'UNHEALTHY').length,
+    };
+  }, [healthData]);
+
+  const statusMap: Record<TabType, string[]> = {
+    ACTIVE: ['ACTIVE'],
+    PAUSED: ['PAUSED'],
+    ARCHIVED: ['ARCHIVED', 'COMPLETED'],
+  };
+
+  // Filter habits by day type: global habits (appliesEveryDay: true) + day-specific habits for selected day type
+  const filteredHabits = useMemo(
+    () => {
+      let filtered = habits.filter(h => statusMap[tab].includes(h.status));
+      
+      if (dayTypeFilter) {
+        filtered = filtered.filter(h => 
+          h.appliesEveryDay === true || 
+          (h.dayTypeAssignments && h.dayTypeAssignments.some(dta => dta.dayTypeId === dayTypeFilter))
+        );
+      }
+      
+      return filtered;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [habits, tab, dayTypeFilter]
+  );
+
+  const runAction = async (id: string, fn: () => Promise<unknown>) => {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      await fn();
+      fetchHealth();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Action failed');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleToday = (habit: Habit) => {
+    const log = getLogForDate(habit.id, today);
+    const next = log?.status === 'COMPLETED' ? 'MISSED' : 'COMPLETED';
+    return runAction(habit.id, () => logHabit(habit.id, today, next));
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const id = confirmDelete.id;
+    setConfirmDelete(null);
+    await runAction(id, () => deleteHabit(id));
+  };
+
+  const renderHabitRow = (habit: Habit) => {
+    const log = getLogForDate(habit.id, today);
+    const done = log?.status === 'COMPLETED';
+    const busy = busyId === habit.id;
+    const health = healthByHabit.get(habit.id);
+    return (
+      <motion.div
+        key={habit.id}
+        layout
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl group hover:border-foreground/20 transition"
+      >
+        {tab === 'ACTIVE' && (
+          <button
+            onClick={() => toggleToday(habit)}
+            disabled={busy}
+            aria-label={done ? `Mark ${habit.name} not done` : `Mark ${habit.name} done`}
+            className={`shrink-0 transition-colors disabled:opacity-50 ${done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-400'}`}
+          >
+            {done ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+          </button>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-sm font-semibold truncate ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+              {habit.name}
+            </span>
+            {(habit.streakCount ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 font-semibold">
+                <Flame size={12} /> {habit.streakCount}
+              </span>
+            )}
+            {health?.longestStreak && health.longestStreak > (habit.streakCount ?? 0) && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-semibold" title="Longest streak">
+                <TrendingUp size={12} /> best {health.longestStreak}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 truncate">
+            {getFrequencyLabel(habit.frequencyType, habit.frequencyValue)}
+            {habit.targetCount ? ` · target ${habit.targetCount}` : ''}
+            {habit.reminderTime ? ` · ⏰ ${habit.reminderTime}` : ''}
+          </p>
+          {health?.completionRate !== null && health?.completionRate !== undefined && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="w-full max-w-[180px] bg-muted rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={cn('h-1.5 rounded-full transition-all duration-500', HEALTH_BAR[health.health])}
+                  style={{ width: `${health.completionRate}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                {health.completionRate}% · {health.health.toLowerCase().replace('_', ' ')}
+              </span>
+            </div>
+          )}
+          {habit.description && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{habit.description}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          {tab === 'ACTIVE' && (
+            <button
+              onClick={() => runAction(habit.id, () => updateHabit(habit.id, { status: 'PAUSED' }))}
+              disabled={busy}
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition disabled:opacity-50"
+              title="Pause habit"
+              aria-label={`Pause ${habit.name}`}
+            >
+              <Pause size={15} />
+            </button>
+          )}
+          {tab === 'PAUSED' && (
+            <button
+              onClick={() => runAction(habit.id, () => updateHabit(habit.id, { status: 'ACTIVE' }))}
+              disabled={busy}
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition disabled:opacity-50"
+              title="Resume habit"
+              aria-label={`Resume ${habit.name}`}
+            >
+              <Play size={15} />
+            </button>
+          )}
+          <button
+            onClick={() => setEditing(habit)}
+            className="p-2.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
+            title="Edit habit"
+            aria-label={`Edit ${habit.name}`}
+          >
+            <Pencil size={15} />
+          </button>
+          {tab !== 'ARCHIVED' ? (
+            <button
+              onClick={() => runAction(habit.id, () => archiveHabit(habit.id))}
+              disabled={busy}
+              className="p-2.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition disabled:opacity-50"
+              title="Archive habit"
+              aria-label={`Archive ${habit.name}`}
+            >
+              <Archive size={15} />
+            </button>
+          ) : (
+            <>
+              {/* Restore: archiving used to be a one-way door with no control
+                  anywhere to undo it, so a mis-click hid a habit and its whole
+                  history with no way back. */}
+              <button
+                onClick={() => runAction(habit.id, () => restoreHabit(habit.id))}
+                disabled={busy}
+                className="p-2.5 rounded-lg text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition disabled:opacity-50"
+                title="Restore habit"
+                aria-label={`Restore ${habit.name}`}
+              >
+                <RotateCcw size={15} />
+              </button>
+              <button
+                onClick={() => setConfirmDelete(habit)}
+                className="p-2.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                title="Delete habit permanently"
+                aria-label={`Delete ${habit.name}`}
+              >
+                <Trash2 size={15} />
+              </button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  const renderTierGroup = (tier: TierType) => {
+    const tierHabits = filteredHabits.filter(h => h.tier === tier);
+    if (tierHabits.length === 0) return null;
+    const sorted = [...tierHabits].sort((a, b) => a.name.localeCompare(b.name));
+    return (
+      <div key={tier} className="space-y-3">
+        <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">{TIER_LABELS[tier]}</h3>
+        <div className="space-y-2">
+          {sorted.map(renderHabitRow)}
+        </div>
+      </div>
+    );
+  };
+
+  const otherHabits = filteredHabits.filter(h => OTHER_TIERS.includes(h.tier)).sort((a, b) => a.name.localeCompare(b.name));
+
+  return (
+    // No local layout wrapper: this page lives in the `(dashboard)` route
+    // group, so it inherits that group's shell (sidebar, header, skip link,
+    // offline banner, footer, mobile nav, focus bar, celebration host, sleep
+    // prompt). It previously sat outside the group and hand-rolled a
+    // *different* `DashboardLayout` with a divergent nav set, so /habits — the
+    // page every nav item links to — was missing SkipLink, OfflineBanner,
+    // MobileNav, FloatingFocusBar, CelebrationHost and SleepPromptHost.
+    <>
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">My Habits</h1>
+          <div className="flex flex-wrap items-center gap-2 mt-1 text-sm text-muted-foreground">
+            <span>{habits.filter(h => h.status === 'ACTIVE').length} active habits</span>
+            {healthData.length > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className={cn('font-medium', healthSummary.healthy > 0 && 'text-emerald-600 dark:text-emerald-400')}>
+                  {healthSummary.healthy} healthy
+                </span>
+                <span className={cn('font-medium', healthSummary.atRisk > 0 && 'text-amber-600 dark:text-amber-400')}>
+                  {healthSummary.atRisk} at risk
+                </span>
+                <span className={cn('font-medium', healthSummary.unhealthy > 0 && 'text-red-600 dark:text-red-400')}>
+                  {healthSummary.unhealthy} unhealthy
+                </span>
+                {healthSummary.overall !== null && (
+                  <span className="tabular-nums">{healthSummary.overall}% avg (28d)</span>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        <Button onClick={() => setModalOpen(true)} variant="primary">
+          <Plus size={16} /> Add Habit
+        </Button>
+      </div>
+
+      {actionError && (
+        <p role="alert" className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+          {actionError}
+        </p>
+      )}
+
+      {/* Health metrics are supplementary, so this is a quiet inline note
+          rather than a page-level error. The columns below are simply blank. */}
+      {healthError && (
+        <p className="mb-4 text-xs text-muted-foreground">
+          <span className="text-destructive">{healthError}.</span>{' '}
+          Health metrics are unavailable; everything else is unaffected.{' '}
+          <button
+            type="button"
+            onClick={() => void fetchHealth()}
+            className="font-semibold text-primary hover:underline"
+          >
+            Retry
+          </button>
+        </p>
+      )}
+
+      {/* Day Type Filter + Status Tabs */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        {/* Day Type Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <Select
+            value={dayTypeFilter || ''}
+            onChange={(e) => setDayTypeFilter(e.target.value || null)}
+            options={[
+              { value: '', label: 'All Days' },
+              ...dayTypes.map(dt => ({ value: dt.id, label: dt.name })),
+            ]}
+            disabled={dayTypesLoading || Boolean(loadError)}
+            className="w-auto min-w-[180px]"
+            placeholder="Filter by day type..."
+          />
+          {loadError && (
+            <button
+              type="button"
+              onClick={() => void loadDayTypes()}
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Retry filter
+            </button>
+          )}
+        </div>
+
+        {/* Status Tabs */}
+        <div className="flex gap-1 bg-card border border-border rounded-xl p-1 w-fit" role="tablist" aria-label="Habit status filter">
+          {(['ACTIVE', 'PAUSED', 'ARCHIVED'] as TabType[]).map(t => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {t.charAt(0) + t.slice(1).toLowerCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="space-y-8"
+        >
+          {filteredHabits.length === 0 ? (
+            <EmptyState
+              icon={<Target size={28} />}
+              title={tab === 'ACTIVE' ? 'No active habits' : tab === 'PAUSED' ? 'No paused habits' : 'No archived habits'}
+              description={tab === 'ACTIVE' ? 'Add your first habit to start tracking your consistency.' : ''}
+              action={tab === 'ACTIVE' ? (
+                <Button onClick={() => setModalOpen(true)} variant="primary" size="sm">
+                  <Plus size={14} /> Add Your First Habit
+                </Button>
+              ) : undefined}
+            />
+          ) : (
+            <>
+              {(['GROWTH', 'BONUS', 'LIFESTYLE'] as TierType[]).map(tier => renderTierGroup(tier))}
+              {otherHabits.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">More Habits</h3>
+                  <div className="space-y-2">
+                    {otherHabits.map(renderHabitRow)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      <AddHabitModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <EditHabitModal habit={editing} onClose={() => setEditing(null)} />
+
+      {/* Delete confirmation */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 8 }}
+              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6"
+              onClick={(e) => e.stopPropagation()}
+              role="alertdialog"
+              aria-modal="true"
+              aria-label="Delete habit"
+            >
+              <h2 className="text-lg font-bold text-foreground">Delete habit?</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                &ldquo;{confirmDelete.name}&rdquo; and its history will be permanently removed. This cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="ghost" onClick={() => setConfirmDelete(null)}>Cancel</Button>
+                <Button variant="primary" onClick={handleDelete}>
+                  Delete
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

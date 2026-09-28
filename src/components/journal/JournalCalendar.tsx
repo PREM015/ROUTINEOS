@@ -12,6 +12,7 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { MOOD_COLORS } from './JournalEntry';
 
 const WEEKDAYS: readonly string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -86,7 +87,9 @@ export default function JournalCalendar({
     return cellsOfMonth;
   }, [month]);
 
-  const todayString = new Date().toISOString().slice(0, 10);
+  // The user's today, not `new Date().toISOString()` — the UTC date, which put
+  // the highlighted day a day out for anyone not on UTC.
+  const { today: todayString } = useUserTimezone();
 
   const goToMonth = (offset: number) => {
     setMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
@@ -99,11 +102,15 @@ export default function JournalCalendar({
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-base font-semibold text-gray-900">{monthLabel}</h3>
         <div className="flex items-center gap-1">
+          {/* h-10 (40px) rather than h-8 (32px): these are the only tappable
+              controls in the calendar and 32px is well under the ~44px touch
+              minimum. The day cells below are already h-10, so this also makes
+              the header and grid optically consistent. */}
           <button
             type="button"
             onClick={() => goToMonth(-1)}
             aria-label="Previous month"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -111,14 +118,19 @@ export default function JournalCalendar({
             type="button"
             onClick={() => goToMonth(1)}
             aria-label="Next month"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1" role="grid" aria-label="Journal activity calendar">
+      {/* `overflow-x-auto` is a backstop: at 40px cells a 7-column grid is
+          ~304px, which fits a 375px viewport, but the wrapper keeps the
+          calendar intact on a narrower device or with a large text zoom instead
+          of letting it clip. */}
+      <div className="overflow-x-auto">
+        <div className="grid grid-cols-7 gap-1" role="grid" aria-label="Journal activity calendar">
         {WEEKDAYS.map((weekday) => (
           <div
             key={weekday}
@@ -159,6 +171,7 @@ export default function JournalCalendar({
             </button>
           );
         })}
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">

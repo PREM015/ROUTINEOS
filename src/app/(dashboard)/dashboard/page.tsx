@@ -12,6 +12,7 @@ import { InsightWidget } from '@/components/dashboard/InsightWidget';
 import { QuoteDisplay } from '@/components/dashboard/QuoteDisplay';
 import { TodayDayType } from '@/components/today/TodayDayType';
 import { RoutineWidget } from '@/components/dashboard/RoutineWidget';
+import { WidgetGate } from '@/components/dashboard/DashboardWidgets';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { Mount } from '@/components/motion/Mount';
@@ -77,7 +78,9 @@ export default async function DashboardPage() {
 
       {/* Quote of the Day */}
       <Mount delay={0.08}>
-        <QuoteDisplay />
+        <WidgetGate widgetKey="quotes">
+          <QuoteDisplay />
+        </WidgetGate>
       </Mount>
 
       {/* Feature Quick Launch Bar */}
@@ -110,7 +113,9 @@ export default async function DashboardPage() {
 
       {/* Top Stats Overview */}
       <Mount delay={0.24}>
-        <TodayDayType date={today} />
+        <WidgetGate widgetKey="summary">
+          <TodayDayType date={today} />
+        </WidgetGate>
       </Mount>
 
       <Mount delay={0.28}>
@@ -119,10 +124,10 @@ export default async function DashboardPage() {
             Metrics & Momentum
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
-            <Mount delay={0.26}><CoreScoreWidget /></Mount>
-            <Mount delay={0.3}><StreakWidget /></Mount>
-            <Mount delay={0.34}><GoalsWidget /></Mount>
-            <Mount delay={0.38}><SleepWidget /></Mount>
+            <Mount delay={0.26}><WidgetGate widgetKey="score"><CoreScoreWidget /></WidgetGate></Mount>
+            <Mount delay={0.3}><WidgetGate widgetKey="streaks"><StreakWidget /></WidgetGate></Mount>
+            <Mount delay={0.34}><WidgetGate widgetKey="goals"><GoalsWidget /></WidgetGate></Mount>
+            <Mount delay={0.38}><WidgetGate widgetKey="wellness"><SleepWidget /></WidgetGate></Mount>
           </div>
         </div>
       </Mount>
@@ -132,13 +137,13 @@ export default async function DashboardPage() {
         {/* Left Column - 2/3 width */}
         <div className="lg:col-span-2 space-y-6 min-w-0 min-h-0">
           {/* Routine Blocks Progress */}
-          <Mount delay={0.42}><RoutineWidget /></Mount>
+          <Mount delay={0.42}><WidgetGate widgetKey="routine"><RoutineWidget /></WidgetGate></Mount>
 
           {/* Contribution Heatmap */}
-          <Mount delay={0.48}><ContributionHeatmap /></Mount>
+          <Mount delay={0.48}><WidgetGate widgetKey="habits"><ContributionHeatmap /></WidgetGate></Mount>
 
           {/* Weekly Progress */}
-          <Mount delay={0.54}><WeeklyBarChart /></Mount>
+          <Mount delay={0.54}><WidgetGate widgetKey="tasks"><WeeklyBarChart /></WidgetGate></Mount>
 
           {/* Habit Health */}
           <Mount delay={0.6}><HabitHealthWidget /></Mount>
@@ -147,7 +152,7 @@ export default async function DashboardPage() {
         {/* Right Column - 1/3 width */}
         <div className="space-y-6">
           {/* AI Insights */}
-          <Mount delay={0.44}><InsightWidget /></Mount>
+          <Mount delay={0.44}><WidgetGate widgetKey="insights"><InsightWidget /></WidgetGate></Mount>
         </div>
       </div>
     </div>

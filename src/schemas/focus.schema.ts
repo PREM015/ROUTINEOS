@@ -7,13 +7,27 @@ import { z } from 'zod';
 /**
  * Coerce ISO-8601 strings into `Date` instances. `null` is rejected instead of
  * being coerced to the Unix epoch, unlike `z.coerce.date()`.
+ *
+ * `z.coerce.date()` runs `new Date(input)`, and `new Date(null)` is
+ * `1970-01-01T00:00:00.000Z` — a *valid* date. So `.optional()` does not help:
+ * an explicit `null` still parses and silently persists the epoch. This is the
+ * shared version, used by every schema that must be able to *clear* a date.
  */
-const dateSchema = z.preprocess(
+export const dateSchema = z.preprocess(
   (value) => (value instanceof Date ? value : typeof value === 'string' ? new Date(value) : value),
   z.date()
 );
 
+/** Same as {@link dateSchema} but also accepts an explicit `null` to clear. */
+export const nullableDateSchema = z.preprocess(
+  (value) => (value instanceof Date ? value : typeof value === 'string' ? new Date(value) : value),
+  z.date().nullable()
+);
+
 export const optionalDateSchema = dateSchema.optional();
+
+/** Optional *and* clearable: `.optional().nullable()`. */
+export const optionalNullableDateSchema = nullableDateSchema.optional();
 
 export const legacyCreateFocusSessionSchema = z.object({
   title: z
@@ -94,7 +108,15 @@ export const focusQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   status: z
-    .enum(['IN_PROGRESS', 'PAUSED', 'COMPLETED', 'ACTIVE'])
+    .enum([
+      'IN_PROGRESS',
+      'PAUSED',
+      'COMPLETED',
+      // Ended early by the user. Previously missing, so there was no way to
+      // filter for abandoned sessions.
+      'ABORTED',
+      'ACTIVE',
+    ])
     .optional(),
   limit: z.number().int().min(1).max(100).optional(),
   offset: z.number().int().min(0).optional(),

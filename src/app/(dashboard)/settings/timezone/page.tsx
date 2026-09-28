@@ -2,23 +2,29 @@
 
 /**
  * Settings — Timezone
- * Picks a timezone from an Intl.supportedValuesOf list (with a curated
- * fallback) and saves it via PUT /api/settings, updating the local auth store
+ *
+ * Picks a timezone from an `Intl.supportedValuesOf` list (with a curated
+ * fallback) and saves it via `PUT /api/settings`, updating the local auth store
  * so formatting reflects the change immediately.
+ *
+ * Previously this page read `GET /api/users/[id]/settings` while every other
+ * settings page read `GET /api/settings`, so two open tabs could show
+ * different timezones. It now uses the shared settings store, like the rest.
+ *
+ * `timezone` exists on both `User` and `UserSettings`. `UserService` writes
+ * both in one call, so the value the UI shows and the value used to bucket
+ * daily scores cannot drift apart.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { CheckCircle2, Globe, ShieldAlert } from 'lucide-react';
-import { apiRequest, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSettings } from '@/hooks/useSettings';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
-
-interface TimezoneSettingsRow {
-  timezone: string;
-}
 
 const FALLBACK_TIMEZONES = [
   'UTC',
@@ -53,47 +59,33 @@ function getTimeZoneOptions(): readonly string[] {
 }
 
 export default function TimezoneSettingsPage() {
-  const { user, isAuthenticated, isLoading: authLoading, updateUser } = useAuth();
-
-  const [timezone, setTimezone] = useState<string>('UTC');
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading: authLoading, updateUser } = useAuth();
+  const { settings, loading, save, patchLocal, saving, error } = useSettings();
   const [saved, setSaved] = useState(false);
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
-  const load = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await apiRequest<TimezoneSettingsRow>(`/api/users/${user.id}/settings`);
-      setTimezone(data.timezone || user.timezone || 'UTC');
-    } catch {
-      setTimezone(user.timezone || 'UTC');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id, user?.timezone]);
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    void load();
-  }, [load]);
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSaved(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await apiRequest('/api/settings', { method: 'PUT', body: { timezone } });
+  // Resolved lazily and memoised: `Intl.supportedValuesOf` returns ~600 zones
+  // and is not cheap enough to call on every render.
+  const options = useMemo(
+    () => getTimeZoneOptions().map((zone) => ({ value: zone, label: zone })),
+    []
+  );
+
+  const timezone = settings?.timezone ?? 'UTC';
+
+  const persist = async () => {
+    if (!settings) return;
+    const result = await save({ timezone });
+    if (result) {
+      // Mirror onto the auth store so the sidebar / date formatting update
+      // without a reload. The server writes `User.timezone` in the same call.
       updateUser({ timezone });
       setSaved(true);
-      window.setTimeout(() => setSaved(false), 1600);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save timezone.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -108,26 +100,24 @@ export default function TimezoneSettingsPage() {
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
     return (
       <main className="container mx-auto max-w-2xl px-4 py-16">
         <Card>
           <div className="p-8 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-amber-500" />
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
-            <a
+            <Link
               href="/login"
               className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary light-sweep glow-neon px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </Card>
       </main>
     );
   }
-
-  const options = getTimeZoneOptions().map((zone) => ({ value: zone, label: zone }));
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-8">
@@ -138,29 +128,34 @@ export default function TimezoneSettingsPage() {
         </p>
       </div>
 
-      {loadError && (
-        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-          {loadError}
-        </div>
-      )}
-
       <Card>
         <div className="p-6">
           <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
+            <Globe className="h-5 w-5 text-primary" aria-hidden="true" />
             <h2 className="text-lg font-bold">Preferred timezone</h2>
           </div>
 
-          {loading ? (
+          {loading || !settings ? (
             <Skeleton className="mt-5 h-10 w-full max-w-sm" />
           ) : (
             <div className="mt-5 max-w-sm">
               <Select
                 label="Timezone"
                 value={timezone}
-                onChange={(event) => setTimezone(event.target.value)}
+                onChange={(event) => patchLocal({ timezone: event.target.value })}
                 options={options}
+                helperText="Daily scores, streaks and reviews are bucketed by this timezone."
               />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Current local time:{' '}
+                <span className="font-medium text-foreground">
+                  {new Intl.DateTimeFormat(undefined, {
+                    timeZone: timezone,
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  }).format(new Date())}
+                </span>
+              </p>
             </div>
           )}
 
@@ -170,13 +165,13 @@ export default function TimezoneSettingsPage() {
             </div>
           )}
 
-          <div className="mt-6 flex items-center gap-3">
-            <Button onClick={() => void save()} isLoading={saving} disabled={loading}>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Button onClick={() => void persist()} isLoading={saving} disabled={loading || !settings}>
               Save timezone
             </Button>
             {saved && (
               <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                 Saved
               </span>
             )}

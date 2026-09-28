@@ -17,13 +17,26 @@ const createDayTypeSchema = z.object({
 
 /**
  * GET /api/day-types
- * List the user's day-type definitions.
+ * List the user's day-type definitions, including archived ones.
+ *
+ * Archived rows are included (with usage counts) because this is the list the
+ * routine-management page uses, and it needs to show — and un-archive — them.
+ * The day-type picker on `/today` and `/dashboard` needs the *active* subset
+ * instead, which the same endpoint already filters server-side per caller via
+ * `?active=true`.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const dayTypes = await dayTypeService.listDayTypes(session.user.id);
+  // `?active=true` returns only non-archived definitions without counts, which
+  // is what a picker needs; the default is the full management list.
+  if (req.nextUrl.searchParams.get('active') === 'true') {
+    const dayTypes = await dayTypeService.listDayTypes(session.user.id);
+    return NextResponse.json({ success: true, data: dayTypes });
+  }
+
+  const dayTypes = await dayTypeService.listAllDayTypes(session.user.id);
 
   return NextResponse.json({ success: true, data: dayTypes });
 }

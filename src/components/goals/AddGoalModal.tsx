@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Modal, Input, Select, Button, Textarea } from '@/components/ui';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 interface AddGoalModalProps {
   open: boolean;
@@ -15,7 +15,8 @@ type GoalType = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTO
 
 export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: AddGoalModalProps) {
   const { addGoal } = useApp();
-  const today = getTodayString();
+  const { today: userToday } = useUserTimezone();
+  const today = userToday;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

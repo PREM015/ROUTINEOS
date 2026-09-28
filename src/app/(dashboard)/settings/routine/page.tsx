@@ -2,15 +2,33 @@
 
 /**
  * Settings — Routine
- * Lists the user's routine templates (GET /api/routine) and creates a new
- * template (POST /api/routine). Templates are the building blocks that the
- * routine planner uses per day type.
+ *
+ * Full CRUD over the user's routine templates:
+ *   GET    /api/routine              list
+ *   POST   /api/routine              create
+ *   PUT    /api/routine              update  (name / description / default)
+ *   DELETE /api/routine              delete
+ *
+ * Previously this page could only create. `PUT` and `DELETE` were fully
+ * implemented server-side but had no UI, and the `notice` banner was rendered
+ * from a state variable that was only ever assigned `null` — an unreachable
+ * element. The banner is now driven by real outcomes.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, Rows3, ShieldAlert } from 'lucide-react';
+import Link from 'next/link';
+import {
+  CheckCircle2,
+  Pencil,
+  Rows3,
+  ShieldAlert,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { apiRequest, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { DEFAULT_DAY_TYPES as DEFAULT_DAY_TYPE_DEFS } from '@/constants/day-types';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -33,14 +51,16 @@ interface RoutineTemplateRow {
   updatedAt: string;
 }
 
-const DAY_TYPE_OPTIONS = [
-  { value: 'WORKDAY', label: 'Workday' },
-  { value: 'WEEKEND', label: 'Weekend' },
-  { value: 'HOLIDAY', label: 'Holiday' },
-  { value: 'EXAM_DAY', label: 'Exam day' },
-  { value: 'LOW_ENERGY', label: 'Low energy' },
-  { value: 'CUSTOM', label: 'Custom' },
-];
+/**
+ * Derived from the shared canonical definition, so the labels match the ones
+ * /routine and /today show. This was a fourth, differently-cased copy
+ * ("Workday", "Low energy") — exactly the drift that made the day-type pickers
+ * look unsynced.
+ */
+const DAY_TYPE_OPTIONS = DEFAULT_DAY_TYPE_DEFS.map((dt) => ({
+  value: dt.enumValue,
+  label: dt.name,
+}));
 
 const DAY_TYPE_COLORS: Record<string, 'primary' | 'success' | 'warning' | 'default'> = {
   WORKDAY: 'primary',
@@ -50,6 +70,11 @@ const DAY_TYPE_COLORS: Record<string, 'primary' | 'success' | 'warning' | 'defau
   LOW_ENERGY: 'default',
   CUSTOM: 'default',
 };
+
+type EditableTemplate = Pick<
+  RoutineTemplateRow,
+  'id' | 'name' | 'description' | 'isDefault'
+>;
 
 export default function RoutineSettingsPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -64,7 +89,11 @@ export default function RoutineSettingsPage() {
   const [dayType, setDayType] = useState('CUSTOM');
   const [isDefault, setIsDefault] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState(false);
+
+  const [editing, setEditing] = useState<EditableTemplate | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,11 +108,15 @@ export default function RoutineSettingsPage() {
     }
   }, []);
 
+  // Guarded: an unauthenticated visit used to fire a guaranteed-401 fetch that
+  // could never be retried, leaving a permanent error banner.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     void load();
-  }, [load]);
-
+  }, [load, isAuthenticated]);
   const create = async () => {
     setCreating(true);
     setError(null);
@@ -98,8 +131,7 @@ export default function RoutineSettingsPage() {
           isDefault,
         },
       });
-      setCreated(true);
-      window.setTimeout(() => setCreated(false), 1600);
+      setNotice(`Template “${name.trim()}” created.`);
       setName('');
       setDescription('');
       setIsDefault(false);
@@ -108,6 +140,68 @@ export default function RoutineSettingsPage() {
       setError(err instanceof ApiError ? err.message : 'Failed to create routine template.');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSavingEdit(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await apiRequest('/api/routine', {
+        method: 'PUT',
+        body: {
+          id: editing.id,
+          name: editing.name.trim(),
+          description: editing.description?.trim() || '',
+          isDefault: editing.isDefault,
+        },
+      });
+      setNotice(`Template “${editing.name.trim()}” updated.`);
+      setEditing(null);
+      void load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to update template.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const makeDefault = async (template: RoutineTemplateRow) => {
+    setBusyId(template.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await apiRequest('/api/routine', {
+        method: 'PUT',
+        body: { id: template.id, isDefault: true },
+      });
+      setNotice(`“${template.name}” is now the default for ${template.dayType.toLowerCase().replace(/_/g, ' ')} days.`);
+      void load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to set default template.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const remove = async (template: RoutineTemplateRow) => {
+    setBusyId(template.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await apiRequest('/api/routine', {
+        method: 'DELETE',
+        body: { id: template.id },
+      });
+      setNotice(`Template “${template.name}” deleted.`);
+      setConfirmDeleteId(null);
+      void load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to delete template.');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -130,12 +224,12 @@ export default function RoutineSettingsPage() {
           <div className="p-8 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-amber-500" />
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
-            <a
+            <Link
               href="/login"
               className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary light-sweep glow-neon px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </Card>
       </main>
@@ -160,8 +254,9 @@ export default function RoutineSettingsPage() {
         </div>
       )}
       {notice && (
-        <div className="mb-6 rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400" role="status">
-          {notice}
+        <div className="mb-6 flex items-start gap-2 rounded-md bg-amber-500/10 px-4 py-3 text-sm text-amber-600 dark:text-amber-400" role="status">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{notice}</span>
         </div>
       )}
 
@@ -178,34 +273,153 @@ export default function RoutineSettingsPage() {
             </div>
           ) : templates.length === 0 ? (
             <div className="p-4 text-center text-sm text-muted-foreground">
-              No routine templates yet.
+              No routine templates yet. Create one below to get started.
             </div>
           ) : (
             <ul className="divide-y divide-border">
-              {templates.map((template) => (
-                <li key={template.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg" aria-hidden="true">{template.icon ?? '🗓️'}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{template.name}</p>
-                        {template.isDefault && <Badge variant="primary">Default</Badge>}
+              {templates.map((template) => {
+                const isEditing = editing?.id === template.id;
+                return (
+                  <li key={template.id} className="py-3">
+                    {isEditing && editing ? (
+                      <div className="space-y-3">
+                        <Input
+                          label="Name"
+                          value={editing.name}
+                          onChange={(event) =>
+                            setEditing({ ...editing, name: event.target.value })
+                          }
+                        />
+                        <Input
+                          label="Description"
+                          value={editing.description ?? ''}
+                          onChange={(event) =>
+                            setEditing({ ...editing, description: event.target.value })
+                          }
+                        />
+                        <Switch
+                          checked={editing.isDefault}
+                          onChange={(checked) =>
+                            setEditing({ ...editing, isDefault: checked })
+                          }
+                          label="Default for this day type"
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => void saveEdit()}
+                            isLoading={savingEdit}
+                            disabled={editing.name.trim().length === 0}
+                          >
+                            Save changes
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditing(null)}
+                            disabled={savingEdit}
+                          >
+                            <X className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {template.description ?? 'No description'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={variantFor(template.dayType)}>{template.dayType}</Badge>
-                    {template.estimatedDuration !== null && (
-                      <span className="text-xs text-muted-foreground/60">
-                        {template.estimatedDuration} min
-                      </span>
+                    ) : confirmDeleteId === template.id ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-foreground">
+                          Delete “{template.name}”? This also removes its routine
+                          blocks and cannot be undone.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => void remove(template)}
+                            isLoading={busyId === template.id}
+                          >
+                            Yes, delete it
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setConfirmDeleteId(null)}
+                            disabled={busyId === template.id}
+                          >
+                            Keep it
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg" aria-hidden="true">
+                            {template.icon ?? '🗓️'}
+                          </span>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-foreground">
+                                {template.name}
+                              </p>
+                              {template.isDefault && <Badge variant="primary">Default</Badge>}
+                            </div>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {template.description ?? 'No description'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={variantFor(template.dayType)}>
+                            {template.dayType}
+                          </Badge>
+                          {template.estimatedDuration !== null && (
+                            <span className="text-xs text-muted-foreground/60">
+                              {template.estimatedDuration} min
+                            </span>
+                          )}
+                          {!template.isDefault && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => void makeDefault(template)}
+                              disabled={busyId === template.id}
+                              isLoading={busyId === template.id}
+                              title={`Use for ${template.dayType.toLowerCase().replace(/_/g, ' ')} days`}
+                            >
+                              <Star className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                              Make default
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              setEditing({
+                                id: template.id,
+                                name: template.name,
+                                description: template.description,
+                                isDefault: template.isDefault,
+                              })
+                            }
+                            disabled={busyId === template.id}
+                          >
+                            <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => setConfirmDeleteId(template.id)}
+                            disabled={busyId === template.id}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -221,6 +435,8 @@ export default function RoutineSettingsPage() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="e.g. Morning focus"
+            maxLength={100}
+            helperText="Up to 100 characters."
           />
           <Input
             label="Description"
@@ -244,12 +460,6 @@ export default function RoutineSettingsPage() {
           >
             Create template
           </Button>
-          {created && (
-            <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" />
-              Template created
-            </span>
-          )}
         </div>
       </Card>
     </main>

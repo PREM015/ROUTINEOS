@@ -1,7 +1,9 @@
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
+import { isStreakActiveDay } from '@/server/domain/streak/streak-calculator';
 import type { HabitTier } from '@/generated/prisma';
 import { THRESHOLDS } from '@/config/scoring';
+import { previousCalendarDay } from '@/lib/dates';
 
 /**
  * Streak Calculation
@@ -25,7 +27,7 @@ export interface StreakCalculationResult {
 export async function calculateStreak(
   userId: string,
   date: string,
-  _habitTier?: HabitTier
+  _habitTier?: HabitTier,
 ): Promise<StreakCalculationResult> {
   // Get user's current streak
   let streak = await streakRepository.findByUserId(userId);
@@ -33,10 +35,16 @@ export async function calculateStreak(
     streak = await streakRepository.create(userId);
   }
 
-  const dateObj = new Date(date);
-  const yesterday = new Date(dateObj);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  // Previous calendar day, by pure string arithmetic.
+  //
+  // This used to be `new Date(date)` → `setDate(getDate() - 1)` →
+  // `toISOString().slice(0, 10)`, which was wrong twice over. `new Date('2026-09-28')`
+  // is UTC midnight, but `getDate()` reads the **host-local** day, so on a host
+  // west of UTC it returned the 28th instead of the 27th; and east of UTC it
+  // could return the 27th for two different inputs. `yesterdayStr` decides
+  // whether a streak continues or resets, so a one-day drift here breaks a
+  // streak that should have survived.
+  const yesterdayStr = previousCalendarDay(date);
 
   // Get today's score
   const todayScore = await scoreRepository.findByDate(userId, date);
@@ -58,7 +66,7 @@ export async function calculateStreak(
 
   // If today's score is a minimum day, increment streak
   if (todayScore?.isMinimumDay) {
-    const updated = await streakRepository.addMinimumDay(userId);
+    const updated = await streakRepository.addMinimumDay(userId, date);
     result.changed = true;
     result.currentStreak = updated.currentStreak;
 
@@ -71,12 +79,16 @@ export async function calculateStreak(
     return result;
   }
 
-  // If today was completed normally
-  if (todayScore && todayScore.totalScore !== null && todayScore.totalScore >= 50) {
+  // If today was completed normally.
+  //
+  // Uses the shared `isStreakActiveDay` predicate rather than a local
+  // `totalScore >= 50` test, so the stored streak and the streak shown by
+  // `analytics/streaks.ts` cannot diverge. See the note on that function.
+  if (todayScore && isStreakActiveDay(todayScore)) {
     // Check if streak continues from yesterday
     if (yesterdayScore) {
       // Streak continues
-      const updated = await streakRepository.incrementCurrentStreak(userId, 1);
+      const updated = await streakRepository.incrementCurrentStreak(userId, 1, date);
       result.changed = true;
       result.currentStreak = updated.currentStreak;
 
@@ -138,9 +150,15 @@ function checkStreakMilestone(currentStreak: number): number | undefined {
 export async function recordStreakMilestone(
   userId: string,
   milestoneDays: number,
-  streakType: string = 'current'
+  streakType: string = 'current',
+  /** The user's today. Required: UTC was used before and mis-dated the row. */
+  today?: string,
 ): Promise<void> {
-  const today = new Date().toISOString().slice(0, 10);
+  if (!today) {
+    // A milestone with no date is worse than none: it cannot be shown in any
+    // date-bucketed query. Callers must pass the user's calendar day.
+    throw new Error('recordStreakMilestone requires the user\'s current date');
+  }
 
   // Check if already recorded
   const existing = await streakRepository.findMilestone(userId, milestoneDays, streakType);

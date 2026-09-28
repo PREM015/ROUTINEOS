@@ -1,5 +1,6 @@
 import { SkipLink } from '@/components/ui/SkipLink';
 import { OfflineBanner } from '@/components/offline/OfflineBanner';
+import { DataErrorBanner } from '@/components/layout/DataErrorBanner';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -17,6 +18,9 @@ export default function DashboardLayout({
     <div className="min-h-screen flex bg-background text-foreground">
       <SkipLink />
       <OfflineBanner />
+      {/* Surfaces AppContext.dataError, which was previously set but never read
+          anywhere — a failed shared fetch looked like an empty dataset. */}
+      <DataErrorBanner className="fixed inset-x-0 top-0 z-50" />
 
       {/* Desktop Sidebar Navigation */}
       <Sidebar />

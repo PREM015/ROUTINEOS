@@ -73,6 +73,23 @@ export class AutomationRepository extends BaseRepository {
   }
 
   /**
+   * Enabled rules that listen for a given trigger event.
+   *
+   * The evaluator's only query: it must be cheap enough to run on hot paths
+   * like logging a habit. `@@index([userId, isActive])` covers the filter.
+   */
+  async findActiveByTriggerType(userId: string, triggerType: string): Promise<AutomationRule[]> {
+    try {
+      return await this.prisma.automationRule.findMany({
+        where: { userId, isActive: true, triggerType },
+        orderBy: { createdAt: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findActiveByTriggerType');
+    }
+  }
+
+  /**
    * Find a single automation rule owned by the user
    */
   async findById(userId: string, ruleId: string): Promise<AutomationRule | null> {
@@ -91,7 +108,7 @@ export class AutomationRepository extends BaseRepository {
   async update(
     userId: string,
     ruleId: string,
-    data: Prisma.AutomationRuleUpdateInput
+    data: Prisma.AutomationRuleUpdateInput,
   ): Promise<AutomationRule> {
     try {
       return await this.prisma.automationRule.update({
@@ -131,56 +148,31 @@ export class AutomationRepository extends BaseRepository {
   }
 
   /**
-   * Execute an automation rule (minimal evaluation).
-   * Always records the trigger; a CREATE_TASK action also spawns a task.
+   * Record that a rule fired: bump the counters and stamp `lastTriggered`.
+   *
+   * Deliberately does **not** execute the action. Business logic belongs in
+   * `AutomationService`, which owns the action implementations; this method only
+   * persists execution bookkeeping. Keeping them apart is what stopped
+   * 4 of the 5 `actionType` values from being silently ignored — the old
+   * combined `trigger()` handled only `CREATE_TASK` and quietly recorded a
+   * "success" for every other type.
    */
-  async trigger(userId: string, ruleId: string): Promise<AutomationTriggerResult> {
+  async markTriggered(userId: string, ruleId: string): Promise<AutomationRule> {
     try {
       const rule = await this.findById(userId, ruleId);
       if (!rule) {
-        this.handleError(new Error('Automation rule not found'), 'trigger');
+        this.handleError(new Error('Automation rule not found'), 'markTriggered');
       }
 
-      let createdTaskId: string | undefined;
-      if (rule.actionType === 'CREATE_TASK') {
-        const config = this.parseConfig(rule.actionConfig);
-        const title = config.title;
-        if (typeof title === 'string' && title.trim().length > 0) {
-          const description = config.description;
-          const task = await this.prisma.task.create({
-            data: {
-              title: title.trim(),
-              description: typeof description === 'string' ? description : undefined,
-              user: { connect: { id: userId } },
-            },
-          });
-          createdTaskId = task.id;
-        }
-      }
-
-      const updated = await this.prisma.automationRule.update({
+      return await this.prisma.automationRule.update({
         where: { id: ruleId },
         data: {
           timesTriggered: { increment: 1 },
           lastTriggered: new Date(),
         },
       });
-
-      return { rule: updated, createdTaskId };
     } catch (error) {
-      this.handleError(error, 'trigger');
+      this.handleError(error, 'markTriggered');
     }
-  }
-
-  private parseConfig(value: string): Record<string, unknown> {
-    try {
-      const parsed: unknown = JSON.parse(value);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-        return parsed as Record<string, unknown>;
-      }
-    } catch {
-      // Fall through to empty config when stored JSON is invalid.
-    }
-    return {};
   }
 }

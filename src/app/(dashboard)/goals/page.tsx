@@ -7,7 +7,7 @@ import AddGoalModal from '@/components/goals/AddGoalModal';
 import EditGoalModal from '@/components/goals/EditGoalModal';
 import { useApp, type Goal } from '@/context/AppContext';
 import { runAchievementCheck } from '@/store/achievement.store';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { Button, Badge, EmptyState } from '@/components/ui';
 
 type TabType = 'DAILY' | 'LONG_TERM' | 'COMPLETED';
@@ -153,6 +153,7 @@ function GoalCard({
 
 export default function GoalsPage() {
   const { goals, deleteGoal, updateGoal } = useApp();
+  const { today: userToday } = useUserTimezone();
   const [tab, setTab] = useState<TabType>('DAILY');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Goal | null>(null);
@@ -160,7 +161,7 @@ export default function GoalsPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [checkins, setCheckins] = useState<Record<string, boolean>>({});
-  const today = getTodayString();
+  const today = userToday;
 
   const { dailyGoals, longTermGoals, completedGoals } = useMemo(() => {
     const done = (g: Goal) => g.status === 'COMPLETED' || g.status === 'CANCELLED';

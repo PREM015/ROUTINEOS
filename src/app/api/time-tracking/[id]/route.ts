@@ -4,7 +4,7 @@ import { updateTimeEntrySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -12,6 +12,7 @@ interface RouteContext {
  * Fetch a single time entry owned by the user
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -19,7 +20,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const repository = new TimeEntryRepository();
-    const entry = await repository.findById(session.user.id, params.id);
+    const entry = await repository.findById(session.user.id, paramId);
 
     if (!entry) {
       return NextResponse.json({ error: 'Time entry not found' }, { status: 404 });
@@ -40,6 +41,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update a time entry owned by the user
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -57,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const repository = new TimeEntryRepository();
-    const existing = await repository.findById(session.user.id, params.id);
+    const existing = await repository.findById(session.user.id, paramId);
 
     if (!existing) {
       return NextResponse.json({ error: 'Time entry not found' }, { status: 404 });
@@ -74,7 +76,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       }
     }
 
-    const entry = await repository.update(session.user.id, params.id, {
+    const entry = await repository.update(session.user.id, paramId, {
       description: validated.data.description,
       startTime: validated.data.startTime,
       endTime: validated.data.endTime,
@@ -104,6 +106,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * Delete a time entry owned by the user
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -111,13 +114,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const repository = new TimeEntryRepository();
-    const existing = await repository.findById(session.user.id, params.id);
+    const existing = await repository.findById(session.user.id, paramId);
 
     if (!existing) {
       return NextResponse.json({ error: 'Time entry not found' }, { status: 404 });
     }
 
-    const deleted = await repository.delete(session.user.id, params.id);
+    const deleted = await repository.delete(session.user.id, paramId);
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {

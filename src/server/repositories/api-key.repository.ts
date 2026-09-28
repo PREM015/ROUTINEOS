@@ -34,6 +34,61 @@ export class ApiKeyRepository extends BaseRepository {
   }
 
   /**
+   * Look up a key by its SHA-256 hash for authentication.
+   *
+   * `keyHash` is `@unique`, so this is a single indexed lookup and the only
+   * supported way to resolve a presented key. Revoked and expired keys are
+   * excluded here rather than in the caller, so no code path can accidentally
+   * authenticate one.
+   */
+  async findAuthenticatableByHash(keyHash: string): Promise<APIKey | null> {
+    try {
+      return await this.prisma.aPIKey.findFirst({
+        where: {
+          keyHash,
+          isActive: true,
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'findAuthenticatableByHash');
+    }
+  }
+
+  /**
+   * Unfiltered hash lookup.
+   *
+   * Only for explaining *why* a key was rejected (revoked vs expired vs never
+   * issued) for logging. Never use this to decide access — it will happily
+   * return a revoked or expired key.
+   */
+  async findByHashIncludingInactive(keyHash: string): Promise<APIKey | null> {
+    try {
+      return await this.prisma.aPIKey.findUnique({ where: { keyHash } });
+    } catch (error) {
+      this.handleError(error, 'findByHashIncludingInactive');
+    }
+  }
+
+  /**
+   * Record that a key was just used.
+   *
+   * Deliberately failure-tolerant: a failure here must not fail the request the
+   * key already authorised.
+   */
+  async recordUsage(id: string): Promise<void> {
+    try {
+      await this.prisma.aPIKey.update({
+        where: { id },
+        data: { lastUsedAt: new Date(), usageCount: { increment: 1 } },
+      });
+    } catch (error) {
+      // Swallow: usage tracking is observability, not authorisation.
+      console.warn('Failed to record API key usage', error);
+    }
+  }
+
+  /**
    * Find an API key by ID, scoped to a specific user (ownership check)
    */
   async findByIdScoped(id: string, userId: string): Promise<APIKey | null> {

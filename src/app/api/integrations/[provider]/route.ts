@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { provider: string };
+  params: Promise<{ provider: string }>;
 }
 
 function providerFromSlug(slug: string): IntegrationProvider | null {
@@ -27,13 +27,14 @@ function providerFromSlug(slug: string): IntegrationProvider | null {
  * Fetch the user's connection for a single provider.
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { provider: paramProvider } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const provider = providerFromSlug(params.provider);
+    const provider = providerFromSlug(paramProvider);
     if (!provider) {
       return NextResponse.json({ error: 'Unknown integration provider' }, { status: 400 });
     }
@@ -63,13 +64,14 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update the connection status or stored tokens for a provider.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { provider: paramProvider } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const provider = providerFromSlug(params.provider);
+    const provider = providerFromSlug(paramProvider);
     if (!provider) {
       return NextResponse.json({ error: 'Unknown integration provider' }, { status: 400 });
     }

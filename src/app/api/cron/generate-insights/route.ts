@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authorizeCron } from '@/lib/cron-auth';
 import { generateInsights } from '../../../../../scripts/generate-insights';
 
 export async function GET(request: NextRequest) {
-  const auth = request.headers.get('authorization');
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
+  const denied = authorizeCron(request);
+  if (denied) return denied;
 
   try {
     const result = await generateInsights();

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FlaskConical, CalendarDays } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 interface DayDebugBlock {
   id: string;
@@ -43,12 +43,13 @@ export default function RoutineScheduleDebug() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { today } = useUserTimezone();
+
   useEffect(() => {
-    const today = getTodayString();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only date sync to avoid SSR hydration mismatch
     setDate(today);
     setQueryDate(today);
-  }, []);
+  }, [today]);
 
   const run = async () => {
     if (!queryDate) return;

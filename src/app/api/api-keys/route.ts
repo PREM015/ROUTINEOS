@@ -1,11 +1,11 @@
 import { auth } from '@/lib/auth';
 import { ApiKeyRepository } from '@/server/repositories/api-key.repository';
-import { createHash, randomBytes } from 'node:crypto';
+import { hashApiKey } from '@/server/services/api-key.service';
+import { API_KEY_PREFIX, API_KEY_ENTROPY_BYTES } from '@/constants/api';
+import { randomBytes } from 'node:crypto';
 import type { APIKey } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-
-const API_KEY_PREFIX = 'rk_live_';
 
 const createApiKeySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),
@@ -15,22 +15,30 @@ const createApiKeySchema = z.object({
 /**
  * Generate a raw API key and its SHA-256 hash. The raw key is only shown
  * once at creation time; the database stores the hash.
+ *
+ * Hashing is delegated to `hashApiKey` so issuing and verifying cannot drift
+ * apart — a mismatch here would make every key unverifiable.
  */
 function generateApiKey(): { key: string; keyHash: string } {
-  const key = `${API_KEY_PREFIX}${randomBytes(32).toString('hex')}`;
-  const keyHash = createHash('sha256').update(key).digest('hex');
-  return { key, keyHash };
+  const key = `${API_KEY_PREFIX}${randomBytes(API_KEY_ENTROPY_BYTES).toString('hex')}`;
+  return { key, keyHash: hashApiKey(key) };
 }
 
 /**
  * Project an APIKey row into a safe response shape with the key masked.
+ *
+ * The raw key is never stored, so there is nothing to mask. This exposes the
+ * first 8 characters of the *hash* purely as a stable identifier for the UI to
+ * distinguish keys — it is not derived from the secret and reveals nothing
+ * usable.
  */
 function toSafeKey(key: APIKey) {
   return {
     id: key.id,
     name: key.name,
     description: key.description,
-    maskedKey: `••••••${key.keyHash.slice(-4)}`,
+    keyFingerprint: key.keyHash.slice(0, 8),
+    maskedKey: `••••••••${key.keyHash.slice(-4)}`,
     isActive: key.isActive,
     scopes: key.scopes,
     rateLimit: key.rateLimit,
@@ -63,10 +71,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { error: 'Failed to fetch API keys' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 });
   }
 }
 
@@ -87,7 +92,7 @@ export async function POST(request: NextRequest) {
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validated.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { success: true, data: { ...toSafeKey(created), key } },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error('Error creating API key:', error);
@@ -111,9 +116,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { error: 'Failed to create API key' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 });
   }
 }

@@ -1,26 +1,45 @@
 /**
  * Date utilities for RoutineOS.
- * All functions are timezone-aware. Default: Asia/Kolkata.
+ *
+ * All functions are timezone-aware. There is deliberately **no default
+ * timezone**: `getTodayString` used to default to `Asia/Kolkata`, which made
+ * "forgot to pass the user's timezone" type-check, lint clean, and silently
+ * wrong — every such call site bucketed by IST+5:30. In this repo that is the
+ * *right* zone for nobody but its author, and it was the reason a user in
+ * `America/New_York` saw tomorrow's score between local midnight and 05:30.
+ *
+ * Every caller must now name a zone. Use the user's `settings.timezone` on the
+ * server, and `useUserTimezone()` on the client.
  */
 
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, subDays } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { toZonedTime, formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
-export const DEFAULT_TZ = 'Asia/Kolkata';
+/**
+ * Last-resort zone for a request whose user row could not be read.
+ *
+ * UTC rather than a real region on purpose: it is the one zone guaranteed not
+ * to invent an offset, and every caller that reaches this is already on an
+ * error path.
+ */
+export const DEFAULT_TZ = 'UTC';
 
 /**
  * Get today's date string (YYYY-MM-DD) in the given timezone.
+ *
+ * `tz` is required. See the module comment.
  */
-export function getTodayString(tz = DEFAULT_TZ): string {
+export function getTodayString(tz: string): string {
   const now = toZonedTime(new Date(), tz);
   return format(now, 'yyyy-MM-dd');
 }
 
-export function todayForUser(timezone = DEFAULT_TZ): string {
+/** Today's date for a user whose timezone is `timezone`. */
+export function todayForUser(timezone: string): string {
   return getTodayString(timezone);
 }
 
-export function nowForUser(timezone = DEFAULT_TZ): string {
+export function nowForUser(timezone: string): string {
   const zoned = toZonedTime(new Date(), timezone);
   return format(zoned, "yyyy-MM-dd'T'HH:mm:ssXXX");
 }
@@ -28,7 +47,7 @@ export function nowForUser(timezone = DEFAULT_TZ): string {
 /**
  * Get a Date object for "now" in the user's timezone.
  */
-export function getNowInTz(tz = DEFAULT_TZ): Date {
+export function getNowInTz(tz: string): Date {
   return toZonedTime(new Date(), tz);
 }
 
@@ -42,11 +61,16 @@ export function formatDisplayDate(dateStr: string): string {
 
 /**
  * Get the start and end of a week (default: week starts Monday).
+ *
+ * `tz` is accepted for call-site clarity but a `YYYY-MM-DD` calendar date has
+ * an intrinsic weekday, so it is parsed as UTC midnight and formatted in UTC.
+ * Formatting it in a user zone shifted the week for anyone west of it — a
+ * Sunday resolved to the *following* week.
  */
 export function getWeekRange(
   dateStr: string,
   weekStartsOn: 0 | 1 = 1,
-  _tz = DEFAULT_TZ
+  _tz?: string
 ): { start: string; end: string } {
   const d = parseISO(dateStr);
   const start = startOfWeek(d, { weekStartsOn });
@@ -134,9 +158,81 @@ export function formatMinutes(minutes: number): string {
 
 /**
  * Determine the day of week name from a YYYY-MM-DD string.
+ *
+ * Parsed and formatted in UTC: `parseISO` yields a host-local midnight, so
+ * `format` on that value reports the previous weekday for any host west of UTC.
  */
 export function getDayOfWeek(dateStr: string): string {
-  return format(parseISO(dateStr), 'EEEE');
+  return formatInTimeZone(new Date(`${dateStr}T00:00:00.000Z`), 'UTC', 'EEEE');
+}
+
+/**
+ * Step a `YYYY-MM-DD` calendar date by whole days.
+ *
+ * Pure string/UTC arithmetic. The obvious alternative —
+ * `new Date(d); d.setDate(d.getDate() + n); d.toISOString().slice(0,10)` — mixes
+ * three different frames: `new Date('2026-09-28')` is UTC midnight, `getDate()`
+ * reads the **host-local** day, and `toISOString()` re-anchors to UTC. On a host
+ * west of UTC `previousCalendarDay('2026-09-01')` returned the 31st of August
+ * instead of the 31st, and the result depended on the server's timezone.
+ *
+ * A `YYYY-MM-DD` date is a calendar label, not an instant, so it is stepped as
+ * one.
+ */
+export function shiftCalendarDay(dateStr: string, days: number): string {
+  const base = new Date(`${dateStr}T00:00:00.000Z`);
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
+/** The calendar day before `dateStr`. */
+export function previousCalendarDay(dateStr: string): string {
+  return shiftCalendarDay(dateStr, -1);
+}
+
+/** The calendar day after `dateStr`. */
+export function nextCalendarDay(dateStr: string): string {
+  return shiftCalendarDay(dateStr, 1);
+}
+
+/**
+ * Whole calendar days from `from` to `to` (negative when `to` is earlier).
+ *
+ * Counted on `YYYY-MM-DD` labels rather than by subtracting `Date` millis.
+ * `new Date('2026-09-28')` is UTC midnight, so a difference computed that way
+ * against a locally-parsed date is short by the host's UTC offset — up to a full
+ * day — and the error varies with the server's timezone.
+ */
+export function calendarDaysBetween(from: string, to: string): number {
+  const MS_PER_DAY = 86_400_000;
+  const a = Date.parse(`${from}T00:00:00.000Z`);
+  const b = Date.parse(`${to}T00:00:00.000Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 0;
+  return Math.round((b - a) / MS_PER_DAY);
+}
+
+/**
+ * The half-open `[start, end)` instant range covering one calendar day in the
+ * given zone.
+ *
+ * `new Date(y, m, d)` — the pattern this replaces — builds a midnight in the
+ * **host's** zone. On a UTC server that is the wrong instant for any user who is
+ * not, so "is this session running today?" was answered against the server's
+ * idea of the day: a user in `Asia/Tokyo` had their evening sessions counted as
+ * yesterday, and a user in `America/New_York` had sessions before 09:00 local
+ * counted as the previous day.
+ *
+ * `date` defaults to the user's current day in that zone.
+ */
+export function dayBoundsInTimezone(
+  tz: string,
+  date?: string
+): { start: Date; end: Date } {
+  const day = date ?? getTodayString(tz);
+  return {
+    start: fromZonedTime(`${day}T00:00:00`, tz),
+    end: fromZonedTime(`${nextCalendarDay(day)}T00:00:00`, tz),
+  };
 }
 
 /**

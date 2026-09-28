@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -20,6 +20,7 @@ interface RouteContext {
  * Fetch a single tag owned by the user.
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const tagRepository = new TagRepository();
-    const tag = await tagRepository.findById(session.user.id, params.id);
+    const tag = await tagRepository.findById(session.user.id, paramId);
 
     if (!tag) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
@@ -45,6 +46,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update a tag owned by the user.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -61,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const tagRepository = new TagRepository();
-    const existing = await tagRepository.findById(session.user.id, params.id);
+    const existing = await tagRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
     }
@@ -70,7 +72,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: true, data: existing });
     }
 
-    const tag = await tagRepository.update(session.user.id, params.id, validated.data);
+    const tag = await tagRepository.update(session.user.id, paramId, validated.data);
     return NextResponse.json({ success: true, data: tag });
   } catch (error) {
     console.error('Error updating tag:', error);
@@ -95,6 +97,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * Delete a tag owned by the user.
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -102,13 +105,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const tagRepository = new TagRepository();
-    const existing = await tagRepository.findById(session.user.id, params.id);
+    const existing = await tagRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
     }
 
-    await tagRepository.delete(session.user.id, params.id);
-    return NextResponse.json({ success: true, data: { id: params.id } });
+    await tagRepository.delete(session.user.id, paramId);
+    return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting tag:', error);
     return NextResponse.json({ error: 'Failed to delete tag' }, { status: 500 });

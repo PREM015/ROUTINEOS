@@ -101,12 +101,15 @@ export default function ApiKeysSettingsPage() {
   const revoke = async (id: string) => {
     setRevokingId(id);
     setNotice(null);
+    // Cleared on entry: a stale error banner used to survive a later
+    // successful revoke.
+    setError(null);
     try {
       await apiRequest(`/api/api-keys/${id}/revoke`, { method: 'POST' });
       setNotice('API key revoked.');
-      void loadKeys();
+      await loadKeys();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to revoke API key.');
+      setError(err instanceof ApiError ? err.message : 'Failed to revoke API key.');
     } finally {
       setRevokingId(null);
     }

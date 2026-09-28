@@ -13,13 +13,14 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GRAIN_CLASS, OVERLAY_CLASS } from './modal-frame';
 
 type DrawerSide = 'left' | 'right' | 'bottom';
 
 const SIDE_CLASSES: Record<DrawerSide, string> = {
   left: 'left-0 top-0 h-full max-w-sm inset-y-0 drawer-in-left',
   right: 'right-0 top-0 h-full max-w-sm inset-y-0 drawer-in-right',
-  bottom: 'bottom-0 left-0 w-full max-h-[85vh] rounded-t-xl drawer-in-bottom',
+  bottom: 'bottom-0 left-0 w-[calc(100%_-_1rem)] max-h-[85dvh] rounded-t-xl drawer-in-bottom sm:w-full',
 };
 
 export interface DrawerProps {
@@ -58,10 +59,12 @@ export function Drawer({
         </DialogPrimitive.Trigger>
       )}
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 overlay-glass noise-overlay" />
+        <DialogPrimitive.Overlay className={OVERLAY_CLASS}>
+          <div className={GRAIN_CLASS} aria-hidden="true" />
+        </DialogPrimitive.Overlay>
         <DialogPrimitive.Content
           className={cn(
-            'fixed z-50 flex flex-col border-border bg-card text-foreground shadow-long outline-none',
+            'fixed z-[110] flex flex-col border-border bg-card text-foreground shadow-long outline-none',
             SIDE_CLASSES[side],
             className,
           )}
@@ -85,7 +88,7 @@ export function Drawer({
               </DialogPrimitive.Close>
             </div>
           )}
-          <div className="flex-1 overflow-y-auto p-5 text-sm text-muted-foreground">{children}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 text-sm text-muted-foreground">{children}</div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

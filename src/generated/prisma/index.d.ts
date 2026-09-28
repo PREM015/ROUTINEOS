@@ -622,6 +622,7 @@ export type InsightPeriod = (typeof InsightPeriod)[keyof typeof InsightPeriod]
 
 
 export const NotificationType: {
+  AUTOMATION: 'AUTOMATION',
   HABIT_REMINDER: 'HABIT_REMINDER',
   ROUTINE_REMINDER: 'ROUTINE_REMINDER',
   GOAL_DEADLINE: 'GOAL_DEADLINE',
@@ -643,6 +644,7 @@ export const NotificationType: {
   HABIT_STREAK_AT_RISK: 'HABIT_STREAK_AT_RISK',
   GOAL_AT_RISK: 'GOAL_AT_RISK',
   GOAL_COMPLETED: 'GOAL_COMPLETED',
+  ROUTINE_START: 'ROUTINE_START',
   ROUTINE_COMPLETED: 'ROUTINE_COMPLETED',
   ROUTINE_MISSED: 'ROUTINE_MISSED',
   DAILY_RESET: 'DAILY_RESET',
@@ -755,6 +757,7 @@ export const AuditAction: {
   HABIT_CREATED: 'HABIT_CREATED',
   HABIT_UPDATED: 'HABIT_UPDATED',
   HABIT_ARCHIVED: 'HABIT_ARCHIVED',
+  HABIT_RESTORED: 'HABIT_RESTORED',
   HABIT_DELETED: 'HABIT_DELETED',
   HABIT_PAUSED: 'HABIT_PAUSED',
   HABIT_RESUMED: 'HABIT_RESUMED',
@@ -777,7 +780,10 @@ export const AuditAction: {
   ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
   PASSWORD_RESET_REQUESTED: 'PASSWORD_RESET_REQUESTED',
   PASSWORD_RESET_COMPLETED: 'PASSWORD_RESET_COMPLETED',
+  LOGOUT: 'LOGOUT',
   LOGOUT_ALL_SESSIONS: 'LOGOUT_ALL_SESSIONS',
+  TWO_FACTOR_ENABLED: 'TWO_FACTOR_ENABLED',
+  TWO_FACTOR_DISABLED: 'TWO_FACTOR_DISABLED',
   EMAIL_VERIFIED: 'EMAIL_VERIFIED',
   SETTINGS_UPDATED: 'SETTINGS_UPDATED'
 };
@@ -14157,6 +14163,7 @@ export namespace Prisma {
     weightNonNeg: number | null
     weightGrowth: number | null
     weightBonus: number | null
+    advanceNotificationMinutes: number | null
     retroactiveEditDays: number | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
@@ -14170,6 +14177,7 @@ export namespace Prisma {
     weightNonNeg: number | null
     weightGrowth: number | null
     weightBonus: number | null
+    advanceNotificationMinutes: number | null
     retroactiveEditDays: number | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
@@ -14207,6 +14215,12 @@ export namespace Prisma {
     smsNotifications: boolean | null
     quietHoursStart: string | null
     quietHoursEnd: string | null
+    routineStartNotifications: boolean | null
+    upcomingRoutineNotifications: boolean | null
+    sleepReminderNotifications: boolean | null
+    habitReminderNotifications: boolean | null
+    goalReminderNotifications: boolean | null
+    advanceNotificationMinutes: number | null
     dailyReminder: boolean | null
     dailyReminderTime: string | null
     habitReminders: boolean | null
@@ -14258,6 +14272,12 @@ export namespace Prisma {
     smsNotifications: boolean | null
     quietHoursStart: string | null
     quietHoursEnd: string | null
+    routineStartNotifications: boolean | null
+    upcomingRoutineNotifications: boolean | null
+    sleepReminderNotifications: boolean | null
+    habitReminderNotifications: boolean | null
+    goalReminderNotifications: boolean | null
+    advanceNotificationMinutes: number | null
     dailyReminder: boolean | null
     dailyReminderTime: string | null
     habitReminders: boolean | null
@@ -14309,6 +14329,12 @@ export namespace Prisma {
     smsNotifications: number
     quietHoursStart: number
     quietHoursEnd: number
+    routineStartNotifications: number
+    upcomingRoutineNotifications: number
+    sleepReminderNotifications: number
+    habitReminderNotifications: number
+    goalReminderNotifications: number
+    advanceNotificationMinutes: number
     dailyReminder: number
     dailyReminderTime: number
     habitReminders: number
@@ -14338,6 +14364,7 @@ export namespace Prisma {
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
+    advanceNotificationMinutes?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -14351,6 +14378,7 @@ export namespace Prisma {
     weightNonNeg?: true
     weightGrowth?: true
     weightBonus?: true
+    advanceNotificationMinutes?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -14388,6 +14416,12 @@ export namespace Prisma {
     smsNotifications?: true
     quietHoursStart?: true
     quietHoursEnd?: true
+    routineStartNotifications?: true
+    upcomingRoutineNotifications?: true
+    sleepReminderNotifications?: true
+    habitReminderNotifications?: true
+    goalReminderNotifications?: true
+    advanceNotificationMinutes?: true
     dailyReminder?: true
     dailyReminderTime?: true
     habitReminders?: true
@@ -14439,6 +14473,12 @@ export namespace Prisma {
     smsNotifications?: true
     quietHoursStart?: true
     quietHoursEnd?: true
+    routineStartNotifications?: true
+    upcomingRoutineNotifications?: true
+    sleepReminderNotifications?: true
+    habitReminderNotifications?: true
+    goalReminderNotifications?: true
+    advanceNotificationMinutes?: true
     dailyReminder?: true
     dailyReminderTime?: true
     habitReminders?: true
@@ -14490,6 +14530,12 @@ export namespace Prisma {
     smsNotifications?: true
     quietHoursStart?: true
     quietHoursEnd?: true
+    routineStartNotifications?: true
+    upcomingRoutineNotifications?: true
+    sleepReminderNotifications?: true
+    habitReminderNotifications?: true
+    goalReminderNotifications?: true
+    advanceNotificationMinutes?: true
     dailyReminder?: true
     dailyReminderTime?: true
     habitReminders?: true
@@ -14628,6 +14674,12 @@ export namespace Prisma {
     smsNotifications: boolean
     quietHoursStart: string | null
     quietHoursEnd: string | null
+    routineStartNotifications: boolean
+    upcomingRoutineNotifications: boolean
+    sleepReminderNotifications: boolean
+    habitReminderNotifications: boolean
+    goalReminderNotifications: boolean
+    advanceNotificationMinutes: number
     dailyReminder: boolean
     dailyReminderTime: string | null
     habitReminders: boolean
@@ -14698,6 +14750,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: boolean
     quietHoursEnd?: boolean
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: boolean
     dailyReminder?: boolean
     dailyReminderTime?: boolean
     habitReminders?: boolean
@@ -14750,6 +14808,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: boolean
     quietHoursEnd?: boolean
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: boolean
     dailyReminder?: boolean
     dailyReminderTime?: boolean
     habitReminders?: boolean
@@ -14802,6 +14866,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: boolean
     quietHoursEnd?: boolean
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: boolean
     dailyReminder?: boolean
     dailyReminderTime?: boolean
     habitReminders?: boolean
@@ -14854,6 +14924,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: boolean
     quietHoursEnd?: boolean
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: boolean
     dailyReminder?: boolean
     dailyReminderTime?: boolean
     habitReminders?: boolean
@@ -14873,7 +14949,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
+  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "routineStartNotifications" | "upcomingRoutineNotifications" | "sleepReminderNotifications" | "habitReminderNotifications" | "goalReminderNotifications" | "advanceNotificationMinutes" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
   export type UserSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -14921,6 +14997,12 @@ export namespace Prisma {
       smsNotifications: boolean
       quietHoursStart: string | null
       quietHoursEnd: string | null
+      routineStartNotifications: boolean
+      upcomingRoutineNotifications: boolean
+      sleepReminderNotifications: boolean
+      habitReminderNotifications: boolean
+      goalReminderNotifications: boolean
+      advanceNotificationMinutes: number
       dailyReminder: boolean
       dailyReminderTime: string | null
       habitReminders: boolean
@@ -15393,6 +15475,12 @@ export namespace Prisma {
     readonly smsNotifications: FieldRef<"UserSettings", 'Boolean'>
     readonly quietHoursStart: FieldRef<"UserSettings", 'String'>
     readonly quietHoursEnd: FieldRef<"UserSettings", 'String'>
+    readonly routineStartNotifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly upcomingRoutineNotifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly sleepReminderNotifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly habitReminderNotifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly goalReminderNotifications: FieldRef<"UserSettings", 'Boolean'>
+    readonly advanceNotificationMinutes: FieldRef<"UserSettings", 'Int'>
     readonly dailyReminder: FieldRef<"UserSettings", 'Boolean'>
     readonly dailyReminderTime: FieldRef<"UserSettings", 'String'>
     readonly habitReminders: FieldRef<"UserSettings", 'Boolean'>
@@ -56963,6 +57051,7 @@ export namespace Prisma {
     actualDuration: number | null
     startedAt: Date | null
     completedAt: Date | null
+    abortedAt: Date | null
     pausedAt: Date | null
     focusRating: number | null
     productivityRating: number | null
@@ -56986,6 +57075,7 @@ export namespace Prisma {
     actualDuration: number | null
     startedAt: Date | null
     completedAt: Date | null
+    abortedAt: Date | null
     pausedAt: Date | null
     focusRating: number | null
     productivityRating: number | null
@@ -57009,6 +57099,7 @@ export namespace Prisma {
     actualDuration: number
     startedAt: number
     completedAt: number
+    abortedAt: number
     pausedAt: number
     focusRating: number
     productivityRating: number
@@ -57054,6 +57145,7 @@ export namespace Prisma {
     actualDuration?: true
     startedAt?: true
     completedAt?: true
+    abortedAt?: true
     pausedAt?: true
     focusRating?: true
     productivityRating?: true
@@ -57077,6 +57169,7 @@ export namespace Prisma {
     actualDuration?: true
     startedAt?: true
     completedAt?: true
+    abortedAt?: true
     pausedAt?: true
     focusRating?: true
     productivityRating?: true
@@ -57100,6 +57193,7 @@ export namespace Prisma {
     actualDuration?: true
     startedAt?: true
     completedAt?: true
+    abortedAt?: true
     pausedAt?: true
     focusRating?: true
     productivityRating?: true
@@ -57210,6 +57304,7 @@ export namespace Prisma {
     actualDuration: number | null
     startedAt: Date
     completedAt: Date | null
+    abortedAt: Date | null
     pausedAt: Date | null
     focusRating: number | null
     productivityRating: number | null
@@ -57252,6 +57347,7 @@ export namespace Prisma {
     actualDuration?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    abortedAt?: boolean
     pausedAt?: boolean
     focusRating?: boolean
     productivityRating?: boolean
@@ -57279,6 +57375,7 @@ export namespace Prisma {
     actualDuration?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    abortedAt?: boolean
     pausedAt?: boolean
     focusRating?: boolean
     productivityRating?: boolean
@@ -57304,6 +57401,7 @@ export namespace Prisma {
     actualDuration?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    abortedAt?: boolean
     pausedAt?: boolean
     focusRating?: boolean
     productivityRating?: boolean
@@ -57329,6 +57427,7 @@ export namespace Prisma {
     actualDuration?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    abortedAt?: boolean
     pausedAt?: boolean
     focusRating?: boolean
     productivityRating?: boolean
@@ -57342,7 +57441,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type FocusSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "title" | "description" | "categoryId" | "plannedDuration" | "actualDuration" | "startedAt" | "completedAt" | "pausedAt" | "focusRating" | "productivityRating" | "difficultyRating" | "energyBefore" | "energyAfter" | "distractions" | "techniques" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["focusSession"]>
+  export type FocusSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "title" | "description" | "categoryId" | "plannedDuration" | "actualDuration" | "startedAt" | "completedAt" | "abortedAt" | "pausedAt" | "focusRating" | "productivityRating" | "difficultyRating" | "energyBefore" | "energyAfter" | "distractions" | "techniques" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["focusSession"]>
   export type FocusSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     category?: boolean | FocusSession$categoryArgs<ExtArgs>
@@ -57375,6 +57474,14 @@ export namespace Prisma {
       actualDuration: number | null
       startedAt: Date
       completedAt: Date | null
+      /**
+       * Set when the user stopped, skipped or switched mode before the session
+       * finished. Without it an aborted session has `completedAt: null`, which is
+       * exactly the shape `findActiveByUserId` uses to find a *running* session —
+       * so stopped timers were reported as "IN PROGRESS" forever, and setting
+       * `completedAt` instead would have counted them as completed work.
+       */
+      abortedAt: Date | null
       pausedAt: Date | null
       focusRating: number | null
       productivityRating: number | null
@@ -57821,6 +57928,7 @@ export namespace Prisma {
     readonly actualDuration: FieldRef<"FocusSession", 'Int'>
     readonly startedAt: FieldRef<"FocusSession", 'DateTime'>
     readonly completedAt: FieldRef<"FocusSession", 'DateTime'>
+    readonly abortedAt: FieldRef<"FocusSession", 'DateTime'>
     readonly pausedAt: FieldRef<"FocusSession", 'DateTime'>
     readonly focusRating: FieldRef<"FocusSession", 'Int'>
     readonly productivityRating: FieldRef<"FocusSession", 'Int'>
@@ -82242,6 +82350,7 @@ export namespace Prisma {
     expiresAt: Date | null
     isActive: boolean | null
     createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type DeviceSessionMaxAggregateOutputType = {
@@ -82257,6 +82366,7 @@ export namespace Prisma {
     expiresAt: Date | null
     isActive: boolean | null
     createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type DeviceSessionCountAggregateOutputType = {
@@ -82272,6 +82382,7 @@ export namespace Prisma {
     expiresAt: number
     isActive: number
     createdAt: number
+    updatedAt: number
     _all: number
   }
 
@@ -82289,6 +82400,7 @@ export namespace Prisma {
     expiresAt?: true
     isActive?: true
     createdAt?: true
+    updatedAt?: true
   }
 
   export type DeviceSessionMaxAggregateInputType = {
@@ -82304,6 +82416,7 @@ export namespace Prisma {
     expiresAt?: true
     isActive?: true
     createdAt?: true
+    updatedAt?: true
   }
 
   export type DeviceSessionCountAggregateInputType = {
@@ -82319,6 +82432,7 @@ export namespace Prisma {
     expiresAt?: true
     isActive?: true
     createdAt?: true
+    updatedAt?: true
     _all?: true
   }
 
@@ -82407,6 +82521,7 @@ export namespace Prisma {
     expiresAt: Date
     isActive: boolean
     createdAt: Date
+    updatedAt: Date
     _count: DeviceSessionCountAggregateOutputType | null
     _min: DeviceSessionMinAggregateOutputType | null
     _max: DeviceSessionMaxAggregateOutputType | null
@@ -82439,6 +82554,7 @@ export namespace Prisma {
     expiresAt?: boolean
     isActive?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["deviceSession"]>
 
@@ -82455,6 +82571,7 @@ export namespace Prisma {
     expiresAt?: boolean
     isActive?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["deviceSession"]>
 
@@ -82471,6 +82588,7 @@ export namespace Prisma {
     expiresAt?: boolean
     isActive?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["deviceSession"]>
 
@@ -82487,9 +82605,10 @@ export namespace Prisma {
     expiresAt?: boolean
     isActive?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
   }
 
-  export type DeviceSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "deviceName" | "deviceType" | "deviceId" | "userAgent" | "ipAddress" | "location" | "lastActiveAt" | "expiresAt" | "isActive" | "createdAt", ExtArgs["result"]["deviceSession"]>
+  export type DeviceSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "deviceName" | "deviceType" | "deviceId" | "userAgent" | "ipAddress" | "location" | "lastActiveAt" | "expiresAt" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["deviceSession"]>
   export type DeviceSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -82510,6 +82629,11 @@ export namespace Prisma {
       userId: string
       deviceName: string | null
       deviceType: $Enums.DeviceType | null
+      /**
+       * Client-generated stable identifier (a UUID in localStorage). Makes the
+       * per-user device unique so a returning device refreshes its row instead of
+       * accumulating duplicates. Nullable for rows backfilled before this existed.
+       */
       deviceId: string | null
       userAgent: string | null
       ipAddress: string | null
@@ -82518,6 +82642,7 @@ export namespace Prisma {
       expiresAt: Date
       isActive: boolean
       createdAt: Date
+      updatedAt: Date
     }, ExtArgs["result"]["deviceSession"]>
     composites: {}
   }
@@ -82954,6 +83079,7 @@ export namespace Prisma {
     readonly expiresAt: FieldRef<"DeviceSession", 'DateTime'>
     readonly isActive: FieldRef<"DeviceSession", 'Boolean'>
     readonly createdAt: FieldRef<"DeviceSession", 'DateTime'>
+    readonly updatedAt: FieldRef<"DeviceSession", 'DateTime'>
   }
     
 
@@ -93884,6 +94010,12 @@ export namespace Prisma {
     smsNotifications: 'smsNotifications',
     quietHoursStart: 'quietHoursStart',
     quietHoursEnd: 'quietHoursEnd',
+    routineStartNotifications: 'routineStartNotifications',
+    upcomingRoutineNotifications: 'upcomingRoutineNotifications',
+    sleepReminderNotifications: 'sleepReminderNotifications',
+    habitReminderNotifications: 'habitReminderNotifications',
+    goalReminderNotifications: 'goalReminderNotifications',
+    advanceNotificationMinutes: 'advanceNotificationMinutes',
     dailyReminder: 'dailyReminder',
     dailyReminderTime: 'dailyReminderTime',
     habitReminders: 'habitReminders',
@@ -94495,6 +94627,7 @@ export namespace Prisma {
     actualDuration: 'actualDuration',
     startedAt: 'startedAt',
     completedAt: 'completedAt',
+    abortedAt: 'abortedAt',
     pausedAt: 'pausedAt',
     focusRating: 'focusRating',
     productivityRating: 'productivityRating',
@@ -94887,7 +95020,8 @@ export namespace Prisma {
     lastActiveAt: 'lastActiveAt',
     expiresAt: 'expiresAt',
     isActive: 'isActive',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   };
 
   export type DeviceSessionScalarFieldEnum = (typeof DeviceSessionScalarFieldEnum)[keyof typeof DeviceSessionScalarFieldEnum]
@@ -96124,6 +96258,12 @@ export namespace Prisma {
     smsNotifications?: BoolFilter<"UserSettings"> | boolean
     quietHoursStart?: StringNullableFilter<"UserSettings"> | string | null
     quietHoursEnd?: StringNullableFilter<"UserSettings"> | string | null
+    routineStartNotifications?: BoolFilter<"UserSettings"> | boolean
+    upcomingRoutineNotifications?: BoolFilter<"UserSettings"> | boolean
+    sleepReminderNotifications?: BoolFilter<"UserSettings"> | boolean
+    habitReminderNotifications?: BoolFilter<"UserSettings"> | boolean
+    goalReminderNotifications?: BoolFilter<"UserSettings"> | boolean
+    advanceNotificationMinutes?: IntFilter<"UserSettings"> | number
     dailyReminder?: BoolFilter<"UserSettings"> | boolean
     dailyReminderTime?: StringNullableFilter<"UserSettings"> | string | null
     habitReminders?: BoolFilter<"UserSettings"> | boolean
@@ -96176,6 +96316,12 @@ export namespace Prisma {
     smsNotifications?: SortOrder
     quietHoursStart?: SortOrderInput | SortOrder
     quietHoursEnd?: SortOrderInput | SortOrder
+    routineStartNotifications?: SortOrder
+    upcomingRoutineNotifications?: SortOrder
+    sleepReminderNotifications?: SortOrder
+    habitReminderNotifications?: SortOrder
+    goalReminderNotifications?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     dailyReminder?: SortOrder
     dailyReminderTime?: SortOrderInput | SortOrder
     habitReminders?: SortOrder
@@ -96231,6 +96377,12 @@ export namespace Prisma {
     smsNotifications?: BoolFilter<"UserSettings"> | boolean
     quietHoursStart?: StringNullableFilter<"UserSettings"> | string | null
     quietHoursEnd?: StringNullableFilter<"UserSettings"> | string | null
+    routineStartNotifications?: BoolFilter<"UserSettings"> | boolean
+    upcomingRoutineNotifications?: BoolFilter<"UserSettings"> | boolean
+    sleepReminderNotifications?: BoolFilter<"UserSettings"> | boolean
+    habitReminderNotifications?: BoolFilter<"UserSettings"> | boolean
+    goalReminderNotifications?: BoolFilter<"UserSettings"> | boolean
+    advanceNotificationMinutes?: IntFilter<"UserSettings"> | number
     dailyReminder?: BoolFilter<"UserSettings"> | boolean
     dailyReminderTime?: StringNullableFilter<"UserSettings"> | string | null
     habitReminders?: BoolFilter<"UserSettings"> | boolean
@@ -96283,6 +96435,12 @@ export namespace Prisma {
     smsNotifications?: SortOrder
     quietHoursStart?: SortOrderInput | SortOrder
     quietHoursEnd?: SortOrderInput | SortOrder
+    routineStartNotifications?: SortOrder
+    upcomingRoutineNotifications?: SortOrder
+    sleepReminderNotifications?: SortOrder
+    habitReminderNotifications?: SortOrder
+    goalReminderNotifications?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     dailyReminder?: SortOrder
     dailyReminderTime?: SortOrderInput | SortOrder
     habitReminders?: SortOrder
@@ -96342,6 +96500,12 @@ export namespace Prisma {
     smsNotifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
     quietHoursStart?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
     quietHoursEnd?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    routineStartNotifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    upcomingRoutineNotifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    sleepReminderNotifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    habitReminderNotifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    goalReminderNotifications?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    advanceNotificationMinutes?: IntWithAggregatesFilter<"UserSettings"> | number
     dailyReminder?: BoolWithAggregatesFilter<"UserSettings"> | boolean
     dailyReminderTime?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
     habitReminders?: BoolWithAggregatesFilter<"UserSettings"> | boolean
@@ -99499,6 +99663,7 @@ export namespace Prisma {
     actualDuration?: IntNullableFilter<"FocusSession"> | number | null
     startedAt?: DateTimeFilter<"FocusSession"> | Date | string
     completedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
+    abortedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
     pausedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
     focusRating?: IntNullableFilter<"FocusSession"> | number | null
     productivityRating?: IntNullableFilter<"FocusSession"> | number | null
@@ -99525,6 +99690,7 @@ export namespace Prisma {
     actualDuration?: SortOrderInput | SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrderInput | SortOrder
+    abortedAt?: SortOrderInput | SortOrder
     pausedAt?: SortOrderInput | SortOrder
     focusRating?: SortOrderInput | SortOrder
     productivityRating?: SortOrderInput | SortOrder
@@ -99554,6 +99720,7 @@ export namespace Prisma {
     actualDuration?: IntNullableFilter<"FocusSession"> | number | null
     startedAt?: DateTimeFilter<"FocusSession"> | Date | string
     completedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
+    abortedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
     pausedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
     focusRating?: IntNullableFilter<"FocusSession"> | number | null
     productivityRating?: IntNullableFilter<"FocusSession"> | number | null
@@ -99580,6 +99747,7 @@ export namespace Prisma {
     actualDuration?: SortOrderInput | SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrderInput | SortOrder
+    abortedAt?: SortOrderInput | SortOrder
     pausedAt?: SortOrderInput | SortOrder
     focusRating?: SortOrderInput | SortOrder
     productivityRating?: SortOrderInput | SortOrder
@@ -99611,6 +99779,7 @@ export namespace Prisma {
     actualDuration?: IntNullableWithAggregatesFilter<"FocusSession"> | number | null
     startedAt?: DateTimeWithAggregatesFilter<"FocusSession"> | Date | string
     completedAt?: DateTimeNullableWithAggregatesFilter<"FocusSession"> | Date | string | null
+    abortedAt?: DateTimeNullableWithAggregatesFilter<"FocusSession"> | Date | string | null
     pausedAt?: DateTimeNullableWithAggregatesFilter<"FocusSession"> | Date | string | null
     focusRating?: IntNullableWithAggregatesFilter<"FocusSession"> | number | null
     productivityRating?: IntNullableWithAggregatesFilter<"FocusSession"> | number | null
@@ -101522,6 +101691,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"DeviceSession"> | Date | string
     isActive?: BoolFilter<"DeviceSession"> | boolean
     createdAt?: DateTimeFilter<"DeviceSession"> | Date | string
+    updatedAt?: DateTimeFilter<"DeviceSession"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
 
@@ -101538,11 +101708,13 @@ export namespace Prisma {
     expiresAt?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
 
   export type DeviceSessionWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    userId_deviceId?: DeviceSessionUserIdDeviceIdCompoundUniqueInput
     AND?: DeviceSessionWhereInput | DeviceSessionWhereInput[]
     OR?: DeviceSessionWhereInput[]
     NOT?: DeviceSessionWhereInput | DeviceSessionWhereInput[]
@@ -101557,8 +101729,9 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"DeviceSession"> | Date | string
     isActive?: BoolFilter<"DeviceSession"> | boolean
     createdAt?: DateTimeFilter<"DeviceSession"> | Date | string
+    updatedAt?: DateTimeFilter<"DeviceSession"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
-  }, "id">
+  }, "id" | "userId_deviceId">
 
   export type DeviceSessionOrderByWithAggregationInput = {
     id?: SortOrder
@@ -101573,6 +101746,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
     _count?: DeviceSessionCountOrderByAggregateInput
     _max?: DeviceSessionMaxOrderByAggregateInput
     _min?: DeviceSessionMinOrderByAggregateInput
@@ -101594,6 +101768,7 @@ export namespace Prisma {
     expiresAt?: DateTimeWithAggregatesFilter<"DeviceSession"> | Date | string
     isActive?: BoolWithAggregatesFilter<"DeviceSession"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"DeviceSession"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"DeviceSession"> | Date | string
   }
 
   export type DataExportWhereInput = {
@@ -103014,6 +103189,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: string | null
     quietHoursEnd?: string | null
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: number
     dailyReminder?: boolean
     dailyReminderTime?: string | null
     habitReminders?: boolean
@@ -103066,6 +103247,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: string | null
     quietHoursEnd?: string | null
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: number
     dailyReminder?: boolean
     dailyReminderTime?: string | null
     habitReminders?: boolean
@@ -103116,6 +103303,12 @@ export namespace Prisma {
     smsNotifications?: BoolFieldUpdateOperationsInput | boolean
     quietHoursStart?: NullableStringFieldUpdateOperationsInput | string | null
     quietHoursEnd?: NullableStringFieldUpdateOperationsInput | string | null
+    routineStartNotifications?: BoolFieldUpdateOperationsInput | boolean
+    upcomingRoutineNotifications?: BoolFieldUpdateOperationsInput | boolean
+    sleepReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    habitReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    goalReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    advanceNotificationMinutes?: IntFieldUpdateOperationsInput | number
     dailyReminder?: BoolFieldUpdateOperationsInput | boolean
     dailyReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
     habitReminders?: BoolFieldUpdateOperationsInput | boolean
@@ -103168,6 +103361,12 @@ export namespace Prisma {
     smsNotifications?: BoolFieldUpdateOperationsInput | boolean
     quietHoursStart?: NullableStringFieldUpdateOperationsInput | string | null
     quietHoursEnd?: NullableStringFieldUpdateOperationsInput | string | null
+    routineStartNotifications?: BoolFieldUpdateOperationsInput | boolean
+    upcomingRoutineNotifications?: BoolFieldUpdateOperationsInput | boolean
+    sleepReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    habitReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    goalReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    advanceNotificationMinutes?: IntFieldUpdateOperationsInput | number
     dailyReminder?: BoolFieldUpdateOperationsInput | boolean
     dailyReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
     habitReminders?: BoolFieldUpdateOperationsInput | boolean
@@ -103219,6 +103418,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: string | null
     quietHoursEnd?: string | null
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: number
     dailyReminder?: boolean
     dailyReminderTime?: string | null
     habitReminders?: boolean
@@ -103269,6 +103474,12 @@ export namespace Prisma {
     smsNotifications?: BoolFieldUpdateOperationsInput | boolean
     quietHoursStart?: NullableStringFieldUpdateOperationsInput | string | null
     quietHoursEnd?: NullableStringFieldUpdateOperationsInput | string | null
+    routineStartNotifications?: BoolFieldUpdateOperationsInput | boolean
+    upcomingRoutineNotifications?: BoolFieldUpdateOperationsInput | boolean
+    sleepReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    habitReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    goalReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    advanceNotificationMinutes?: IntFieldUpdateOperationsInput | number
     dailyReminder?: BoolFieldUpdateOperationsInput | boolean
     dailyReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
     habitReminders?: BoolFieldUpdateOperationsInput | boolean
@@ -103320,6 +103531,12 @@ export namespace Prisma {
     smsNotifications?: BoolFieldUpdateOperationsInput | boolean
     quietHoursStart?: NullableStringFieldUpdateOperationsInput | string | null
     quietHoursEnd?: NullableStringFieldUpdateOperationsInput | string | null
+    routineStartNotifications?: BoolFieldUpdateOperationsInput | boolean
+    upcomingRoutineNotifications?: BoolFieldUpdateOperationsInput | boolean
+    sleepReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    habitReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    goalReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    advanceNotificationMinutes?: IntFieldUpdateOperationsInput | number
     dailyReminder?: BoolFieldUpdateOperationsInput | boolean
     dailyReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
     habitReminders?: BoolFieldUpdateOperationsInput | boolean
@@ -106766,6 +106983,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -106792,6 +107010,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -106814,6 +107033,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -106840,6 +107060,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -106864,6 +107085,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -106885,6 +107107,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -106908,6 +107131,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -109039,6 +109263,7 @@ export namespace Prisma {
     expiresAt: Date | string
     isActive?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     user: UserCreateNestedOneWithoutDeviceSessionsInput
   }
 
@@ -109055,6 +109280,7 @@ export namespace Prisma {
     expiresAt: Date | string
     isActive?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type DeviceSessionUpdateInput = {
@@ -109069,6 +109295,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutDeviceSessionsNestedInput
   }
 
@@ -109085,6 +109312,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DeviceSessionCreateManyInput = {
@@ -109100,6 +109328,7 @@ export namespace Prisma {
     expiresAt: Date | string
     isActive?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type DeviceSessionUpdateManyMutationInput = {
@@ -109114,6 +109343,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DeviceSessionUncheckedUpdateManyInput = {
@@ -109129,6 +109359,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DataExportCreateInput = {
@@ -110994,6 +111225,12 @@ export namespace Prisma {
     smsNotifications?: SortOrder
     quietHoursStart?: SortOrder
     quietHoursEnd?: SortOrder
+    routineStartNotifications?: SortOrder
+    upcomingRoutineNotifications?: SortOrder
+    sleepReminderNotifications?: SortOrder
+    habitReminderNotifications?: SortOrder
+    goalReminderNotifications?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     dailyReminder?: SortOrder
     dailyReminderTime?: SortOrder
     habitReminders?: SortOrder
@@ -111021,6 +111258,7 @@ export namespace Prisma {
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -111058,6 +111296,12 @@ export namespace Prisma {
     smsNotifications?: SortOrder
     quietHoursStart?: SortOrder
     quietHoursEnd?: SortOrder
+    routineStartNotifications?: SortOrder
+    upcomingRoutineNotifications?: SortOrder
+    sleepReminderNotifications?: SortOrder
+    habitReminderNotifications?: SortOrder
+    goalReminderNotifications?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     dailyReminder?: SortOrder
     dailyReminderTime?: SortOrder
     habitReminders?: SortOrder
@@ -111109,6 +111353,12 @@ export namespace Prisma {
     smsNotifications?: SortOrder
     quietHoursStart?: SortOrder
     quietHoursEnd?: SortOrder
+    routineStartNotifications?: SortOrder
+    upcomingRoutineNotifications?: SortOrder
+    sleepReminderNotifications?: SortOrder
+    habitReminderNotifications?: SortOrder
+    goalReminderNotifications?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     dailyReminder?: SortOrder
     dailyReminderTime?: SortOrder
     habitReminders?: SortOrder
@@ -111136,6 +111386,7 @@ export namespace Prisma {
     weightNonNeg?: SortOrder
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
+    advanceNotificationMinutes?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -113456,6 +113707,7 @@ export namespace Prisma {
     actualDuration?: SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrder
+    abortedAt?: SortOrder
     pausedAt?: SortOrder
     focusRating?: SortOrder
     productivityRating?: SortOrder
@@ -113489,6 +113741,7 @@ export namespace Prisma {
     actualDuration?: SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrder
+    abortedAt?: SortOrder
     pausedAt?: SortOrder
     focusRating?: SortOrder
     productivityRating?: SortOrder
@@ -113512,6 +113765,7 @@ export namespace Prisma {
     actualDuration?: SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrder
+    abortedAt?: SortOrder
     pausedAt?: SortOrder
     focusRating?: SortOrder
     productivityRating?: SortOrder
@@ -114803,6 +115057,11 @@ export namespace Prisma {
     _max?: NestedEnumIntegrationProviderFilter<$PrismaModel>
   }
 
+  export type DeviceSessionUserIdDeviceIdCompoundUniqueInput = {
+    userId: string
+    deviceId: string
+  }
+
   export type DeviceSessionCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
@@ -114816,6 +115075,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type DeviceSessionMaxOrderByAggregateInput = {
@@ -114831,6 +115091,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type DeviceSessionMinOrderByAggregateInput = {
@@ -114846,6 +115107,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     isActive?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type EnumExportFormatFilter<$PrismaModel = never> = {
@@ -121896,6 +122158,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: string | null
     quietHoursEnd?: string | null
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: number
     dailyReminder?: boolean
     dailyReminderTime?: string | null
     habitReminders?: boolean
@@ -121946,6 +122214,12 @@ export namespace Prisma {
     smsNotifications?: boolean
     quietHoursStart?: string | null
     quietHoursEnd?: string | null
+    routineStartNotifications?: boolean
+    upcomingRoutineNotifications?: boolean
+    sleepReminderNotifications?: boolean
+    habitReminderNotifications?: boolean
+    goalReminderNotifications?: boolean
+    advanceNotificationMinutes?: number
     dailyReminder?: boolean
     dailyReminderTime?: string | null
     habitReminders?: boolean
@@ -123049,6 +123323,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -123073,6 +123348,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -124070,6 +124346,7 @@ export namespace Prisma {
     expiresAt: Date | string
     isActive?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type DeviceSessionUncheckedCreateWithoutUserInput = {
@@ -124084,6 +124361,7 @@ export namespace Prisma {
     expiresAt: Date | string
     isActive?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type DeviceSessionCreateOrConnectWithoutUserInput = {
@@ -124334,6 +124612,12 @@ export namespace Prisma {
     smsNotifications?: BoolFieldUpdateOperationsInput | boolean
     quietHoursStart?: NullableStringFieldUpdateOperationsInput | string | null
     quietHoursEnd?: NullableStringFieldUpdateOperationsInput | string | null
+    routineStartNotifications?: BoolFieldUpdateOperationsInput | boolean
+    upcomingRoutineNotifications?: BoolFieldUpdateOperationsInput | boolean
+    sleepReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    habitReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    goalReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    advanceNotificationMinutes?: IntFieldUpdateOperationsInput | number
     dailyReminder?: BoolFieldUpdateOperationsInput | boolean
     dailyReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
     habitReminders?: BoolFieldUpdateOperationsInput | boolean
@@ -124384,6 +124668,12 @@ export namespace Prisma {
     smsNotifications?: BoolFieldUpdateOperationsInput | boolean
     quietHoursStart?: NullableStringFieldUpdateOperationsInput | string | null
     quietHoursEnd?: NullableStringFieldUpdateOperationsInput | string | null
+    routineStartNotifications?: BoolFieldUpdateOperationsInput | boolean
+    upcomingRoutineNotifications?: BoolFieldUpdateOperationsInput | boolean
+    sleepReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    habitReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    goalReminderNotifications?: BoolFieldUpdateOperationsInput | boolean
+    advanceNotificationMinutes?: IntFieldUpdateOperationsInput | number
     dailyReminder?: BoolFieldUpdateOperationsInput | boolean
     dailyReminderTime?: NullableStringFieldUpdateOperationsInput | string | null
     habitReminders?: BoolFieldUpdateOperationsInput | boolean
@@ -125315,6 +125605,7 @@ export namespace Prisma {
     actualDuration?: IntNullableFilter<"FocusSession"> | number | null
     startedAt?: DateTimeFilter<"FocusSession"> | Date | string
     completedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
+    abortedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
     pausedAt?: DateTimeNullableFilter<"FocusSession"> | Date | string | null
     focusRating?: IntNullableFilter<"FocusSession"> | number | null
     productivityRating?: IntNullableFilter<"FocusSession"> | number | null
@@ -126228,6 +126519,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"DeviceSession"> | Date | string
     isActive?: BoolFilter<"DeviceSession"> | boolean
     createdAt?: DateTimeFilter<"DeviceSession"> | Date | string
+    updatedAt?: DateTimeFilter<"DeviceSession"> | Date | string
   }
 
   export type DataExportUpsertWithWhereUniqueWithoutUserInput = {
@@ -128518,6 +128810,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -128542,6 +128835,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -142567,6 +142861,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -142592,6 +142887,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -142812,6 +143108,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -142837,6 +143134,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -154475,6 +154773,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -154837,6 +155136,7 @@ export namespace Prisma {
     expiresAt: Date | string
     isActive?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type DataExportCreateManyUserInput = {
@@ -156082,6 +156382,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -156106,6 +156407,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -156129,6 +156431,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -157167,6 +157470,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DeviceSessionUncheckedUpdateWithoutUserInput = {
@@ -157181,6 +157485,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DeviceSessionUncheckedUpdateManyWithoutUserInput = {
@@ -157195,6 +157500,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DataExportUpdateWithoutUserInput = {
@@ -157471,6 +157777,7 @@ export namespace Prisma {
     actualDuration?: number | null
     startedAt: Date | string
     completedAt?: Date | string | null
+    abortedAt?: Date | string | null
     pausedAt?: Date | string | null
     focusRating?: number | null
     productivityRating?: number | null
@@ -157674,6 +157981,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -157698,6 +158006,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
@@ -157721,6 +158030,7 @@ export namespace Prisma {
     actualDuration?: NullableIntFieldUpdateOperationsInput | number | null
     startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    abortedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     pausedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     focusRating?: NullableIntFieldUpdateOperationsInput | number | null
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null

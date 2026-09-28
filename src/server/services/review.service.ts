@@ -1,9 +1,9 @@
 import { ReviewRepository } from '@/server/repositories/review.repository';
 import { HabitRepository } from '@/server/repositories/habit.repository';
+import { GoalRepository } from '@/server/repositories/goal.repository';
 import { generateWeeklyRecap } from '@/server/recap/weekly';
-import { invalidateDashboard } from '@/server/cache/dashboard-cache';
-import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
-import type { MonthlyReset, WeeklyReview } from '@/generated/prisma';
+import { addMonths, endOfMonth, parse } from 'date-fns';
+import type { MonthlyReset, Prisma, WeeklyReview } from '@/generated/prisma';
 
 /**
  * Review Service
@@ -48,6 +48,8 @@ export interface MonthlyResetInput {
   newHabitsToAdd?: Array<{ name: string; tier: string; frequencyType: string }>;
   goalsCompleted?: string[];
   goalsInProgress?: string[];
+  /** Goals the user chose to drop. Archived, not completed. */
+  goalsDropped?: string[];
   goalsReviewNotes?: string;
   nextMonthPriorities?: string[];
   nextMonthGoals?: Array<{ title: string; targetValue: number; unit?: string }>;
@@ -86,10 +88,12 @@ function parseJsonColumn<T>(raw: string | null): T | null {
 export class ReviewService {
   private reviewRepository: ReviewRepository;
   private habitRepository: HabitRepository;
+  private goalRepository: GoalRepository;
 
   constructor() {
     this.reviewRepository = new ReviewRepository();
     this.habitRepository = new HabitRepository();
+    this.goalRepository = new GoalRepository();
   }
 
   // ==========================================================================
@@ -158,8 +162,6 @@ export class ReviewService {
       shared
     );
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
 
     return review;
   }
@@ -191,6 +193,12 @@ export class ReviewService {
       );
     }
 
+    // Apply goal decisions. Previously these lists were only written into the
+    // snapshot JSON, so the wizard's "Mark Complete" / "Carry Over" / "Drop"
+    // buttons changed nothing about the goals themselves — the reset screen
+    // reported success while every goal kept its old status.
+    const appliedGoals = await this.applyGoalDecisions(userId, input);
+
     const reset = await this.reviewRepository.createMonthlyReset({
       userId,
       month: input.month,
@@ -201,6 +209,7 @@ export class ReviewService {
         goalsInProgress: input.goalsInProgress,
         nextMonthPriorities: input.nextMonthPriorities,
         nextMonthGoals: input.nextMonthGoals,
+        appliedGoals,
       }),
       monthHighlights: input.monthHighlights,
       monthChallenges: input.monthChallenges,
@@ -219,10 +228,126 @@ export class ReviewService {
       goalProgress: input.goalProgress,
     });
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
 
     return reset;
+  }
+
+  /**
+   * Apply the goal decisions from a monthly reset.
+   *
+   * - `goalsCompleted` → status COMPLETED, `completedAt` stamped.
+   * - `goalsInProgress` → the goal's window is rolled forward to the end of the
+   *   following month so it stays visible instead of silently ageing out.
+   * - `goalsDropped`   → archived, which is what "Drop Goal" means.
+   * - `nextMonthGoals`  → real goals are created, not just noted.
+   *
+   * A goal that is both completed and carried over is treated as completed.
+   * Failures are collected rather than thrown, so one bad goal id does not
+   * discard the whole reset — but the reason is recorded, because silently
+   * skipping a goal is exactly the failure mode this method exists to prevent.
+   */
+  private async applyGoalDecisions(
+    userId: string,
+    input: MonthlyResetInput
+  ): Promise<{
+    completed: string[];
+    carriedOver: string[];
+    dropped: string[];
+    created: string[];
+    failed: Array<{ goalId: string; reason: string }>;
+  }> {
+    const completed = new Set(input.goalsCompleted ?? []);
+    const carriedOver = new Set(input.goalsInProgress ?? []);
+    const dropped = new Set(input.goalsDropped ?? []);
+
+    // The reset is for `month` (e.g. "2026-08"), so the new window ends at the
+    // end of the following month ("2026-09").
+    const carriedTo = this.endOfFollowingMonth(input.month);
+
+    const completedOk: string[] = [];
+    const carriedOk: string[] = [];
+    const droppedOk: string[] = [];
+    const failed: Array<{ goalId: string; reason: string }> = [];
+
+    for (const goalId of completed) {
+      try {
+        await this.goalRepository.complete(goalId, userId);
+        completedOk.push(goalId);
+      } catch (err) {
+        failed.push({ goalId, reason: err instanceof Error ? err.message : 'unknown error' });
+      }
+    }
+
+    for (const goalId of carriedOver) {
+      // A goal already completed or dropped this round should not be re-opened.
+      if (completed.has(goalId) || dropped.has(goalId)) continue;
+      try {
+        await this.goalRepository.update(goalId, userId, {
+          endDate: carriedTo,
+        });
+        carriedOk.push(goalId);
+      } catch (err) {
+        failed.push({ goalId, reason: err instanceof Error ? err.message : 'unknown error' });
+      }
+    }
+
+    for (const goalId of dropped) {
+      // "Complete" and "Drop" are mutually exclusive; completing wins, because
+      // archiving a goal the user just finished would lose the achievement.
+      if (completed.has(goalId)) continue;
+      try {
+        // Matches `goalService.archiveGoal`: CANCELLED is the closest
+        // GoalStatus to "dropped", and `archivedAt` is what the list queries
+        // filter on. There is no ARCHIVED status in the enum.
+        await this.goalRepository.update(goalId, userId, {
+          status: 'CANCELLED',
+          archivedAt: new Date(),
+        });
+        droppedOk.push(goalId);
+      } catch (err) {
+        failed.push({ goalId, reason: err instanceof Error ? err.message : 'unknown error' });
+      }
+    }
+
+    const created: string[] = [];
+    for (const planned of input.nextMonthGoals ?? []) {
+      if (!planned.title?.trim()) continue;
+      try {
+        const goal = await this.goalRepository.create({
+          user: { connect: { id: userId } },
+          title: planned.title.trim(),
+          type: 'CUSTOM',
+          priority: 'MEDIUM',
+          status: 'ACTIVE',
+          targetValue: planned.targetValue,
+          currentValue: 0,
+          unit: planned.unit ?? null,
+          startDate: new Date(),
+          endDate: carriedTo,
+        } as Prisma.GoalCreateInput);
+        created.push(goal.id);
+      } catch (err) {
+        failed.push({
+          goalId: planned.title,
+          reason: err instanceof Error ? err.message : 'unknown error',
+        });
+      }
+    }
+
+    if (failed.length > 0) {
+      console.error(
+        `Monthly reset for ${userId}: ${failed.length} goal decision(s) could not be applied`,
+        failed
+      );
+    }
+
+    return { completed: completedOk, carriedOver: carriedOk, dropped: droppedOk, created, failed };
+  }
+
+  /** Last day of the month after `month` ("2026-08" → 2026-09-30). */
+  private endOfFollowingMonth(month: string): Date {
+    const start = parse(month, 'yyyy-MM', new Date());
+    return endOfMonth(addMonths(start, 1));
   }
 
   /**

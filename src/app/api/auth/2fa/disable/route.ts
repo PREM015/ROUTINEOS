@@ -28,7 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     const authService = new AuthService();
-    const result = await authService.disableTwoFactor(session.user.id);
+    // The validated code must be passed through — it used to be discarded here,
+    // which meant any six digits disabled 2FA.
+    const result = await authService.disableTwoFactor(
+      session.user.id,
+      validated.data.code
+    );
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {

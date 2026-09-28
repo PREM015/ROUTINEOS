@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Mount } from '@/components/motion/Mount';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { format, parseISO, subDays, addDays } from 'date-fns';
 
 interface DayScore {
@@ -21,12 +21,14 @@ export function WeeklyBarChart() {
   const [rows, setRows] = useState<DayScore[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Trailing 7 days ending on the user's today, so the chart's right edge is
+  // the day they are actually looking at.
+  const { today } = useUserTimezone();
   const weekRange = useMemo(() => {
-    const today = getTodayString();
     const anchor = parseISO(today);
     const start = format(subDays(anchor, 6), 'yyyy-MM-dd');
     return { start, end: today };
-  }, []);
+  }, [today]);
 
   useEffect(() => {
     let cancelled = false;

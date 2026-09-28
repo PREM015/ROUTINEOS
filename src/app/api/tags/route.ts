@@ -1,13 +1,15 @@
 import { auth } from '@/lib/auth';
-import { TagRepository } from '@/server/repositories/tag.repository';
+import { tagService } from '@/server/services/tag.service';
 import { createTagSchema } from '@/schemas/tag.schema';
-import { ConflictError } from '@/lib/errors/app-error';
+import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Tag Route
  * GET  /api/tags – list the authenticated user's tags
  * POST /api/tags – create a tag
+ *
+ * Thin handler: validation and data access live in `TagService`.
  */
 
 /**
@@ -21,8 +23,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tagRepository = new TagRepository();
-    const tags = await tagRepository.listForUser(session.user.id);
+    const tags = await tagService.list(session.user.id);
 
     return NextResponse.json({ success: true, data: tags });
   } catch (error) {
@@ -47,17 +48,16 @@ export async function POST(request: NextRequest) {
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validated.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const tagRepository = new TagRepository();
-    const tag = await tagRepository.create(session.user.id, validated.data);
+    const tag = await tagService.create(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: tag }, { status: 201 });
   } catch (error) {
     console.error('Error creating tag:', error);
-    if (error instanceof ConflictError) {
+    if (error instanceof ConflictError || error instanceof NotFoundError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
     if (error instanceof RangeError) {

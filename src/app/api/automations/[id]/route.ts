@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -19,6 +19,7 @@ interface RouteContext {
  * Fetch a single automation rule owned by the user.
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -26,7 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const automationRepository = new AutomationRepository();
-    const rule = await automationRepository.findById(session.user.id, params.id);
+    const rule = await automationRepository.findById(session.user.id, paramId);
 
     if (!rule) {
       return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
@@ -44,6 +45,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update an automation rule. Config objects are re-serialized when provided.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -60,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const automationRepository = new AutomationRepository();
-    const existing = await automationRepository.findById(session.user.id, params.id);
+    const existing = await automationRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
     }
@@ -69,7 +71,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: true, data: existing });
     }
 
-    const rule = await automationRepository.update(session.user.id, params.id, {
+    const rule = await automationRepository.update(session.user.id, paramId, {
       ...(validated.data.name !== undefined && { name: validated.data.name }),
       ...(validated.data.isActive !== undefined && { isActive: validated.data.isActive }),
       ...(validated.data.triggerType !== undefined && { triggerType: validated.data.triggerType }),
@@ -97,6 +99,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * Delete an automation rule owned by the user.
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -104,13 +107,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const automationRepository = new AutomationRepository();
-    const existing = await automationRepository.findById(session.user.id, params.id);
+    const existing = await automationRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
     }
 
-    await automationRepository.delete(session.user.id, params.id);
-    return NextResponse.json({ success: true, data: { id: params.id } });
+    await automationRepository.delete(session.user.id, paramId);
+    return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting automation:', error);
     return NextResponse.json({ error: 'Failed to delete automation' }, { status: 500 });

@@ -14,6 +14,11 @@ import {
   type SleepLogView,
   type SleepPromptView,
 } from '@/hooks/useSleepSession';
+import { SleepQualityMeter } from '@/components/sleep/SleepQualityMeter';
+import {
+  calculateSleepDuration,
+  calculateSleepScore,
+} from '@/lib/sleep/calculate-duration';
 
 /**
  * Sleep Tracker
@@ -36,8 +41,10 @@ export function TodaySleep({ date }: TodaySleepProps) {
     stop,
     respond,
     longRunning,
+    refresh,
   } = useSleepSession();
   const [isEditing, setIsEditing] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const notifiedReminder = useRef<Set<string>>(new Set());
   const [longRunningOpen, setLongRunningOpen] = useState(false);
 
@@ -106,21 +113,41 @@ export function TodaySleep({ date }: TodaySleepProps) {
                 </DialogHeader>
                 <SleepForm
                   onSave={async (formData) => {
+                    setSaveError(null);
                     try {
                       const res = await fetch('/api/sleep', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ date, ...formData }),
                       });
-                      if (res.ok) {
-                        setIsEditing(false);
-                        await fetch('/api/sleep/session', { credentials: 'include' });
+
+                      // Previously `if (res.ok)` with no `else`, and a `catch`
+                      // whose entire body was a comment. A 400 (the form sends
+                      // `quality: NaN` for a blank field) or a 500 left the
+                      // dialog open, the fields untouched, and no message at
+                      // all — the user just clicked Save again and again.
+                      if (!res.ok) {
+                        const body = await res.json().catch(() => ({}));
+                        throw new Error(
+                          body?.error ?? `Could not save (status ${res.status})`
+                        );
                       }
-                    } catch {
-                      // keep dialog open
+
+                      setIsEditing(false);
+                      // Re-read through the store so both this card and
+                      // SleepPromptHost see the new log. Previously this was a
+                      // bare `fetch` whose Response was discarded, so the
+                      // shared state was never updated and a rejection escaped
+                      // as an unhandled promise.
+                      await refresh();
+                    } catch (err) {
+                      setSaveError(
+                        err instanceof Error ? err.message : 'Could not save sleep log'
+                      );
                     }
                   }}
                   initialData={todaySleepLog}
+                  error={saveError}
                 />
               </DialogContent>
             </Dialog>
@@ -151,7 +178,11 @@ export function TodaySleep({ date }: TodaySleepProps) {
       ) : (
         <div>
           {hasLog ? (
-            <SleepSummary log={todaySleepLog as SleepLogView} />
+            <SleepSummary
+          log={todaySleepLog as SleepLogView}
+          targetBedtime={(todaySleepLog as SleepLogView | null)?.targetBedtime}
+          targetWakeTime={(todaySleepLog as SleepLogView | null)?.targetWakeTime}
+        />
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Moon className="mx-auto h-8 w-8 mb-2 opacity-60" />
@@ -295,37 +326,65 @@ function ReminderPanel({
   );
 }
 
-function SleepSummary({ log }: { log: SleepLogView }) {
+/**
+ * Today's sleep summary.
+ *
+ * ERROR.md A4 asked for a sleep quality meter on /today. This rendered the
+ * self-rated quality as a bare `4/5` text cell, so there was no score, no band
+ * and no visual weight. It now computes the same 0–100 score the dashboard uses
+ * (duration vs target, adjusted by the self-rating and restedness) and renders
+ * the shared `SleepQualityMeter`.
+ */
+function SleepSummary({ log, targetBedtime, targetWakeTime }: { log: SleepLogView; targetBedtime?: string | null; targetWakeTime?: string | null }) {
+  /**
+   * Null when there is no target window: the score is "actual vs planned", so
+   * with no target there is nothing to measure against. A 0 here would read as
+   * awful sleep rather than unmeasured.
+   */
+  const plannedMinutes =
+    targetBedtime && targetWakeTime ? calculateSleepDuration(targetBedtime, targetWakeTime) : null;
+
+  const score =
+    log.actualDurationMinutes != null && plannedMinutes !== null
+      ? calculateSleepScore(
+          log.actualDurationMinutes,
+          plannedMinutes,
+          log.quality,
+          log.feltRested
+        )
+      : null;
+
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <p className="text-sm text-muted-foreground">Bedtime</p>
-        <p className="text-xl font-semibold text-foreground">{log.actualBedtime || '\u2014'}</p>
-      </div>
-      <div>
-        <p className="text-sm text-muted-foreground">Wake Time</p>
-        <p className="text-xl font-semibold text-foreground">{log.actualWakeTime || '\u2014'}</p>
-      </div>
-      <div>
-        <p className="text-sm text-muted-foreground">Duration</p>
-        <p className="text-xl font-semibold text-foreground">
-          {log.actualDurationMinutes ? formatDuration(log.actualDurationMinutes) : '\u2014'}
-        </p>
-      </div>
-      <div>
-        <p className="text-sm text-muted-foreground">Quality</p>
-        <p className="text-xl font-semibold text-foreground">
-          {log.quality ? `${log.quality}/5` : '\u2014'}
-        </p>
-      </div>
-      {log.feltRested !== null && (
-        <div className="col-span-2">
-          <p className="text-sm text-muted-foreground">Felt rested</p>
-          <p className="text-sm font-medium text-foreground">
-            {log.feltRested ? 'Yes' : 'No'}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">Bedtime</p>
+          <p className="text-xl font-semibold text-foreground">{log.actualBedtime || '\u2014'}</p>
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Wake Time</p>
+          <p className="text-xl font-semibold text-foreground">{log.actualWakeTime || '\u2014'}</p>
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground">Duration</p>
+          <p className="text-xl font-semibold text-foreground">
+            {log.actualDurationMinutes ? formatDuration(log.actualDurationMinutes) : '\u2014'}
           </p>
         </div>
-      )}
+        <div>
+          <p className="text-sm text-muted-foreground">Target</p>
+          <p className="text-xl font-semibold text-foreground">
+            {plannedMinutes !== null ? formatDuration(plannedMinutes) : '\u2014'}
+          </p>
+        </div>
+      </div>
+
+      <SleepQualityMeter
+        score={score}
+        quality={log.quality}
+        feltRested={log.feltRested}
+        wakeUpCount={log.wakeUpCount}
+      />
     </div>
   );
 }
@@ -333,9 +392,12 @@ function SleepSummary({ log }: { log: SleepLogView }) {
 function SleepForm({
   onSave,
   initialData,
+  error,
 }: {
   onSave: (data: { actualBedtime: string; actualWakeTime: string; quality: number; feltRested: boolean }) => Promise<void>;
   initialData: SleepLogView | null;
+  /** Save failure from the parent, rendered inside the dialog. */
+  error?: string | null;
 }) {
   const [formData, setFormData] = useState({
     actualBedtime: initialData?.actualBedtime || '',
@@ -392,6 +454,14 @@ function SleepForm({
           I felt rested
         </label>
       </div>
+      {error && (
+        <p
+          role="alert"
+          className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {error}
+        </p>
+      )}
       <Button type="submit" className="w-full" isLoading={saving}>
         Save Sleep Data
       </Button>

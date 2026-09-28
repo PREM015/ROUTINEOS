@@ -19,13 +19,27 @@ export function CurrentRoutineBlock() {
   const [currentBlock, setCurrentBlock] = useState<Block | null>(null);
   const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState('');
+  /**
+   * Set when the routine could not be loaded.
+   *
+   * The card is *supposed* to be absent when nothing is running, so a failed
+   * fetch was previously invisible: `res.ok` was never checked, a 500 parsed to
+   * `data.success === undefined`, and `!currentBlock` rendered `null` exactly as
+   * a genuinely empty schedule does. The user had no way to tell "I have nothing
+   * scheduled" from "the schedule failed to load".
+   */
+  const [error, setError] = useState<string | null>(null);
 
   const fetchRoutine = useCallback(async () => {
     try {
       const res = await fetch('/api/routine/today');
+      if (!res.ok) {
+        throw new Error(`Could not load your routine (status ${res.status})`);
+      }
       const data = await res.json();
 
       if (data.success && data.data.blocks) {
+        setError(null);
         const current = getCurrentBlock(data.data.blocks) as Block | null;
         setCurrentBlock(current);
 
@@ -34,15 +48,19 @@ export function CurrentRoutineBlock() {
           setProgress(prog.percentage);
           setTimeRemaining(formatMinutes(prog.minutesRemaining));
         }
+      } else {
+        setError(data.error || 'Could not load your routine');
       }
-    } catch (error) {
-      console.error('Error fetching routine:', error);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Could not load your routine'
+      );
     }
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    fetchRoutine();
+    void fetchRoutine();
     const interval = setInterval(fetchRoutine, 60000); // Update every minute
     window.addEventListener('day-mode-changed', fetchRoutine);
     return () => {
@@ -50,6 +68,26 @@ export function CurrentRoutineBlock() {
       window.removeEventListener('day-mode-changed', fetchRoutine);
     };
   }, [fetchRoutine]);
+
+  // A load failure is shown rather than hidden: the card is designed to vanish
+  // when no block is running, so a silent failure is indistinguishable from an
+  // empty day.
+  if (error && !currentBlock) {
+    return (
+      <Card className="p-4">
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+        <button
+          type="button"
+          onClick={() => void fetchRoutine()}
+          className="mt-1 text-sm font-semibold text-primary hover:underline"
+        >
+          Try again
+        </button>
+      </Card>
+    );
+  }
 
   if (!currentBlock) {
     return null;

@@ -2,7 +2,9 @@
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PERIOD_LABEL, PERIOD_ORDER, type Period } from '@/lib/period-range';
+import { PERIOD_LABEL, PERIOD_ORDER, shiftAnchor, type Period } from '@/lib/period-range';
+import { DEFAULT_TZ } from '@/lib/dates';
+import { useMemo } from 'react';
 
 interface PeriodControlProps {
   period: Period;
@@ -14,6 +16,23 @@ interface PeriodControlProps {
   todayLabel?: string;
   className?: string;
   size?: 'sm' | 'md';
+  /**
+   * The anchor date currently in view, and the newest anchor the user may
+   * navigate to (normally today, in their timezone).
+   *
+   * Together they disable the "next" arrow once the visible period already
+   * contains the present. It used to be always enabled, so a user could walk
+   * forward into periods that have not happened and land on an empty dashboard
+   * with no explanation. Omit `maxAnchor` to keep navigation unbounded (the
+   * small `RoutineWidget` variant, which is scoped to its own data).
+   */
+  anchorDate?: string;
+  maxAnchor?: string;
+  /**
+   * IANA zone used for the period math. Required whenever `anchorDate` and
+   * `maxAnchor` are supplied — it is the 4th parameter of `shiftAnchor`.
+   */
+  timezone?: string;
 }
 
 /**
@@ -30,19 +49,53 @@ export function PeriodControl({
   todayLabel = 'Today',
   className,
   size = 'md',
+  anchorDate,
+  maxAnchor,
+  timezone = DEFAULT_TZ,
 }: PeriodControlProps) {
-  const tabSize = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm';
-  const navSize = size === 'sm' ? 'p-1' : 'p-1.5';
+  const tabSize = size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm';
+  // `p-1`/`p-1.5` around a 16px icon is a 24-28px target, well under the ~44px
+  // minimum for touch. The buttons are sized to the target instead of the glyph.
+  const navSize = size === 'sm' ? 'p-2.5' : 'p-3';
   const arrowClass = size === 'sm' ? 'h-4 w-4' : 'h-4 w-4';
   const labelClass = size === 'sm' ? 'text-xs' : 'text-sm';
   const todayClass = size === 'sm' ? 'text-xs' : 'text-sm';
 
+  // Disabled once stepping forward would leave the current period, i.e. when
+  // the period already in view contains today. String comparison is safe: both
+  // operands are `YYYY-MM-DD` wall-clock labels produced by `shiftAnchor`.
+  //
+  // NOTE the 4th argument to `shiftAnchor` is the *timezone*, not a bound.
+  // Passing `maxAnchor` there previously made `fromZonedTime(..., "2026-09-28")`
+  // return an Invalid Date, so `format()` threw `RangeError: Invalid time value`
+  // and crashed the whole /analytics page. Hence the explicit `timezone` prop.
+  const atCurrentPeriod = useMemo(() => {
+    if (!anchorDate || !maxAnchor) return false;
+    try {
+      return shiftAnchor(anchorDate, period, 1, timezone) > maxAnchor;
+    } catch {
+      // Never let a date-arithmetic failure take the page down; worst case the
+      // arrow stays enabled.
+      return false;
+    }
+  }, [anchorDate, maxAnchor, period, timezone]);
+
   return (
-    <div className={cn('flex items-center gap-2', className)}>
-      <div className="flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+    // Wraps below ~640px. The control is a five-tab strip plus two arrows, a
+    // 150px label and a link: at 375px that is wider than the viewport, and the
+    // un-wrappable row pushed the "Today" link off-screen entirely.
+    <div className={cn('flex flex-wrap items-center justify-center gap-2 sm:justify-start', className)}>
+      <div
+        className="flex items-center gap-0.5 overflow-x-auto rounded-lg bg-muted p-0.5"
+        role="tablist"
+        aria-label="Reporting period"
+      >
         {PERIOD_ORDER.map((p) => (
           <button
             key={p}
+            type="button"
+            role="tab"
+            aria-selected={period === p}
             onClick={() => onPeriodChange(p)}
             className={cn(
               'rounded-md font-semibold transition-colors',
@@ -57,6 +110,7 @@ export function PeriodControl({
         ))}
       </div>
       <button
+        type="button"
         onClick={onPrev}
         aria-label="Previous period"
         className={cn(
@@ -68,25 +122,34 @@ export function PeriodControl({
       </button>
       <span
         className={cn(
-          'font-semibold text-foreground tabular-nums text-center min-w-[150px] break-keep',
+          // `min-w` only until it runs out of room, then the label wraps
+          // instead of forcing the row wider than the viewport.
+          'font-semibold text-foreground tabular-nums text-center min-w-0 flex-1 basis-[150px] break-words',
           labelClass
         )}
       >
         {label || '\u2014'}
       </span>
       <button
+        type="button"
         onClick={onNext}
         aria-label="Next period"
+        disabled={atCurrentPeriod}
         className={cn(
           'rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors',
+          'disabled:pointer-events-none disabled:opacity-40',
           navSize
         )}
       >
         <ChevronRight className={arrowClass} />
       </button>
       <button
+        type="button"
         onClick={onToday}
-        className={cn('font-semibold text-primary hover:underline break-keep', todayClass)}
+        className={cn(
+          'rounded-md px-2 py-1.5 font-semibold text-primary hover:underline break-keep',
+          todayClass
+        )}
       >
         {todayLabel}
       </button>

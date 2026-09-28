@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { BarChart3, CalendarRange, Flame, Moon, Target } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { shiftAnchor, type Period } from '@/lib/period-range';
 import { PeriodControl } from '@/components/shared/PeriodControl';
 import type { AnalyticsDashboard } from '@/types/analytics';
@@ -56,7 +56,11 @@ function chart2Label(period: Period): string {
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>('day');
-  const [anchorDate, setAnchorDate] = useState<string>(() => getTodayString());
+  // Anchored to the user's today. The `useState` initialiser runs before the
+  // settings row has loaded, so it starts empty and is seeded from the hook in
+  // an effect below; the hook's value is the only one that is ever committed.
+  const { today: userToday, timezone } = useUserTimezone();
+  const [anchorDate, setAnchorDate] = useState<string>('');
   const [data, setData] = useState<AnalyticsDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -78,6 +82,15 @@ export default function AnalyticsPage() {
   );
 
   useEffect(() => {
+    // Seed the anchor once the settings row resolves, and only while the user
+    // has not navigated. `userToday` starts as the browser zone and settles to
+    // the stored value, so committing the first render's value would freeze the
+    // chart on the wrong day for anyone whose stored zone differs.
+    setAnchorDate((current) => current || userToday);
+  }, [userToday]);
+
+  useEffect(() => {
+    if (!anchorDate) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load(period, anchorDate);
   }, [period, anchorDate, load, retryKey]);
@@ -119,7 +132,7 @@ export default function AnalyticsPage() {
   }
 
   const { hero, tiles } = data;
-  const today = getTodayString();
+  const today = userToday;
   const heroPct = hero.total != null ? Math.min(Math.max(hero.total, 0), 100) : 0;
 
   return (
@@ -141,10 +154,13 @@ export default function AnalyticsPage() {
           period={period}
           onPeriodChange={setPeriod}
           label={data.range.label}
-          onPrev={() => navigate(-1)}
-          onNext={() => navigate(1)}
-          onToday={() => setAnchorDate(today)}
-        />
+        onPrev={() => navigate(-1)}
+        onNext={() => navigate(1)}
+        onToday={() => setAnchorDate(today)}
+        anchorDate={anchorDate}
+        maxAnchor={userToday}
+        timezone={timezone}
+      />
       </div>
 
       {/* Bento hero — mixed-size cards, one accent per metric */}

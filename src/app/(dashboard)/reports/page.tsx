@@ -7,16 +7,10 @@ import type { WeeklySummary } from '@/server/analytics/weekly';
 import type { MonthlySummary } from '@/server/analytics/monthly';
 import { Button, Card, Input, Spinner } from '@/components/ui';
 import { BarChart } from '@/components/charts/BarChart';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { formatInTimeZone } from 'date-fns-tz';
 
 type ReportType = 'weekly' | 'monthly';
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
-}
 
 function Row({ label, value }: { label: string; value: string | number }) {
   return (
@@ -33,11 +27,22 @@ function Row({ label, value }: { label: string; value: string | number }) {
  */
 export default function ReportsPage() {
   const [type, setType] = useState<ReportType>('weekly');
-  const [date, setDate] = useState(todayIso());
+  // Reports are anchored to the user's today, and the monthly view to their
+  // current month. Both were derived from `new Date().toISOString()` — the UTC
+  // date — so on the 1st of a month a user west of UTC was shown the *previous*
+  // month's report, and the weekly view opened on a day that was not theirs.
+  const { today, timezone } = useUserTimezone();
+  const [date, setDate] = useState(today);
   const [weekly, setWeekly] = useState<WeeklySummary | null>(null);
   const [monthly, setMonthly] = useState<MonthlySummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The current calendar month in the user's zone, as `YYYY-MM`.
+  const currentMonth = useMemo(
+    () => formatInTimeZone(new Date(), timezone, 'yyyy-MM'),
+    [timezone]
+  );
 
   const load = useCallback(async (reportType: ReportType, reportDate: string) => {
     setLoading(true);
@@ -86,7 +91,7 @@ export default function ReportsPage() {
 
   const switchType = (next: ReportType) => {
     setType(next);
-    setDate(next === 'weekly' ? todayIso() : currentMonth());
+    setDate(next === 'weekly' ? today : currentMonth);
   };
 
   return (

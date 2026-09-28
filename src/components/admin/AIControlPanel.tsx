@@ -80,8 +80,17 @@ export function AIControlPanel() {
       });
       setResult(latest);
       setError(null);
-    } catch {
+    } catch (err) {
+      // Reported rather than collapsed to `null`. `setResult(null)` rendered
+      // "no insight exists for this period", which is a confident statement
+      // about the data derived from a failed request — and for an admin
+      // debugging the AI pipeline it is actively misleading.
       setResult(null);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not load the latest insight'
+      );
     } finally {
       setLatestLoading(false);
     }

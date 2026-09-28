@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, Circle, Flame } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { cn } from '@/lib/utils';
 import { EASE } from '@/lib/motion';
 import { ScrollableCard } from '@/components/dashboard/ScrollableCard';
@@ -65,22 +66,34 @@ const TIER_DOT: Record<string, string> = {
  */
 export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps) {
   const { habits, getLogForDate, logHabit, selectedDate } = useApp();
-  const today = selectedDate || getTodayString();
+  const { timezone } = useUserTimezone();
+  const today = selectedDate || getTodayString(timezone);
   const reduce = useReducedMotion();
 
   const [healthData, setHealthData] = useState<HealthHabit[]>([]);
   const [healthSummary, setHealthSummary] = useState<HealthSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchHealth = useCallback(async () => {
     try {
       const res = await fetch('/api/habits/health?days=28');
+      if (!res.ok) {
+        // Previously an empty `catch`, so a failed health request left the
+        // bars and percentages silently missing with no way to tell that apart
+        // from a habit that simply has no history.
+        setError(`Could not load habit health (status ${res.status})`);
+        return;
+      }
       const result = await res.json();
       if (result.success) {
         setHealthData(result.data.habits as HealthHabit[]);
         setHealthSummary(result.data.summary as HealthSummary);
+        setError(null);
+      } else {
+        setError(result.error ?? 'Could not load habit health');
       }
-    } catch {
-      // Non-fatal — widget still lists habits without health metrics.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load habit health');
     }
   }, []);
 
@@ -128,7 +141,15 @@ export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps
 
   const toggle = (habitId: string) => {
     const log = getLogForDate(habitId, today);
-    logHabit(habitId, today, log?.status === 'COMPLETED' ? 'MISSED' : 'COMPLETED').catch(() => undefined);
+    // `logHabit` applies the tick optimistically and rolls back on failure, so
+    // swallowing the rejection made a failed save look like the tick springing
+    // back on its own. The user was never told the write did not land.
+    logHabit(habitId, today, log?.status === 'COMPLETED' ? 'MISSED' : 'COMPLETED')
+      .catch((err: unknown) => {
+        setError(
+          err instanceof Error ? err.message : 'Could not save habit for today'
+        );
+      });
   };
 
   const summary = healthSummary;
@@ -141,6 +162,23 @@ export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps
         { label: 'Unhealthy', count: summary.unhealthyCount, className: 'bg-red-500/10 text-red-600 dark:text-red-400' },
       ]
     : [];
+
+  if (error) {
+    return (
+      <ScrollableCard title="Habit Health">
+        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+        <button
+          type="button"
+          onClick={() => void fetchHealth()}
+          className="mt-2 text-sm font-semibold text-primary hover:underline"
+        >
+          Try again
+        </button>
+      </ScrollableCard>
+    );
+  }
 
   return (
     <ScrollableCard

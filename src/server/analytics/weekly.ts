@@ -228,12 +228,15 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
   const progressDeltas = await Promise.all(
     goals.map(goal => goalProgressDelta(goal.id, range))
   );
-  const goalsCompleted = (await goalRepository.findAll(userId, {})).filter(goal =>
-    goal.status === 'COMPLETED' &&
-    goal.completedAt !== null &&
-    goal.completedAt.toISOString().slice(0, 10) >= range.startDate &&
-    goal.completedAt.toISOString().slice(0, 10) <= range.endDate
-  ).length;
+    // A completed goal is no longer ACTIVE, so the first call cannot see it and a
+    // second query is genuinely required. Narrow it in the database rather than
+    // fetching every goal and filtering in JS; the date part still needs JS because
+    // it depends on completedAt.
+    const goalsCompleted = (await goalRepository.findAll(userId, { status: 'COMPLETED' })).filter(goal =>
+      goal.completedAt !== null &&
+      goal.completedAt.toISOString().slice(0, 10) >= range.startDate &&
+      goal.completedAt.toISOString().slice(0, 10) <= range.endDate
+    ).length;
 
   return {
     period: range,

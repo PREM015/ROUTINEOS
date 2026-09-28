@@ -79,14 +79,15 @@ export interface GoalListItem {
 
 export interface CreateGoalInput {
   title: string;
-  description?: string;
+  /** Nullable so an empty field can be cleared: `undefined` never survives JSON.stringify. */
+  description?: string | null;
   type: GoalType;
-  priority?: GoalPriority;
+  priority?: GoalPriority | null;
   targetValue: number;
   currentValue?: number;
-  unit?: string;
-  startDate: Date;
-  endDate: Date;
+  unit?: string | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
   projectId?: string;
   parentGoalId?: string;
   isPublic?: boolean;
@@ -103,15 +104,17 @@ export interface CreateGoalInput {
 
 export interface UpdateGoalInput {
   title?: string;
-  description?: string;
+  /** Nullable so an empty field can be cleared: `undefined` never survives JSON.stringify. */
+  description?: string | null;
   type?: GoalType;
-  priority?: GoalPriority;
+  priority?: GoalPriority | null;
   status?: GoalStatus;
   targetValue?: number;
   currentValue?: number;
-  unit?: string;
-  startDate?: Date;
-  endDate?: Date;
+  unit?: string | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  completedAt?: Date | null;
   projectId?: string | null;
   parentGoalId?: string | null;
   isPublic?: boolean;

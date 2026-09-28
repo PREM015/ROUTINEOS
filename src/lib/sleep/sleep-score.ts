@@ -1,133 +1,68 @@
-import { auth } from '@/lib/auth';
-import { SleepRepository } from '@/server/repositories/sleep.repository';
-import { calculateSleepDuration, calculateSleepDeficit } from '@/lib/sleep/calculate-duration';
-import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-
-const sleepLogSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  targetBedtime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  targetWakeTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-  actualBedtime: z.string().regex(/^\d{2}:\d{2}$/),
-  actualWakeTime: z.string().regex(/^\d{2}:\d{2}$/),
-  quality: z.number().int().min(1).max(5).optional(),
-  wakeUpCount: z.number().int().min(0).optional(),
-  feltRested: z.boolean().optional(),
-  moodOnWaking: z.number().int().min(1).max(5).optional(),
-  energyOnWaking: z.number().int().min(1).max(5).optional(),
-  notes: z.string().optional(),
-});
-
 /**
- * GET /api/sleep
- * Get sleep log for date
+ * Sleep score presentation helpers.
+ *
+ * This file used to contain `GET`/`POST` route handlers that imported
+ * `next/server` and called `SleepRepository` directly from `src/lib`. That was
+ * two problems at once: it put a repository call outside the service layer, and
+ * it duplicated `src/app/api/sleep/route.ts`, which is the real route. Nothing
+ * imported those handlers, so they were dead code that would drift from the live
+ * route. Only the pure band helper below is used, by `SleepCard`.
+ *
+ * The band colours are semantic Tailwind tokens rather than the fixed
+ * `bg-green-100 text-green-800` palette they used to be, which rendered as a
+ * pale chip with dark text in both themes. A light-background/text pair cannot
+ * adapt to the dark theme; a low-alpha tint plus an explicit dark-mode text
+ * colour uses the theme's own foreground.
  */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date');
-
-    if (!date) {
-      return NextResponse.json(
-        { error: 'Date parameter required' },
-        { status: 400 }
-      );
-    }
-
-    const sleepRepository = new SleepRepository();
-    const sleepLog = await sleepRepository.findByDate(session.user.id, date);
-
-    return NextResponse.json({
-      success: true,
-      data: sleepLog,
-    });
-  } catch (error) {
-    console.error('Error fetching sleep log:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sleep log' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * POST /api/sleep
- * Create or update sleep log
- */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const validated = sleepLogSchema.safeParse(body);
-
-    if (!validated.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validated.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const { date, ...logData } = validated.data;
-
-    // Calculate duration
-    const actualDurationMinutes = calculateSleepDuration(
-      logData.actualBedtime,
-      logData.actualWakeTime
-    );
-
-    // Calculate deficit if target is available
-    let deficitMinutes: number | undefined;
-    if (logData.targetBedtime && logData.targetWakeTime) {
-      const targetDuration = calculateSleepDuration(
-        logData.targetBedtime,
-        logData.targetWakeTime
-      );
-      deficitMinutes = calculateSleepDeficit(actualDurationMinutes, targetDuration);
-    }
-
-    const sleepRepository = new SleepRepository();
-    const sleepLog = await sleepRepository.upsertLog(session.user.id, date, {
-      user: { connect: { id: session.user.id } },
-      ...logData,
-      actualDurationMinutes,
-      deficitMinutes,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: sleepLog,
-    });
-  } catch (error) {
-    console.error('Error saving sleep log:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to save sleep log' },
-      { status: 500 }
-    );
-  }
-}
 
 export interface SleepScoreBand {
+  /** Tailwind classes for the band pill: tinted background + readable text. */
   color: string;
+  /** Tailwind classes for the meter's filled portion. */
+  barColor: string;
   label: string;
+  /** What the score means, shown as helper text under the meter. */
+  description: string;
 }
 
 export function getSleepScoreBand(score: number): SleepScoreBand {
-  if (score >= 85) return { color: 'bg-green-100 text-green-800', label: 'Excellent' };
-  if (score >= 70) return { color: 'bg-blue-100 text-blue-800', label: 'Good' };
-  if (score >= 50) return { color: 'bg-yellow-100 text-yellow-800', label: 'Fair' };
-  return { color: 'bg-red-100 text-red-800', label: 'Poor' };
+  if (score >= 85) {
+    return {
+      color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+      barColor: 'bg-emerald-500',
+      label: 'Excellent',
+      description: 'Long and restorative — keep this up.',
+    };
+  }
+  if (score >= 70) {
+    return {
+      color: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+      barColor: 'bg-sky-500',
+      label: 'Good',
+      description: 'Solid night’s sleep.',
+    };
+  }
+  if (score >= 50) {
+    return {
+      color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+      barColor: 'bg-amber-500',
+      label: 'Fair',
+      description: 'Shorter than planned — aim for your target window.',
+    };
+  }
+  return {
+    color: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+    barColor: 'bg-rose-500',
+    label: 'Poor',
+    description: 'Well under your target. Worth protecting an earlier bedtime.',
+  };
+}
+
+/** Human label for the 1–5 self-reported quality rating. */
+export function getQualityLabel(quality: number): string {
+  if (quality >= 5) return 'Excellent';
+  if (quality === 4) return 'Good';
+  if (quality === 3) return 'Fair';
+  if (quality === 2) return 'Poor';
+  return 'Very poor';
 }

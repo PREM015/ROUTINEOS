@@ -5,7 +5,8 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useApp, Goal } from '@/context/AppContext';
 import { Target, Plus, CheckCircle2, Circle } from 'lucide-react';
 import { EmptyState, Badge } from '@/components/ui';
-import { getDaysRemaining, getTodayString } from '@/lib/dates';
+import { getDaysRemaining } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { useCountUp } from '@/components/motion/useCountUp';
 import { EASE } from '@/lib/motion';
 import { fetchWithAuth } from '@/lib/api-client';
@@ -33,10 +34,13 @@ function AnimatedPct({ value }: { value: number }) {
 
 export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: GoalsWidgetProps = {}) {
   const { goals, updateGoalProgress, updateGoal } = useApp();
+  const { today: userToday } = useUserTimezone();
   const reduce = useReducedMotion();
   const [incrementingId, setIncrementingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkins, setCheckins] = useState<Record<string, boolean>>({});
+  /** Daily check-in state could not load, so every box shows unticked. */
+  const [checkinError, setCheckinError] = useState<string | null>(null);
 
   const activeGoals = goals.filter(
     (g) => g.type === type && (g.status === 'ACTIVE' || g.status === 'CARRIED_OVER')
@@ -53,23 +57,33 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
         // it now reads the canonical goals-for-today projection instead of
         // duplicating the query.
         const res = await fetchWithAuth('/api/goals/today');
-        if (res.ok) {
-          const json = (await res.json()) as {
-            success?: boolean;
-            data?: Array<{ id: string; loggedToday: number | null }>;
-          };
-          if (json.success && Array.isArray(json.data)) {
-            const map: Record<string, boolean> = {};
-            for (const goal of json.data) {
-              // Null means "no progress logged today", which is different from
-              // a logged 0 (an explicit un-check), so only null is falsy here.
-              map[goal.id] = goal.loggedToday !== null && goal.loggedToday > 0;
-            }
-            setCheckins(map);
+        if (!res.ok) {
+          throw new Error(`Could not load today's check-ins (status ${res.status})`);
+        }
+        const json = (await res.json()) as {
+          success?: boolean;
+          error?: string;
+          data?: Array<{ id: string; loggedToday: number | null }>;
+        };
+        if (json.success && Array.isArray(json.data)) {
+          const map: Record<string, boolean> = {};
+          for (const goal of json.data) {
+            // Null means "no progress logged today", which is different from
+            // a logged 0 (an explicit un-check), so only null is falsy here.
+            map[goal.id] = goal.loggedToday !== null && goal.loggedToday > 0;
           }
+          setCheckins(map);
+          setCheckinError(null);
+        } else {
+          throw new Error(json.error || 'Could not load today’s check-ins');
         }
       } catch (err) {
-        console.error('Failed to load checkins:', err);
+        // Reported rather than logged. `checkins` stays empty on failure, so
+        // every daily check-off rendered unticked with no message — the user
+        // would tick a goal that was already ticked, or assume none were done.
+        setCheckinError(
+          err instanceof Error ? err.message : 'Could not load today’s check-ins'
+        );
       }
     };
 
@@ -86,6 +100,10 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
     );
   }
 
+  // A failed check-in load must not look like "nothing ticked today", so the
+  // check-off column is replaced with a message rather than shown unticked.
+  const checkinsUnavailable = showDailyCheckoff && checkinError !== null;
+
   const handleDailyCheck = async (goal: Goal) => {
     const completed = checkins[goal.id] !== true;
     setIncrementingId(goal.id);
@@ -94,7 +112,9 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
     try {
       const res = await fetchWithAuth(`/api/goals/${goal.id}/checkin`, {
         method: 'POST',
-        body: JSON.stringify({ date: getTodayString(), completed }),
+        // A write, not a read: the date decides which `GoalProgress` row this
+      // lands in, so it has to be the user's today, not a hard-coded zone.
+      body: JSON.stringify({ date: userToday, completed }),
       });
 
       if (!res.ok) {
@@ -132,6 +152,12 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
   return (
     <div className="space-y-4">
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+      {checkinsUnavailable && (
+        <p role="alert" className="text-xs text-destructive">
+          {checkinError} — today’s check-offs are hidden rather than shown as
+          unticked.
+        </p>
+      )}
 
       <AnimatePresence>
         {activeGoals.map((goal) => {
@@ -153,7 +179,7 @@ export function GoalsWidget({ type = 'WEEKLY', showDailyCheckoff = false }: Goal
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
-                  {isDaily && showDailyCheckoff && (
+                  {isDaily && showDailyCheckoff && !checkinsUnavailable && (
                     <motion.span
                       key={checked ? 'checked' : 'open'}
                       initial={reduce ? false : { scale: checked ? 0.6 : 1 }}

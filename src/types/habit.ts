@@ -76,17 +76,18 @@ export interface HabitListItem {
 
 export interface CreateHabitInput {
   name: string;
-  description?: string;
+  /** Nullable so an empty field can be cleared: `undefined` never survives JSON.stringify. */
+  description?: string | null;
   tier: HabitTier;
   categoryId?: string;
-  color?: string;
-  icon?: string;
+  color?: string | null;
+  icon?: string | null;
   frequencyType: HabitFrequencyType;
-  frequencyValue?: string;
-  targetCount?: number;
-  startDate?: Date;
-  endDate?: Date;
-  reminderTime?: string;
+  frequencyValue?: string | null;
+  targetCount?: number | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  reminderTime?: string | null;
   reminderEnabled?: boolean;
   points?: number;
   estimatedDuration?: number;
@@ -99,18 +100,19 @@ export interface CreateHabitInput {
 
 export interface UpdateHabitInput {
   name?: string;
-  description?: string;
+  /** Nullable so an empty field can be cleared: `undefined` never survives JSON.stringify. */
+  description?: string | null;
   tier?: HabitTier;
   status?: HabitStatus;
   categoryId?: string | null;
-  color?: string;
-  icon?: string;
+  color?: string | null;
+  icon?: string | null;
   frequencyType?: HabitFrequencyType;
-  frequencyValue?: string;
-  targetCount?: number;
-  startDate?: Date;
-  endDate?: Date;
-  reminderTime?: string;
+  frequencyValue?: string | null;
+  targetCount?: number | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  reminderTime?: string | null;
   reminderEnabled?: boolean;
   points?: number;
   estimatedDuration?: number;
@@ -141,14 +143,15 @@ export interface LogHabitInput {
   habitId: string;
   date: string; // YYYY-MM-DD
   status: HabitLogStatus;
-  completedAt?: Date;
+  /** Nullable: an explicit null clears the column. `z.coerce.date()` would coerce null to 1970-01-01. */
+  completedAt?: Date | null;
   durationMinutes?: number;
   quantity?: number;
   difficulty?: number;
   energyLevel?: number;
   moodBefore?: number;
   moodAfter?: number;
-  note?: string;
+  note?: string | null;
 }
 
 export interface LogHabitResponse {

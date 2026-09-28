@@ -381,3 +381,46 @@ export const ENUM_TO_SLUG: Record<DayType, string> = {
   LOW_ENERGY: 'low-energy-day',
   CUSTOM: 'custom',
 };
+
+/**
+ * Normalise a DayTypeDefinition slug so it can be compared against both the
+ * canonical slugs and the enum members. Slugs are kebab-case; enum members are
+ * UPPER_SNAKE_CASE. Whitespace and underscores are treated like dashes so that
+ * a hand-written slug ('work day', 'work_day') still resolves.
+ */
+function normalizeDayTypeSlug(slug: string): string {
+  return slug.trim().toLowerCase().replace(/[\s_-]+/g, '_');
+}
+
+// Reverse of ENUM_TO_SLUG: 'work_day' -> 'WORKDAY', 'low_energy_day' -> 'LOW_ENERGY'.
+const SLUG_TO_ENUM: Record<string, DayType> = Object.fromEntries(
+  (Object.entries(ENUM_TO_SLUG) as [DayType, string][]).map(([dayType, slug]) => [
+    normalizeDayTypeSlug(slug),
+    dayType,
+  ])
+);
+
+/**
+ * Canonical slug -> DayType classification.
+ *
+ * Slugs are not enum members: 'work-day' is WORKDAY, not 'WORK_DAY', and
+ * 'low-energy-day' is LOW_ENERGY, not 'LOW_ENERGY_DAY'. Deriving the value
+ * mechanically (`slug.toUpperCase().replace(/-/g, '_')`) therefore produced
+ * non-existent enum values that every call site then collapsed to 'CUSTOM',
+ * which is what made distinct day types indistinguishable in the UI.
+ *
+ * Unknown slugs (user-defined day types such as 'Focus') classify as 'CUSTOM';
+ * identity always stays with the DayTypeDefinition row's `id`.
+ */
+export function slugToDayType(slug: string | null | undefined): DayType {
+  if (typeof slug !== 'string') return 'CUSTOM';
+
+  const normalized = normalizeDayTypeSlug(slug);
+  if (!normalized) return 'CUSTOM';
+
+  const fromCanonicalSlug = SLUG_TO_ENUM[normalized];
+  if (fromCanonicalSlug) return fromCanonicalSlug;
+
+  const upper = normalized.toUpperCase();
+  return isDayType(upper) ? upper : 'CUSTOM';
+}

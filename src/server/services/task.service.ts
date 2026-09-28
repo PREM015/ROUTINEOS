@@ -2,6 +2,7 @@ import type { Task } from '@/generated/prisma';
 import { TaskPriority } from '@/generated/prisma';
 import { TaskRepository } from '@/server/repositories/task.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
+import { GoalService } from '@/server/services/goal.service';
 import { ProjectRepository } from '@/server/repositories/project.repository';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import {
@@ -25,12 +26,14 @@ export class TaskService {
   private goalRepository: GoalRepository;
   private projectRepository: ProjectRepository;
   private auditRepository: AuditRepository;
+  private goalService: GoalService;
 
   constructor() {
     this.taskRepository = new TaskRepository();
     this.goalRepository = new GoalRepository();
     this.projectRepository = new ProjectRepository();
     this.auditRepository = new AuditRepository();
+    this.goalService = new GoalService();
   }
 
   /**
@@ -139,7 +142,7 @@ export class TaskService {
    * Update a task owned by the user
    */
   async updateTask(userId: string, taskId: string, input: UpdateTaskInput) {
-    await this.getTask(userId, taskId);
+    const before = await this.getTask(userId, taskId);
 
     const parsed = updateTaskSchema.parse(input);
 
@@ -184,6 +187,16 @@ export class TaskService {
       entityId: taskId,
     });
 
+    // Re-opening a task has to give the goal its unit back. `completeTask`
+    // credits +1 to the parent goal, so without this a user who accidentally
+    // ticked then unticked a task permanently inflated their goal progress —
+    // it could read 100% with no completed tasks behind it.
+    const wasCompleted = before.status === 'COMPLETED';
+    const isCompleted = parsed.status === 'COMPLETED';
+    if (wasCompleted && !isCompleted && before.goalId) {
+      await this.goalService.updateProgress(userId, before.goalId, -1, undefined, false);
+    }
+
     return this.getTask(userId, taskId);
   }
 
@@ -200,14 +213,14 @@ export class TaskService {
     await this.taskRepository.complete(userId, taskId);
 
     if (task.goalId) {
-      const goal = await this.goalRepository.findById(task.goalId, userId);
-      if (goal) {
-        await this.goalRepository.updateProgress(
-          task.goalId,
-          userId,
-          (goal.currentValue ?? 0) + 1
-        );
-      }
+      // `GoalService.updateProgress` is the single place that knows how a goal
+      // accumulates progress: it writes the `GoalProgress` history row, bumps
+      // `currentValue` and auto-completes the goal at `targetValue`. This
+      // service previously called `goalRepository.updateProgress` directly with
+      // a pre-computed total, which advanced the number but recorded no history
+      // and never completed the goal — so a goal whose only progress came from
+      // its tasks could reach 100% and stay ACTIVE forever.
+      await this.goalService.updateProgress(userId, task.goalId, 1, undefined, true);
     }
 
     return this.getTask(userId, taskId);

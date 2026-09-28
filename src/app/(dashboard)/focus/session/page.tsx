@@ -27,9 +27,12 @@ function formatDateTime(value: string): string {
   });
 }
 
-function statusVariant(status: string): 'primary' | 'success' | 'default' {
+function statusVariant(status: string): 'primary' | 'success' | 'warning' | 'default' {
   if (status === 'IN_PROGRESS') return 'primary';
   if (status === 'COMPLETED') return 'success';
+  // Ended early — visually distinct from a finished session so the history
+  // does not read as a wall of successes.
+  if (status === 'ABORTED') return 'warning';
   return 'default';
 }
 

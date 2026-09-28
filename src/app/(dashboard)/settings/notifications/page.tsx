@@ -1,145 +1,339 @@
-'use client';
+﻿'use client';
 
 /**
  * Settings — Notifications
- * Reads the user's notification preferences from GET /api/settings and
- * persists changes via PUT /api/settings. Sleep reminders are managed on
- * the Sleep settings page; this page covers general delivery and reminders.
+ *
+ * Manages push notification preferences, device registration, and categories.
+ *
+ * Fixes vs. the previous version:
+ *  - The five "Routine Notifications" switches and the "Advance notification"
+ *    select sent fields that `updateSettingsSchema` silently stripped and that
+ *    had no Prisma column, so they saved nothing and sprang back on reload.
+ *    The columns now exist and the scheduler reads them.
+ *  - Preferences come from the shared settings store, so this page can no
+ *    longer disagree with `/settings/habits` about `dailyReminderTime`.
+ *  - Device registration now sends `deviceType`, so the per-device icon and
+ *    label branches below are actually reachable (the route accepts it; the
+ *    page previously omitted it).
+ *  - The VAPID key is read from `GET /api/push-config` instead of a build-time
+ *    `process.env` value that is inlined at compile time.
+ *  - `permissionState` is refreshed after granting permission, so the
+ *    "Permission:" tile stopped being stale.
+ *  - Mojibake in the debug block and test title (the source of the file's two
+ *    `react/no-unescaped-entities` lint errors) was replaced with real UTF-8.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { Bell, CheckCircle2, Clock, ShieldAlert } from 'lucide-react';
-import { apiRequest, ApiError } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  Bell,
+  CheckCircle2,
+  Clock,
+  ShieldAlert,
+  MonitorSmartphone,
+  Smartphone,
+  Send,
+  AlertCircle,
+  CheckCircle,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
+import { apiRequest } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
+import { useSettings } from '@/hooks/useSettings';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Select } from '@/components/ui/Select';
+// `UserSettings` is a type-only import (erased at compile time). The enums are
+// runtime values, so they come from the client-safe mirror — importing them
+// from `@/generated/prisma` would bundle the Node Prisma client into the
+// browser.
+import type { UserSettings } from '@/generated/prisma';
+import { DeviceType } from '@/constants/prisma-enums';
 
-interface NotificationsRow {
-  notificationsEnabled: boolean;
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  smsNotifications: boolean;
-  dailyReminder: boolean;
-  dailyReminderTime: string | null;
-  habitReminders: boolean;
-  goalReminders: boolean;
-  weeklyReviewReminder: boolean;
-  monthlyResetReminder: boolean;
-  focusReminders: boolean;
-  breakReminders: boolean;
-  quietHoursStart: string | null;
-  quietHoursEnd: string | null;
+interface PushSubscription {
+  id: string;
+  endpoint: string;
+  deviceName: string | null;
+  deviceType: string | null;
+  isActive: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
 }
 
-const FALLBACK: NotificationsRow = {
-  notificationsEnabled: true,
-  emailNotifications: true,
-  pushNotifications: true,
-  smsNotifications: false,
-  dailyReminder: true,
-  dailyReminderTime: '20:00',
-  habitReminders: true,
-  goalReminders: true,
-  weeklyReviewReminder: true,
-  monthlyResetReminder: true,
-  focusReminders: true,
-  breakReminders: true,
-  quietHoursStart: null,
-  quietHoursEnd: null,
-};
+/** The boolean `UserSettings` columns this page exposes as switches. */
+type NotificationToggleKey = {
+  [K in keyof UserSettings]: UserSettings[K] extends boolean | null ? K : never;
+}[keyof UserSettings];
 
 interface ToggleRow {
-  key: keyof NotificationsRow;
+  key: NotificationToggleKey;
   label: string;
   description: string;
 }
 
+const ADVANCE_OPTIONS = [
+  { value: '0', label: 'At start time' },
+  { value: '5', label: '5 minutes before' },
+  { value: '10', label: '10 minutes before' },
+  { value: '15', label: '15 minutes before' },
+  { value: '30', label: '30 minutes before' },
+];
+
+const CATEGORY_ROWS: ToggleRow[] = [
+  { key: 'routineStartNotifications', label: 'Routine Start', description: 'Notify when a scheduled routine block begins.' },
+  { key: 'upcomingRoutineNotifications', label: 'Upcoming Routine', description: 'Notify before a routine block starts (advance notice).' },
+  { key: 'sleepReminderNotifications', label: 'Sleep Reminder', description: "Remind you when it's time to sleep." },
+  { key: 'habitReminderNotifications', label: 'Habit Reminder', description: 'Prompt for scheduled habits.' },
+  { key: 'goalReminderNotifications', label: 'Goal Reminder', description: 'Nudge for goal check-ins and deadlines.' },
+];
+
+/** Best-effort classification of this browser, stored with the subscription. */
+function detectDeviceType(): DeviceType {
+  if (typeof navigator === 'undefined') return DeviceType.WEB;
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet/i.test(ua)) return DeviceType.TABLET;
+  if (/Android/i.test(ua)) return DeviceType.MOBILE_ANDROID;
+  if (/iPhone|iPod|Mobile/i.test(ua)) return DeviceType.MOBILE_IOS;
+  return DeviceType.DESKTOP;
+}
+
+function detectDeviceName(): string {
+  if (typeof navigator === 'undefined') return 'This device';
+  const ua = navigator.userAgent;
+  if (/iPad|Tablet/i.test(ua)) return 'Tablet';
+  if (/Android/i.test(ua)) return 'Android device';
+  if (/iPhone|iPod|Mobile/i.test(ua)) return 'iOS device';
+  return navigator.platform || 'Desktop browser';
+}
+
 export default function NotificationsSettingsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const {
+    settings,
+    loading: settingsLoading,
+    save,
+    patchLocal,
+    saving,
+    error: settingsError,
+  } = useSettings();
 
-  const [settings, setSettings] = useState<NotificationsRow>(FALLBACK);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [devices, setDevices] = useState<PushSubscription[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(true);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+  const [testNotificationLoading, setTestNotificationLoading] = useState(false);
+  const [testNotificationResult, setTestNotificationResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [deviceMessage, setDeviceMessage] = useState<{ success: boolean; message: string } | null>(null);
+  const [pushSupported, setPushSupported] = useState(false);
+  const [permissionState, setPermissionState] = useState<NotificationPermission>('default');
+  const [vapidPublicKey, setVapidPublicKey] = useState<string | null>(null);
+  const [registering, setRegistering] = useState(false);
 
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
-  const load = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await apiRequest<Partial<NotificationsRow>>(`/api/users/${user.id}/settings`);
-      setSettings({
-        notificationsEnabled: data.notificationsEnabled ?? FALLBACK.notificationsEnabled,
-        emailNotifications: data.emailNotifications ?? FALLBACK.emailNotifications,
-        pushNotifications: data.pushNotifications ?? FALLBACK.pushNotifications,
-        smsNotifications: data.smsNotifications ?? FALLBACK.smsNotifications,
-        dailyReminder: data.dailyReminder ?? FALLBACK.dailyReminder,
-        dailyReminderTime: data.dailyReminderTime ?? FALLBACK.dailyReminderTime,
-        habitReminders: data.habitReminders ?? FALLBACK.habitReminders,
-        goalReminders: data.goalReminders ?? FALLBACK.goalReminders,
-        weeklyReviewReminder: data.weeklyReviewReminder ?? FALLBACK.weeklyReviewReminder,
-        monthlyResetReminder: data.monthlyResetReminder ?? FALLBACK.monthlyResetReminder,
-        focusReminders: data.focusReminders ?? FALLBACK.focusReminders,
-        breakReminders: data.breakReminders ?? FALLBACK.breakReminders,
-        quietHoursStart: data.quietHoursStart ?? FALLBACK.quietHoursStart,
-        quietHoursEnd: data.quietHoursEnd ?? FALLBACK.quietHoursEnd,
-      });
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Failed to load notification preferences.');
-    } finally {
-      setLoading(false);
+  // Plain function rather than `useCallback`: it is only ever invoked, never
+  // passed down or used as a hook dependency, so the memo bought nothing and
+  // the React Compiler refused to preserve it ("Compilation Skipped").
+  const loadDevices = async (): Promise<void> => {
+    if (!user?.id) {
+      setDevicesLoading(false);
+      return;
     }
-  }, [user?.id]);
+    setDevicesLoading(true);
+    setDevicesError(null);
+    try {
+      const data = await apiRequest<PushSubscription[]>(
+        `/api/users/${user.id}/push-subscriptions`
+      );
+      setDevices(data);
+    } catch (err) {
+      setDevicesError(err instanceof Error ? err.message : 'Failed to load devices.');
+    } finally {
+      setDevicesLoading(false);
+    }
+  };
+
+  const userId = user?.id;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    void load();
-  }, [load]);
+    void loadDevices();
+    // Re-fetch only when the account changes; `loadDevices` is intentionally
+    // not a dependency because it is recreated on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
-  const toggle = (key: keyof NotificationsRow) => (checked: boolean) => {
-    setSettings((current) => ({ ...current, [key]: checked }));
-    setSaved(false);
+  useEffect(() => {
+    // Check push notification support and permission.
+    if (typeof window !== 'undefined') {
+      const supported = 'serviceWorker' in navigator && 'PushManager' in window;
+      setPushSupported(supported);
+      if (supported && 'Notification' in window) {
+        setPermissionState(Notification.permission);
+      }
+    }
+
+    // The VAPID public key is served at runtime so a key rotation does not
+    // require a rebuild. Falls back to the build-time value if the route fails.
+    let cancelled = false;
+    void apiRequest<{ vapidPublicKey: string | null }>('/api/push-config')
+      .then((data) => {
+        if (!cancelled && data.vapidPublicKey) setVapidPublicKey(data.vapidPublicKey);
+      })
+      .catch(() => {
+        if (!cancelled) setVapidPublicKey(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSaved(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
+
+  const persist = async () => {
+    if (!settings) return;
+    const result = await save({
+      notificationsEnabled: settings.notificationsEnabled,
+      emailNotifications: settings.emailNotifications,
+      pushNotifications: settings.pushNotifications,
+      smsNotifications: settings.smsNotifications,
+      dailyReminder: settings.dailyReminder,
+      // `null` clears the column; '' failed the HH:mm regex with a 400.
+      dailyReminderTime: settings.dailyReminderTime?.trim() || '20:00',
+      habitReminders: settings.habitReminders,
+      goalReminders: settings.goalReminders,
+      weeklyReviewReminder: settings.weeklyReviewReminder,
+      monthlyResetReminder: settings.monthlyResetReminder,
+      focusReminders: settings.focusReminders,
+      breakReminders: settings.breakReminders,
+      quietHoursStart: settings.quietHoursStart,
+      quietHoursEnd: settings.quietHoursEnd,
+      routineStartNotifications: settings.routineStartNotifications,
+      upcomingRoutineNotifications: settings.upcomingRoutineNotifications,
+      sleepReminderNotifications: settings.sleepReminderNotifications,
+      habitReminderNotifications: settings.habitReminderNotifications,
+      goalReminderNotifications: settings.goalReminderNotifications,
+      advanceNotificationMinutes: settings.advanceNotificationMinutes,
+    });
+    if (result) setSaved(true);
   };
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
+  const handleRegisterDevice = async () => {
+    if (!user?.id || !pushSupported) return;
+
+    setRegistering(true);
+    setDeviceMessage(null);
+
     try {
-      await apiRequest('/api/settings', {
-        method: 'PUT',
+      const permission = await Notification.requestPermission();
+      // Refresh the tile immediately; it previously kept showing the stale
+      // 'default' value until a full page reload.
+      setPermissionState(permission);
+
+      if (permission !== 'granted') {
+        setDeviceMessage({
+          success: false,
+          message: 'Notification permission denied. Please allow notifications in browser settings.',
+        });
+        return;
+      }
+
+      if (!vapidPublicKey) {
+        setDeviceMessage({ success: false, message: 'VAPID key not configured. Check server environment.' });
+        return;
+      }
+
+      let registration: ServiceWorkerRegistration;
+      try {
+        registration = await navigator.serviceWorker.ready;
+      } catch {
+        setDeviceMessage({ success: false, message: 'Service worker not ready. Refresh the page and try again.' });
+        return;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey).buffer as ArrayBuffer,
+      });
+
+      await apiRequest(`/api/users/${user.id}/push-subscriptions`, {
+        method: 'POST',
         body: {
-          notificationsEnabled: settings.notificationsEnabled,
-          emailNotifications: settings.emailNotifications,
-          pushNotifications: settings.pushNotifications,
-          smsNotifications: settings.smsNotifications,
-          dailyReminder: settings.dailyReminder,
-          dailyReminderTime: settings.dailyReminderTime,
-          habitReminders: settings.habitReminders,
-          goalReminders: settings.goalReminders,
-          weeklyReviewReminder: settings.weeklyReviewReminder,
-          monthlyResetReminder: settings.monthlyResetReminder,
-          focusReminders: settings.focusReminders,
-          breakReminders: settings.breakReminders,
-          quietHoursStart: settings.quietHoursStart,
-          quietHoursEnd: settings.quietHoursEnd,
+          endpoint: subscription.endpoint,
+          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')!))),
+          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')!))),
+          deviceName: detectDeviceName(),
+          // Previously omitted, so the route stored null and every device
+          // rendered with the generic icon and fell through to `deviceName`.
+          deviceType: detectDeviceType(),
         },
       });
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1600);
+
+      await loadDevices();
+      setDeviceMessage({ success: true, message: 'Device registered successfully!' });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save notification preferences.');
+      setDeviceMessage({
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to register device',
+      });
     } finally {
-      setSaving(false);
+      setRegistering(false);
     }
   };
 
-  if (isLoading) {
+  const handleUnregisterDevice = async (subscriptionId: string) => {
+    if (!user?.id) return;
+
+    setDeviceMessage(null);
+    try {
+      await apiRequest(`/api/users/${user.id}/push-subscriptions?subscriptionId=${subscriptionId}`, {
+        method: 'DELETE',
+      });
+      await loadDevices();
+      setDeviceMessage({ success: true, message: 'Device unregistered successfully!' });
+    } catch (err) {
+      setDeviceMessage({
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to unregister device',
+      });
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    if (!user?.id) return;
+
+    setTestNotificationLoading(true);
+    setTestNotificationResult(null);
+
+    try {
+      await apiRequest('/api/push/test', {
+        method: 'POST',
+        body: {
+          userId: user.id,
+          title: 'Test Notification',
+          body: 'This is a test notification from RoutineOS. If you see this, push notifications are working!',
+          url: '/today',
+        },
+      });
+      setTestNotificationResult({ success: true, message: 'Test notification sent! Check your devices.' });
+    } catch (err) {
+      setTestNotificationResult({
+        success: false,
+        message: err instanceof Error ? err.message : 'Failed to send test notification',
+      });
+    } finally {
+      setTestNotificationLoading(false);
+    }
+  };
+
+  if (authLoading) {
     return (
       <main className="container mx-auto max-w-3xl px-4 py-8">
         <Skeleton className="h-8 w-44" />
@@ -163,61 +357,48 @@ export default function NotificationsSettingsPage() {
     );
   }
 
-  const general: ToggleRow[] = [
-    {
-      key: 'dailyReminder',
-      label: 'Daily reminder',
-      description: 'Get reminded to log your habits each day.',
-    },
-    {
-      key: 'habitReminders',
-      label: 'Habit reminders',
-      description: 'Prompt before scheduled habits are due.',
-    },
-    {
-      key: 'goalReminders',
-      label: 'Goal check-ins',
-      description: 'Nudge when a goal check-in is overdue.',
-    },
-    {
-      key: 'weeklyReviewReminder',
-      label: 'Weekly review',
-      description: 'Receive a summary of your week.',
-    },
-    {
-      key: 'monthlyResetReminder',
-      label: 'Monthly reset',
-      description: 'Remind you before the monthly reset.',
-    },
-    {
-      key: 'focusReminders',
-      label: 'Focus session reminders',
-      description: 'Notify about scheduled or paused focus sessions.',
-    },
-    {
-      key: 'breakReminders',
-      label: 'Break reminders',
-      description: 'Tell you when it\u2019s time for a break.',
-    },
+  const channels: ToggleRow[] = [
+    { key: 'emailNotifications', label: 'Email', description: 'Deliver notifications by email.' },
+    { key: 'pushNotifications', label: 'Push notifications', description: 'Deliver real-time notifications to this device.' },
+    { key: 'smsNotifications', label: 'SMS', description: 'Deliver notifications by text message.' },
   ];
 
-  const channels: ToggleRow[] = [
-    {
-      key: 'emailNotifications',
-      label: 'Email',
-      description: 'Deliver notifications by email.',
-    },
-    {
-      key: 'pushNotifications',
-      label: 'Push notifications',
-      description: 'Deliver real-time notifications to this device.',
-    },
-    {
-      key: 'smsNotifications',
-      label: 'SMS',
-      description: 'Deliver notifications by text message.',
-    },
+  const general: ToggleRow[] = [
+    { key: 'dailyReminder', label: 'Daily reminder', description: 'Get reminded to log your habits each day.' },
+    { key: 'habitReminders', label: 'Habit reminders', description: 'Prompt before scheduled habits are due.' },
+    { key: 'goalReminders', label: 'Goal check-ins', description: 'Nudge when a goal check-in is overdue.' },
+    { key: 'weeklyReviewReminder', label: 'Weekly review', description: 'Receive a summary of your week.' },
+    { key: 'monthlyResetReminder', label: 'Monthly reset', description: 'Remind you before the monthly reset.' },
+    { key: 'focusReminders', label: 'Focus session reminders', description: 'Notify about scheduled or paused focus sessions.' },
+    { key: 'breakReminders', label: 'Break reminders', description: 'Tell you when it\'s time for a break.' },
   ];
+
+  const getDeviceIcon = (deviceType: string | null) => {
+    if (deviceType?.includes('MOBILE') || deviceType?.includes('ANDROID') || deviceType?.includes('IOS')) {
+      return <Smartphone className="h-5 w-5" />;
+    }
+    return <MonitorSmartphone className="h-5 w-5" />;
+  };
+
+  const getDeviceLabel = (device: PushSubscription) => {
+    const type = device.deviceType;
+    if (type?.includes('MOBILE_ANDROID')) return 'Android';
+    if (type?.includes('MOBILE_IOS')) return 'iOS';
+    if (type?.includes('DESKTOP')) return 'Desktop';
+    if (type?.includes('WEB')) return 'Web Browser';
+    return device.deviceName || 'Unknown Device';
+  };
+
+  if (!settings) {
+    return (
+      <main className="container mx-auto max-w-3xl px-4 py-8">
+        <Skeleton className="h-8 w-44" />
+        <div className="mt-6 space-y-6">
+          <Skeleton className="h-80 rounded-xl" />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-8">
@@ -227,19 +408,189 @@ export default function NotificationsSettingsPage() {
           Notifications
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose what reminders you receive and how they\u2019re delivered.
+          Choose what reminders you receive, how they&rsquo;re delivered, and manage your devices.
         </p>
       </div>
 
-      {loadError && (
+      {settingsError && (
         <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-          {loadError}
+          {settingsError}
+        </div>
+      )}
+      {devicesError && (
+        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+          {devicesError}
         </div>
       )}
 
+      {/* Push Support Status */}
+      <Card className="mb-6">
+        <div className="p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Bell className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Push Notification Status</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              {pushSupported ? (
+                <CheckCircle className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-destructive" />
+              )}
+              <span>
+                Browser Support: {pushSupported ? 'Supported' : 'Not Supported'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              {permissionState === 'granted' ? (
+                <CheckCircle className="h-4 w-4 text-emerald-500" />
+              ) : permissionState === 'denied' ? (
+                <AlertCircle className="h-4 w-4 text-destructive" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-amber-500" />
+              )}
+              <span>
+                Permission: {permissionState.charAt(0).toUpperCase() + permissionState.slice(1)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+{devices.length > 0 ? (
+                <Wifi className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <WifiOff className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span>
+                Devices: {devices.length} registered
+              </span>
+            </div>
+          </div>
+
+          {/*
+            The "Debug Info" panel (VAPID Key: Configured / Service Worker:
+            Available / PushManager / Notification API / Secure Context) has been
+            removed at the user's request.
+
+            It was diagnostic scaffolding, not a user-facing feature, and it
+            published internal deployment state to anyone who opened the page:
+            whether push was configured server-side, whether the worker
+            registered, and — via "Secure Context" — whether the session was
+            served over HTTPS. That is useful reconnaissance for an attacker
+            deciding whether the push/VAPID surface is worth attacking, and it is
+            not information a user needs.
+
+            The equivalent diagnostics remain available to operators where they
+            belong: the browser DevTools console for `navigator.serviceWorker`
+            and `Notification.permission`, and the server log, where
+            `push.service` now records every failed delivery and its reason.
+          */}
+
+          {!pushSupported && (
+            <p className="mt-3 text-sm text-destructive">
+              Your browser doesn&rsquo;t support push notifications. Please use a modern browser like Chrome, Firefox, or Edge.
+            </p>
+          )}
+
+          {deviceMessage && (
+            <div
+              className={`mt-4 flex items-center gap-2 rounded-md px-4 py-3 text-sm ${
+                deviceMessage.success
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-destructive/10 text-destructive'
+              }`}
+              role="status"
+            >
+              {deviceMessage.success ? (
+                <CheckCircle className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <AlertCircle className="h-4 w-4" aria-hidden="true" />
+              )}
+              {deviceMessage.message}
+            </div>
+          )}
+
+          {pushSupported && permissionState !== 'granted' && devices.length === 0 && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                onClick={() => void handleRegisterDevice()}
+                disabled={devicesLoading || registering}
+                isLoading={registering}
+              >
+                Enable Push Notifications
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Registered Devices */}
+      <Card className="mb-6">
+        <div className="p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <MonitorSmartphone className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Registered Devices</h2>
+            </div>
+            {pushSupported && permissionState === 'granted' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void handleRegisterDevice()}
+                disabled={devicesLoading || registering}
+                isLoading={registering}
+              >
+                Add Device
+              </Button>
+            )}
+          </div>
+
+          {devicesLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : devices.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              No devices registered yet.
+              {pushSupported && permissionState !== 'granted' && (
+                <p className="mt-2">Click &ldquo;Enable Push Notifications&rdquo; above to register this device.</p>
+              )}
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {devices.map((device) => (
+                <li key={device.id} className="flex flex-wrap items-center justify-between gap-3 px-2 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                      {getDeviceIcon(device.deviceType)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{device.deviceName || getDeviceLabel(device)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {getDeviceLabel(device)} &middot; {device.isActive ? 'Active' : 'Inactive'}
+                        {device.lastUsedAt && ` \u00b7 Last used ${new Date(device.lastUsedAt).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleUnregisterDevice(device.id)}
+                    disabled={devicesLoading}
+                  >
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Card>
+
+      {/* Main Notification Settings */}
       <Card>
         <div className="p-6">
-          {loading ? (
+          {settingsLoading ? (
             <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -249,7 +600,7 @@ export default function NotificationsSettingsPage() {
             <div className="space-y-7">
               <Switch
                 checked={settings.notificationsEnabled}
-                onChange={toggle('notificationsEnabled')}
+                onChange={(checked) => patchLocal({ notificationsEnabled: checked })}
                 label="Notification master switch"
                 description="Turns all reminders on or off at once."
               />
@@ -260,8 +611,8 @@ export default function NotificationsSettingsPage() {
                   {channels.map((row) => (
                     <Switch
                       key={row.key}
-                      checked={settings[row.key] as boolean}
-                      onChange={toggle(row.key)}
+                      checked={settings[row.key]}
+                      onChange={(checked) => patchLocal({ [row.key]: checked })}
                       label={row.label}
                       description={row.description}
                       disabled={!settings.notificationsEnabled}
@@ -271,13 +622,48 @@ export default function NotificationsSettingsPage() {
               </div>
 
               <div>
-                <h2 className="mb-3 text-sm font-semibold text-foreground">Reminders</h2>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">Routine Notifications</h2>
+                <div className="space-y-3">
+                  {CATEGORY_ROWS.map((row) => (
+                    <Switch
+                      key={row.key}
+                      checked={settings[row.key]}
+                      onChange={(checked) => patchLocal({ [row.key]: checked })}
+                      label={row.label}
+                      description={row.description}
+                      disabled={!settings.notificationsEnabled || !settings.pushNotifications}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">Advance Notification</h2>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  When to notify before a routine block starts. Only applies while
+                  &ldquo;Upcoming Routine&rdquo; is on.
+                </p>
+                <Select
+                  label="Advance notification"
+                  value={String(settings.advanceNotificationMinutes)}
+                  onChange={(event) =>
+                    patchLocal({
+                      advanceNotificationMinutes: Number.parseInt(event.target.value, 10),
+                    })
+                  }
+                  disabled={!settings.notificationsEnabled || !settings.pushNotifications}
+                  options={ADVANCE_OPTIONS}
+                />
+              </div>
+
+              <div>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">Other Reminders</h2>
                 <div className="space-y-3">
                   {general.map((row) => (
                     <Switch
                       key={row.key}
-                      checked={settings[row.key] as boolean}
-                      onChange={toggle(row.key)}
+                      checked={settings[row.key]}
+                      onChange={(checked) => patchLocal({ [row.key]: checked })}
                       label={row.label}
                       description={row.description}
                       disabled={!settings.notificationsEnabled}
@@ -291,10 +677,9 @@ export default function NotificationsSettingsPage() {
                   label="Daily reminder time"
                   type="time"
                   value={settings.dailyReminderTime ?? ''}
-                  onChange={(event) => {
-                    setSettings({ ...settings, dailyReminderTime: event.target.value });
-                    setSaved(false);
-                  }}
+                  onChange={(event) =>
+                    patchLocal({ dailyReminderTime: event.target.value || null })
+                  }
                   disabled={!settings.dailyReminder}
                   helperText="When the daily nudge is sent."
                 />
@@ -302,42 +687,78 @@ export default function NotificationsSettingsPage() {
                   label="Quiet hours start"
                   type="time"
                   value={settings.quietHoursStart ?? ''}
-                  onChange={(event) => {
-                    setSettings({ ...settings, quietHoursStart: event.target.value || null });
-                    setSaved(false);
-                  }}
+                  onChange={(event) =>
+                    patchLocal({ quietHoursStart: event.target.value || null })
+                  }
                   helperText="Leave empty for none."
                 />
                 <Input
                   label="Quiet hours end"
                   type="time"
                   value={settings.quietHoursEnd ?? ''}
-                  onChange={(event) => {
-                    setSettings({ ...settings, quietHoursEnd: event.target.value || null });
-                    setSaved(false);
-                  }}
-                  helperText="Don\u2019t send reminders inside this window."
+                  onChange={(event) =>
+                    patchLocal({ quietHoursEnd: event.target.value || null })
+                  }
+                  helperText="Don&rsquo;t send reminders inside this window."
                 />
               </div>
 
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" />
-                Sleep reminders are configured on the Sleep settings page.
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                Sleep reminders are configured on the{' '}
+                <Link href="/settings/sleep" className="text-primary hover:underline">
+                  Sleep settings page
+                </Link>
+                .
               </p>
 
-              {error && (
-                <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-                  {error}
+              {/* Test Notification Button */}
+              <div className="border-t border-border pt-4">
+                <h3 className="mb-3 text-sm font-semibold text-foreground">Test Notifications</h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    onClick={() => void handleSendTestNotification()}
+                    isLoading={testNotificationLoading}
+                    disabled={
+                      settingsLoading ||
+                      saving ||
+                      !settings.pushNotifications ||
+                      devices.length === 0
+                    }
+                  >
+                    <Send className="mr-2 h-4 w-4" aria-hidden="true" />
+                    Send Test Notification
+                  </Button>
+                  {testNotificationResult && (
+                    <div
+                      className={`flex items-center gap-2 text-sm ${
+                        testNotificationResult.success
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-destructive'
+                      }`}
+                      role="status"
+                    >
+                      {testNotificationResult.success ? (
+                        <CheckCircle className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      {testNotificationResult.message}
+                    </div>
+                  )}
                 </div>
-              )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Sends a real push notification to all registered devices.
+                </p>
+              </div>
 
-              <div className="flex items-center gap-3">
-                <Button onClick={() => void save()} isLoading={saving} disabled={loading}>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={() => void persist()} isLoading={saving} disabled={settingsLoading}>
                   Save preferences
                 </Button>
                 {saved && (
                   <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="h-4 w-4" />
+                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                     Saved
                   </span>
                 )}
@@ -348,4 +769,15 @@ export default function NotificationsSettingsPage() {
       </Card>
     </main>
   );
+}
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }

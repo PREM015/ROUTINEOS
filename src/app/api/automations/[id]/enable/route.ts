@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -16,6 +16,7 @@ interface RouteContext {
  * Set an automation rule to active.
  */
 export async function POST(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -23,12 +24,12 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     }
 
     const automationRepository = new AutomationRepository();
-    const existing = await automationRepository.findById(session.user.id, params.id);
+    const existing = await automationRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
     }
 
-    const rule = await automationRepository.setActive(session.user.id, params.id, true);
+    const rule = await automationRepository.setActive(session.user.id, paramId, true);
     return NextResponse.json({ success: true, data: rule });
   } catch (error) {
     console.error('Error enabling automation:', error);

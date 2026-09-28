@@ -4,9 +4,14 @@
  * Settings — Profile
  * Edits the signed-in user's public profile via PATCH /api/auth/update-profile
  * and updates the local auth store so the sidebar reflects changes immediately.
+ *
+ * Emptied fields are sent as `null`, not `undefined`: `JSON.stringify` drops
+ * `undefined` properties, so the old payload omitted them entirely and clearing
+ * a display name, bio or avatar silently did nothing.
  */
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { CheckCircle2, ShieldAlert } from 'lucide-react';
 import { apiRequest, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,9 +23,9 @@ import { Skeleton } from '@/components/ui/Skeleton';
 
 interface ProfilePatch {
   name?: string;
-  displayName?: string;
-  bio?: string;
-  avatarUrl?: string;
+  displayName?: string | null;
+  bio?: string | null;
+  avatarUrl?: string | null;
 }
 
 export default function ProfileSettingsPage() {
@@ -48,11 +53,13 @@ export default function ProfileSettingsPage() {
     setSaving(true);
     setError(null);
     try {
+      // `null` (not `undefined`) for cleared fields so the server actually
+      // receives the key and nulls the column.
       const patch: ProfilePatch = {
         name: name.trim(),
-        displayName: displayName.trim() || undefined,
-        bio: bio.trim() || undefined,
-        avatarUrl: avatarUrl.trim() || undefined,
+        displayName: displayName.trim() || null,
+        bio: bio.trim() || null,
+        avatarUrl: avatarUrl.trim() || null,
       };
       await apiRequest('/api/auth/update-profile', { method: 'PATCH', body: patch });
       updateUser({
@@ -88,12 +95,12 @@ export default function ProfileSettingsPage() {
           <div className="p-8 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-amber-500" />
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
-            <a
+            <Link
               href="/login"
               className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary light-sweep glow-neon px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </Card>
       </main>
@@ -117,13 +124,15 @@ export default function ProfileSettingsPage() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Your full name"
+              maxLength={50}
             />
             <Input
               label="Display name"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               placeholder="How others see you"
-              helperText="Fallback to your name when empty."
+              maxLength={50}
+              helperText="Clear this to fall back to your name."
             />
           </div>
 
@@ -133,7 +142,7 @@ export default function ProfileSettingsPage() {
               value={avatarUrl}
               onChange={(event) => setAvatarUrl(event.target.value)}
               placeholder="https://…"
-              helperText="Accepted as-is; invalid images are ignored client-side."
+              helperText="Must be a valid URL. Clear this to remove your avatar."
             />
           </div>
 
@@ -145,6 +154,7 @@ export default function ProfileSettingsPage() {
               rows={4}
               maxLength={500}
               placeholder="A short introduction (max 500 characters)"
+              helperText="Clear this to remove your bio."
             />
           </div>
 
@@ -164,13 +174,13 @@ export default function ProfileSettingsPage() {
             </div>
           )}
 
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <Button onClick={() => void save()} isLoading={saving} disabled={name.trim().length < 2}>
               Save profile
             </Button>
             {saved && (
               <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                 Saved
               </span>
             )}

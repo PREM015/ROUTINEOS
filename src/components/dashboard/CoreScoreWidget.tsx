@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { apiRequest } from '@/lib/api-client';
 import { useCountUp } from '@/components/motion/useCountUp';
 
 export interface ScoreAxis {
@@ -87,6 +88,11 @@ export function CoreScoreWidget({ axes: axesProp, score: scoreProp, dayMode }: C
   const [loading, setLoading] = useState(!axesProp);
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<number | null>(null);
+  // Scoped to the user's timezone. Without it this requested
+  // `/api/score/<tomorrow>` for anyone west of the old hard-coded
+  // Asia/Kolkata default during the first 5.5 hours of their local day, so the
+  // card read zero right after midnight.
+  const { today } = useUserTimezone();
 
   useEffect(() => {
     if (axesProp) return;
@@ -95,30 +101,30 @@ export function CoreScoreWidget({ axes: axesProp, score: scoreProp, dayMode }: C
       try {
         setLoading(true);
         setError(null);
-        const today = getTodayString();
-        const res = await fetch(`/api/score/${today}`);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error || 'Failed to load score');
-        if (!cancelled) setLive(data as ScoreResponse);
+        // `apiRequest` unwraps the `{ success, data }` envelope, which is what
+        // this route now returns. It used to `setLive(data as ScoreResponse)`
+        // against a *bare* row to work around the missing envelope — that
+        // workaround is why this widget worked while `TodayScore` showed 0.
+        const data = await apiRequest<ScoreResponse>(`/api/score/${today}`);
+        if (!cancelled) setLive(data);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load score');
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
-    run().catch(() => undefined);
+    void run();
     return () => {
       cancelled = true;
     };
-  }, [axesProp]);
+  }, [axesProp, today]);
 
   const retry = () => {
     setError(null);
     setLoading(true);
-    fetch(`/api/score/${getTodayString()}`)
-      .then((r) => r.json())
-      .then((d) => setLive(d as ScoreResponse))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load score'))
+    apiRequest<ScoreResponse>(`/api/score/${today}`)
+      .then((d) => setLive(d))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load score'))
       .finally(() => setLoading(false));
   };
 

@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, KeyRound, Laptop, Lock, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { apiRequest, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/Card';
@@ -35,7 +36,10 @@ export default function SecuritySettingsPage() {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(user?.twoFactorEnabled ?? false);
   const [secret, setSecret] = useState<string | null>(null);
   const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
-  const [tfaCode, setTfaCode] = useState('');
+  /** Code typed while *enabling* 2FA. */
+  const [setupCode, setSetupCode] = useState('');
+  /** Code typed while *disabling* 2FA. */
+  const [disableCode, setDisableCode] = useState('');
   const [tfaBusy, setTfaBusy] = useState(false);
   const [tfaError, setTfaError] = useState<string | null>(null);
   const [tfaSuccess, setTfaSuccess] = useState<string | null>(null);
@@ -49,13 +53,36 @@ export default function SecuritySettingsPage() {
 
   const [sessions, setSessions] = useState<DeviceSessionInfo[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  /**
+   * Set when the session list could not be loaded.
+   *
+   * The previous `catch { setSessions([]) }` made a failed request render
+   * "No active sessions found." That is a security *claim* to the user — it
+   * asserts nothing is wrong — produced by a 500. An unknown state must not be
+   * reported as a known-good one.
+   */
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
 
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true);
+    setSessionsError(null);
     try {
-      setSessions(await apiRequest<DeviceSessionInfo[]>('/api/auth/sessions'));
-    } catch {
-      setSessions([]);
+      let deviceId: string | null = null;
+      try {
+        deviceId = window.localStorage.getItem('routineos.device.id');
+      } catch {
+        deviceId = null;
+      }
+      setSessions(
+        await apiRequest<DeviceSessionInfo[]>(
+          '/api/auth/sessions',
+          deviceId ? { query: { deviceId } } : undefined
+        )
+      );
+    } catch (err) {
+      setSessionsError(
+        err instanceof Error ? err.message : 'Failed to load active sessions'
+      );
     } finally {
       setSessionsLoading(false);
     }
@@ -69,10 +96,21 @@ export default function SecuritySettingsPage() {
     }
   }, [user, loadSessions]);
 
+  /** Discard an in-progress setup so the panel is not soft-locked. */
+  const cancelSetup = () => {
+    setSecret(null);
+    setOtpauthUrl(null);
+    setSetupCode('');
+    setTfaError(null);
+    setTfaSuccess(null);
+  };
+
   const startSetup = async () => {
     setTfaBusy(true);
     setTfaError(null);
     setTfaSuccess(null);
+    setSetupCode('');
+    setDisableCode('');
     try {
       const data = await apiRequest<{ secret: string; otpauthUrl: string }>('/api/auth/2fa/setup', {
         method: 'POST',
@@ -94,13 +132,13 @@ export default function SecuritySettingsPage() {
     try {
       await apiRequest('/api/auth/2fa/verify', {
         method: 'POST',
-        body: { code: tfaCode.trim() },
+        body: { code: setupCode.trim() },
       });
       setTwoFactorEnabled(true);
       updateUser({ twoFactorEnabled: true });
       setSecret(null);
       setOtpauthUrl(null);
-      setTfaCode('');
+      setSetupCode('');
       setTfaSuccess('Two-factor authentication enabled.');
     } catch (err) {
       setTfaError(err instanceof ApiError ? err.message : 'Verification failed.');
@@ -116,11 +154,11 @@ export default function SecuritySettingsPage() {
     try {
       await apiRequest('/api/auth/2fa/disable', {
         method: 'POST',
-        body: { code: tfaCode.trim() },
+        body: { code: disableCode.trim() },
       });
       setTwoFactorEnabled(false);
       updateUser({ twoFactorEnabled: false });
-      setTfaCode('');
+      setDisableCode('');
       setTfaSuccess('Two-factor authentication disabled.');
     } catch (err) {
       setTfaError(err instanceof ApiError ? err.message : 'Failed to disable 2FA.');
@@ -142,7 +180,9 @@ export default function SecuritySettingsPage() {
         method: 'POST',
         body: { currentPassword, newPassword },
       });
-      setPasswordSuccess('Password changed successfully.');
+      setPasswordSuccess(
+        'Password changed. Every other device has been signed out.'
+      );
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -234,31 +274,67 @@ export default function SecuritySettingsPage() {
             {!twoFactorEnabled && secret !== null && otpauthUrl !== null && (
               <div>
                 <p className="text-sm text-muted-foreground">
-                  Scan the QR code with your authenticator app, or enter the secret manually:
+                  Scan this QR code with your authenticator app, or enter the
+                  secret manually:
                 </p>
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Secret</p>
-                    <p className="rounded-md bg-muted/50 p-3 font-mono text-xs">{secret}</p>
+                    <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+                      QR code
+                    </p>
+                    {/* The copy below promises a QR code; previously only the
+                        raw secret and otpauth URI were shown. */}
+                    <div className="inline-block rounded-md bg-white p-3">
+                      <QRCodeSVG
+                        value={otpauthUrl}
+                        size={168}
+                        level="M"
+                        bgColor="#ffffff"
+                        fgColor="#000000"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Setup URI</p>
-                    <p className="break-all rounded-md bg-muted/50 p-3 font-mono text-xs">{otpauthUrl}</p>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+                        Secret
+                      </p>
+                      <p className="rounded-md bg-muted/50 p-3 font-mono text-xs break-all">
+                        {secret}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+                        Setup URI
+                      </p>
+                      <p className="rounded-md bg-muted/50 p-3 font-mono text-xs break-all">
+                        {otpauthUrl}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-4 flex flex-wrap items-end gap-3">
                   <div className="w-40">
                     <Input
                       label="6-digit code"
-                      value={tfaCode}
-                      onChange={(event) => setTfaCode(event.target.value)}
+                      value={setupCode}
+                      onChange={(event) => setSetupCode(event.target.value)}
                       placeholder="123456"
                       maxLength={6}
                       inputMode="numeric"
+                      autoComplete="one-time-code"
                     />
                   </div>
-                  <Button onClick={() => void verifyCode()} isLoading={tfaBusy} disabled={tfaCode.trim().length !== 6}>
+                  <Button onClick={() => void verifyCode()} isLoading={tfaBusy} disabled={setupCode.trim().length !== 6}>
                     Verify and enable
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={cancelSetup}
+                    disabled={tfaBusy}
+                    title="Discard this secret and start over later"
+                  >
+                    Cancel
                   </Button>
                 </div>
               </div>
@@ -267,24 +343,27 @@ export default function SecuritySettingsPage() {
             {twoFactorEnabled && (
               <div>
                 <p className="text-sm text-muted-foreground">
-                  Two-factor authentication is active on your account.
+                  Two-factor authentication is active on your account. Disabling
+                  it requires a current code from your authenticator app.
                 </p>
                 <div className="mt-4 flex flex-wrap items-end gap-3">
-                  <div className="w-40">
+                  <div className="w-48">
                     <Input
-                      label="Recovery code"
-                      value={tfaCode}
-                      onChange={(event) => setTfaCode(event.target.value)}
+                      label="Authenticator code"
+                      helperText="Not a recovery code — this is the current 6-digit code from your app."
+                      value={disableCode}
+                      onChange={(event) => setDisableCode(event.target.value)}
                       placeholder="123456"
                       maxLength={6}
                       inputMode="numeric"
+                      autoComplete="one-time-code"
                     />
                   </div>
                   <Button
                     variant="danger"
                     onClick={() => void disableTwoFactor()}
                     isLoading={tfaBusy}
-                    disabled={tfaCode.trim().length !== 6}
+                    disabled={disableCode.trim().length !== 6}
                   >
                     Disable 2FA
                   </Button>
@@ -348,6 +427,19 @@ export default function SecuritySettingsPage() {
           <div className="p-6">
             {sessionsLoading ? (
               <Skeleton className="h-24 w-full" />
+            ) : sessionsError ? (
+              <div>
+                <p role="alert" className="text-sm text-destructive">
+                  {sessionsError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void loadSessions()}
+                  className="mt-2 text-sm font-semibold text-primary hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
             ) : sessions.length === 0 ? (
               <p className="text-sm text-muted-foreground">No active sessions found.</p>
             ) : (

@@ -1,7 +1,21 @@
 'use client';
 
+/**
+ * Settings — Quotes
+ *
+ * CRUD over the user's quotes via GET/POST/PUT/DELETE /api/quotes.
+ *
+ * Bug fixed: after a create, edit or delete the page read
+ * `json.data.quotes` and fell back to `[]`. The routes return
+ * `{ success: true, data: <Quote> }` — a single quote, not a
+ * `{ quotes: [...] }` wrapper — so every mutation silently emptied the list and
+ * the user's new quote appeared to vanish. Mutations now re-fetch the list,
+ * which is the only way to get the server's authoritative ordering and scope.
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import { Pencil, Plus, Quote as QuoteIcon, Trash2 } from 'lucide-react';
+import { apiRequest, ApiError } from '@/lib/api-client';
 
 interface Quote {
   id: string;
@@ -13,16 +27,18 @@ interface Quote {
 
 const SCOPE_KEY = 'routineos-quote-scope';
 
-function apiError(json: unknown, fallback: string): string {
-  if (json && typeof json === 'object') {
-    const j = json as { error?: string; details?: { fieldErrors?: Record<string, string[]> } };
-    if (j.details?.fieldErrors) {
-      const first = Object.entries(j.details.fieldErrors).find(([, v]) => v?.length);
-      if (first) return `${first[0]}: ${first[1][0]}`;
-    }
-    if (typeof j.error === 'string' && j.error) return j.error;
+function apiError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    const details = err.details as
+      | { fieldErrors?: Record<string, string[]> }
+      | undefined;
+    const first = details?.fieldErrors
+      ? Object.entries(details.fieldErrors).find(([, v]) => v?.length)
+      : undefined;
+    if (first) return `${first[0]}: ${first[1][0]}`;
+    return err.message || fallback;
   }
-  return fallback;
+  return err instanceof Error ? err.message : fallback;
 }
 
 export default function QuotesSettingsPage() {
@@ -52,12 +68,10 @@ export default function QuotesSettingsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/quotes');
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(apiError(json, 'Failed to load quotes'));
-      setQuotes(Array.isArray(json?.data) ? json.data : []);
+      const data = await apiRequest<Quote[]>('/api/quotes');
+      setQuotes(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load quotes');
+      setError(apiError(err, 'Failed to load quotes'));
     } finally {
       setLoading(false);
     }
@@ -110,22 +124,20 @@ export default function QuotesSettingsPage() {
     setSaving(true);
     setFormError(null);
     try {
-      const res = await fetch('/api/quotes', {
+      await apiRequest('/api/quotes', {
         method: editing ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           ...(editing ? { id: editing.id } : {}),
           text: text.trim(),
           author: author.trim() || undefined,
           isPublic,
-        }),
+        },
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(apiError(json, 'Failed to save quote'));
-      setQuotes(Array.isArray(json?.data?.quotes) ? json.data.quotes : []);
       setFormOpen(false);
+      // The response is the single affected quote; re-read the list.
+      await load();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to save quote');
+      setFormError(apiError(err, 'Failed to save quote'));
     } finally {
       setSaving(false);
     }
@@ -138,16 +150,13 @@ export default function QuotesSettingsPage() {
     setBusyId(id);
     setError(null);
     try {
-      const res = await fetch('/api/quotes', {
+      await apiRequest('/api/quotes', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: { id },
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(apiError(json, 'Failed to delete quote'));
-      setQuotes(Array.isArray(json?.data?.quotes) ? json.data.quotes : []);
+      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete quote');
+      setError(apiError(err, 'Failed to delete quote'));
     } finally {
       setBusyId(null);
     }

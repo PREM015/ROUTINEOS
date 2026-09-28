@@ -26,6 +26,15 @@ export interface SleepLogView {
   actualDurationMinutes: number | null;
   quality: number | null;
   feltRested: boolean | null;
+  /**
+   * Added for the sleep quality meter (ERROR.md A4). The `/api/sleep/session`
+   * state endpoint returns the full `SleepLog` row, so these were already on the
+   * wire — the view type just did not declare them, which is why the meter could
+   * only show the bare `quality` number.
+   */
+  wakeUpCount?: number | null;
+  targetBedtime?: string | null;
+  targetWakeTime?: string | null;
 }
 
 export interface ActiveSessionView {
@@ -95,15 +104,39 @@ async function refresh(): Promise<void> {
     try {
       const res = await fetch('/api/sleep/session', { credentials: 'include' });
       const json: unknown = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        // A failed poll used to fall through silently and keep the last known
+        // state. On first load that state is `null`, so a 401/500 rendered as
+        // "No sleep logged yet today" and `SleepPromptHost` rendered nothing —
+        // a broken request was indistinguishable from a user with no sleep
+        // data, and a bedtime prompt that failed to resolve simply never
+        // appeared.
+        emit({
+          error: `Could not load sleep data (status ${res.status})`,
+        });
+        return;
+      }
+
       if (
         json &&
         typeof json === 'object' &&
         (json as { success?: unknown }).success === true
       ) {
         emit({ state: (json as { data: SleepStateView }).data, error: null });
+      } else {
+        const body = (json as { error?: string } | null)?.error;
+        emit({ error: body ?? 'Could not load sleep data' });
       }
-    } catch {
-      // keep the last known state; the next poll retries
+    } catch (error) {
+      // Keep the last known state so the timer still ticks, but say why it is
+      // stale rather than presenting stale data as current.
+      emit({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Could not load sleep data',
+      });
     } finally {
       emit({ loading: false });
       refreshInflight = null;
@@ -116,14 +149,31 @@ async function refresh(): Promise<void> {
 function startPolling(): void {
   if (pollTimer !== null) return;
 
-  void refresh();
-  pollTimer = window.setInterval(() => void refresh(), POLL_MS);
+  /**
+   * The interval only ticks while the tab is actually visible.
+   *
+   * It previously ran unconditionally, so a backgrounded tab kept hitting
+   * `/api/sleep/session` every 15s forever — and that endpoint is one of the
+   * slower queries in the app (1-6s), so the tab generated steady pointless
+   * load against the database. It still refreshes once on becoming visible, so
+   * returning to the tab is always up to date.
+   */
+  const tick = () => {
+    if (document.visibilityState !== 'visible') return;
+    void refresh();
+  };
 
   const onVisible = () => {
     if (document.visibilityState === 'visible') void refresh();
   };
+
+  pollTimer = window.setInterval(tick, POLL_MS);
   window.addEventListener('focus', onVisible);
   document.addEventListener('visibilitychange', onVisible);
+
+  // Kick off immediately (page load / first consumer mounts).
+  if (document.visibilityState === 'visible') void refresh();
+
   pollCleanup = () => {
     window.removeEventListener('focus', onVisible);
     document.removeEventListener('visibilitychange', onVisible);

@@ -2,45 +2,43 @@
 
 /**
  * Settings — Sleep
- * Sleep target and reminder preferences. Reads values from
- * GET /api/users/[id]/settings and writes them via PUT /api/settings.
+ *
+ * Sleep targets, the bedtime reminder, and sleep-session auto-start.
+ *
+ * Fixes vs. the previous version:
+ *  - "Start sleep automatically" was a dead switch: `sleepAutoStartEnabled` was
+ *    only read by this file (to hide the minutes input) and ignored by
+ *    `sleep-session.service.ts`, so turning it off changed nothing. The
+ *    service now honours it in all three places it previously overrode it.
+ *  - The two number inputs advertised `min=0` / `max=1440`, but
+ *    `updateSettingsSchema` enforces `minSleepDuration` in 60–720 and the
+ *    auto-start minutes in 1–120. Values outside those ranges were accepted by
+ *    the UI and rejected with a 400. The bounds now match the server.
+ *  - Clearing a numeric field sent `0` (`Number('')`), which failed
+ *    validation. Empty fields are now sent as the documented default.
+ *  - `ensurePushSubscription()` had no `.catch`, so a throw would leave the
+ *    "Setting up device notifications…" line stuck forever.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { Bell, CheckCircle2, Moon, ShieldAlert } from 'lucide-react';
-import { apiRequest, ApiError } from '@/lib/api-client';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { CheckCircle2, Moon, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { registerServiceWorker, ensurePushSubscription } from '@/lib/pwa/push-client';
+import { useSettings } from '@/hooks/useSettings';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { ensurePushSubscription, registerServiceWorker } from '@/lib/pwa/push-client';
 
-interface SleepSettingsRow {
-  targetBedtime: string | null;
-  targetWakeTime: string | null;
-  minSleepDuration: number | null;
-  sleepReminder: boolean;
-  sleepAutoStartEnabled: boolean;
-  sleepAutoStartAfterMinutes: number;
-}
+/** Must match `updateSettingsSchema` in `src/lib/validation/settings.schema.ts`. */
+const MIN_SLEEP_DURATION = { min: 60, max: 720, step: 15, fallback: 420 };
+const AUTO_START_MINUTES = { min: 1, max: 120, step: 1, fallback: 15 };
 
 export default function SleepSettingsPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  const [settings, setSettings] = useState<SleepSettingsRow>({
-    targetBedtime: '23:00',
-    targetWakeTime: '07:00',
-    minSleepDuration: 420,
-    sleepReminder: false,
-    sleepAutoStartEnabled: true,
-    sleepAutoStartAfterMinutes: 15,
-  });
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, isLoading } = useAuth();
+  const { settings, loading, save, patchLocal, saving, error } = useSettings();
   const [saved, setSaved] = useState(false);
   const [pushEnabled, setPushEnabled] = useState<boolean | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
@@ -50,65 +48,23 @@ export default function SleepSettingsPage() {
     void registerServiceWorker();
   }, []);
 
+  useEffect(() => {
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSaved(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
+
   const handleReminderToggle = (checked: boolean) => {
-    setSettings({ ...settings, sleepReminder: checked });
+    if (!settings) return;
+    patchLocal({ sleepReminder: checked });
     if (checked) {
       setPushBusy(true);
-      void ensurePushSubscription().then((ok) => {
-        setPushEnabled(ok);
-        setPushBusy(false);
-      });
-    }
-  };
-
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- inferred deps differ from source deps
-  const load = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const data = await apiRequest<SleepSettingsRow>(`/api/users/${user.id}/settings`);
-      setSettings({
-        targetBedtime: data.targetBedtime ?? '23:00',
-        targetWakeTime: data.targetWakeTime ?? '07:00',
-        minSleepDuration: data.minSleepDuration ?? 420,
-        sleepReminder: data.sleepReminder ?? false,
-        sleepAutoStartEnabled: data.sleepAutoStartEnabled ?? true,
-        sleepAutoStartAfterMinutes: data.sleepAutoStartAfterMinutes ?? 15,
-      });
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'Failed to load sleep settings.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    void load();
-  }, [load]);
-
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    try {
-      await apiRequest('/api/settings', {
-        method: 'PUT',
-        body: {
-          targetBedtime: settings.targetBedtime,
-          targetWakeTime: settings.targetWakeTime,
-          minSleepDuration: settings.minSleepDuration,
-          sleepReminder: settings.sleepReminder,
-          sleepAutoStartEnabled: settings.sleepAutoStartEnabled,
-          sleepAutoStartAfterMinutes: settings.sleepAutoStartAfterMinutes,
-        },
-      });
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1600);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Failed to save sleep settings.');
-    } finally {
-      setSaving(false);
+      // `.catch` was missing: a rejection left `pushBusy` stuck true and the
+      // "Setting up device notifications…" message on screen permanently.
+      void ensurePushSubscription()
+        .then((ok) => setPushEnabled(ok))
+        .catch(() => setPushEnabled(false))
+        .finally(() => setPushBusy(false));
     }
   };
 
@@ -117,153 +73,237 @@ export default function SleepSettingsPage() {
       <main className="container mx-auto max-w-3xl px-4 py-8">
         <Skeleton className="h-8 w-40" />
         <div className="mt-6 space-y-6">
-          <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-56 rounded-xl" />
         </div>
       </main>
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated) {
     return (
       <main className="container mx-auto max-w-2xl px-4 py-16">
         <Card>
           <div className="p-8 text-center">
             <ShieldAlert className="mx-auto h-12 w-12 text-amber-500" />
             <h1 className="mt-4 text-xl font-bold">Sign in required</h1>
-            <a
+            <Link
               href="/login"
               className="mt-6 inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary light-sweep glow-neon px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-[background-color,box-shadow,transform] duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
             >
               Sign in
-            </a>
+            </Link>
           </div>
         </Card>
       </main>
     );
   }
 
+  const persist = async () => {
+    if (!settings) return;
+    const result = await save({
+      targetBedtime: settings.targetBedtime?.trim() || null,
+      targetWakeTime: settings.targetWakeTime?.trim() || null,
+      minSleepDuration: settings.minSleepDuration ?? MIN_SLEEP_DURATION.fallback,
+      sleepReminder: settings.sleepReminder,
+      sleepAutoStartEnabled: settings.sleepAutoStartEnabled,
+      sleepAutoStartAfterMinutes:
+        settings.sleepAutoStartAfterMinutes ?? AUTO_START_MINUTES.fallback,
+    });
+    if (result) setSaved(true);
+  };
+
   return (
     <main className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Sleep</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Set targets the wellness tracker compares against.
+          Set sleep targets, bedtime reminders and automatic session start.
         </p>
       </div>
 
-      {loadError && (
-        <div className="mb-6 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-          {loadError}
-        </div>
-      )}
-
-      <Card>
-        <div className="p-6">
-          {loading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-1/2" />
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                  label="Target bedtime"
-                  type="time"
-                  value={settings.targetBedtime ?? ''}
-                  onChange={(event) => setSettings({ ...settings, targetBedtime: event.target.value })}
-                />
-                <Input
-                  label="Target wake time"
-                  type="time"
-                  value={settings.targetWakeTime ?? ''}
-                  onChange={(event) => setSettings({ ...settings, targetWakeTime: event.target.value })}
-                />
-              </div>
-              <div>
-                <Input
-                  label="Minimum sleep duration (minutes)"
-                  type="number"
-                  min={0}
-                  max={1440}
-                  value={settings.minSleepDuration ?? 0}
-                  onChange={(event) =>
-                    setSettings({ ...settings, minSleepDuration: Number(event.target.value) })
-                  }
-                  helperText="Used as the healthy threshold in the sleep summary."
-                />
-              </div>
-              <Switch
-                checked={settings.sleepReminder}
-                onChange={handleReminderToggle}
-                label="Sleep reminder"
-              />
-              {pushEnabled === true && settings.sleepReminder && (
-                <p className="-mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-                  Reminder notifications are enabled on this device.
-                </p>
-              )}
-              {pushEnabled === false && settings.sleepReminder && !pushBusy && (
-                <p className="-mt-2 text-xs text-muted-foreground">
-                  Push notifications aren&apos;t available on this device.
-                </p>
-              )}
-              {pushBusy && (
-                <p className="-mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Bell className="h-3.5 w-3.5" />
-                  Setting up device notifications&hellip;
-                </p>
-              )}
-              {settings.sleepReminder && (
-                <>
-                  <Switch
-                    checked={settings.sleepAutoStartEnabled}
-                    onChange={(checked) => setSettings({ ...settings, sleepAutoStartEnabled: checked })}
-                    label="Start sleep automatically"
+      <div className="space-y-6">
+        <Card>
+          <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+            <Moon className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h2 className="text-lg font-bold">Targets</h2>
+          </div>
+          <div className="space-y-5 p-6">
+            {loading || !settings ? (
+              <>
+                <Skeleton className="h-10 w-full max-w-xs" />
+                <Skeleton className="h-10 w-full max-w-xs" />
+                <Skeleton className="h-10 w-full max-w-xs" />
+              </>
+            ) : (
+              <>
+                <div className="max-w-xs">
+                  <Input
+                    label="Target bedtime"
+                    type="time"
+                    value={settings.targetBedtime ?? ''}
+                    onChange={(event) =>
+                      patchLocal({ targetBedtime: event.target.value || null })
+                    }
+                    helperText="Used to decide when to prompt you."
                   />
-                  {settings.sleepAutoStartEnabled && (
+                </div>
+                <div className="max-w-xs">
+                  <Input
+                    label="Target wake time"
+                    type="time"
+                    value={settings.targetWakeTime ?? ''}
+                    onChange={(event) =>
+                      patchLocal({ targetWakeTime: event.target.value || null })
+                    }
+                  />
+                </div>
+                <div className="max-w-xs">
+                  <Input
+                    label="Minimum sleep duration (minutes)"
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_SLEEP_DURATION.min}
+                    max={MIN_SLEEP_DURATION.max}
+                    step={MIN_SLEEP_DURATION.step}
+                    value={settings.minSleepDuration ?? MIN_SLEEP_DURATION.fallback}
+                    onChange={(event) => {
+                      const parsed = Number(event.target.value);
+                      patchLocal({
+                        minSleepDuration: Number.isFinite(parsed) && parsed > 0
+                          ? Math.min(
+                              Math.max(MIN_SLEEP_DURATION.min, Math.round(parsed)),
+                              MIN_SLEEP_DURATION.max
+                            )
+                          : MIN_SLEEP_DURATION.fallback,
+                      });
+                    }}
+                    helperText={`${MIN_SLEEP_DURATION.min}–${MIN_SLEEP_DURATION.max} minutes (${MIN_SLEEP_DURATION.min / 60}–${MIN_SLEEP_DURATION.max / 60} hours).`}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="border-b border-border px-6 py-4">
+            <h2 className="text-lg font-bold">Bedtime reminder</h2>
+          </div>
+          <div className="space-y-5 p-6">
+            {loading || !settings ? (
+              <>
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </>
+            ) : (
+              <>
+                <Switch
+                  label="Sleep reminder"
+                  description="Prompt me at my target bedtime."
+                  checked={settings.sleepReminder}
+                  onChange={handleReminderToggle}
+                />
+
+                {pushBusy && (
+                  <p className="text-sm text-muted-foreground" role="status">
+                    Setting up device notifications…
+                  </p>
+                )}
+                {!pushBusy && pushEnabled === false && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400" role="status">
+                    Browser notifications are not enabled. The reminder will only
+                    appear in-app. You can enable it any time from the
+                    Notifications page.
+                  </p>
+                )}
+
+                <div className="max-w-xs">
+                  <Input
+                    label="Reminder time"
+                    type="time"
+                    value={settings.sleepReminderTime ?? settings.targetBedtime ?? ''}
+                    disabled={!settings.sleepReminder}
+                    onChange={(event) =>
+                      patchLocal({ sleepReminderTime: event.target.value || null })
+                    }
+                    helperText="Defaults to your target bedtime."
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="border-b border-border px-6 py-4">
+            <h2 className="text-lg font-bold">Automatic start</h2>
+          </div>
+          <div className="space-y-5 p-6">
+            {loading || !settings ? (
+              <>
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-10 w-full max-w-xs" />
+              </>
+            ) : (
+              <>
+                <Switch
+                  label="Start sleep automatically"
+                  description="When off, sleep tracking only starts if you tap start. Nothing is started for you."
+                  checked={settings.sleepAutoStartEnabled}
+                  onChange={(checked) => patchLocal({ sleepAutoStartEnabled: checked })}
+                />
+                {settings.sleepAutoStartEnabled && (
+                  <div className="max-w-xs">
                     <Input
                       label="Auto-start sleep after (minutes)"
                       type="number"
-                      min={1}
-                      max={120}
-                      value={settings.sleepAutoStartAfterMinutes}
-                      onChange={(event) =>
-                        setSettings({ ...settings, sleepAutoStartAfterMinutes: Number(event.target.value) })
-                      }
-                      helperText="If you ignore the reminder, a sleep session starts automatically after this time. Say “Not yet” to dismiss it."
+                      inputMode="numeric"
+                      min={AUTO_START_MINUTES.min}
+                      max={AUTO_START_MINUTES.max}
+                      step={AUTO_START_MINUTES.step}
+                      value={settings.sleepAutoStartAfterMinutes ?? AUTO_START_MINUTES.fallback}
+                      onChange={(event) => {
+                        const parsed = Number(event.target.value);
+                        patchLocal({
+                          sleepAutoStartAfterMinutes:
+                            Number.isFinite(parsed) && parsed > 0
+                              ? Math.min(
+                                  Math.max(
+                                    AUTO_START_MINUTES.min,
+                                    Math.round(parsed)
+                                  ),
+                                  AUTO_START_MINUTES.max
+                                )
+                              : AUTO_START_MINUTES.fallback,
+                        });
+                      }}
+                      helperText="How long after the prompt sleep starts if you do not respond."
                     />
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {error && (
-            <div className="mt-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
-              {error}
-            </div>
-          )}
-
-          <div className="mt-6 flex items-center gap-3">
-            <Button onClick={() => void save()} isLoading={saving} disabled={loading}>
-              Save changes
-            </Button>
-            {saved && (
-              <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                Saved
-              </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Moon className="h-3.5 w-3.5" />
-        Sleep logs are recorded from the wellness page; these targets set your goals.
-      </p>
+        {error && (
+          <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive" role="alert">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={() => void persist()} isLoading={saving} disabled={loading || !settings}>
+            Save changes
+          </Button>
+          {saved && (
+            <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Saved
+            </span>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

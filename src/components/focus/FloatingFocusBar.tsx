@@ -81,7 +81,10 @@ export function FloatingFocusBar() {
       role="status"
       aria-live="polite"
       aria-label={`${meta.label} timer, ${formatTime(remaining)}${status === 'paused' ? ', paused' : ''}`}
-      className="fixed bottom-20 right-3 z-40 md:bottom-6 md:right-6"
+        // Sits below `SleepPromptHost` (bottom-36 mobile / md:bottom-24), which
+        // occupies the same corner. They previously both resolved to
+        // `md:bottom-6` and overlapped on desktop.
+        className="fixed bottom-20 right-3 z-40 md:bottom-6 md:right-6"
     >
       {collapsed ? (
         <button

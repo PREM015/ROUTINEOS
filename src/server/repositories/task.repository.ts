@@ -173,6 +173,54 @@ export class TaskRepository extends BaseRepository {
    * within [startDate, endDate] (inclusive). Completion uses completedAt, so a
    * task counts toward the period in which it was actually finished.
    */
+  /**
+   * Open tasks that are due inside a window, for the task-reminder producer.
+   *
+   * `TaskReminderService` needs every open task whose due time falls in a range
+   * (already overdue but still worth nagging about, or due shortly), across all
+   * users, because the cron dispatcher is a system job rather than a
+   * user-scoped request. It filters to non-terminal statuses here so a completed
+   * or cancelled task never generates a reminder, and returns the owning userId
+   * so the caller can check that user's notification settings.
+   *
+   * Only `dueDate` and `scheduledFor` are selected alongside the fields needed
+   * to write the notification, to keep this cheap at 12 cron ticks an hour.
+   */
+  async findByDueWindow(windowStart: Date, windowEnd: Date): Promise<
+    Array<{
+      id: string;
+      userId: string;
+      title: string;
+      dueDate: Date | null;
+      scheduledFor: Date | null;
+    }>
+  > {
+    try {
+      const openStatuses = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.WAITING];
+
+      // A task is a reminder candidate if *either* its dueDate or its
+      // scheduledFor lands in the window, so two `where` clauses are unioned.
+      const inWindow = { gte: windowStart, lte: windowEnd };
+
+      return await this.prisma.task.findMany({
+        where: {
+          status: { in: openStatuses },
+          OR: [{ dueDate: inWindow }, { scheduledFor: inWindow }],
+        },
+        select: {
+          id: true,
+          userId: true,
+          title: true,
+          dueDate: true,
+          scheduledFor: true,
+        },
+        orderBy: { dueDate: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findByDueWindow');
+    }
+  }
+
   async getThroughput(
     userId: string,
     startDate: Date,
@@ -240,6 +288,17 @@ export class TaskRepository extends BaseRepository {
   /**
    * Update a task owned by the user
    */
+  /**
+   * Update a task.
+   *
+   * `completedAt` is derived from `status` here rather than trusted from the
+   * caller, because `getThroughput` counts completions by `completedAt` within
+   * a date range. A PATCH that set `status: 'COMPLETED'` without it left the
+   * task permanently "incomplete" as far as every throughput and analytics
+   * query was concerned, and re-opening a task left a stale `completedAt`
+   * behind so it still counted as done. The timestamp is cleared on the way
+   * back out, which is what makes the field trustworthy in both directions.
+   */
   async update(
     userId: string,
     taskId: string,
@@ -248,11 +307,36 @@ export class TaskRepository extends BaseRepository {
     try {
       return await this.prisma.task.update({
         where: { id: taskId, userId },
-        data,
+        data: this.withDerivedCompletion(data),
       });
     } catch (error) {
       this.handleError(error, 'update');
     }
+  }
+
+  /**
+   * Stamp or clear `completedAt` to match the requested `status`.
+   *
+   * COMPLETED is the only status that counts as done; everything else clears
+   * the stamp. An explicit `completedAt` from the caller is preserved, so an
+   * import or backfill that knows the real finish time is not overwritten.
+   */
+  private withDerivedCompletion(
+    data: Prisma.TaskUpdateInput
+  ): Prisma.TaskUpdateInput {
+    const status =
+      typeof data.status === 'string' ? data.status : undefined;
+    if (status === undefined) return data;
+
+    const isDone = status === TaskStatus.COMPLETED;
+    const callerSetCompletion = 'completedAt' in data;
+
+    if (isDone) {
+      return callerSetCompletion ? data : { ...data, completedAt: new Date() };
+    }
+    // Re-opening (TODO/IN_PROGRESS/…) must clear the stamp, or the task keeps
+    // counting as completed forever.
+    return { ...data, completedAt: null };
   }
 
   /**

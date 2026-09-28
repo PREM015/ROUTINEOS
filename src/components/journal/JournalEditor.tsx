@@ -20,12 +20,13 @@ import * as React from 'react';
 import type { Tag } from '@/generated/prisma';
 import { Save } from 'lucide-react';
 import type { JournalEntryWithRelations } from '@/types/journal';
-import { apiRequest } from '@/lib/api-client';
+import { apiRequest, ApiError } from '@/lib/api-client';
 import { Button, Card, Input } from '@/components/ui';
 import RichTextEditor from '@/components/ui/RichTextEditor';
 import TagInput from '../tags/TagInput';
 import { MOOD_COLORS, MOOD_LABELS } from './JournalEntry';
 import { cn } from '@/lib/utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 export interface JournalEditorProps {
   /** When provided the editor loads this entry for editing. */
@@ -35,10 +36,6 @@ export interface JournalEditorProps {
   onSaved: (entry: JournalEntryWithRelations) => void;
   onCancel?: () => void;
   className?: string;
-}
-
-function todayString(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 const RATINGS: readonly number[] = [1, 2, 3, 4, 5];
@@ -78,10 +75,14 @@ function readDraft(key: string): JournalDraft | null {
 
 export default function JournalEditor({ entry, availableTags, onSaved, onCancel, className }: JournalEditorProps) {
   const isEditMode = entry !== undefined;
+  // The user's today. A new entry is saved against this, so it must not be the
+  // UTC date — otherwise an entry written at 22:00 in `Asia/Kolkata` was filed
+  // under the previous day.
+  const { today: today } = useUserTimezone();
 
   const draftKey = React.useMemo(
-    () => (entry ? `journal-draft:entry:${entry.id}` : `journal-draft:date:${todayString()}`),
-    [entry],
+    () => (entry ? `journal-draft:entry:${entry.id}` : `journal-draft:date:${today}`),
+    [entry, today],
   );
 
   const baseline = React.useMemo(
@@ -202,30 +203,77 @@ export default function JournalEditor({ entry, availableTags, onSaved, onCancel,
       return;
     }
 
-    const tagIds = tagNames
-      .map((name) => (availableTags ?? []).find((tag) => tag.name === name)?.id)
-      .filter((id): id is string => id !== undefined);
-
-    const payload: Record<string, unknown> = {
-      date: entry?.date ?? todayString(),
-      title: title.trim().length > 0 ? title.trim() : undefined,
-      content,
-      ...(mood !== null ? { mood } : {}),
-      ...(energy !== null ? { energy } : {}),
-      ...(tagIds.length > 0 ? { tagIds } : { tagIds: [] }),
-    };
-
     setSaving(true);
     setError(null);
     setSavedMessage(null);
+
     try {
+      // Resolve tag *names* to ids, creating any that don't exist yet.
+      //
+      // `TagInput` accepts free text, so the user can type a tag that has
+      // never been used. The previous code mapped names to existing ids and
+      // filtered out the misses, so a brand-new tag was silently discarded
+      // while the UI showed the chip and reported "Entry created." — silent
+      // data loss on both create and edit.
+      const existing = availableTags ?? [];
+      const tagIds: string[] = [];
+      const unresolved: string[] = [];
+
+      for (const rawName of tagNames) {
+        const name = rawName.trim();
+        if (!name) continue;
+        const match = existing.find((tag) => tag.name === name);
+        if (match) {
+          if (!tagIds.includes(match.id)) tagIds.push(match.id);
+        } else if (
+          !unresolved.some((n) => n.toLowerCase() === name.toLowerCase())
+        ) {
+          unresolved.push(name);
+        }
+      }
+
+      for (const name of unresolved) {
+        try {
+          const created = await apiRequest<{ id: string }>('/api/tags', {
+            method: 'POST',
+            body: { name },
+          });
+          if (created?.id && !tagIds.includes(created.id)) tagIds.push(created.id);
+        } catch (tagErr) {
+          // A 409 means it already exists — re-read and match by name rather
+          // than failing the whole save.
+          if (tagErr instanceof ApiError && tagErr.status === 409) {
+            const refreshed = await apiRequest<Array<{ id: string; name: string }>>(
+              '/api/tags'
+            );
+            const match = refreshed.find((tag) => tag.name === name);
+            if (match && !tagIds.includes(match.id)) tagIds.push(match.id);
+          } else {
+            throw new Error(
+              tagErr instanceof ApiError
+                ? `Could not create tag "${name}": ${tagErr.message}`
+                : `Could not create tag "${name}"`
+            );
+          }
+        }
+      }
+
+      const payload: Record<string, unknown> = {
+        date: entry?.date ?? today,
+        title: title.trim().length > 0 ? title.trim() : undefined,
+        content,
+        ...(mood !== null ? { mood } : {}),
+        ...(energy !== null ? { energy } : {}),
+        tagIds,
+      };
+
       const result = await apiRequest<JournalEntryWithRelations>(
         entry ? `/api/journal/${entry.id}` : '/api/journal',
-        { method: entry ? 'PATCH' : 'POST', body: payload },
+        { method: entry ? 'PATCH' : 'POST', body: payload }
       );
       window.localStorage.removeItem(draftKey);
       setSavedMessage(
-        isEditMode ? 'Changes saved — previous version kept in history.' : 'Entry created.',
+        isEditMode ? 'Changes saved — previous version kept in history.' : 'Entry created.'
       );
       onSaved(result);
     } catch (err) {

@@ -75,12 +75,24 @@ export function Footer({
   columns = DEFAULT_COLUMNS,
   children,
 }: FooterProps) {
-  // Computed lazily (never during an effect): SSR falls back to a fixed
-  // year, the client uses the real one. No hydration mismatch in practice
-  // since server and client agree except across a New Year boundary.
-  const [currentYear] = useState(
-    () => year ?? (typeof window === 'undefined' ? 2026 : new Date().getFullYear())
-  );
+  // Computed lazily (never during an effect): SSR falls back to the build-time
+  // year, the client uses the real one. No hydration mismatch in practice since
+  // server and client agree except across a New Year boundary.
+  //
+  // The fallback was a literal `2026`, which silently froze the copyright on any
+  // deploy after that year. `new Date().getFullYear()` is evaluated on the
+  // server too, so it is correct at build time *and* on every later render, and
+  // it is guarded so a non-browser environment without a usable clock cannot
+  // produce `NaN`.
+  const [currentYear] = useState(() => {
+    if (year !== undefined) return year;
+    if (typeof window === 'undefined') {
+      // Server render: read the clock rather than hard-coding a year.
+      const now = new Date();
+      return Number.isFinite(now.getFullYear()) ? now.getFullYear() : new Date(0).getUTCFullYear();
+    }
+    return new Date().getFullYear();
+  });
 
   const resolvedColumns: FooterColumn[] = links
     ? [{ title: 'Product', links }, ...columns.slice(1)]

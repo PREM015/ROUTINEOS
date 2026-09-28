@@ -22,7 +22,7 @@ import JournalList from '@/components/journal/JournalList';
 import JournalEditor from '@/components/journal/JournalEditor';
 import JournalVersionHistory from '@/components/journal/JournalVersionHistory';
 import { formatDate } from '@/lib/utils';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 function toDateKey(date: Date | string): string {
   return new Date(date).toISOString().slice(0, 10);
@@ -59,6 +59,9 @@ export default function JournalPage() {
   const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
   const [hasTodayReflection, setHasTodayReflection] = useState<boolean | null>(null);
+  const { today: userToday } = useUserTimezone();
+  /** Set when the today-reflection check failed, so `null` stays meaningful. */
+  const [reflectionError, setReflectionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -80,19 +83,25 @@ export default function JournalPage() {
   }, []);
 
   useEffect(() => {
+    if (!userToday) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load();
     void (async () => {
       try {
         const reflection = await apiRequest<unknown | null>('/api/reflections', {
-          query: { date: getTodayString() },
+          query: { date: userToday },
         });
         setHasTodayReflection(reflection !== null && reflection !== undefined);
-      } catch {
-        setHasTodayReflection(false);
+      } catch (err) {
+        // Reported rather than assumed: the old `catch` set `false`, so a failed
+        // request told the user they had no reflection today — a fact, stated
+        // confidently, derived from a 500.
+        setReflectionError(
+          err instanceof Error ? err.message : 'Could not check today’s reflection'
+        );
       }
     })();
-  }, [load]);
+  }, [load, userToday]);
 
   const moodByDate = useMemo(() => {
     const map: Record<string, number | null> = {};
@@ -256,12 +265,19 @@ export default function JournalPage() {
                 Daily reflection
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {hasTodayReflection === null
-                  ? 'Checking today\u2019s reflection\u2026'
-                  : hasTodayReflection
-                    ? 'You already reflected today. Catch up on tonight\u2019s prompts or add more below.'
-                    : 'You haven\u2019t reflected today yet. Three short prompts take under a minute.'}
+                {reflectionError
+                  ? 'Could not check whether you have already reflected today.'
+                  : hasTodayReflection === null
+                    ? 'Checking today’s reflection…'
+                    : hasTodayReflection
+                      ? 'You already reflected today. Catch up on tonight’s prompts or add more below.'
+                      : 'You haven’t reflected today yet. Three short prompts take under a minute.'}
               </p>
+              {reflectionError && (
+                <p role="alert" className="mt-1 text-sm text-destructive">
+                  {reflectionError}
+                </p>
+              )}
               <Button
                 className="mt-3"
                 onClick={() => router.push('/today')}

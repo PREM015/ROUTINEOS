@@ -4,7 +4,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * POST /api/habits/[id]/archive
- * Archive habit
+ * Archive habit, or restore it with `?restore=true`.
+ *
+ * Restore lives here rather than in a separate `restore/` subroute, matching
+ * the tasks endpoint. Archiving used to be a one-way door: nothing anywhere in
+ * the app could undo it, so a mis-click permanently hid a habit and its whole
+ * history.
  */
 export async function POST(
   request: NextRequest,
@@ -17,10 +22,18 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { reason } = body;
-
     const habitService = new HabitService();
+
+    if (request.nextUrl.searchParams.get('restore') === 'true') {
+      const habit = await habitService.restoreHabit(session.user.id, id);
+      return NextResponse.json({ success: true, data: habit });
+    }
+
+    // A body is optional for archiving, so a malformed/absent one must not be a
+    // 500: `request.json()` throws on an empty body.
+    const body = await request.json().catch(() => ({}));
+    const { reason } = body ?? {};
+
     await habitService.archiveHabit(session.user.id, id, reason);
 
     return NextResponse.json({ success: true });

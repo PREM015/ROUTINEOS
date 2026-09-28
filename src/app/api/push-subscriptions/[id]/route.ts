@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -16,6 +16,7 @@ interface RouteContext {
  * Remove a push subscription owned by the user.
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -23,13 +24,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const pushSubscriptionRepository = new PushSubscriptionRepository();
-    const existing = await pushSubscriptionRepository.findById(session.user.id, params.id);
+    const existing = await pushSubscriptionRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Push subscription not found' }, { status: 404 });
     }
 
-    await pushSubscriptionRepository.delete(session.user.id, params.id);
-    return NextResponse.json({ success: true, data: { id: params.id } });
+    await pushSubscriptionRepository.delete(session.user.id, paramId);
+    return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting push subscription:', error);
     return NextResponse.json({ error: 'Failed to delete push subscription' }, { status: 500 });

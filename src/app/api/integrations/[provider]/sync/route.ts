@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { provider: string };
+  params: Promise<{ provider: string }>;
 }
 
 function providerFromSlug(slug: string): IntegrationProvider | null {
@@ -26,13 +26,14 @@ function providerFromSlug(slug: string): IntegrationProvider | null {
  * last 30 days); other providers record a sync status update.
  */
 export async function POST(_request: NextRequest, { params }: RouteContext) {
+  const { provider: paramProvider } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const provider = providerFromSlug(params.provider);
+    const provider = providerFromSlug(paramProvider);
     if (!provider) {
       return NextResponse.json({ error: 'Unknown integration provider' }, { status: 400 });
     }

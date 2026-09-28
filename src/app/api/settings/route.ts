@@ -14,7 +14,7 @@ export async function GET() {
     }
 
     const settings = await userService.getSettings(session.user.id);
-    return NextResponse.json(settings);
+    return NextResponse.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error fetching settings:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -35,9 +35,10 @@ export async function PUT(req: NextRequest) {
 
     const json = await req.json();
     const updated = await userService.updateSettings(session.user.id, json);
-    return NextResponse.json(updated);
+    return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Bad Request';
-    return NextResponse.json({ error: message }, { status: 400 });
+    const status = message === 'Unauthorized' ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
 }

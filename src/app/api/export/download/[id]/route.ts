@@ -63,11 +63,20 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       );
     }
 
+    // `DataExport.fileUrl` holds the stored *file name* (it used to hold a
+    // `/uploads/...` public path). Files live outside `public/` so this
+    // authorized route is the only way to read one.
     const fileName = path.basename(exportRow.fileUrl);
+
+    // Defensive: the name is derived from stored data, so reject anything that
+    // is not a bare filename before it reaches the filesystem.
+    if (fileName !== exportRow.fileUrl || fileName.includes('..')) {
+      return NextResponse.json({ error: 'Invalid export file name' }, { status: 400 });
+    }
+
     const filePath = path.join(
       process.cwd(),
-      'public',
-      'uploads',
+      '.data',
       'exports',
       session.user.id,
       fileName

@@ -8,7 +8,7 @@ import { HabitReview } from '@/components/monthly-reset/HabitReview';
 import { GoalReview } from '@/components/monthly-reset/GoalReview';
 import { NextMonthPlan } from '@/components/monthly-reset/NextMonthPlan';
 import { ResetConfirmation } from '@/components/monthly-reset/ResetConfirmation';
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,6 +76,7 @@ export default function MonthlyResetPage() {
   const [habitsToModify, setHabitsToModify] = useState<string[]>([]);
   const [goalsCompleted, setGoalsCompleted] = useState<string[]>([]);
   const [goalsInProgress, setGoalsInProgress] = useState<string[]>([]);
+  const [goalsDropped, setGoalsDropped] = useState<string[]>([]);
   const [nextMonthFocus, setNextMonthFocus] = useState('');
   const [nextMonthGoalTitles, setNextMonthGoalTitles] = useState<string[]>([]);
 
@@ -118,6 +119,7 @@ export default function MonthlyResetPage() {
         );
         // Default active goals to in-progress
         setGoalsInProgress(rawGoals.map((g: Record<string, unknown>) => g.id as string));
+        setGoalsDropped([]);
       }
 
       // Map the REAL month-level analytics (`/api/analytics/monthly`). No
@@ -166,15 +168,22 @@ export default function MonthlyResetPage() {
   };
 
   // ── Goal decision helpers ─────────────────────────────────────────────────
+  // A goal is in exactly one bucket. `handleGoalDrop` previously only removed
+  // the id from the other two lists, which is indistinguishable from "no
+  // decision made" — and nothing was ever sent for dropped goals, so the
+  // archive call in the service had nothing to act on.
   const handleGoalComplete = (id: string) => {
     setGoalsCompleted((p) => [...new Set([...p, id])]);
     setGoalsInProgress((p) => p.filter((x) => x !== id));
+    setGoalsDropped((p) => p.filter((x) => x !== id));
   };
   const handleGoalCarryOver = (id: string) => {
     setGoalsInProgress((p) => [...new Set([...p, id])]);
     setGoalsCompleted((p) => p.filter((x) => x !== id));
+    setGoalsDropped((p) => p.filter((x) => x !== id));
   };
   const handleGoalDrop = (id: string) => {
+    setGoalsDropped((p) => [...new Set([...p, id])]);
     setGoalsCompleted((p) => p.filter((x) => x !== id));
     setGoalsInProgress((p) => p.filter((x) => x !== id));
   };
@@ -201,6 +210,7 @@ export default function MonthlyResetPage() {
           habitsToModify: habitsToModify.map((id) => ({ habitId: id, changes: {} })),
           goalsCompleted,
           goalsInProgress,
+          goalsDropped,
           nextMonthFocus,
           nextMonthGoals: nextMonthGoalTitles.map((title) => ({
             title,
@@ -222,6 +232,10 @@ export default function MonthlyResetPage() {
     habitsKept: habitsToKeep.length,
     habitsRemoved: habitsToRemove.length,
     goalsCarried: goalsInProgress.length,
+    // Previously these three were only implied, so the confirmation screen
+    // counted carried-over goals while ignoring completed and dropped ones.
+    goalsCompleted: goalsCompleted.length,
+    goalsDropped: goalsDropped.length,
     newGoals: nextMonthGoalTitles.filter(Boolean).length,
   };
 
@@ -420,13 +434,8 @@ export default function MonthlyResetPage() {
             summary={confirmSummary}
             onBack={() => setStep('plan')}
             onConfirm={handleConfirm}
+            submitting={submitting}
           />
-          {submitting && (
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Loader2 size={16} className="animate-spin" />
-              Applying your reset…
-            </div>
-          )}
         </div>
       )}
     </div>

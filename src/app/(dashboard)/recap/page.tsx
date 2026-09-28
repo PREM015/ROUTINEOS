@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { CalendarDays, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { shiftAnchor, type Period } from '@/lib/period-range';
 import { PeriodControl } from '@/components/shared/PeriodControl';
 import DailyRecap from '@/components/recap/DailyRecap';
@@ -55,13 +55,20 @@ function monthName(monthKey: string): string {
 
 export default function RecapPage() {
   const [period, setPeriod] = useState<Period>('week');
-  const [anchorDate, setAnchorDate] = useState<string>(() => getTodayString());
+  // Anchored to the user's today, not a hard-coded zone. The initialiser used
+  // to freeze the anchor to the first render's value, which for a stored
+  // timezone differing from the browser's would show the wrong week until the
+  // user pressed "Today".
+  const { today, timezone } = useUserTimezone();
+  const [anchorDate, setAnchorDate] = useState<string>('');
   const [report, setReport] = useState<RecapReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const requestId = useRef(0);
 
-  const today = useMemo(() => getTodayString(), []);
+  useEffect(() => {
+    setAnchorDate((current) => current || today);
+  }, [today]);
 
   const load = useCallback(async (nextPeriod: Period, anchor: string) => {
     const id = ++requestId.current;
@@ -82,6 +89,7 @@ export default function RecapPage() {
   }, []);
 
   useEffect(() => {
+    if (!anchorDate) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
     void load(period, anchorDate);
   }, [period, anchorDate, load]);
@@ -102,10 +110,13 @@ export default function RecapPage() {
           period={period}
           onPeriodChange={(p) => setPeriod(p)}
           label={report?.label ?? '\u2014'}
-          onPrev={() => navigate(-1)}
-          onNext={() => navigate(1)}
-          onToday={() => setAnchorDate(today)}
-        />
+        onPrev={() => navigate(-1)}
+        onNext={() => navigate(1)}
+        onToday={() => setAnchorDate(today)}
+        anchorDate={anchorDate}
+        maxAnchor={today}
+        timezone={timezone}
+      />
       </div>
 
       {loading ? (

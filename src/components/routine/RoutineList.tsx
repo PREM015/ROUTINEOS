@@ -6,12 +6,16 @@ import { useApp, RoutineBlock } from '@/context/AppContext';
 import { Clock, Trash2, AlertTriangle, CheckCircle2, Circle, Pencil, ChevronUp, ChevronDown } from 'lucide-react';
 import { EmptyState, Modal, Input, Button, Select, Textarea, Switch, ColorPicker } from '@/components/ui';
 import { timeToMinutes, getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 
 export const BLOCK_ENERGY_LABELS: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
   HIGH: '⚡ High energy',
   MEDIUM: '• Medium',
   LOW: '↓ Low energy',
 };
+
+/** The submit button lives in the modal's pinned footer, so it targets the form by id. */
+const EDIT_FORM_ID = 'edit-routine-block-form';
 
 export const BLOCK_ENERGY_STYLES: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
   HIGH: 'bg-sky-500/15 text-sky-400',
@@ -48,7 +52,7 @@ interface DayLog {
 }
 
 export default function RoutineList() {
-  const { routineBlocks, deleteRoutineBlock, updateRoutineBlock, selectedRoutineTab, selectedDate } = useApp();
+  const { routineBlocks, deleteRoutineBlock, updateRoutineBlock, selectedRoutineTab, selectedDate, reloadData } = useApp();
   const [nowMinutes, setNowMinutes] = useState<number | null>(null);
   const [editing, setEditing] = useState<RoutineBlock | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -65,7 +69,8 @@ export default function RoutineList() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const today = selectedDate || getTodayString();
+  const { timezone } = useUserTimezone();
+  const today = selectedDate || getTodayString(timezone);
 
   // Clock reads happen after mount: no hydration mismatch.
   useEffect(() => {
@@ -84,7 +89,15 @@ export default function RoutineList() {
     const load = async () => {
       try {
         const res = await fetch(`/api/routine/today?date=${today}`);
-        if (!res.ok) return;
+        if (!res.ok) {
+          // `dayLogs` stays empty, so every checkbox below renders unticked —
+          // indistinguishable from a day with nothing ticked. Toggles still
+          // work optimistically, so without this the list looks right.
+          if (!cancelled) {
+            setActionError(`Could not load today's routine progress (status ${res.status})`);
+          }
+          return;
+        }
         const json = await res.json();
         const logs: DayLog[] = [];
         const data = json?.data;
@@ -95,12 +108,19 @@ export default function RoutineList() {
             logs.push({ routineBlockId: b.id ?? b.blockId, status: log.status });
           }
         }
-        if (!cancelled) setDayLogs(logs);
-      } catch {
-        // Offline or not ready: today toggles still work optimistically.
+        if (!cancelled) {
+          setDayLogs(logs);
+          setActionError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setActionError(
+            err instanceof Error ? err.message : "Could not load today's routine progress"
+          );
+        }
       }
     };
-    load();
+    void load();
     return () => { cancelled = true; };
   }, [today, routineBlocks.length]);
 
@@ -170,26 +190,39 @@ export default function RoutineList() {
     }
   };
 
-  /** Reorder a block by swapping sortOrder with its neighbor (persisted). */
+  /**
+   * Reorder a block against its neighbour.
+   *
+   * Sent as one `?peerId=` request rather than two parallel `sortOrder` PUTs:
+   * the route's Zod schema previously had no `sortOrder` field at all, so
+   * `z.object` stripped it and both PUTs succeeded while changing nothing. Doing
+   * it in two requests could also half-apply, leaving two blocks sharing a
+   * sortOrder with no uniqueness constraint to catch it.
+   */
   const moveBlock = async (block: RoutineBlock, dir: -1 | 1) => {
     const peek = filteredBlocks.findIndex(b => b.id === block.id);
     const peer = peek === -1 ? null : filteredBlocks[peek + dir];
     if (!peer || togglingId) return;
+    if (!block.templateId) {
+      setActionError('This block is not linked to a routine template and cannot be reordered.');
+      return;
+    }
     setTogglingId(block.id);
     setActionError(null);
     try {
-      await Promise.all([
-        fetch(`/api/routine/${block.templateId}/blocks/${block.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sortOrder: peer.sortOrder }),
-        }),
-        fetch(`/api/routine/${block.templateId}/blocks/${peer.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sortOrder: block.sortOrder }),
-        }),
-      ]);
+      const res = await fetch(
+        `/api/routine/${block.templateId}/blocks/${block.id}?peerId=${peer.id}`,
+        { method: 'PUT' }
+      );
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error || 'Failed to reorder block');
+      }
+      // Blocks are owned by AppContext and re-sorted by `sortOrder` in
+      // `filteredBlocks`, so the new order is only visible once the shared
+      // list is refetched. No local copy is kept, so it cannot drift from
+      // context.
+      await reloadData();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Failed to reorder block');
     } finally {
@@ -318,7 +351,7 @@ export default function RoutineList() {
                       <button
                         onClick={() => moveBlock(block, -1)}
                         disabled={idx === 0 || togglingId === block.id}
-                        className="p-1 rounded-md text-zinc-600 hover:text-foreground hover:bg-muted transition disabled:opacity-40"
+                        className="p-2.5 rounded-md text-zinc-600 hover:text-foreground hover:bg-muted transition disabled:opacity-40"
                         title="Move earlier"
                         aria-label={`Move ${block.title} earlier`}
                       >
@@ -327,7 +360,7 @@ export default function RoutineList() {
                       <button
                         onClick={() => moveBlock(block, 1)}
                         disabled={idx === filteredBlocks.length - 1 || togglingId === block.id}
-                        className="p-1 rounded-md text-zinc-600 hover:text-foreground hover:bg-muted transition disabled:opacity-40"
+                        className="p-2.5 rounded-md text-zinc-600 hover:text-foreground hover:bg-muted transition disabled:opacity-40"
                         title="Move later"
                         aria-label={`Move ${block.title} later`}
                       >
@@ -346,7 +379,7 @@ export default function RoutineList() {
                       )}
                       <button
                         onClick={() => openEdit(block)}
-                        className="p-1 rounded-md text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition"
+                        className="p-2.5 rounded-md text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition"
                         title="Edit block"
                         aria-label={`Edit ${block.title}`}
                       >
@@ -354,7 +387,7 @@ export default function RoutineList() {
                       </button>
                       <button
                         onClick={() => setConfirmDelete(block)}
-                        className="p-1 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition"
+                        className="p-2.5 rounded-md text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition"
                         title="Delete block"
                         aria-label={`Delete ${block.title}`}
                       >
@@ -406,8 +439,18 @@ export default function RoutineList() {
       </div>
 
       {/* Edit modal */}
-      <Modal isOpen={!!editing} onClose={() => setEditing(null)} title="Edit Block">
-        <form onSubmit={saveEdit} className="space-y-4">
+      <Modal
+        isOpen={!!editing}
+        onClose={() => setEditing(null)}
+        title="Edit Block"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setEditing(null)} disabled={editSaving}>Cancel</Button>
+            <Button type="submit" form={EDIT_FORM_ID} variant="primary" disabled={editSaving}>{editSaving ? 'Saving...' : 'Save'}</Button>
+          </>
+        }
+      >
+        <form id={EDIT_FORM_ID} onSubmit={saveEdit} className="space-y-4">
           <Input label="Title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required autoFocus />
           <div className="grid grid-cols-2 gap-4">
             <Input label="Start" type="time" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
@@ -442,22 +485,24 @@ export default function RoutineList() {
             onChange={setEditColor}
           />
           {editError && <p role="alert" className="text-sm text-red-400">{editError}</p>}
-          <div className="flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => setEditing(null)} disabled={editSaving}>Cancel</Button>
-            <Button type="submit" variant="primary" disabled={editSaving}>{editSaving ? 'Saving...' : 'Save'}</Button>
-          </div>
         </form>
       </Modal>
 
       {/* Delete confirm */}
-      <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Delete block?">
+      <Modal
+        isOpen={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete block?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(null)}>Cancel</Button>
+            <Button variant="primary" onClick={confirmDeleteBlock}>Delete</Button>
+          </>
+        }
+      >
         <p className="text-sm text-zinc-400">
           &ldquo;{confirmDelete?.title}&rdquo; ({confirmDelete?.startTime} – {confirmDelete?.endTime}) will be removed permanently.
         </p>
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="ghost" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-          <Button variant="primary" onClick={confirmDeleteBlock}>Delete</Button>
-        </div>
       </Modal>
     </div>
   );

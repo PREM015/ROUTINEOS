@@ -23,16 +23,33 @@ export function InsightWidget() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * A failed insight load. Previously `console.error` only, so the card
+   * rendered its "no insight yet" empty state — which invites the user to
+   * generate one, when in fact generation is fine and the *read* is broken.
+   */
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchLatestInsight = useCallback(async () => {
     try {
+      setLoadError(null);
       const res = await fetch('/api/insights/latest?period=WEEKLY');
+      if (!res.ok) {
+        throw new Error(`Could not load your latest insight (status ${res.status})`);
+      }
       const data = await res.json();
       if (data.success && data.data) {
         setInsight(data.data);
+      } else if (data.success) {
+        // A genuine "nothing generated yet" is a legitimate empty state.
+        setInsight(null);
+      } else {
+        throw new Error(data.error || 'Could not load your latest insight');
       }
     } catch (error) {
-      console.error('Error fetching insight:', error);
+      setLoadError(
+        error instanceof Error ? error.message : 'Could not load your latest insight'
+      );
     } finally {
       setLoading(false);
     }
@@ -41,7 +58,7 @@ export function InsightWidget() {
   // Initial fetch on mount.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    fetchLatestInsight().catch(() => undefined);
+    void fetchLatestInsight();
   }, [fetchLatestInsight]);
 
   async function generateNewInsight() {
@@ -99,18 +116,40 @@ export function InsightWidget() {
     return (
       <Card className="p-6 fade-rise-in">
         <h3 className="text-lg font-semibold mb-4">AI Insights</h3>
-        <p className="text-muted-foreground mb-4">
-          Get personalized insights powered by AI
-        </p>
-        {notice && (
-          <p role="status" className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
-            {notice}
-          </p>
+        {loadError ? (
+          <>
+            {/* A failed read is not the same as "no insight generated yet", and
+                offering "Generate Insight" here would invite the user to pay for
+                a regeneration to fix a request that never worked. */}
+            <p role="alert" className="mb-4 text-sm text-destructive">
+              {loadError}
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLoading(true);
+                void fetchLatestInsight();
+              }}
+            >
+              Try again
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-muted-foreground mb-4">
+              Get personalized insights powered by AI
+            </p>
+            {notice && (
+              <p role="status" className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                {notice}
+              </p>
+            )}
+            <Button onClick={generateNewInsight} disabled={generating}>
+              {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+              {generating ? 'Generating...' : 'Generate Insight'}
+            </Button>
+          </>
         )}
-        <Button onClick={generateNewInsight} disabled={generating}>
-          {generating && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
-          {generating ? 'Generating...' : 'Generate Insight'}
-        </Button>
       </Card>
     );
   }

@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 function withParsedContent(template: {
@@ -44,6 +44,7 @@ function withParsedContent(template: {
  * Fetch a single template the user may access.
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -51,7 +52,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const templateRepository = new TemplateRepository();
-    const template = await templateRepository.findById(session.user.id, params.id);
+    const template = await templateRepository.findById(session.user.id, paramId);
 
     if (!template) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
@@ -69,6 +70,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update a template owned by the user.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -85,7 +87,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const templateRepository = new TemplateRepository();
-    const template = await templateRepository.findById(session.user.id, params.id);
+    const template = await templateRepository.findById(session.user.id, paramId);
 
     if (!template) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
@@ -98,7 +100,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: true, data: template });
     }
 
-    const updated = await templateRepository.update(session.user.id, params.id, {
+    const updated = await templateRepository.update(session.user.id, paramId, {
       ...(validated.data.name !== undefined && { name: validated.data.name }),
       ...(validated.data.description !== undefined && { description: validated.data.description }),
       ...(validated.data.category !== undefined && { category: validated.data.category }),
@@ -127,6 +129,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * Delete a template owned by the user.
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -134,7 +137,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const templateRepository = new TemplateRepository();
-    const template = await templateRepository.findById(session.user.id, params.id);
+    const template = await templateRepository.findById(session.user.id, paramId);
 
     if (!template) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
@@ -143,8 +146,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await templateRepository.delete(session.user.id, params.id);
-    return NextResponse.json({ success: true, data: { id: params.id } });
+    await templateRepository.delete(session.user.id, paramId);
+    return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting template:', error);
     return NextResponse.json({ error: 'Failed to delete template' }, { status: 500 });

@@ -1,17 +1,20 @@
 import { auth } from '@/lib/auth';
-import { AutomationRepository } from '@/server/repositories/automation.repository';
-import { automationSchema, automationQuerySchema } from '@/schemas/automation.schema';
+import { automationService } from '@/server/services/automation.service';
+import { automationQuerySchema } from '@/schemas/automation.schema';
+import { ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Automation Route
- * GET  /api/automations – list automation rules for the authenticated user
- * POST /api/automations – create an automation rule
+ * GET  /api/automations - list the authenticated user's rules
+ * POST /api/automations - create a rule
+ *
+ * Thin handler: query validation, input validation and the JSON-string
+ * serialisation of `triggerConfig`/`actionConfig` live in `AutomationService`.
  */
 
 /**
  * GET /api/automations
- * List automation rules, optionally filtered by active status or type.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -22,29 +25,22 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const queryData = {
-      isActive: searchParams.get('isActive') !== null ? searchParams.get('isActive') === 'true' : undefined,
+      isActive:
+        searchParams.get('isActive') !== null ? searchParams.get('isActive') === 'true' : undefined,
       triggerType: searchParams.get('triggerType') ?? undefined,
       actionType: searchParams.get('actionType') ?? undefined,
       limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined,
       offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : undefined,
     };
-
     const validated = automationQuerySchema.safeParse(queryData);
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid query parameters', details: validated.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const automationRepository = new AutomationRepository();
-    const rules = await automationRepository.findByUserId(session.user.id, {
-      isActive: validated.data.isActive,
-      triggerType: validated.data.triggerType,
-      actionType: validated.data.actionType,
-      limit: validated.data.limit,
-      offset: validated.data.offset,
-    });
+    const rules = await automationService.list(session.user.id, validated.data);
 
     return NextResponse.json({
       success: true,
@@ -63,7 +59,6 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/automations
- * Create an automation rule. Config objects are serialized for storage.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -73,27 +68,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validated = automationSchema.safeParse(body);
-    if (!validated.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validated.error.flatten() },
-        { status: 400 }
-      );
-    }
-
-    const automationRepository = new AutomationRepository();
-    const rule = await automationRepository.create(session.user.id, {
-      name: validated.data.name,
-      triggerType: validated.data.triggerType,
-      triggerConfig: JSON.stringify(validated.data.triggerConfig),
-      actionType: validated.data.actionType,
-      actionConfig: JSON.stringify(validated.data.actionConfig),
-      isActive: validated.data.isActive,
-    });
+    const rule = await automationService.create(session.user.id, body);
 
     return NextResponse.json({ success: true, data: rule }, { status: 201 });
   } catch (error) {
     console.error('Error creating automation:', error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message, details: error.details }, { status: 400 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

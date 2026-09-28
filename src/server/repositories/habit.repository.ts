@@ -385,6 +385,40 @@ export class HabitRepository extends BaseRepository {
   }
 
   /**
+   * Attach or clear a note on a habit log **without touching its status**.
+   *
+   * Notes used to be saved by POSTing `/log` with `status: 'COMPLETED'`, which
+   * also upserted a completion and advanced the streak — writing a note
+   * silently marked the habit done. On a day the habit was not scheduled the
+   * service rejected the COMPLETED status outright, so notes could not be saved
+   * at all. This only touches `note`.
+   */
+  async setLogNote(
+    habitId: string,
+    userId: string,
+    date: string,
+    note: string | null
+  ): Promise<HabitLog> {
+    try {
+      return await this.prisma.habitLog.upsert({
+        where: { userId_habitId_date: { userId, habitId, date } },
+        create: {
+          habit: { connect: { id: habitId } },
+          user: { connect: { id: userId } },
+          date,
+          // A note on its own is not a completion. `PARTIAL` records that the
+          // day was touched without claiming the habit was done.
+          status: 'PARTIAL',
+          note,
+        } as Prisma.HabitLogCreateInput,
+        update: { note },
+      });
+    } catch (error) {
+      this.handleError(error, 'setLogNote');
+    }
+  }
+
+  /**
    * Delete habit log
    */
   async deleteLog(habitId: string, userId: string, date: string): Promise<void> {

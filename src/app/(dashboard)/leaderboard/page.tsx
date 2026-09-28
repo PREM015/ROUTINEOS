@@ -6,29 +6,7 @@ import { apiRequest } from '@/lib/api-client';
 import { Card, EmptyState, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
-interface SafeUser {
-  id: string;
-  name: string | null;
-  displayName: string | null;
-  avatarUrl: string | null;
-}
-
-interface UserStats {
-  totalHabits: number;
-  activeHabits: number;
-  totalGoals: number;
-  completedGoals: number;
-  currentStreak: number;
-  longestStreak: number;
-  totalDays: number;
-  averageScore: number;
-}
-
-interface ProfileResponse {
-  profile: SafeUser;
-  stats: UserStats;
-}
-
+/** A single ranked row, as returned by `GET /api/users/leaderboard`. */
 interface LeaderboardRow {
   id: string;
   name: string;
@@ -53,37 +31,13 @@ export default function LeaderboardPage() {
     let cancelled = false;
     const load = async () => {
       try {
-        const users = await apiRequest<SafeUser[]>('/api/users/search?q=&limit=25');
-        const profiles = await Promise.all(
-          users.map(async (user): Promise<LeaderboardRow | null> => {
-            try {
-              const data = await apiRequest<ProfileResponse>(`/api/users/${user.id}/profile`);
-              return {
-                id: user.id,
-                name: data.profile.displayName ?? data.profile.name ?? 'Anonymous',
-                avatarUrl: data.profile.avatarUrl ?? user.avatarUrl,
-                averageScore: data.stats.averageScore,
-                currentStreak: data.stats.currentStreak,
-                longestStreak: data.stats.longestStreak,
-                totalDays: data.stats.totalDays,
-              };
-            } catch {
-              return null;
-            }
-          }),
+        // One request. Ranking and aggregation happen server-side; the page
+        // used to fan out 1 search + 25 profile requests, and the profile
+        // routes are rate limited to 30/min, so a reload could 429.
+        const data = await apiRequest<LeaderboardRow[]>(
+          '/api/users/leaderboard?limit=25&windowDays=90'
         );
-        if (!cancelled) {
-          setRows(
-            profiles
-              .filter((row): row is LeaderboardRow => row !== null)
-              .sort(
-                (a, b) =>
-                  b.averageScore - a.averageScore ||
-                  b.currentStreak - a.currentStreak ||
-                  b.totalDays - a.totalDays,
-              ),
-          );
-        }
+        if (!cancelled) setRows(data);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load leaderboard');
       }

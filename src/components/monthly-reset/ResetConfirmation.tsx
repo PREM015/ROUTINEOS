@@ -6,13 +6,16 @@ interface ResetConfirmationProps {
     habitsKept: number;
     habitsRemoved: number;
     goalsCarried: number;
+    goalsCompleted: number;
+    goalsDropped: number;
     newGoals: number;
   };
   onConfirm: () => void;
   onBack: () => void;
+  submitting?: boolean;
 }
 
-export const ResetConfirmation: React.FC<ResetConfirmationProps> = ({ summary, onConfirm, onBack }) => {
+export const ResetConfirmation: React.FC<ResetConfirmationProps> = ({ summary, onConfirm, onBack, submitting = false }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-2xl mx-auto w-full text-center border border-gray-100 dark:border-gray-700">
       <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -35,24 +38,28 @@ export const ResetConfirmation: React.FC<ResetConfirmationProps> = ({ summary, o
         <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
           <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 border-b border-gray-200 dark:border-gray-600 pb-2">Goals</h4>
           <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+            <li className="flex justify-between"><span>Completed:</span> <span className="font-medium">{summary.goalsCompleted}</span></li>
             <li className="flex justify-between"><span>Carried over:</span> <span className="font-medium">{summary.goalsCarried}</span></li>
+            <li className="flex justify-between"><span>Dropped:</span> <span className="font-medium">{summary.goalsDropped}</span></li>
             <li className="flex justify-between"><span>New goals:</span> <span className="font-medium">{summary.newGoals}</span></li>
           </ul>
         </div>
       </div>
-      
+
       <div className="flex space-x-4">
         <button
           onClick={onBack}
-          className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 font-medium rounded-lg transition-colors"
+          disabled={submitting}
+          className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 disabled:opacity-60 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 font-medium rounded-lg transition-colors"
         >
           Go Back
         </button>
         <button
           onClick={onConfirm}
-          className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors shadow-sm"
+          disabled={submitting}
+          className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-medium rounded-lg transition-colors shadow-sm"
         >
-          Confirm Reset
+          {submitting ? 'Applying…' : 'Confirm Reset'}
         </button>
       </div>
     </div>

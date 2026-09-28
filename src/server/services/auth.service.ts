@@ -12,6 +12,7 @@ import { UserRepository } from '@/server/repositories/user.repository';
 import { AuthTokenRepository } from '@/server/repositories/auth-token.repository';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
+import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { EmailService } from '@/server/services/email.service';
 import {
   changePasswordSchema,
@@ -238,6 +239,7 @@ export class AuthService {
   private authTokenRepository: AuthTokenRepository;
   private auditRepository: AuditRepository;
   private streakRepository: StreakRepository;
+  private routineRepository: RoutineRepository;
   private emailService: EmailService;
 
   constructor() {
@@ -245,6 +247,7 @@ export class AuthService {
     this.authTokenRepository = new AuthTokenRepository();
     this.auditRepository = new AuditRepository();
     this.streakRepository = new StreakRepository();
+    this.routineRepository = new RoutineRepository();
     this.emailService = new EmailService();
   }
 
@@ -285,9 +288,27 @@ export class AuthService {
       timezone: input.timezone || undefined,
     });
 
-    await this.userRepository.createSettings(user.id, {
-      timezone: input.timezone || undefined,
-    });
+  await this.userRepository.createSettings(user.id, {
+    timezone: input.timezone || undefined,
+  });
+
+  // Seed the user's default day types.
+  //
+  // These were only ever created by `scripts/seed-day-types.ts`, a manual
+  // one-off over accounts that already existed. A newly registered user had no
+  // `DayTypeDefinition` rows at all, so `/today` and `/routine` both fell back to
+  // *different* hardcoded lists and the two screens disagreed about which day
+  // types exist. Best-effort: a failure here must not block sign-up, the user
+  // can still create day types by hand.
+  try {
+    await this.routineRepository.createDefaultDayTypes(user.id);
+  } catch (err) {
+    console.error(
+      '[auth.register] failed to seed default day types; user can create them manually:',
+      err
+    );
+  }
+
 
     try {
       await this.streakRepository.create(user.id);
@@ -411,7 +432,12 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
     await this.userRepository.updatePassword(userId, passwordHash);
+    // Deleting the DeviceSession rows is not enough on its own: NextAuth issues
+    // stateless JWTs, so other devices keep their cookie until the 6-hour
+    // absolute expiry. Bumping `sessionVersion` invalidates every issued token
+    // immediately (see the check in `lib/auth.ts`).
     await this.userRepository.deleteAllDeviceSessions(userId);
+    await this.userRepository.bumpSessionVersion(userId);
 
     await this.auditRepository.create({
       userId,
@@ -638,10 +664,15 @@ export class AuthService {
   }
 
   /**
-   * Disable two-factor authentication
+   * Disable two-factor authentication.
+   *
+   * Requires a valid TOTP code from the user's authenticator. This previously
+   * took only `userId`: the route validated the submitted code and then threw
+   * it away, so any six digits turned 2FA off.
    */
   async disableTwoFactor(
-    userId: string
+    userId: string,
+    code: string
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -652,6 +683,9 @@ export class AuthService {
     if (!state.secret || !state.enabled) {
       throw new Error('Two-factor authentication is not enabled');
     }
+    if (!verifyTotpCode(state.secret, code)) {
+      throw new Error('Invalid two-factor code');
+    }
 
     await this.userRepository.update(userId, {
       preferences: writeTwoFactorState(user, {
@@ -659,6 +693,13 @@ export class AuthService {
         secret: null,
         verifiedAt: null,
       }),
+    });
+
+    await this.auditRepository.create({
+      userId,
+      action: 'TWO_FACTOR_DISABLED',
+      entityType: 'USER',
+      entityId: userId,
     });
 
     return { success: true, message: 'Two-factor authentication disabled' };
@@ -678,6 +719,8 @@ export class AuthService {
 
     await this.userRepository.softDelete(userId, reason);
     await this.userRepository.deleteAllDeviceSessions(userId);
+    // Kill any JWT still in circulation for the deleted account.
+    await this.userRepository.bumpSessionVersion(userId);
     await this.auditRepository.create({
       userId,
       action: 'ACCOUNT_DELETED',
@@ -690,12 +733,17 @@ export class AuthService {
   }
 
   /**
-   * Revoke every device session for the user
+   * Revoke every device session for the user.
+   *
+   * Also bumps `sessionVersion` so the stateless JWTs other devices are still
+   * holding are rejected on their next request. Without it, "sign out all" only
+   * cleared the database rows and left the sessions themselves alive.
    */
   async logoutAll(
     userId: string
   ): Promise<{ success: boolean; revoked: number }> {
     const revoked = await this.userRepository.deleteAllDeviceSessions(userId);
+    await this.userRepository.bumpSessionVersion(userId);
     await this.auditRepository.create({
       userId,
       action: 'LOGOUT_ALL_SESSIONS',

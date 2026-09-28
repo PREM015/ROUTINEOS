@@ -325,9 +325,21 @@ export class RecapService {
     );
 
     // Goals: completed within the period, live active count, average progress.
+    //
+    // `completedAt` is bucketed with `formatInTimeZone(..., timezone, ...)` to
+    // match how the sleep logs above are bucketed. It used to be sliced straight
+    // to a UTC string, so a goal completed at 23:30 local counted towards the
+    // *previous* period for anyone east of UTC and the next one for anyone west —
+    // the two halves of this same report disagreed with each other.
     const activeGoals = goals.filter((goal) => goal.status === 'ACTIVE');
     const completedInPeriod = goals.filter(
-      (goal) => goal.completedAt !== null && isWithin(goal.completedAt.toISOString().slice(0, 10), start, end)
+      (goal) =>
+        goal.completedAt !== null &&
+        isWithin(
+          formatInTimeZone(goal.completedAt as Date, timezone, 'yyyy-MM-dd'),
+          start,
+          end
+        )
     ).length;
     const progressValues = activeGoals
       .filter((goal) => goal.targetValue > 0)
@@ -379,16 +391,21 @@ export class RecapService {
         reachedDate: milestone.reachedDate,
       }));
 
-    // Achievements unlocked inside this period.
+    // Achievements unlocked inside this period. Zoned like everything else in
+    // this report, for the same reason as `completedInPeriod` above.
     const achievementsInPeriod = achievements
-      .filter((achievement) =>
-        isWithin(achievement.unlockedAt.toISOString().slice(0, 10), start, end)
-      )
       .map((achievement) => ({
         title: achievement.title,
         description: achievement.description,
-        unlockedAt: achievement.unlockedAt.toISOString().slice(0, 10),
-      }));
+        unlockedAt: formatInTimeZone(
+          achievement.unlockedAt as Date,
+          timezone,
+          'yyyy-MM-dd'
+        ),
+      }))
+      .filter((achievement) =>
+        isWithin(achievement.unlockedAt, start, end)
+      );
 
     const journal = journalEntries.map((entry) => ({
       date: entry.date,

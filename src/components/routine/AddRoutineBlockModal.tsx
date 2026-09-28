@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { Modal, Input, Select, Button, Textarea, Switch, ColorPicker } from '@/components/ui';
 import type { DayType } from '@/generated/prisma';
@@ -11,6 +11,8 @@ interface AddRoutineBlockModalProps {
   open: boolean;
   onClose: () => void;
   defaultDayType?: DayType;
+  /** Identity of `defaultDayType`; absent for the static built-in defaults. */
+  defaultDayTypeId?: string;
   dayTypes?: DayTypeOption[];
 }
 
@@ -34,13 +36,16 @@ const ENERGY_OPTIONS = [
   { value: 'LOW', label: 'Low energy' },
 ];
 
-export default function AddRoutineBlockModal({ open, onClose, defaultDayType = 'WORKDAY', dayTypes = [] }: AddRoutineBlockModalProps) {
+/** The submit button lives in the modal's pinned footer, so it targets the form by id. */
+const FORM_ID = 'add-routine-block-form';
+
+export default function AddRoutineBlockModal({ open, onClose, defaultDayType = 'WORKDAY', defaultDayTypeId, dayTypes = [] }: AddRoutineBlockModalProps) {
   const { addRoutineBlock, routineBlocks } = useApp();
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('06:00');
   const [endTime, setEndTime] = useState('07:00');
   const [category, setCategory] = useState('Personal');
-  const [dayType, setDayType] = useState(defaultDayType);
+  const [selection, setSelection] = useState(defaultDayTypeId ?? defaultDayType);
   const [trackCompletion, setTrackCompletion] = useState(true);
   const [description, setDescription] = useState('');
   const [energyLevel, setEnergyLevel] = useState('');
@@ -52,10 +57,18 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
   // Use provided dayTypes or fallback
   const availableDayTypes = dayTypes.length > 0 ? dayTypes : FALLBACK_DAY_TYPES;
 
-  // Reset dayType when defaultDayType changes
-  useEffect(() => {
-    setDayType(defaultDayType);
-  }, [defaultDayType]);
+  // Options are identified by the day-type row's id, never by the DayType
+  // classification: every user-defined day type classifies as 'CUSTOM', so
+  // keying by classification produced duplicate option values and submitted
+  // the first CUSTOM row's id no matter which one was picked. The parent keys
+  // this component on the originating tab, so the initial state is always the
+  // tab the modal was opened from.
+  const optionValue = (dt: DayTypeOption) => dt.dayTypeId ?? dt.value;
+
+  const selectedDayType = availableDayTypes.find(dt => optionValue(dt) === selection)
+    ?? availableDayTypes.find(dt => dt.value === defaultDayType);
+  const dayType: DayType = selectedDayType?.value ?? defaultDayType;
+  const dayTypeId = selectedDayType?.dayTypeId;
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -84,10 +97,6 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
     setSubmitting(true);
     setSubmitError(null);
     try {
-      // Find the selected day type to get its dayTypeId
-      const selectedDayTypeOption = availableDayTypes.find(dt => dt.value === dayType);
-      const dayTypeId = selectedDayTypeOption?.dayTypeId;
-
       // sortOrder is per-day-type: new blocks go last within that tab.
       const siblingCount = routineBlocks.filter(b => b.dayType === dayType).length;
       const saved = await addRoutineBlock({
@@ -126,8 +135,20 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
   };
 
   return (
-    <Modal isOpen={open} onClose={onClose} title="Add Routine Block">
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Add Routine Block"
+      footer={
+        <>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="flex-1 sm:flex-none">Cancel</Button>
+          <Button type="submit" form={FORM_ID} variant="default" disabled={submitting} className="flex-1 sm:flex-none">
+            {submitting ? 'Adding...' : 'Add Block'}
+          </Button>
+        </>
+      }
+    >
+      <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <Input
           label="Title"
           value={title}
@@ -154,19 +175,21 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
           />
         </div>
 
-        <Select
-          label="Category"
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-          options={CATEGORIES.map(c => ({ value: c, label: c }))}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
+            label="Category"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            options={CATEGORIES.map(c => ({ value: c, label: c }))}
+          />
 
-        <Select
-          label="Day Type"
-          value={dayType}
-          onChange={e => setDayType(e.target.value as DayType)}
-          options={availableDayTypes.map(dt => ({ value: dt.value, label: dt.label }))}
-        />
+          <Select
+            label="Day Type"
+            value={selection}
+            onChange={e => setSelection(e.target.value)}
+            options={availableDayTypes.map(dt => ({ value: optionValue(dt), label: dt.label }))}
+          />
+        </div>
 
         <Select
           label="Energy Level"
@@ -202,13 +225,6 @@ export default function AddRoutineBlockModal({ open, onClose, defaultDayType = '
             {submitError}
           </p>
         )}
-
-        <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>
-          <Button type="submit" variant="default" disabled={submitting} className="flex-1">
-            {submitting ? 'Adding...' : 'Add Block'}
-          </Button>
-        </div>
       </form>
     </Modal>
   );

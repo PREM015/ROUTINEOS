@@ -1,12 +1,22 @@
 "use client";
 
-import { useState } from 'react';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { TIMEZONE_OPTIONS } from './onboarding-options';
 
-export function TimezoneStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
-
+export function TimezoneStep({
+  timezone,
+  onChange,
+  onNext,
+  onBack,
+  saving,
+}: {
+  timezone: string;
+  onChange: (value: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+  saving: boolean;
+}) {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -18,20 +28,16 @@ export function TimezoneStep({ onNext, onBack }: { onNext: () => void; onBack: (
         <Select
           label="Timezone"
           value={timezone}
-          onChange={(e) => setTimezone(e.target.value)}
-          options={[
-            { value: timezone, label: timezone },
-            { value: 'America/New_York', label: 'America/New_York' },
-            { value: 'Europe/London', label: 'Europe/London' },
-            { value: 'Asia/Tokyo', label: 'Asia/Tokyo' },
-          ]}
+          onChange={(e) => onChange(e.target.value)}
+          options={TIMEZONE_OPTIONS}
+          helperText="Drives when your day rolls over, and how scores and streaks are bucketed."
         />
 
         <div className="flex gap-4">
-          <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+          <Button type="button" variant="outline" onClick={onBack} className="flex-1" disabled={saving}>
             Back
           </Button>
-          <Button type="button" onClick={onNext} className="flex-1">
+          <Button type="button" onClick={onNext} className="flex-1" isLoading={saving}>
             Continue
           </Button>
         </div>

@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Mount } from '@/components/motion/Mount';
 import { Button } from '@/components/ui/Button';
+import { shiftCalendarDay } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { cn } from '@/lib/utils';
 
 interface DayData {
@@ -35,17 +37,24 @@ export function ContributionHeatmap() {
   const reduce = useReducedMotion();
   const [data, setData] = useState<DayData[]>([]);
   const [loading, setLoading] = useState(true);
+  /** History could not load; the grid renders blank without saying why. */
+  const [error, setError] = useState<string | null>(null);
+  // The window is anchored to the user's today, not `new Date().toISOString()`,
+  // which is the UTC date and shifted the whole 365-day grid by a day for
+  // anyone not on UTC — the most recent column rendered empty and an extra
+  // future column appeared.
+  const { today } = useUserTimezone();
   const [expanded, setExpanded] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - WINDOW_DAYS);
-
+      setError(null);
       const res = await fetch(
-        `/api/scores/daily?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`
+        `/api/scores/daily?startDate=${shiftCalendarDay(today, -WINDOW_DAYS)}&endDate=${today}`
       );
+      if (!res.ok) {
+        throw new Error(`Could not load your history (status ${res.status})`);
+      }
       const result = await res.json();
 
       if (result.success) {
@@ -55,17 +64,22 @@ export function ContributionHeatmap() {
           level: getLevel(score.totalScore),
         }));
         setData(heatmapData);
+      } else {
+        throw new Error(result.error || 'Could not load your history');
       }
-    } catch (error) {
-      console.error('Error fetching heatmap data:', error);
+    } catch (err) {
+      // Previously `console.error` only: a failed request left `data` empty and
+      // the heatmap rendered blank, which reads as "you have no history" rather
+      // than "this did not load".
+      setError(err instanceof Error ? err.message : 'Could not load your history');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [today]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
   useEffect(() => {
@@ -113,6 +127,27 @@ export function ContributionHeatmap() {
             </div>
           ))}
         </div>
+      </Card>
+    );
+  }
+
+  // A failed load renders an empty grid with no explanation; say so instead.
+  if (error && data.length === 0) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-2">Activity</h3>
+        <p role="alert" className="text-sm text-destructive">{error}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => {
+            setLoading(true);
+            void fetchData();
+          }}
+        >
+          Try again
+        </Button>
       </Card>
     );
   }

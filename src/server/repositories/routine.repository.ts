@@ -1,4 +1,4 @@
-import { DayType, RoutineLogStatus } from '@/generated/prisma';
+﻿import { DayType, RoutineLogStatus } from '@/generated/prisma';
 import type {
   RoutineTemplate,
   RoutineBlock,
@@ -7,6 +7,7 @@ import type {
   DayTypeDefinition,
   Prisma,
 } from '@/generated/prisma';
+import { DEFAULT_DAY_TYPES } from '@/constants/day-types';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -59,6 +60,10 @@ export class RoutineRepository extends BaseRepository {
 
   /**
    * Find all templates for user
+   *
+   * `dayTypeDef` is included so callers can derive the DayType classification
+   * from the definition's slug; the stored `dayType` column is only a coarse
+   * fallback ('CUSTOM') for templates connected to a definition.
    */
   async findAllTemplates(userId: string, includeInactive = false) {
     try {
@@ -68,6 +73,7 @@ export class RoutineRepository extends BaseRepository {
           blocks: {
             orderBy: { sortOrder: 'asc' },
           },
+          dayTypeDef: true,
           _count: {
             select: { blocks: true },
           },
@@ -146,15 +152,53 @@ export class RoutineRepository extends BaseRepository {
 
   /**
    * All of a user's day-type definitions, in display order.
+   *
+   * Archived definitions are excluded: they must not be offered in a picker, and
+   * `onDelete: SetNull` means an existing exception referencing one still
+   * resolves — it just falls back to its own `dayType` column.
+   *
+   * `include` is not passed in, so Prisma rejects `_count` at runtime. Callers
+   * that need related counts (the settings page shows templates per day type)
+   * must go through `listDayTypeDefinitionsWithCounts`.
    */
   async listDayTypeDefinitions(userId: string) {
     try {
       return await this.prisma.dayTypeDefinition.findMany({
-        where: { userId },
+        where: { userId, isArchived: false },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       });
     } catch (error) {
       this.handleError(error, 'listDayTypeDefinitions');
+    }
+  }
+
+  /**
+   * The same list, with archived rows and a per-day-type usage count.
+   *
+   * Separate from `listDayTypeDefinitions` because the `include` changes the
+   * return type, and a picker must not surface archived entries while the
+   * management page does. The counts gate the Archive action: a day type that
+   * still has templates, exceptions or habit assignments attached is worth
+   * warning about before it is hidden.
+   */
+  async listDayTypeDefinitionsWithCounts(userId: string) {
+    try {
+      return await this.prisma.dayTypeDefinition.findMany({
+        where: { userId },
+        include: {
+          _count: {
+            select: {
+              routineTemplates: true,
+              routineExceptions: true,
+              habitAssignments: true,
+              goalAssignments: true,
+            },
+          },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      });
+    } catch (error) {
+      this.handleError(error, 'listDayTypeDefinitionsWithCounts');
     }
   }
 
@@ -168,6 +212,46 @@ export class RoutineRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'findDayTypeDefinitionById');
+    }
+  }
+
+  /**
+   * Create the canonical default `DayTypeDefinition` rows for a new user.
+   *
+   * Idempotent: skips any slug the user already has, so re-running it for an
+   * existing account (the backfill `scripts/seed-day-types.ts` performs) is safe
+   * and never duplicates a day type.
+   */
+  async createDefaultDayTypes(userId: string): Promise<number> {
+    try {
+      const existing = await this.prisma.dayTypeDefinition.findMany({
+        where: { userId },
+        select: { slug: true },
+      });
+      const have = new Set(existing.map((d) => d.slug));
+
+      const toCreate = DEFAULT_DAY_TYPES.filter((d) => !have.has(d.slug)).map(
+        (d) => ({
+          userId,
+          name: d.name,
+          slug: d.slug,
+          color: d.color,
+          icon: d.icon,
+          description: d.description,
+          isDefault: true,
+          isArchived: false,
+          sortOrder: d.sortOrder,
+        })
+      );
+
+      if (toCreate.length === 0) return 0;
+
+      const result = await this.prisma.dayTypeDefinition.createMany({
+        data: toCreate,
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'createDefaultDayTypes');
     }
   }
 
@@ -220,7 +304,46 @@ export class RoutineRepository extends BaseRepository {
   }
 
   /**
-   * Delete a day-type definition.
+   * Archive a day-type definition (soft delete).
+   *
+   * Prefer this over `deleteDayTypeDefinition`: the relations use
+   * `onDelete: SetNull`, so a hard delete silently detaches every template,
+   * exception and habit assignment pointing at this day type.
+   */
+  async archiveDayTypeDefinition(
+    dayTypeId: string,
+    userId: string
+  ): Promise<DayTypeDefinition> {
+    try {
+      return await this.prisma.dayTypeDefinition.update({
+        where: { id: dayTypeId, userId },
+        data: { isArchived: true },
+      });
+    } catch (error) {
+      this.handleError(error, 'archiveDayTypeDefinition');
+    }
+  }
+
+  /** Restore a soft-deleted day-type definition. */
+  async unarchiveDayTypeDefinition(
+    dayTypeId: string,
+    userId: string
+  ): Promise<DayTypeDefinition> {
+    try {
+      return await this.prisma.dayTypeDefinition.update({
+        where: { id: dayTypeId, userId },
+        data: { isArchived: false },
+      });
+    } catch (error) {
+      this.handleError(error, 'unarchiveDayTypeDefinition');
+    }
+  }
+
+  /**
+   * Delete a day-type definition outright.
+   *
+   * Retained only for a genuine hard delete of an already-archived definition
+   * that has no remaining references; prefer the archive methods above.
    */
   async deleteDayTypeDefinition(
     dayTypeId: string,
@@ -359,22 +482,44 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Upsert the exception for a (user, date) pair, so toggling a day type never
    * creates duplicates.
+   *
+   * `dayTypeId` links to the user's `DayTypeDefinition` and is what makes a
+   * *custom* day type distinguishable. `dayType` alone is a six-value enum
+   * where every custom day type collapses to `CUSTOM`, so it could never
+   * identify which one the user picked — the column was simply not written
+   * here, which is why `/today` and `/dashboard` had no way to show or restore
+   * a custom day type.
    */
   async upsertException(
     userId: string,
     date: string,
     data: {
       dayType: DayType;
+      dayTypeId?: string | null;
       templateId: string | null;
       note: string | null;
       reason?: string | null;
     }
-  ) {
+  ): Promise<
+    Prisma.RoutineExceptionGetPayload<{ include: { dayTypeDef: true } }>
+  > {
     try {
+      const { dayTypeId, ...rest } = data;
+      // The FK scalar `dayTypeId` is written directly rather than through
+      // `dayTypeDef: { connect }`. `RoutineException` carries two optional
+      // relations with `onDelete: SetNull`, so Prisma's *checked* input type
+      // makes `templateId` unusable alongside a relation operation (it would
+      // demand a nested `template: { set: null }`). The unchecked input accepts
+      // the raw FK, and it is the same column either way.
+      // `null` on update disconnects, so switching from a custom day type back
+      // to a built-in one clears the link instead of leaving it dangling.
+      const payload = { ...rest, dayTypeId: dayTypeId ?? null };
+
       return await this.prisma.routineException.upsert({
         where: { userId_date: { userId, date } },
-        create: { userId, date, ...data },
-        update: data,
+        create: { ...payload, userId, date },
+        update: payload,
+        include: { dayTypeDef: true },
       });
     } catch (error) {
       this.handleError(error, 'upsertException');
@@ -383,15 +528,22 @@ export class RoutineRepository extends BaseRepository {
 
   /**
    * Exceptions for a user, newest first, optionally for a single date.
+   *
+   * Includes `dayTypeDef` so callers can render the user's own name for a
+   * custom day type ("College Day") instead of the generic `CUSTOM` enum.
    */
   async listExceptions(
     userId: string,
     date?: string
-  ): Promise<Prisma.RoutineExceptionGetPayload<{ include: { template: true } }>[]> {
+  ): Promise<
+    Prisma.RoutineExceptionGetPayload<{
+      include: { template: true; dayTypeDef: true };
+    }>[]
+  > {
     try {
       return await this.prisma.routineException.findMany({
         where: { userId, ...(date ? { date } : {}) },
-        include: { template: true },
+        include: { template: true, dayTypeDef: true },
         orderBy: { date: 'desc' },
       });
     } catch (error) {
@@ -401,12 +553,26 @@ export class RoutineRepository extends BaseRepository {
 
   /**
    * Create or update the single log for a (user, block, date).
+   *
+   * Routed on the `userId_routineBlockId_date` unique key, so a repeated
+   * submission updates the existing row instead of raising P2002. Every field
+   * beyond `status` is optional; Prisma ignores keys absent from `data` in the
+   * update branch, so a status-only caller leaves the richer fields untouched.
    */
   async upsertLog(
     userId: string,
     routineBlockId: string,
     date: string,
-    data: { status: RoutineLogStatus; note?: string | null }
+    data: {
+      status: RoutineLogStatus;
+      note?: string | null;
+      actualStartTime?: string | null;
+      actualEndTime?: string | null;
+      durationMinutes?: number | null;
+      focusRating?: number | null;
+      productivityRating?: number | null;
+      energyLevel?: number | null;
+    }
   ): Promise<RoutineLog> {
     try {
       return await this.prisma.routineLog.upsert({
@@ -486,6 +652,63 @@ export class RoutineRepository extends BaseRepository {
   }
 
   /**
+   * A block with its owning template, for ownership checks.
+   */
+  async findBlockByIdForService(blockId: string) {
+    try {
+      return await this.prisma.routineBlock.findUnique({
+        where: { id: blockId },
+        include: { template: true, category: true },
+      });
+    } catch (error) {
+      this.handleError(error, 'findBlockByIdForService');
+    }
+  }
+
+  /**
+   * Atomically swap two blocks' `sortOrder` within a template.
+   *
+   * Both writes share a transaction because `sortOrder` has no uniqueness
+   * constraint: a partial swap (one write landing, the other failing) leaves
+   * two blocks with the same order and the list renders them in an arbitrary
+   * order until the page is reloaded.
+   */
+  async swapBlockOrder(
+    userId: string,
+    blockId: string,
+    peerId: string
+  ): Promise<RoutineBlock[]> {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const [block, peer] = await Promise.all([
+          tx.routineBlock.findFirst({ where: { id: blockId, userId } }),
+          tx.routineBlock.findFirst({ where: { id: peerId, userId } }),
+        ]);
+
+        if (!block || !peer) {
+          throw new Error('Block not found');
+        }
+        if (block.templateId !== peer.templateId) {
+          throw new Error('Blocks belong to different templates');
+        }
+
+        await Promise.all([
+          tx.routineBlock.update({ where: { id: blockId }, data: { sortOrder: peer.sortOrder } }),
+          tx.routineBlock.update({ where: { id: peerId }, data: { sortOrder: block.sortOrder } }),
+        ]);
+
+        return tx.routineBlock.findMany({
+          where: { templateId: block.templateId },
+          include: { category: true },
+          orderBy: { sortOrder: 'asc' },
+        });
+      });
+    } catch (error) {
+      this.handleError(error, 'swapBlockOrder');
+    }
+  }
+
+  /**
    * Update routine block
    */
   async updateBlock(
@@ -526,11 +749,13 @@ export class RoutineRepository extends BaseRepository {
   async findException(
     userId: string,
     date: string
-  ): Promise<RoutineException | null> {
+  ): Promise<Prisma.RoutineExceptionGetPayload<{ include: { template: true; dayTypeDef: true } }> | null> {
     try {
       return await this.prisma.routineException.findFirst({
         where: { userId, date },
-        include: { template: true },
+        // `dayTypeDef` carries the user's display name for a custom day type.
+        // Without it a chosen "College Day" renders as the generic `CUSTOM`.
+        include: { template: true, dayTypeDef: true },
       });
     } catch (error) {
       this.handleError(error, 'findException');
@@ -680,17 +905,6 @@ export class RoutineRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'findLogsByRange');
-    }
-  }
-
-  /**
-   * Create routine log
-   */
-  async createLog(data: Prisma.RoutineLogCreateInput): Promise<RoutineLog> {
-    try {
-      return await this.prisma.routineLog.create({ data });
-    } catch (error) {
-      this.handleError(error, 'createLog');
     }
   }
 

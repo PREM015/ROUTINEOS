@@ -2,9 +2,6 @@ import type { GoalPriority, GoalStatus, GoalType, Prisma } from '@/generated/pri
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import type { CreateGoalInput, UpdateGoalInput } from '@/types/goal';
 import { AchievementService } from './achievement.service';
-import { invalidateDashboard } from '@/server/cache/dashboard-cache';
-import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
-import { invalidateInsights } from '@/server/cache/insight-cache';
 import { resolveDayTypeForDate } from '@/lib/scheduling/resolve-routine';
 
 /**
@@ -104,81 +101,16 @@ export class GoalService {
   }
 
   /**
-   * Filter the user's goals.
-   *
-   * Owns the timeline→filter translation (the `timeline` shorthand maps onto
-   * status/overdue/dueSoon) and the free-text search, both of which used to
-   * live in the route.
-   */
-  async filterGoals(
-    userId: string,
-    filters: {
-      type?: GoalType[];
-      status?: GoalStatus[];
-      priority?: GoalPriority[];
-      timeline?: 'all' | 'active' | 'completed' | 'cancelled' | 'overdue' | 'dueSoon';
-      projectId?: string;
-      parentGoalId?: string;
-      search?: string;
-      sortBy?: string;
-      sortOrder?: 'asc' | 'desc';
-      limit?: number;
-      offset?: number;
-    }
-  ) {
-    let statusFilter: GoalStatus | GoalStatus[] | undefined;
-    let overdue: boolean | undefined;
-    let dueSoon: boolean | undefined;
-
-    if (filters.timeline === 'overdue') {
-      overdue = true;
-    } else if (filters.timeline === 'dueSoon') {
-      dueSoon = true;
-    } else if (
-      filters.timeline === 'active' ||
-      filters.timeline === 'completed' ||
-      filters.timeline === 'cancelled'
-    ) {
-      statusFilter = filters.timeline.toUpperCase() as GoalStatus;
-    }
-
-    // An explicit status list always wins over the timeline shorthand.
-    if (filters.status?.length) {
-      statusFilter = filters.status;
-    }
-
-    let goals = await this.goalRepository.findAll(userId, {
-      status: statusFilter,
-      type: filters.type,
-      priority: filters.priority,
-      projectId: filters.projectId,
-      parentGoalId: filters.parentGoalId,
-      overdue,
-      dueSoon,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
-      limit: filters.limit,
-      offset: filters.offset,
-    });
-
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      goals = goals.filter(
-        (goal) =>
-          goal.title.toLowerCase().includes(q) ||
-          (goal.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
-
-    return goals;
-  }
-
-  /**
    * Archive a goal by cancelling it.
    *
    * Goals have no ARCHIVED status, so "archiving" a goal means marking it
    * CANCELLED. Exposed as a service method so the bulk endpoint does not have to
    * reach into the repository to express the same intent.
+   *
+   * `archivedAt` is stamped alongside the status so the column is actually
+   * populated, matching how `Habit` and `Project` record the same event. It was
+   * previously never written, so "archived before X" and archive-time ordering
+   * were impossible.
    */
   async archiveGoal(userId: string, goalId: string) {
     const goal = await this.goalRepository.findById(goalId, userId);
@@ -186,11 +118,10 @@ export class GoalService {
       throw new Error('Goal not found');
     }
 
-    await this.goalRepository.update(goalId, userId, { status: 'CANCELLED' });
-
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
+    await this.goalRepository.update(goalId, userId, {
+      status: 'CANCELLED',
+      archivedAt: new Date(),
+    });
 
     return this.goalRepository.findWithRelations(goalId, userId);
   }
@@ -199,8 +130,16 @@ export class GoalService {
    * Create new goal
    */
   async createGoal(userId: string, input: CreateGoalInput) {
-    // Validate dates
-    if (new Date(input.endDate) <= new Date(input.startDate)) {
+    // `startDate` / `endDate` are non-null columns, but the schema now allows
+    // them to be omitted or explicitly null so the Edit modal can clear a
+    // field. Default rather than reject: an omitted date means "starts now,
+    // runs a year".
+    const startDate = input.startDate ?? new Date();
+    const endDate =
+      input.endDate ??
+      new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+    if (endDate <= startDate) {
       throw new Error('End date must be after start date');
     }
 
@@ -211,15 +150,15 @@ export class GoalService {
     const goal = await this.goalRepository.create({
       user: { connect: { id: userId } },
       title: input.title,
-      description: input.description,
+      description: input.description ?? null,
       type: input.type,
-      priority: input.priority || 'MEDIUM',
+      priority: input.priority ?? 'MEDIUM',
       status: 'ACTIVE',
       targetValue: input.targetValue,
       currentValue: input.currentValue || 0,
-      unit: input.unit,
-      startDate: input.startDate,
-      endDate: input.endDate,
+      unit: input.unit ?? null,
+      startDate,
+      endDate,
       appliesEveryDay,
       project: input.projectId
         ? { connect: { id: input.projectId } }
@@ -252,9 +191,6 @@ export class GoalService {
     // Add tags if provided
     await this.goalRepository.addTags(goal.id, input.tagIds ?? []);
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
 
     return this.goalRepository.findWithRelations(goal.id, userId);
   }
@@ -272,13 +208,24 @@ export class GoalService {
       ...(input.title && { title: input.title }),
       ...(input.description !== undefined && { description: input.description }),
       ...(input.type && { type: input.type }),
-      ...(input.priority && { priority: input.priority }),
-      ...(input.status && { status: input.status }),
+      ...(input.priority !== undefined && { priority: input.priority ?? 'MEDIUM' }),
+      // Previously unreachable: `updateGoalSchema` did not declare `status`, so
+      // the plain `z.object` stripped it and this branch never fired. The Edit
+      // modal's Status select appeared to save and reverted on refresh.
+      ...(input.status && {
+        status: input.status,
+        // `archivedAt` mirrors CANCELLED status, so a goal revived through
+        // this path must not be left looking archived.
+        ...(input.status === 'CANCELLED'
+          ? { archivedAt: new Date() }
+          : { archivedAt: null }),
+      }),
       ...(input.targetValue !== undefined && { targetValue: input.targetValue }),
       ...(input.currentValue !== undefined && { currentValue: input.currentValue }),
       ...(input.unit !== undefined && { unit: input.unit }),
-      ...(input.startDate && { startDate: input.startDate }),
-      ...(input.endDate && { endDate: input.endDate }),
+      ...(input.startDate !== undefined && { startDate: input.startDate ?? new Date() }),
+      ...(input.endDate !== undefined && { endDate: input.endDate ?? new Date() }),
+      ...(input.completedAt !== undefined && { completedAt: input.completedAt }),
       ...(input.projectId !== undefined && {
         project: input.projectId
           ? { connect: { id: input.projectId } }
@@ -309,9 +256,6 @@ export class GoalService {
       await this.goalRepository.addTags(goalId, input.tagIds);
     }
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
 
     return this.goalRepository.findWithRelations(goalId, userId);
   }
@@ -380,9 +324,6 @@ export class GoalService {
     });
     // TODO: Trigger notification
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
 
     return this.goalRepository.findWithRelations(goalId, userId);
   }
@@ -510,9 +451,6 @@ export class GoalService {
 
     // TODO: Audit log
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
   }
 }
 

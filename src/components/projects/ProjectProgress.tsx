@@ -10,7 +10,7 @@
  */
 import { CircleCheck, Circle, Flag, FolderKanban, Target } from 'lucide-react';
 import type { Milestone, Goal } from '@/generated/prisma';
-import type { ProjectItem } from '@/store/projects.store';
+import type { ProjectItem } from '@/types/projects';
 import { formatDate, getPercentageColor } from '@/lib/utils';
 import { Badge, Card, Progress } from '@/components/ui';
 import { PROJECT_STATUS_LABELS } from './ProjectCard';

@@ -1,4 +1,4 @@
-import type { Prisma, HabitLog, HabitStatus, HabitTier } from '@/generated/prisma';
+import type { Prisma, HabitLog } from '@/generated/prisma';
 import { format, parseISO, subDays } from 'date-fns';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { HabitRepository } from '@/server/repositories/habit.repository';
@@ -8,11 +8,10 @@ import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
 import { calculateHabitEligibility } from '@/lib/habits/eligibility';
 import { calculateStreak, recordStreakMilestone } from '@/lib/streaks/calculate-streak';
 import { AuditRepository } from '@/server/repositories/audit.repository';
+import { UserRepository } from '@/server/repositories/user.repository';
 import { ScoringService } from './scoring.service';
 import { AchievementService } from './achievement.service';
-import { invalidateDashboard } from '@/server/cache/dashboard-cache';
-import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
-import { invalidateInsights } from '@/server/cache/insight-cache';
+import { automationService } from './automation.service';
 
 /**
  * Habit Service
@@ -43,68 +42,6 @@ export class HabitService {
     return this.habitRepository.findAll(userId, filters);
   }
 
-  /**
-   * Filter the user's habits.
-   *
-   * Owns the composed filter rules that used to live in the route: free-text
-   * search over name/description, an "active on this date" window check, and the
-   * "has a log at this energy level" filter (resolved with one query, not one
-   * lookup per habit).
-   */
-  async filterHabits(
-    userId: string,
-    filters: {
-      status?: HabitStatus[];
-      tier?: HabitTier[];
-      categoryId?: string;
-      search?: string;
-      sortBy?: 'name' | 'createdAt' | 'streak' | 'completionRate';
-      sortOrder?: 'asc' | 'desc';
-      limit?: number;
-      offset?: number;
-      includeArchived?: boolean;
-      date?: string;
-      energy?: number;
-    }
-  ) {
-    let habits = await this.habitRepository.findAll(userId, {
-      status: filters.status,
-      tier: filters.tier,
-      categoryId: filters.categoryId,
-      includeArchived: filters.includeArchived,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
-      limit: filters.limit,
-      offset: filters.offset,
-    });
-
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      habits = habits.filter(
-        (habit) =>
-          habit.name.toLowerCase().includes(q) ||
-          (habit.description?.toLowerCase().includes(q) ?? false)
-      );
-    }
-
-    if (filters.date) {
-      const target = new Date(`${filters.date}T00:00:00Z`);
-      habits = habits.filter((habit) => {
-        if (new Date(habit.startDate) > target) return false;
-        if (habit.endDate && new Date(habit.endDate) < target) return false;
-        return true;
-      });
-    }
-
-    if (filters.energy !== undefined) {
-      const matchingIds = new Set(
-        await this.habitRepository.findIdsWithLogEnergy(userId, filters.energy)
-      );
-      habits = habits.filter((habit) => matchingIds.has(habit.id));
-    }
-
-    return habits;
-  }
 
   /**
    * Today's eligible habits with their completion state.
@@ -201,9 +138,6 @@ export class HabitService {
     }
 
     // Invalidate dashboard cache
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
 
     // Return habit with relations
     return (await this.habitRepository.findWithRelations(
@@ -335,10 +269,15 @@ export class HabitService {
 
           // Check for milestone
           if (updated.newMilestone !== undefined) {
+            // Dated to the log's own day. It previously fell back to
+            // `new Date().toISOString()`, so back-filling an older day recorded
+            // the milestone against today and it vanished from the day it
+            // happened in every date-bucketed query.
             await recordStreakMilestone(
               userId,
               updated.newMilestone,
-              habit.tier.toLowerCase()
+              habit.tier.toLowerCase(),
+              date
             );
           }
         }
@@ -348,20 +287,53 @@ export class HabitService {
     // Trigger score recalculation for the date
     await new ScoringService().calculateDailyScore(userId, date);
 
+    // Fire `HABIT_COMPLETED` automations. Previously nothing evaluated
+    // automation rules, so enabling one had no effect. Fire-and-forget like the
+    // achievement check: an automation must not fail the habit log.
+    //
+    // Only on COMPLETED — a MISSED or PARTIAL log is not a completion, and
+    // firing on every log would spam tasks for users who mark things skipped.
+    if (status === 'COMPLETED') {
+      automationService
+        .handleEvent(userId, { type: 'HABIT_COMPLETED', habitId, date })
+        .catch((err: unknown) => {
+          console.error('Failed to run automations after habit log:', err);
+        });
+    }
+
     // Trigger achievement checks asynchronously (don't block the request)
     new AchievementService().checkForUnlocks(userId).catch(err => {
       console.error('Failed to check achievements after habit log:', err);
     });
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
 
     return {
       log,
       streakUpdated,
       newStreak,
     };
+  }
+
+  /**
+   * Attach or clear a habit-log note without changing completion state.
+   *
+   * The Notes panel used to POST `/log` with `status: 'COMPLETED'`, so saving
+   * a note marked the habit done and advanced the streak — and on a day the
+   * habit was not scheduled, the eligibility guard rejected the COMPLETED
+   * status, so the note could not be saved at all. A note is metadata about the
+   * day, not evidence the habit was completed, so it gets its own path.
+   */
+  async setNote(
+    userId: string,
+    habitId: string,
+    date: string,
+    note: string | null
+  ): Promise<HabitLog> {
+    const habit = await this.habitRepository.findById(habitId, userId);
+    if (!habit) {
+      throw new Error('Habit not found');
+    }
+    return this.habitRepository.setLogNote(habitId, userId, date, note);
   }
 
   /**
@@ -389,9 +361,39 @@ export class HabitService {
       metadata: reason ? { reason } : undefined,
     });
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
+  }
+
+  /**
+   * Restore an archived habit.
+   *
+   * Without this, archiving was irreversible: there was no restore endpoint,
+   * service method or UI control anywhere, so a mis-click hid a habit and its
+   * entire log history with no way back except hard deletion. The habit
+   * returns to `ACTIVE` — a habit that was `PAUSED` before being archived
+   * cannot be recovered as `PAUSED`, because the previous status is not stored.
+   */
+  async restoreHabit(userId: string, habitId: string) {
+    const habit = await this.habitRepository.findById(habitId, userId);
+    if (!habit) {
+      throw new Error('Habit not found');
+    }
+
+    if (habit.status !== 'ARCHIVED') {
+      // Not an error worth failing the request over, but say so, because a
+      // client double-submitting a restore would otherwise look like it worked.
+      return habit;
+    }
+
+    await this.habitRepository.updateStatus(habitId, userId, 'ACTIVE');
+
+    await this.auditRepository.create({
+      userId,
+      action: 'HABIT_RESTORED',
+      entityType: 'HABIT',
+      entityId: habitId,
+    });
+
+    return this.habitRepository.findById(habitId, userId);
   }
 
   /**
@@ -425,9 +427,6 @@ export class HabitService {
       } as Prisma.HabitOverrideCreateInput);
     }
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
   }
 
   /**
@@ -450,9 +449,28 @@ export class HabitService {
     // Clear pause overrides
     await this.habitRepository.deleteOverridesByType(habitId, 'PAUSE');
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
+  }
+
+  /**
+   * All habit logs for a user on a single date, across every habit.
+   *
+   * `findAll` returns `_count: { select: { logs: true } }` — a *count*, not the
+   * log rows — so the client could never reconstruct completion state from the
+   * habits payload. `AppContext` previously read `raw.logs` off that payload,
+   * which is always `undefined`, leaving `habitLogs` permanently empty and
+   * every habit checkbox rendering as "not done" after a refresh. This is the
+   * read path that answers the question the client was actually asking.
+   */
+  async getLogsForDate(userId: string, date: string) {
+    return this.habitRepository.findLogsByUserRange(userId, date, date);
+  }
+
+  /**
+   * Habit-log rows for an arbitrary window, across every habit. Used by the
+   * dashboard health widget and the /habits list so both read one source.
+   */
+  async getLogsInRange(userId: string, startDate: string, endDate: string) {
+    return this.habitRepository.findLogsByUserRange(userId, startDate, endDate);
   }
 
   /**
@@ -462,7 +480,16 @@ export class HabitService {
    * unhealthy. Habits with no logs in the window report "no data".
    */
   async getHabitHealth(userId: string, windowDays = 28) {
-    const endDate = getTodayString(DEFAULT_TZ);
+    // The window's *end* decides which logs count, so it has to be the user's
+    // today. It was pinned to `DEFAULT_TZ`, which meant the last day of the
+    // 28-day window was a different calendar day than the one the user logs
+    // against — for anyone east or west of UTC the most recent day was
+    // systematically included or excluded.
+    const settings = await new UserRepository()
+      .getSettings(userId)
+      .catch(() => null);
+    const timezone = settings?.timezone || DEFAULT_TZ;
+    const endDate = getTodayString(timezone);
     const startDate = format(subDays(parseISO(endDate), windowDays - 1), 'yyyy-MM-dd');
 
     const [habits, logs] = await Promise.all([
@@ -569,9 +596,6 @@ export class HabitService {
       reason: 'Added to today manually',
     } as Prisma.HabitOverrideCreateInput);
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
   }
 
   /**
@@ -594,9 +618,6 @@ export class HabitService {
       await this.habitRepository.deleteOverride(override.id, userId);
     }
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
   }
 
   /**
@@ -636,9 +657,6 @@ export class HabitService {
       } as Prisma.HabitLogCreateInput
     );
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
   }
 
   /**
@@ -662,9 +680,6 @@ export class HabitService {
       entityId: habitId,
     });
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
   }
 
   /**

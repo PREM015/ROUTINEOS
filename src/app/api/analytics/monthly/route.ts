@@ -3,9 +3,18 @@ import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { UserService } from '@/server/services/user.service';
 
 const monthQuerySchema = z.object({
-  month: z.string().regex(/^\d{4}-\d{2}$/),
+  // A plain /^\d{4}-\d{2}$/ also accepts 2026-99, which would reach the service
+  // and surface as a 500. Refine so an out-of-range month is a 400 here.
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .refine((value) => {
+      const monthNumber = Number(value.slice(5, 7));
+      return monthNumber >= 1 && monthNumber <= 12;
+    }, { message: 'month must be 01-12' }),
 });
 
 /**
@@ -22,9 +31,13 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const month =
-      searchParams.get('month') ??
-      getTodayString(DEFAULT_TZ).slice(0, 7);
+    // The user's timezone, as the docstring promises. It hard-coded
+    // `DEFAULT_TZ` instead, so a `America/Los_Angeles` user at 20:00 local on
+    // the 1st was served September data — the month boundary was off by hours.
+    const timezone = await new UserService()
+      .getTimezone(session.user.id)
+      .catch(() => DEFAULT_TZ);
+    const month = searchParams.get('month') ?? getTodayString(timezone).slice(0, 7);
 
     const validated = monthQuerySchema.safeParse({ month });
     if (!validated.success) {

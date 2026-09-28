@@ -59,31 +59,32 @@ export default function HabitNotes({ habitId }: HabitNotesProps) {
     load();
   }, [habitId, today]);
 
-  // ── Save note for today's log ─────────────────────────────────────────────
+  // ── Save note for this day's log ───────────────────────────────────────────
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     setSaved(false);
     try {
-      const res = await fetch(`/api/habits/${habitId}/log`, {
-        method: 'POST',
+      // PATCH /note, not POST /log. Posting the log with `status: 'COMPLETED'`
+      // is what made saving a note mark the habit done and bump the streak.
+      const res = await fetch(`/api/habits/${habitId}/note`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: today,
-          status: 'COMPLETED',
-          note: todayNote,
-        }),
+        body: JSON.stringify({ date: today, note: todayNote.trim() || null }),
       });
-      if (!res.ok) throw new Error('Failed to save note');
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error || 'Failed to save note');
+      }
 
-      // Update local notes list
       setNotes((prev) => {
         const updated = prev.filter((n) => n.date !== today);
         if (todayNote.trim()) {
-          updated.unshift({ date: today, note: todayNote });
+          updated.unshift({ date: today, note: todayNote.trim() });
         }
         return updated;
       });
+      setTodayNote(todayNote.trim());
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {

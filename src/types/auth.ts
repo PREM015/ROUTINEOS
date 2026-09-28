@@ -184,6 +184,8 @@ export interface UpdateProfileResponse {
 
 export interface DeviceSessionInfo {
   id: string;
+  /** Stable per-browser identifier; used to recognise "this" device. */
+  deviceId: string | null;
   deviceName: string | null;
   deviceType: DeviceType | null;
   ipAddress: string | null;

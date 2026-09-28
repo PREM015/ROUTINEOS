@@ -1,7 +1,9 @@
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { BreakRepository } from '@/server/repositories/break.repository';
+import { UserRepository } from '@/server/repositories/user.repository';
 import { getFocusSessionStatus } from '@/types/focus';
 import { nextBreakAt } from '@/lib/focus/break-scheduler';
+import { DEFAULT_TZ, dayBoundsInTimezone } from '@/lib/dates';
 import type { createFocusSessionSchema, focusQuerySchema, createBreakSchema, breakQuerySchema } from '@/schemas/focus.schema';
 import type { z } from 'zod';
 
@@ -22,10 +24,12 @@ type BreakQuery = z.infer<typeof breakQuerySchema>;
 export class FocusService {
   private focusRepository: FocusRepository;
   private breakRepository: BreakRepository;
+  private userRepository: UserRepository;
 
   constructor() {
     this.focusRepository = new FocusRepository();
     this.breakRepository = new BreakRepository();
+    this.userRepository = new UserRepository();
   }
 
   /**
@@ -34,18 +38,32 @@ export class FocusService {
    * A session only counts as current when it started today; a session left
    * running from a previous day is treated as stale.
    */
-  async getActiveSession(userId: string, now: Date = new Date()) {
+  async getActiveSession(userId: string) {
     const active = await this.focusRepository.findActiveByUserId(userId);
     if (!active) return null;
 
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    // "Today" is the user's today. The bounds used to be built with
+    // `new Date(y, m, d)`, which resolves midnight in the **host's** zone, so
+    // on a UTC server a session started at 22:00 in `Asia/Tokyo` was judged to
+    // belong to the previous day and was discarded as stale — the user watched
+    // their running session disappear from the UI.
+    const { start: startOfToday, end: endOfToday } = dayBoundsInTimezone(
+      await this.timezoneFor(userId)
+    );
 
     if (active.startedAt < startOfToday || active.startedAt >= endOfToday) {
       return null;
     }
 
     return { ...active, status: getFocusSessionStatus(active) };
+  }
+
+  /** The user's stored timezone, falling back to `DEFAULT_TZ` on any failure. */
+  private async timezoneFor(userId: string): Promise<string> {
+    const settings = await this.userRepository
+      .getSettings(userId)
+      .catch(() => null);
+    return settings?.timezone || DEFAULT_TZ;
   }
 
   /**
@@ -103,14 +121,25 @@ export class FocusService {
         'long-break': 'Long break',
         stopwatch: 'Stopwatch session',
       };
+      // An aborted session must be closed out, not left "open".
+      //
+      // `findActiveByUserId` selects `completedAt: null` to mean "a session is
+      // currently running". Stop / Skip / mode-switch all post with
+      // `completed: false`, and the service used to leave `completedAt`
+      // undefined — so the row looked like a live session indefinitely and
+      // `/focus/session` showed it as IN PROGRESS forever. Setting
+      // `completedAt` instead would have been wrong the other way: it counts
+      // as completed work in the stats. `abortedAt` records "ended, not
+      // finished" explicitly.
       return this.focusRepository.createSession(userId, {
         title: titles[input.type],
         plannedDuration: Math.max(1, Math.round(input.plannedSeconds / 60)),
         actualDuration: Math.max(0, Math.round(input.actualSeconds / 60)),
         techniques: input.type === 'focus' ? ['Pomodoro'] : undefined,
         startedAt: input.startedAt ?? new Date(),
-        completedAt:
-          input.completed === true ? (input.endedAt ?? new Date()) : undefined,
+        ...(input.completed === true
+          ? { completedAt: input.endedAt ?? new Date() }
+          : { abortedAt: input.endedAt ?? new Date() }),
       });
     }
 
@@ -141,12 +170,9 @@ export class FocusService {
     try {
       const active = await this.focusRepository.findActiveByUserId(userId);
       if (active) {
-        const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const endOfToday = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate() + 1
+        // Same host-local-vs-user-local bug as `getActiveSession`.
+        const { start: startOfToday, end: endOfToday } = dayBoundsInTimezone(
+          await this.timezoneFor(userId)
         );
 
         if (active.startedAt >= startOfToday && active.startedAt < endOfToday) {

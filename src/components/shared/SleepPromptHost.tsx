@@ -37,11 +37,17 @@ export function SleepPromptHost() {
   ).padStart(2, '0')}`;
 
   return (
-    <div className="fixed bottom-24 right-4 z-40 w-80 max-w-[calc(100vw-2rem)] md:bottom-6">
-      <div className="rounded-xl border border-amber-500/40 bg-background/95 p-4 shadow-lg backdrop-blur">
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-sm font-semibold text-foreground">Time to wind down</p>
-          <Timer className="h-4 w-4 text-amber-500/70" />
+      // Stacked clear of `FloatingFocusBar`, which occupies the same corner:
+      // that bar sits at `bottom-20` on mobile and `md:bottom-6` on desktop, and
+      // both were pinned to `md:bottom-6` — so on desktop the sleep card and the
+      // focus pill were rendered on top of each other and the pill was
+      // unreachable. `bottom-36` / `md:bottom-24` clears the bar plus its
+      // height, and `z-50` puts the time-sensitive prompt above it.
+      <div className="fixed bottom-36 right-3 z-50 w-80 max-w-[calc(100vw-1.5rem)] md:bottom-24 md:right-6">
+        <div className="rounded-xl border border-amber-500/40 bg-background/95 p-4 shadow-lg backdrop-blur">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold text-foreground">Time to wind down</p>
+            <Timer className="h-4 w-4 text-amber-500/70" />
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Target bedtime {prompt.targetBedtime || '\u2014'}. Auto-starts in{' '}

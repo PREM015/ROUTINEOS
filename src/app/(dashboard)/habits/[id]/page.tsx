@@ -4,8 +4,15 @@ import { HabitRepository } from '@/server/repositories/habit.repository';
 import { Metadata } from 'next';
 import HabitDetailClient from './HabitDetailClient';
 
+/**
+ * `params` is a Promise in Next 15+ (synchronous access was removed in 16).
+ * Declaring it as a plain object made `params.id` `undefined` at runtime, so
+ * this page either 404'd or — worse — resolved to an arbitrary habit of the
+ * user via `findFirst({ where: { userId } })` and titled itself with that
+ * habit's name. Every habit link in the app led here.
+ */
 interface HabitDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // ── Server-side metadata ──────────────────────────────────────────────────────
@@ -16,8 +23,9 @@ export async function generateMetadata(
   if (!session?.user?.id) return { title: 'Habit' };
 
   try {
+    const { id } = await params;
     const repo = new HabitRepository();
-    const habit = await repo.findWithRelations(params.id, session.user.id);
+    const habit = await repo.findWithRelations(id, session.user.id);
     return {
       title: habit ? `${habit.name} — RoutineOS` : 'Habit — RoutineOS',
       description: habit?.description ?? undefined,
@@ -32,8 +40,9 @@ export default async function HabitDetailPage({ params }: HabitDetailPageProps) 
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
+  const { id } = await params;
   const repo = new HabitRepository();
-  const habit = await repo.findWithRelations(params.id, session.user.id);
+  const habit = await repo.findWithRelations(id, session.user.id);
 
   if (!habit) notFound();
 

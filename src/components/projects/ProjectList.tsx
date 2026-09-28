@@ -7,7 +7,7 @@
  *   <ProjectList projects={projects} onSelect={(id) => open(id)} />
  */
 import { FolderKanban } from 'lucide-react';
-import type { ProjectItem } from '@/store/projects.store';
+import type { ProjectItem } from '@/types/projects';
 import { EmptyState } from '@/components/ui';
 import ProjectCard from './ProjectCard';
 import { cn } from '@/lib/utils';

@@ -18,7 +18,13 @@ import type {
 // Core Focus Types
 // ============================================================================
 
-export type FocusSessionStatus = 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+export type FocusSessionStatus =
+  | 'IN_PROGRESS'
+  | 'PAUSED'
+  | 'COMPLETED'
+  /** Ended early by the user (stop / skip / mode switch). Not completed work. */
+  | 'ABORTED'
+  | 'CANCELLED';
 
 export interface FocusSessionWithRelations extends FocusSession {
   category: Category | null;
@@ -461,9 +467,12 @@ export function isValidFocusTimerState(state: unknown): state is FocusTimerState
 }
 
 export function getFocusSessionStatus(
-  session: Pick<FocusSession, 'startedAt' | 'completedAt' | 'pausedAt'>
+  session: Pick<FocusSession, 'startedAt' | 'completedAt' | 'abortedAt' | 'pausedAt'>
 ): FocusSessionStatus {
   if (session.completedAt) return 'COMPLETED';
+  // Ended early (stop / skip / mode switch). Distinct from COMPLETED so
+  // average-duration and completion stats do not count it as finished work.
+  if (session.abortedAt) return 'ABORTED';
   if (session.pausedAt) return 'PAUSED';
   return 'IN_PROGRESS';
 }

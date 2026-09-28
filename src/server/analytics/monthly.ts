@@ -120,9 +120,21 @@ function monthWeeks(startDate: string, endDate: string): Array<{ index: number; 
  * Monthly summary for a `YYYY-MM` month string.
  */
 export async function monthlySummary(userId: string, month: string): Promise<MonthlySummary> {
-  const [year, monthNumber] = month.split('-').map(Number);
+  // Number() yields NaN for malformed input, and NaN is not nullish, so a `?? 0`
+  // fallback here would never fire and would silently produce a range like
+  // "2026-09-NaN". Validate the shape instead.
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) {
+    throw new Error(`Invalid month "${month}": expected YYYY-MM`);
+  }
+  const year = Number(match[1]);
+  const monthNumber = Number(match[2]);
+  if (monthNumber < 1 || monthNumber > 12) {
+    throw new Error(`Invalid month "${month}": month must be 01-12`);
+  }
+
   const startDate = `${month}-01`;
-  const lastDay = new Date(Date.UTC(year ?? 0, monthNumber ?? 1, 0)).getUTCDate();
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
   const endDate = `${month}-${String(lastDay).padStart(2, '0')}`;
   const period: DateRange = { startDate, endDate };
 
@@ -135,7 +147,7 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
       new Date(`${startDate}T00:00:00.000Z`),
       new Date(`${endDate}T23:59:59.999Z`)
     ),
-    journalRepository.countByMonth(userId, year ?? 0, monthNumber ?? 1),
+      journalRepository.countByMonth(userId, year, monthNumber),
     goalRepository.findAll(userId, {}),
   ]);
 

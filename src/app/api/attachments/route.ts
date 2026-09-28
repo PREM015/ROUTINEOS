@@ -1,11 +1,15 @@
 import { auth } from '@/lib/auth';
-import { AttachmentRepository } from '@/server/repositories/attachment.repository';
+import { attachmentService } from '@/server/services/attachment.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
+ * Attachments Route
  * GET /api/attachments
- * List all attachments for the authenticated user (optionally filtered by entity)
+ *
+ * Thin handler: the list + count pair and their shared filter live in
+ * `AttachmentService`.
  */
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -14,17 +18,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const offset = Math.max(0, parseInt(searchParams.get('offset') ?? '0', 10) || 0);
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') ?? '50', 10) || 50));
-
-    const attachmentRepository = new AttachmentRepository();
-    const attachments = await attachmentRepository.findAllByUser(session.user.id, {
-      limit,
-      offset,
-      entityType: searchParams.get('entityType') ?? undefined,
-      entityId: searchParams.get('entityId') ?? undefined,
-    });
-    const total = await attachmentRepository.countByUser(session.user.id, {
+    const { attachments, total, limit, offset } = await attachmentService.list(session.user.id, {
+      limit: parseInt(searchParams.get('limit') ?? '50', 10) || 50,
+      offset: Math.max(0, parseInt(searchParams.get('offset') ?? '0', 10) || 0),
       entityType: searchParams.get('entityType') ?? undefined,
       entityId: searchParams.get('entityId') ?? undefined,
     });

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Mount } from '@/components/motion/Mount';
+import { calendarDaysBetween } from '@/lib/dates';
 import type { GoalPriority, GoalType } from '@/generated/prisma';
 
 interface TodayGoal {
@@ -27,13 +28,17 @@ interface TodayGoalsProps {
   date: string;
 }
 
-function daysRemaining(endDate: string): number {
-  const diff = new Date(endDate).getTime() - new Date(dateStr()).getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
-function dateStr(): string {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * Whole days from `today` until `endDate`.
+ *
+ * Both operands are pure `YYYY-MM-DD` calendar labels, so they are stepped with
+ * `shiftCalendarDay` rather than by subtracting `Date` millis. The previous
+ * `new Date(endDate).getTime() - new Date(dateStr()).getTime()` parsed
+ * `dateStr()` (a UTC date string) as **local** midnight, so the difference was
+ * short by the host's UTC offset and every count was off by up to a day.
+ */
+function daysRemaining(endDate: string, today: string): number {
+  return Math.max(0, calendarDaysBetween(today, endDate));
 }
 
 export function TodayGoals({ date }: TodayGoalsProps) {
@@ -122,7 +127,7 @@ export function TodayGoals({ date }: TodayGoalsProps) {
             const pct = goal.targetValue > 0
               ? Math.min(100, (Number(goal.currentValue) / Number(goal.targetValue)) * 100)
               : 0;
-            const remaining = daysRemaining(goal.endDate);
+            const remaining = daysRemaining(goal.endDate, date);
             const isDaily = goal.type === 'DAILY';
             return (
               <div key={goal.id} className="border rounded-lg p-4">

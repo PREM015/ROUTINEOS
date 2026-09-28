@@ -1,4 +1,5 @@
 import { UserRepository } from '@/server/repositories/user.repository';
+import { auth } from '@/lib/auth';
 import { RateLimiter } from '@/lib/middleware/rate-limit';
 import { RateLimitError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
@@ -39,6 +40,20 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const user = await new UserRepository().findById(id);
     if (!user || user.isDeleted || !user.isActive) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Honour the user's own privacy choice. `profilePublic` used to be
+    // write-only: the Settings > Privacy switch saved it, but this route
+    // returned the profile to anyone who asked, which is exactly the audience
+    // the switch exists to exclude.
+    //
+    // The owner always sees their own profile so a signed-in user is never
+    // surprised by a 404 on their own record.
+    const settings = await new UserRepository().getSettings(id);
+    const isSelf =
+      (await auth())?.user?.id === id;
+    if (settings && settings.profilePublic === false && !isSelf) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 

@@ -100,7 +100,6 @@ export function FocusStats({ className }: { className?: string }) {
 
     let todayMinutes = 0;
     let weekMinutes = 0;
-    let totalMinutes = 0;
 
     for (const session of sessions) {
       const started = new Date(session.startedAt);
@@ -109,14 +108,21 @@ export function FocusStats({ className }: { className?: string }) {
 
       daysWithSessions.add(day);
       dayMinutes.set(day, (dayMinutes.get(day) ?? 0) + minutes);
-      totalMinutes += minutes;
       if (day === todayKey) todayMinutes += minutes;
       if (day >= weekAgoKey && day <= localDayKey(now)) weekMinutes += minutes;
     }
 
+    // Average duration of *completed* sessions. This used to divide
+    // `totalMinutes` (every session, including aborted and in-progress ones)
+    // by the number of completed sessions, inflating the average. The
+    // all-sessions total it came from is no longer needed by any tile.
     const completed = sessions.filter((session) => session.status === 'COMPLETED');
+    const completedMinutes = completed.reduce(
+      (sum, session) => sum + sessionMinutes(session),
+      0
+    );
     const averageDuration =
-      completed.length === 0 ? 0 : Math.round(totalMinutes / completed.length);
+      completed.length === 0 ? 0 : Math.round(completedMinutes / completed.length);
 
     const chart = Array.from({ length: 7 }, (_, index) => {
       const day = new Date(now);

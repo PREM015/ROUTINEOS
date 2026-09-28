@@ -15,6 +15,40 @@ const MS_PER_DAY = 86_400_000;
 /** Milestone lengths at which a streak qualifies for a badge. */
 export const STREAK_MILESTONES: number[] = [...THRESHOLDS.streakMilestones];
 
+/** The score fields that decide whether a day counts toward a streak. */
+export interface StreakDayScore {
+  coreScore: number | null;
+  isMinimumDay: boolean;
+}
+
+/**
+ * THE definition of "this day counts toward a streak".
+ *
+ * Both the write path (`lib/streaks/calculate-streak.ts`, which mutates the
+ * stored `Streak` row) and the read path (`analytics/streaks.ts`, which derives
+ * streaks for display) must agree, or the number a user sees differs from the
+ * number on record.
+ *
+ * They previously did not: the write path tested `totalScore >= 50` while the
+ * read path tested this predicate. A day with a `coreScore` but a `totalScore`
+ * below 50 was counted in one place and ignored in the other.
+ *
+ * ## A scored zero is not activity
+ *
+ * `coreScore` is `Float?` in the schema, and the scorer writes a numeric `0` for
+ * a day the user simply never logged — not `null`. A bare `coreScore !== null`
+ * therefore treated *every scored day* as a streak day, including days with zero
+ * activity. A user with 8 scored days but real activity on only 3 of them was
+ * credited a current streak of 8 and a total of 8 completed days.
+ *
+ * So a day counts only when it carries genuine activity: a minimum day (which is
+ * explicitly opted into and may legitimately score 0) or a positive core score.
+ * `null` remains "never scored" and does not count.
+ */
+export function isStreakActiveDay(score: StreakDayScore): boolean {
+  return score.isMinimumDay === true || (score.coreScore !== null && score.coreScore > 0);
+}
+
 export interface StreakOptions {
   /** Dates (YYYY-MM-DD) that count toward the streak (e.g. rest dates). */
   restDates?: ReadonlySet<string>;
@@ -67,11 +101,7 @@ export function calculateCurrentStreak(
   today: string,
   options: StreakOptions = {},
 ): number {
-  const {
-    restDates = new Set<string>(),
-    restCountsInStreak = true,
-    graceDays = 0,
-  } = options;
+  const { restDates = new Set<string>(), restCountsInStreak = true, graceDays = 0 } = options;
 
   const active = normalizeDates(dates);
   const activeSet = new Set(active);
@@ -114,10 +144,7 @@ export function calculateLongestStreak(
   dates: string[],
   options: Pick<StreakOptions, 'restDates' | 'restCountsInStreak'> = {},
 ): number {
-  const {
-    restDates = new Set<string>(),
-    restCountsInStreak = true,
-  } = options;
+  const { restDates = new Set<string>(), restCountsInStreak = true } = options;
 
   const active = normalizeDates(dates);
   if (active.length === 0) return 0;
@@ -161,9 +188,7 @@ export function streakMilestone(
   streakDays: number,
   milestones: number[] = STREAK_MILESTONES,
 ): number | null {
-  const reached = milestones
-    .filter((m) => streakDays >= m)
-    .sort((a, b) => b - a);
+  const reached = milestones.filter((m) => streakDays >= m).sort((a, b) => b - a);
   return reached[0] ?? null;
 }
 
@@ -176,9 +201,7 @@ export function nextStreakMilestone(
   streakDays: number,
   milestones: number[] = STREAK_MILESTONES,
 ): number | null {
-  const next = milestones
-    .filter((m) => m > streakDays)
-    .sort((a, b) => a - b);
+  const next = milestones.filter((m) => m > streakDays).sort((a, b) => a - b);
   return next[0] ?? null;
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { fetchWithAuth } from '@/lib/api-client';
 import HabitScheduleEditor from '@/components/habits/HabitScheduleEditor';
 import HabitHistory from '@/components/habits/HabitHistory';
@@ -116,13 +117,21 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
     }
   };
 
-  const handleSkipToday = () =>
-    apiAction('skip', 'POST', { date: new Date().toISOString().split('T')[0] });
+  // The log's date, from the user's timezone.
+  //
+  // These two used `new Date().toISOString().split('T')[0]`, which is the **UTC**
+  // date. For a user in `Asia/Kolkata` at 06:00 local that is *yesterday*, so
+  // "Log today" wrote the log against the previous day — which then re-scored
+  // that day and broke its streak. It also disagreed with every other habit
+  // write path, which goes through `useApp().selectedDate`.
+  const { today: userToday } = useUserTimezone();
+
+  const handleSkipToday = () => apiAction('skip', 'POST', { date: userToday });
   const handlePause = () => apiAction('pause', 'POST', {});
   const handleResume = () => apiAction('resume', 'POST', {});
   const handleLogToday = () =>
     apiAction('log', 'POST', {
-      date: new Date().toISOString().split('T')[0],
+      date: userToday,
       status: 'COMPLETED',
     });
 
@@ -388,9 +397,20 @@ export default function HabitDetailClient({ habit: initialHabit }: HabitDetailCl
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
             Frequency &amp; Schedule
           </h2>
+          {/* `frequencyValue` is a comma-joined weekday list ("1,3,5"), not
+              JSON. This used to `JSON.parse(habit.frequencyValue)`, which threw
+              a SyntaxError for every SPECIFIC_WEEKDAYS habit and dropped the
+              whole tab into the error boundary. The editor parses it itself
+              and persists the change. */}
           <HabitScheduleEditor
+            habitId={habit.id}
             initialFrequencyType={habit.frequencyType}
-            initialConfig={habit.frequencyValue ? JSON.parse(habit.frequencyValue) : null}
+            initialFrequencyValue={habit.frequencyValue ?? null}
+            initialTargetCount={habit.targetCount ?? null}
+            // The page is a server component reading through
+            // `HabitRepository`, so a schedule change has to come back through
+            // the server to update the header and history tabs.
+            onSaved={() => router.refresh()}
           />
         </div>
       )}

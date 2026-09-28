@@ -3,9 +3,49 @@
 import { createContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { fetchWithAuth } from '@/lib/api-client';
-import { getTodayString, nowForUser } from '@/lib/dates';
+import { nowForUser } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { isDayType } from '@/constants/routine';
 import type { DayType } from '@/generated/prisma';
+
+/**
+ * Update payload accepted by `updateHabit` / `updateGoal`.
+ *
+ * Shaped like `Partial<Habit>` / `Partial<Goal>` so the optimistic local write
+ * stays type-safe against the client models, but the fields backed by a nullable
+ * Prisma column accept `null` as well as `undefined`. Sending `undefined` to
+ * mean "clear this" does nothing — `JSON.stringify` drops undefined keys, so the
+ * request never carried them and the old value survived. That is why the Edit
+ * modals could not empty a description, a colour, `frequencyValue`,
+ * `targetCount` or `reminderTime`.
+ */
+type UpdateHabitPatch = Omit<
+  Partial<Habit>,
+  | 'description'
+  | 'color'
+  | 'icon'
+  | 'frequencyValue'
+  | 'targetCount'
+  | 'reminderTime'
+  | 'endDate'
+  | 'categoryId'
+> & {
+  description?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  frequencyValue?: string | null;
+  targetCount?: number | null;
+  reminderTime?: string | null;
+  endDate?: string | null;
+  categoryId?: string | null;
+  appliesEveryDay?: boolean;
+  dayTypeIds?: string[];
+};
+
+type UpdateGoalPatch = Omit<Partial<Goal>, 'description' | 'unit'> & {
+  description?: string | null;
+  unit?: string | null;
+};
 
 // ─── Types (aligned with Prisma enums + API Zod schemas) ────────────────────
 
@@ -31,19 +71,21 @@ export type DayMode = 'NORMAL' | 'MINIMUM' | 'REST' | 'MISSED';
 export interface Habit {
   id: string;
   name: string;
-  description?: string;
+  /** Nullable because the Prisma column is nullable — an emptied field clears
+   *  it rather than falling back to `undefined`. */
+  description?: string | null;
   tier: HabitTier;
   status: HabitStatus;
-  categoryId?: string;
+  categoryId?: string | null;
   category?: string;
-  color?: string;
-  icon?: string;
+  color?: string | null;
+  icon?: string | null;
   frequencyType: FrequencyType;
-  frequencyValue?: string;
-  targetCount?: number;
+  frequencyValue?: string | null;
+  targetCount?: number | null;
   startDate: string;
-  endDate?: string;
-  reminderTime?: string;
+  endDate?: string | null;
+  reminderTime?: string | null;
   reminderEnabled?: boolean;
   appliesEveryDay?: boolean;
   dayTypeAssignments?: Array<{ dayTypeId: string }>;
@@ -81,18 +123,19 @@ export interface RoutineBlock {
 export interface Goal {
   id: string;
   type: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'CUSTOM';
+  // `Goal.priority` is `GoalPriority @default(MEDIUM)` — non-nullable in the
+  // database, so the client model must not claim otherwise.
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | 'PERSONAL' | 'ACADEMIC' | 'NON_PROFIT' | 'PROFESSIONAL';
   status: 'ACTIVE' | 'COMPLETED' | 'MISSED' | 'CARRIED_OVER' | 'ON_HOLD' | 'CANCELLED';
   title: string;
-  description?: string;
+  description?: string | null;
   targetValue: number;
   currentValue: number;
-  unit?: string;
+  unit?: string | null;
   startDate: string;
   endDate: string;
   carriedOverFrom?: string;
 }
-
 export interface DayMeta {
   date: string;
   /** Day *mode* (NORMAL/MINIMUM/REST/MISSED) — not the routine `DayType`. */
@@ -117,8 +160,18 @@ interface AppContextValue {
   dataError: string | null;
   reloadData: () => Promise<void>;
   addHabit: (habit: Omit<Habit, 'id'> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => Promise<Habit>;
-  updateHabit: (id: string, updates: Partial<Habit> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => Promise<void>;
+  /**
+   * Patch a habit.
+   *
+   * The update payload is `UpdateHabitInput`-shaped rather than
+   * `Partial<Habit>` so callers can send `null` to *clear* a nullable column.
+   * `Partial<Habit>` forbade null, which is why the Edit modal used to send
+   * `undefined` (dropped by `JSON.stringify`) and four fields could never be
+   * emptied.
+   */
+  updateHabit: (id: string, updates: UpdateHabitPatch) => Promise<void>;
   archiveHabit: (id: string) => Promise<void>;
+  restoreHabit: (id: string) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   logHabit: (habitId: string, date: string, status: LogStatus, note?: string) => Promise<void>;
   getLogForDate: (habitId: string, date: string) => HabitLog | undefined;
@@ -132,7 +185,8 @@ interface AppContextValue {
   // Goals
   goals: Goal[];
   addGoal: (goal: Omit<Goal, 'id'>) => Promise<Goal>;
-  updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>;
+  /** Patch a goal. `UpdateGoalPatch` allows `null` so fields can be cleared. */
+  updateGoal: (id: string, updates: UpdateGoalPatch) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   updateGoalProgress: (id: string, value: number) => Promise<void>;
 
@@ -183,13 +237,18 @@ let inflightFetch: Promise<void> | null = null;
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const { status } = useSession();
+  // The user's timezone drives "today". It previously called `getTodayString()`
+  // with no argument, which silently resolved to a hard-coded Asia/Kolkata
+  // default, so every habit/routine/goal widget was anchored to the IST date —
+  // a day ahead for the 5.5 hours a western user's local day runs ahead of IST.
+  const { timezone: userTimezone, today: userToday } = useUserTimezone();
   // Avoid hydration mismatch: render a stable placeholder, set the real
   // local date after mount.
   const [selectedDate, setSelectedDate] = useState('');
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only date sync to avoid SSR hydration mismatch
-    setSelectedDate((d) => d || getTodayString());
-  }, []);
+    setSelectedDate((d) => d || userToday);
+  }, [userToday]);
   const today = selectedDate || '1970-01-01';
 
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -263,7 +322,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     color?: string | null; icon?: string | null; sortOrder?: number | null;
     trackCompletion?: boolean | null; overlapWarning?: boolean;
     energyLevel?: string | null;
-    template?: { id?: string; dayType?: string; dayTypeId?: string } | null;
+    dayTypeId?: string | null;
+    // `RoutineBlock.templateId` is a real FK and is present on the row itself.
+    // It is read first because a flattened block (see `fetchAll`) has no nested
+    // `template` object at all — reading only `raw.template?.id` left every
+    // block's `templateId` undefined, so `RoutineList.moveBlock` requested
+    // `/api/routine/undefined/blocks/<id>` and reorder silently failed.
+    templateId?: string | null;
+    template?: { id?: string; dayType?: string; dayTypeId?: string | null } | null;
   }): RoutineBlock => ({
     id: raw.id,
     // Pass the server's DayType straight through. This used to rewrite WORKDAY to
@@ -275,7 +341,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       : isDayType(raw.template?.dayType)
         ? raw.template.dayType
         : 'CUSTOM',
-    dayTypeId: raw.template?.dayTypeId,
+    dayTypeId: raw.dayTypeId ?? raw.template?.dayTypeId ?? undefined,
     startTime: raw.startTime,
     endTime: raw.endTime,
     title: raw.title ?? raw.name ?? 'Untitled block',
@@ -289,7 +355,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     energyLevel: raw.energyLevel === 'HIGH' || raw.energyLevel === 'MEDIUM' || raw.energyLevel === 'LOW'
       ? raw.energyLevel
       : undefined,
-    templateId: raw.template?.id,
+    templateId: raw.templateId ?? raw.template?.id ?? undefined,
   }), []);
 
   const fetchAll = useCallback(async () => {
@@ -299,7 +365,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setDataError(null);
     try {
       const [habitRes, routineRes, goalRes] = await Promise.all([
-        fetch('/api/habits', { signal: controller.signal }),
+        // `includeArchived=true` and an explicit high limit. Without the first,
+        // the repository strips ARCHIVED rows, so the /habits "Archived" tab
+        // was permanently empty — and because permanent delete was only offered
+        // from that tab, the app's one hard-delete control was unreachable.
+        // Without the second, the route's `limit ?? 20` default silently
+        // truncated the list with no pagination UI to reveal the rest.
+        fetch('/api/habits?includeArchived=true&limit=100', {
+          signal: controller.signal,
+        }),
         fetch('/api/routine', { signal: controller.signal }),
         fetch('/api/goals', { signal: controller.signal }),
       ]);
@@ -307,19 +381,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (habitRes.ok) {
         const habitJson = await habitRes.json();
         const list = Array.isArray(habitJson?.data) ? habitJson.data : [];
-        const mappedHabits = list.map(normalizeHabit);
-        setHabits(mappedHabits);
-        const mappedLogs: HabitLog[] = list.flatMap((raw: { id: string; logs?: Array<{ id: string; date: string; status: LogStatus; note?: string | null; completedAt?: string | Date | null }> }) =>
-          (raw.logs ?? []).map((log) => ({
-            id: log.id,
-            habitId: raw.id,
-            date: typeof log.date === 'string' ? log.date.slice(0, 10) : String(log.date),
-            status: log.status,
-            note: log.note ?? undefined,
-            completedAt: log.completedAt ? String(log.completedAt) : undefined,
-          }))
-        );
-        setHabitLogs(mappedLogs);
+        setHabits(list.map(normalizeHabit));
       } else if (habitRes.status !== 401) {
         const j = await habitRes.json().catch(() => ({}));
         throw new Error(apiErrorMessage(j, 'Failed to load habits'));
@@ -329,10 +391,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const routineJson = await routineRes.json();
         const templates = Array.isArray(routineJson?.data) ? routineJson.data : [];
         // Templates include blocks: flatten to the block list the UI consumes.
-        const blocks = templates.flatMap((t: { dayType?: string; blocks?: unknown[] }) =>
-          (Array.isArray(t.blocks) ? t.blocks : []).map((b) =>
-            normalizeRoutine({ ...(b as object), dayType: (b as { dayType?: string }).dayType ?? t.dayType } as never)
-          )
+        // The owning template's id is injected here because the flattened block
+        // loses it — `RoutineList` needs it to build the reorder URL.
+        const blocks = templates.flatMap((t: { id?: string; dayType?: string; dayTypeId?: string | null; blocks?: unknown[] }) =>
+          (Array.isArray(t.blocks) ? t.blocks : []).map((b) => {
+            const raw = b as Record<string, unknown>;
+            return normalizeRoutine({
+              ...raw,
+              templateId: (raw.templateId as string | undefined) ?? t.id,
+              dayType: (raw.dayType as string | undefined) ?? t.dayType,
+              dayTypeId: (raw.dayTypeId as string | null | undefined) ?? t.dayTypeId,
+            } as never);
+          })
         );
         blocks.sort((a: RoutineBlock, b: RoutineBlock) => a.startTime.localeCompare(b.startTime));
         setRoutineBlocks(blocks);
@@ -348,6 +418,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const j = await goalRes.json().catch(() => ({}));
         throw new Error(apiErrorMessage(j, 'Failed to load goals'));
       }
+
+      // A 401 is not swallowed. The `status !== 401` guards below skipped
+      // reporting, so an expired session left all three lists empty and still
+      // called `setDataLoaded(true)` — every page then rendered a confident
+      // "nothing here yet" instead of prompting a re-login.
+      if (habitRes.status === 401 || routineRes.status === 401 || goalRes.status === 401) {
+        throw new Error('Your session expired. Sign in again to load your data.');
+      }
+
       setDataLoaded(true);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -355,6 +434,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setDataError(error instanceof Error ? error.message : 'Failed to load data');
     }
   }, [normalizeHabit, normalizeGoal, normalizeRoutine]);
+
+  /**
+   * Load the habit logs for the selected date.
+   *
+   * These live in their own request because `GET /api/habits` returns
+   * `_count.logs` (a number), not the log rows — reading them off the habits
+   * payload is why every checkbox used to reset on refresh.
+   *
+   * Kept out of `fetchAll`'s `Promise.all` deliberately: a failure here degrades
+   * habits *only*, whereas throwing would blank habits, routine **and** goals
+   * at once.
+   *
+   * A failure is still reported. The old code logged to the console and
+   * returned, leaving `habitLogs` empty — indistinguishable from a genuine day
+   * with nothing ticked, and it read as silent data loss: every checkbox
+   * rendered unticked with no explanation.
+   */
+  const fetchHabitLogs = useCallback(async (date: string) => {
+    try {
+      const res = await fetch(`/api/habits/logs?date=${encodeURIComponent(date)}`);
+      if (res.status === 401) return;
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setDataError(apiErrorMessage(j, `Failed to load habit logs (${res.status})`));
+        return;
+      }
+      const json = await res.json();
+      const rows: Array<{
+        id: string;
+        habitId: string;
+        date: string | Date;
+        status: LogStatus;
+        note?: string | null;
+        completedAt?: string | Date | null;
+      }> = Array.isArray(json?.data) ? json.data : [];
+
+      setHabitLogs(
+        rows.map((log) => ({
+          id: log.id,
+          habitId: log.habitId,
+          date:
+            typeof log.date === 'string'
+              ? log.date.slice(0, 10)
+              : new Date(log.date).toISOString().slice(0, 10),
+          status: log.status,
+          note: log.note ?? undefined,
+          completedAt: log.completedAt ? String(log.completedAt) : undefined,
+        }))
+      );
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      // Non-fatal for the rest of the page, but the user must be able to tell
+      // "nothing logged" from "the log request failed".
+      setDataError(error instanceof Error ? error.message : 'Failed to load habit logs');
+    }
+  }, []);
 
   // Single data layer: one deduped fetch per auth session with abort on
   // unmount. State resets when the session ends.
@@ -381,6 +516,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const reloadData = useCallback(async () => {
     await fetchAll();
   }, [fetchAll]);
+
+  // Habit logs for the selected date. Re-runs whenever the selected day or the
+  // session changes, so /habits, /routine and the dashboard widgets all read one
+  // source of truth instead of each guessing.
+  useEffect(() => {
+    if (status !== 'authenticated' || !selectedDate) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- date-driven data layer
+    void fetchHabitLogs(selectedDate);
+  }, [fetchHabitLogs, selectedDate, status]);
 
   // ── Habits ──────────────────────────────────────────────────────────────────
   const addHabit = useCallback(async (habit: Omit<Habit, 'id'> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => {
@@ -414,7 +558,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [normalizeHabit, status]);
 
-  const updateHabit = useCallback(async (id: string, updates: Partial<Habit> & { appliesEveryDay?: boolean; dayTypeIds?: string[] }) => {
+  const updateHabit = useCallback(async (id: string, updates: UpdateHabitPatch) => {
     const { appliesEveryDay, dayTypeIds, ...fields } = updates;
     const prev = habits.find(h => h.id === id);
     setHabits(prevList => prevList.map(h => h.id === id ? { ...h, ...fields } : h));
@@ -448,6 +592,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return updateHabit(id, { status: 'ARCHIVED' });
   }, [updateHabit]);
 
+  /**
+   * Restore an archived habit.
+   *
+   * Uses the dedicated `?restore=true` endpoint rather than a PATCH with
+   * `status: 'ACTIVE'`, because the endpoint clears `archivedAt` and writes a
+   * `HABIT_RESTORED` audit entry; a PATCH would leave the archive timestamp in
+   * place and log nothing.
+   */
+  const restoreHabit = useCallback(async (id: string) => {
+    if (status !== 'authenticated' || id.startsWith('local-')) return;
+
+    // Snapshot the *single* habit, not the array. The rollback maps over the
+    // list and substitutes the previous record, so handing it the whole array
+    // spliced the array into itself as one element.
+    const prev = habits.find(h => h.id === id);
+    setHabits(prevList => prevList.map(h => h.id === id ? { ...h, status: 'ACTIVE' } : h));
+
+    try {
+      const res = await fetch(`/api/habits/${id}/archive?restore=true`, { method: 'POST' });
+      const json = await throwIfNotOk(res, 'Failed to restore habit') as { data: never };
+      const restored = normalizeHabit(json.data);
+      setHabits(prevList => prevList.map(h => h.id === id ? restored : h));
+    } catch (error) {
+      console.error('restoreHabit failed:', error);
+      if (prev) setHabits(prevList => prevList.map(h => h.id === id ? prev : h));
+      throw error;
+    }
+  }, [habits, normalizeHabit, status]);
+
   const deleteHabit = useCallback(async (id: string) => {
     const prev = habits;
     setHabits(prevList => prevList.filter(h => h.id !== id));
@@ -473,7 +646,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (existing) {
         return prev.map(l =>
           l.habitId === habitId && l.date === date
-            ? { ...l, status: statusValue, note, completedAt: statusValue === 'COMPLETED' ? nowForUser() : undefined }
+            ? { ...l, status: statusValue, note, completedAt: statusValue === 'COMPLETED' ? nowForUser(userTimezone) : undefined }
             : l
         );
       }
@@ -483,7 +656,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         date,
         status: statusValue,
         note,
-        completedAt: statusValue === 'COMPLETED' ? nowForUser() : undefined,
+        completedAt: statusValue === 'COMPLETED' ? nowForUser(userTimezone) : undefined,
       }];
     });
 
@@ -631,7 +804,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [normalizeGoal, status]);
 
-  const updateGoal = useCallback(async (id: string, updates: Partial<Goal>) => {
+  const updateGoal = useCallback(async (id: string, updates: UpdateGoalPatch) => {
     const prev = goals.find(g => g.id === id);
     setGoals(prevList => prevList.map(g => g.id === id ? { ...g, ...updates } : g));
 
@@ -733,7 +906,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       habits, habitLogs, dataLoaded, dataError, reloadData,
-      addHabit, updateHabit, archiveHabit, deleteHabit, logHabit, getLogForDate,
+      addHabit, updateHabit, archiveHabit, restoreHabit, deleteHabit, logHabit, getLogForDate,
       routineBlocks, addRoutineBlock, updateRoutineBlock, deleteRoutineBlock,
       goals, addGoal, updateGoal, deleteGoal, updateGoalProgress,
       dayMeta, setDayMeta, getDayMeta,

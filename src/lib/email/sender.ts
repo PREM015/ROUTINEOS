@@ -7,10 +7,15 @@
  *   returning a deterministic result so downstream flows keep working.
  *
  * The API surface is intentionally small and dependency-free.
+ *
+ * This module deliberately imports only `./html` (pure string helpers) and never
+ * `./templates`, which pulls in `react-dom/server` and is rejected by Turbopack
+ * anywhere in the App Router server graph. That is what makes `sendEmail` safe
+ * to call from a route.
  */
 
-import { renderTemplate, DEFAULT_FROM, subjectFor } from './templates';
-import type { EmailTemplateName, TemplateData } from './templates';
+import { renderPlainHtml, subjectFor, DEFAULT_FROM } from './html';
+import type { EmailTemplateName, TemplateData } from './html';
 
 export interface SendEmailOptions {
   to: string;
@@ -18,6 +23,8 @@ export interface SendEmailOptions {
   subject?: string;
   template: EmailTemplateName;
   data?: TemplateData;
+  /** Pre-rendered body. Takes precedence over `template`, and is how callers
+   *  with no dedicated template (e.g. notification reminders) send mail. */
   html?: string;
 }
 
@@ -40,8 +47,8 @@ const RESEND_API_URL = 'https://api.resend.com/emails';
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const to = options.to;
   const from = options.from ?? DEFAULT_FROM;
-  const html = options.html ?? (await renderTemplate(options.template, options.data));
-  const finalSubject = options.subject ?? resolveSubject(options.template, options.data);
+  const finalSubject = options.subject ?? subjectFor(options.template, options.data);
+  const html = options.html ?? renderPlainHtml(finalSubject, options.data ?? {});
 
   const apiKey = process.env.RESEND_API_KEY ?? '';
 
@@ -105,11 +112,4 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       error: error instanceof Error ? error.message : 'Network error',
     };
   }
-}
-
-function resolveSubject(
-  template: EmailTemplateName,
-  data?: TemplateData
-): string {
-  return subjectFor(template, data ?? {});
 }

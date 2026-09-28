@@ -12,6 +12,7 @@ import { FocusRepository } from '@/server/repositories/focus.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { InsightRepository } from '@/server/repositories/insight.repository';
+import { ValidationError } from '@/lib/errors/app-error';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import { MoodRepository } from '@/server/repositories/mood.repository';
 import { ProductivityPatternRepository } from '@/server/repositories/productivity-pattern.repository';
@@ -90,6 +91,21 @@ export class AnalyticsService {
   private streakRepository: StreakRepository;
   private patternRepository: ProductivityPatternRepository;
   private insightRepository: InsightRepository;
+
+  /**
+   * Dismiss one of the user's insights.
+   *
+   * `InsightRepository.deleteOwned` is already scoped by `userId`, so this
+   * cannot delete another user's insight; the id is validated here so a
+   * malformed value returns 400 rather than reaching the database.
+   */
+  async dismissInsight(userId: string, insightId: string): Promise<void> {
+    const trimmed = insightId?.trim();
+    if (!trimmed) {
+      throw new ValidationError('Invalid insight id');
+    }
+    await this.insightRepository.deleteOwned(userId, trimmed);
+  }
   private routineRepository: RoutineRepository;
   private timeEntryRepository: TimeEntryRepository;
   private nutritionRepository: NutritionRepository;
@@ -135,8 +151,7 @@ export class AnalyticsService {
 
     const rangeStart = fromZonedTime(`${range.start}T00:00:00`, timezone);
     const rangeEnd = fromZonedTime(`${range.end}T23:59:59.999`, timezone);
-    const daysInRange =
-      differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
+    const daysInRange = differenceInCalendarDays(parseISO(range.end), parseISO(range.start)) + 1;
 
     const monthKey = range.start.slice(0, 7);
     const year = Number(range.start.slice(0, 4));
@@ -200,7 +215,7 @@ export class AnalyticsService {
     ]);
 
     const tierMix = buildTierMix(activeHabits);
-    const tasks = buildTaskQuadrant(openTasks, today);
+    const tasks = buildTaskQuadrant(openTasks, today, timezone);
     const moodPulse = buildMoodPulse(moodLogs, energyLogs);
     const sleep = buildSleepSnapshot(sleepLogs);
     const focusedMinutes = focusStats.totalFocusMinutes;
@@ -217,10 +232,7 @@ export class AnalyticsService {
       },
       hero: buildHero(period, day, week, month, yearSummary),
       tiles: {
-        routine:
-          day && day.routine.total > 0
-            ? day.routine
-            : null,
+        routine: day && day.routine.total > 0 ? day.routine : null,
         habitCompletion: buildHabitCompletion(period, day, week, month, yearSummary),
         sleepMinutes: buildSleepMinutes(period, day, week, month, yearSummary),
         mood: buildAverageMood(moodLogs),
@@ -251,7 +263,7 @@ export class AnalyticsService {
               entries: nutritionEntries.length,
               calories: nutritionEntries.some((entry) => entry.calories !== null)
                 ? Math.round(
-                    nutritionEntries.reduce((sum, entry) => sum + (entry.calories ?? 0), 0)
+                    nutritionEntries.reduce((sum, entry) => sum + (entry.calories ?? 0), 0),
                   )
                 : null,
               daysLogged: new Set(nutritionEntries.map((entry) => entry.date)).size,
@@ -294,11 +306,9 @@ export class AnalyticsService {
   async getReport(
     userId: string,
     type: 'weekly' | 'monthly',
-    date: string
+    date: string,
   ): Promise<WeeklySummary | MonthlySummary> {
-    return type === 'monthly'
-      ? monthlySummary(userId, date)
-      : weeklySummary(userId, date);
+    return type === 'monthly' ? monthlySummary(userId, date) : weeklySummary(userId, date);
   }
 
   /** GET /api/analytics/monthly — month summary delegating to the core. */
@@ -319,7 +329,7 @@ interface StreakRowLike {
 
 function buildStreakSnapshot(
   row: StreakRowLike | null,
-  report: StreakAnalytics
+  report: StreakAnalytics,
 ): AnalyticsStreakSnapshot {
   return {
     current: row?.currentStreak ?? report.current.total,
@@ -350,7 +360,7 @@ function buildHero(
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
   week: WeeklySummary | null,
   month: MonthlySummary | null,
-  year: YearlySummary | null
+  year: YearlySummary | null,
 ): AnalyticsDashboard['hero'] {
   if (period === 'day' && day) {
     return {
@@ -396,7 +406,14 @@ function buildHero(
     };
   }
 
-  return { total: null, grade: null, core: null, growth: null, bonus: null, habitReliability: null };
+  return {
+    total: null,
+    grade: null,
+    core: null,
+    growth: null,
+    bonus: null,
+    habitReliability: null,
+  };
 }
 
 function buildHabitCompletion(
@@ -404,7 +421,7 @@ function buildHabitCompletion(
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
   week: WeeklySummary | null,
   month: MonthlySummary | null,
-  year: YearlySummary | null
+  year: YearlySummary | null,
 ): number | null {
   if (period === 'day' && day) return day.habitReliability;
   if (period === 'week' && week) return week.habits.averageCompletionRate;
@@ -418,7 +435,7 @@ function buildSleepMinutes(
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
   week: WeeklySummary | null,
   month: MonthlySummary | null,
-  year: YearlySummary | null
+  year: YearlySummary | null,
 ): number | null {
   if (period === 'day' && day) return day.sleep.durationMinutes;
   if (period === 'week' && week) return week.sleep.averageDuration;
@@ -427,10 +444,8 @@ function buildSleepMinutes(
   return null;
 }
 
-function buildAverageMood(
-  moodLogs: Array<{ mood: number }>
-): number | null {
-  const values = moodLogs.map(log => log.mood);
+function buildAverageMood(moodLogs: Array<{ mood: number }>): number | null {
+  const values = moodLogs.map((log) => log.mood);
   if (values.length === 0) return null;
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
@@ -446,33 +461,42 @@ function buildChart1(
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
   week: WeeklySummary | null,
   month: MonthlySummary | null,
-  year: YearlySummary | null
+  year: YearlySummary | null,
 ): AnalyticsChartData[] {
   if (period === 'day' && day) {
     const byStatus = new Map<string, number>();
     for (const habit of day.habits) {
-      const key = habit.status === 'COMPLETED'
-        ? 'Completed'
-        : habit.status === 'MISSED'
-          ? 'Missed'
-          : habit.status === 'SKIPPED'
-            ? 'Skipped'
-            : 'Not logged';
+      const key =
+        habit.status === 'COMPLETED'
+          ? 'Completed'
+          : habit.status === 'MISSED'
+            ? 'Missed'
+            : habit.status === 'SKIPPED'
+              ? 'Skipped'
+              : 'Not logged';
       byStatus.set(key, (byStatus.get(key) ?? 0) + 1);
     }
-    return ['Completed', 'Missed', 'Skipped', 'Not logged']
-      .map(name => ({ name, value: byStatus.get(name) ?? 0 }));
+    return ['Completed', 'Missed', 'Skipped', 'Not logged'].map((name) => ({
+      name,
+      value: byStatus.get(name) ?? 0,
+    }));
   }
   if (period === 'week' && week) {
-    return week.habits.perHabit.map(habit => ({ name: habit.habitName, value: Math.round(habit.completionRate) }));
+    return week.habits.perHabit.map((habit) => ({
+      name: habit.habitName,
+      value: Math.round(habit.completionRate),
+    }));
   }
   if (period === 'month' && month) {
-    return month.habits.perHabit.map(habit => ({ name: habit.habitName, value: Math.round(habit.completionRate) }));
+    return month.habits.perHabit.map((habit) => ({
+      name: habit.habitName,
+      value: Math.round(habit.completionRate),
+    }));
   }
   if (period === 'year' && year) {
     return year.habits.perHabit
-      .filter(habit => habit.completionRate > 0 || habit.missed > 0)
-      .map(habit => ({ name: habit.habitName, value: Math.round(habit.completionRate) }));
+      .filter((habit) => habit.completionRate > 0 || habit.missed > 0)
+      .map((habit) => ({ name: habit.habitName, value: Math.round(habit.completionRate) }));
   }
   return [];
 }
@@ -482,19 +506,25 @@ function buildChart2(
   timezone: string,
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
   month: MonthlySummary | null,
-  year: YearlySummary | null
+  year: YearlySummary | null,
 ): AnalyticsChartData[] {
   if (period === 'day' && day) {
-    return day.tiers.map(tier => ({ name: tier.tier, value: Math.round(tier.completionRate) }));
+    return day.tiers.map((tier) => ({ name: tier.tier, value: Math.round(tier.completionRate) }));
   }
   if (period === 'week' && month) {
-    return month.scores.byTier.map(tier => ({ name: tier.tier, value: Math.round(tier.completionRate) }));
+    return month.scores.byTier.map((tier) => ({
+      name: tier.tier,
+      value: Math.round(tier.completionRate),
+    }));
   }
   if (period === 'month' && month) {
-    return month.scores.byTier.map(tier => ({ name: tier.tier, value: Math.round(tier.completionRate) }));
+    return month.scores.byTier.map((tier) => ({
+      name: tier.tier,
+      value: Math.round(tier.completionRate),
+    }));
   }
   if (period === 'year' && year) {
-    return year.monthlyScoreTrend.map(entry => ({
+    return year.monthlyScoreTrend.map((entry) => ({
       name: monthLabel(entry.month, timezone),
       value: Math.round(entry.averageScore),
     }));
@@ -506,7 +536,8 @@ function buildChart2(
 
 function buildTaskQuadrant(
   tasks: Array<{ isUrgent: boolean; isImportant: boolean; dueDate: Date | null; status: string }>,
-  today: string
+  today: string,
+  timezone: string,
 ): AnalyticsTaskQuadrant {
   const quadrant: AnalyticsTaskQuadrant = {
     urgentImportant: 0,
@@ -522,10 +553,14 @@ function buildTaskQuadrant(
     else if (task.isImportant) quadrant.importantNotUrgent++;
     else quadrant.neither++;
 
+    // `dueDate` is bucketed into the user's zone, not sliced to UTC, so it is
+    // comparable with the zoned `today`. A task due at 23:00 local yesterday read
+    // as *today* in UTC, so `due < today` was false and it was never counted as
+    // overdue — for every user east of UTC on the evening due date.
     if (
       task.dueDate !== null &&
       task.status !== 'COMPLETED' &&
-      formatIso(task.dueDate) < today
+      formatInTimeZone(task.dueDate, timezone, 'yyyy-MM-dd') < today
     ) {
       quadrant.overdue++;
     }
@@ -533,7 +568,13 @@ function buildTaskQuadrant(
   return quadrant;
 }
 
-type ProjectLike = { id: string; name: string; progress: number; status: AnalyticsProjectProgress['status']; color: string | null };
+type ProjectLike = {
+  id: string;
+  name: string;
+  progress: number;
+  status: AnalyticsProjectProgress['status'];
+  color: string | null;
+};
 
 function buildProjectProgress(project: ProjectLike): AnalyticsProjectProgress {
   return {
@@ -560,20 +601,24 @@ function buildFocusSummary(
   stats: FocusStatsLike,
   daysInRange: number,
   peakPatterns: Array<{ timeOfDay: string }>,
-  breaks: BreakLike[]
+  breaks: BreakLike[],
 ): AnalyticsFocusSummary {
   const breakMinutes = breaks.reduce((sum, row) => {
     if (row.durationMinutes !== null && row.durationMinutes !== undefined) {
       return sum + row.durationMinutes;
     }
     if (row.endedAt) {
-      return sum + Math.max(0, Math.round((row.endedAt.getTime() - row.startedAt.getTime()) / 60000));
+      return (
+        sum + Math.max(0, Math.round((row.endedAt.getTime() - row.startedAt.getTime()) / 60000))
+      );
     }
     return sum;
   }, 0);
   const averageMinutes = breaks.length > 0 ? Math.round(breakMinutes / breaks.length) : null;
   const ratio =
-    stats.totalFocusMinutes > 0 ? Number((breakMinutes / stats.totalFocusMinutes).toFixed(2)) : null;
+    stats.totalFocusMinutes > 0
+      ? Number((breakMinutes / stats.totalFocusMinutes).toFixed(2))
+      : null;
 
   return {
     period: { sessions: stats.totalSessions, minutes: stats.totalFocusMinutes },
@@ -581,7 +626,7 @@ function buildFocusSummary(
       sessions: Math.round(stats.totalSessions / Math.max(daysInRange, 1)),
       minutes: Math.round(stats.totalFocusMinutes / Math.max(daysInRange, 1)),
     },
-    peakHours: peakPatterns.map(pattern => pattern.timeOfDay),
+    peakHours: peakPatterns.map((pattern) => pattern.timeOfDay),
     breaks: { count: breaks.length, averageMinutes, ratio },
   };
 }
@@ -603,7 +648,7 @@ interface FocusSessionLike {
 
 function buildTimeAllocation(
   timeEntries: TimeEntryLike[],
-  focusSessions: FocusSessionLike[]
+  focusSessions: FocusSessionLike[],
 ): AnalyticsTimeAllocation {
   const summary = new Map<string, AnalyticsTimeAllocationEntry>();
   let totalMinutes = 0;
@@ -655,7 +700,7 @@ interface EnergyLogLike {
 
 function buildMoodPulse(
   moodLogs: MoodLogLike[],
-  energyLogs: EnergyLogLike[]
+  energyLogs: EnergyLogLike[],
 ): AnalyticsMoodPulsePoint[] {
   const byTimestamp = new Map<number, AnalyticsMoodPulsePoint>();
   for (const log of moodLogs) {
@@ -680,7 +725,7 @@ function buildMoodPulse(
     byTimestamp.set(ts, point);
   }
   const points = Array.from(byTimestamp.values()).sort((a, b) =>
-    a.timestamp.localeCompare(b.timestamp)
+    a.timestamp.localeCompare(b.timestamp),
   );
   return points.length > MOOD_PULSE_LIMIT ? points.slice(-MOOD_PULSE_LIMIT) : points;
 }
@@ -722,17 +767,14 @@ function buildRoutineDetail(logs: RoutineLogLike[]): AnalyticsRoutineDetail {
 
   for (const bucket of byBlock.values()) {
     bucket.completionRate =
-      bucket.daysTracked > 0
-        ? Math.round((bucket.completed / bucket.daysTracked) * 100)
-        : 0;
+      bucket.daysTracked > 0 ? Math.round((bucket.completed / bucket.daysTracked) * 100) : 0;
   }
 
   const blocks = Array.from(byBlock.values()).sort((a, b) =>
-    a.startTime.localeCompare(b.startTime)
+    a.startTime.localeCompare(b.startTime),
   );
   const mostMissed =
-    blocks.filter((block) => block.missed > 0).sort((a, b) => b.missed - a.missed)[0] ??
-    null;
+    blocks.filter((block) => block.missed > 0).sort((a, b) => b.missed - a.missed)[0] ?? null;
 
   return {
     daysTracked: days.size,
@@ -752,18 +794,20 @@ interface SleepLogLike {
 }
 
 function buildSleepSnapshot(logs: SleepLogLike[]): AnalyticsSleepSnapshot | null {
-  const durational = logs.filter(log => log.actualDurationMinutes !== null);
-  const periodStats = logs.length > 0
-    ? {
-        loggedDays: logs.length,
-        averageDurationMinutes: durational.length > 0
-          ? Math.round(
-              durational.reduce((sum, log) => sum + (log.actualDurationMinutes ?? 0), 0) /
-                durational.length
-            )
-          : null,
-      }
-    : null;
+  const durational = logs.filter((log) => log.actualDurationMinutes !== null);
+  const periodStats =
+    logs.length > 0
+      ? {
+          loggedDays: logs.length,
+          averageDurationMinutes:
+            durational.length > 0
+              ? Math.round(
+                  durational.reduce((sum, log) => sum + (log.actualDurationMinutes ?? 0), 0) /
+                    durational.length,
+                )
+              : null,
+        }
+      : null;
 
   const latest = logs[logs.length - 1];
   if (!latest) return null;
@@ -777,9 +821,8 @@ function buildSleepSnapshot(logs: SleepLogLike[]): AnalyticsSleepSnapshot | null
     deficitMinutes: latest.deficitMinutes,
     quality: latest.quality,
     feltRested: latest.feltRested,
-    metTarget: latest.actualDurationMinutes !== null
-      ? latest.actualDurationMinutes >= target
-      : null,
+    metTarget:
+      latest.actualDurationMinutes !== null ? latest.actualDurationMinutes >= target : null,
     periodStats,
   };
 }
@@ -807,10 +850,6 @@ function pickInsight(insights: InsightLike[]): AnalyticsInsight | null {
     }
   }
   return null;
-}
-
-function formatIso(date: Date): string {
-  return date.toISOString().slice(0, 10);
 }
 
 export const analyticsService = new AnalyticsService();

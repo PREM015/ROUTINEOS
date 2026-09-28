@@ -9,7 +9,7 @@
  */
 import { CalendarDays, CheckSquare, Target } from 'lucide-react';
 import type { ProjectStatus } from '@/generated/prisma';
-import type { ProjectItem } from '@/store/projects.store';
+import type { ProjectItem } from '@/types/projects';
 import { formatDate, getPercentageColor } from '@/lib/utils';
 import { Badge, Card, Progress } from '@/components/ui';
 import { cn } from '@/lib/utils';

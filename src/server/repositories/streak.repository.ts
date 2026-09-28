@@ -53,16 +53,26 @@ export class StreakRepository extends BaseRepository {
   /**
    * Increment current streak
    */
+  /**
+   * Increment the current streak.
+   *
+   * `completedDate` is the day the user actually completed, passed in by the
+   * caller. It was `new Date().toISOString().split('T')[0]` — the UTC date —
+   * which for any user not on UTC disagreed with the `DailyScore.date` the same
+   * completion was recorded against, so the streak's own bookkeeping pointed at
+   * a different day than the score it was derived from.
+   */
   async incrementCurrentStreak(
     userId: string,
-    days: number = 1
+    days: number = 1,
+    completedDate?: string
   ): Promise<Streak> {
     try {
       return await this.prisma.streak.update({
         where: { userId },
         data: {
           currentStreak: { increment: days },
-          lastCompletedDate: new Date().toISOString().split('T')[0],
+          lastCompletedDate: completedDate ?? null,
           totalCompletedDays: { increment: 1 },
         },
       });
@@ -102,9 +112,10 @@ export class StreakRepository extends BaseRepository {
   }
 
   /**
-   * Add minimum day
+   * Add a minimum day. See `incrementCurrentStreak` on why `completedDate` is
+   * passed in rather than derived from `new Date()`.
    */
-  async addMinimumDay(userId: string): Promise<Streak> {
+  async addMinimumDay(userId: string, completedDate?: string): Promise<Streak> {
     try {
       return await this.prisma.streak.update({
         where: { userId },
@@ -113,7 +124,7 @@ export class StreakRepository extends BaseRepository {
           minimumDayStreak: { increment: 1 },
           totalMinimumDays: { increment: 1 },
           totalCompletedDays: { increment: 1 },
-          lastCompletedDate: new Date().toISOString().split('T')[0],
+          lastCompletedDate: completedDate ?? null,
         },
       });
     } catch (error) {

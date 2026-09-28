@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { SleepLog, SleepFormData } from '@/types/sleep';
 import { calculateSleepDuration, formatSleepDuration } from '@/lib/sleep/calculate-duration';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 interface SleepEditorProps {
   sleepLog?: SleepLog | null;
@@ -30,60 +32,61 @@ export function SleepEditor({ sleepLog, onSave, onCancel }: SleepEditorProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 border rounded-lg bg-white shadow space-y-4">
-      <h3 className="text-lg font-semibold">Log Sleep</h3>
-      
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <h3 className="text-base font-semibold text-foreground">Log sleep</h3>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Bedtime</label>
-          <input 
-            type="time" 
+          <label htmlFor="sleep-bedtime" className="mb-1 block text-sm font-medium text-foreground">
+            Bedtime
+          </label>
+          <Input
+            id="sleep-bedtime"
+            type="time"
             required
             value={bedtime}
             onChange={(e) => setBedtime(e.target.value)}
-            className="w-full border rounded p-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Wake Time</label>
-          <input 
-            type="time" 
+          <label htmlFor="sleep-waketime" className="mb-1 block text-sm font-medium text-foreground">
+            Wake time
+          </label>
+          <Input
+            id="sleep-waketime"
+            type="time"
             required
             value={wakeTime}
             onChange={(e) => setWakeTime(e.target.value)}
-            className="w-full border rounded p-2 focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
       </div>
 
       {durationStr && (
-        <p className="text-sm text-gray-600">Calculated duration: <span className="font-medium text-gray-900">{durationStr}</span></p>
+        <p className="text-sm text-muted-foreground">
+          Calculated duration:{' '}
+          <span className="font-medium tabular-nums text-foreground">{durationStr}</span>
+        </p>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-        <textarea 
+        <label htmlFor="sleep-notes" className="mb-1 block text-sm font-medium text-foreground">
+          Notes <span className="font-normal text-muted-foreground">(optional)</span>
+        </label>
+        <textarea
+          id="sleep-notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full border rounded p-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full rounded-md border border-input bg-background p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           rows={3}
         />
       </div>
 
-      <div className="flex justify-end gap-2 mt-4">
-        <button 
-          type="button" 
-          onClick={onCancel}
-          className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50 transition"
-        >
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </button>
-        <button 
-          type="submit" 
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
-        >
-          Save
-        </button>
+        </Button>
+        <Button type="submit">Save</Button>
       </div>
     </form>
   );

@@ -34,6 +34,21 @@ export interface ProjectWithRelations extends Project {
   };
 }
 
+/**
+ * A project as the list endpoints return it: the scalar row plus its category
+ * and roll-up counts, with no nested collections.
+ *
+ * This used to live in `src/store/projects.store.ts` as part of that store's
+ * private state type, which was the only definition of it. Four live components
+ * imported a *domain* type from a zustand store file, so the whole duplicate
+ * data layer stayed reachable purely to host a type. It lives here now, where
+ * the rest of the project's shapes are, and the dead store is gone.
+ */
+export interface ProjectItem extends Project {
+  category: { id: string; name: string; color: string | null } | null;
+  _count?: { goals: number; tasks: number; timeEntries: number };
+}
+
 export interface ProjectListItem {
   id: string;
   name: string;

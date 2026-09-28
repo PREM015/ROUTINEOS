@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getTodayString } from '@/lib/dates';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { EASE } from '@/lib/motion';
@@ -53,7 +54,8 @@ interface ProgressPayload {
 
 export function RoutineWidget() {
   const { selectedDate } = useApp();
-  const today = selectedDate || getTodayString();
+  const { timezone } = useUserTimezone();
+  const today = selectedDate || getTodayString(timezone);
   const reduce = useReducedMotion();
 
   const [period, setPeriod] = useState<Period>('day');

@@ -39,6 +39,13 @@ export interface AchievementPopupProps {
 
 const LAST_SEEN_KEY = 'routineos_last_achievement_seen';
 
+/**
+ * How many times to retry the "latest unlock" lookup after a failure before
+ * giving up for the session. A single transient error should not permanently
+ * silence celebrations, but a hard outage should not retry forever.
+ */
+const MAX_FETCH_ATTEMPTS = 2;
+
 interface AchievementRow {
   id: string;
   title: string;
@@ -84,7 +91,10 @@ export function AchievementPopup({
 }: AchievementPopupProps) {
   const [queue, setQueue] = useState<AchievementUnlockEvent[]>([]);
   const [fetched, setFetched] = useState(false);
+  /** Failed-fetch attempt counter, driving the bounded retry below. */
+  const [attempts, setAttempts] = useState(0);
   const hideTimer = useRef<number | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Push the prop-driven achievement into the queue when it changes (deduped).
   useEffect(() => {
@@ -114,15 +124,31 @@ export function AchievementPopup({
         if (readLastSeen() === latest.id) return;
         setQueue([normalizeRow(latest)]);
       } catch {
-        if (!cancelled) setFetched(true);
+        if (cancelled) return;
+        // The old handler called `setFetched(true)` here, which permanently
+        // disabled the celebration check for the rest of the session: one
+        // transient 500 on page load and the user never saw an unlock toast
+        // again, with no way to recover short of a reload.
+        //
+        // Nothing false is rendered on failure, so there is nothing to report —
+        // but it must retry. Bounded, so a persistent outage does not spin.
+        if (attempts >= MAX_FETCH_ATTEMPTS) {
+          setFetched(true);
+        } else {
+          retryTimer.current = setTimeout(
+            () => setAttempts((n) => n + 1),
+            2000 * (attempts + 1)
+          );
+        }
       }
     };
 
     void load();
     return () => {
       cancelled = true;
+      if (retryTimer.current) clearTimeout(retryTimer.current);
     };
-  }, [achievement, fetched]);
+  }, [achievement, fetched, attempts]);
 
   const current = queue[0];
 

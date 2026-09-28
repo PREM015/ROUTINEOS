@@ -3,6 +3,7 @@ import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { automationService } from '@/server/services/automation.service';
 import { computeDayScore } from '@/server/domain/scoring/score-calculator';
 import {
   DEFAULT_TIER_WEIGHTS,
@@ -11,10 +12,7 @@ import {
 } from '@/server/domain/scoring/tier-weights';
 import type { TierWeights } from '@/server/domain/scoring/tier-weights';
 import { CALCULATION_RULES } from '@/config/scoring';
-import {
-  calculateScoreSchema,
-  scoreQuerySchema,
-} from '@/lib/validation/score.schema';
+import { calculateScoreSchema, scoreQuerySchema } from '@/lib/validation/score.schema';
 import type {
   CalculateDailyScoreInput,
   DailyScoreWithContext,
@@ -24,9 +22,6 @@ import type {
   ScoreHistoryRange,
 } from '@/types/score';
 import { getGradeFromPercentage, isValidScoreGrade } from '@/types/score';
-import { invalidateDashboard } from '@/server/cache/dashboard-cache';
-import { invalidateAnalyticsCache } from '@/server/cache/analytics-cache';
-import { invalidateInsights } from '@/server/cache/insight-cache';
 
 /**
  * Score Service
@@ -85,7 +80,7 @@ export class ScoringService {
   async calculateDailyScore(
     userId: string,
     date: string,
-    options?: Omit<CalculateDailyScoreInput, 'userId' | 'date'>
+    options?: Omit<CalculateDailyScoreInput, 'userId' | 'date'>,
   ): Promise<DailyScoreWithContext> {
     const parsed = calculateScoreSchema.parse({
       date,
@@ -100,10 +95,8 @@ export class ScoringService {
     const settings = await this.userRepository.getSettings(userId);
     const weights: TierWeights = {
       ...DEFAULT_TIER_WEIGHTS,
-      weightNonNeg:
-        settings?.weightNonNeg ?? DEFAULT_TIER_WEIGHTS.weightNonNeg,
-      weightGrowth:
-        settings?.weightGrowth ?? DEFAULT_TIER_WEIGHTS.weightGrowth,
+      weightNonNeg: settings?.weightNonNeg ?? DEFAULT_TIER_WEIGHTS.weightNonNeg,
+      weightGrowth: settings?.weightGrowth ?? DEFAULT_TIER_WEIGHTS.weightGrowth,
       weightBonus: settings?.weightBonus ?? DEFAULT_TIER_WEIGHTS.weightBonus,
     };
 
@@ -130,14 +123,12 @@ export class ScoringService {
         weights,
         isRestDay: parsed.isRestDay ?? false,
         isMinimumDay: parsed.isMinimumDay ?? false,
-      }
+      },
     );
 
     const scoredHabits = habits.filter((h) => SCORED_TIERS.includes(h.tier));
     const completedCount = logs.filter((l) => l.status === 'COMPLETED').length;
-    const routineCompletedCount = routineLogs.filter(
-      (l) => l.status === 'COMPLETED'
-    ).length;
+    const routineCompletedCount = routineLogs.filter((l) => l.status === 'COMPLETED').length;
 
     const breakdown: ScoreBreakdown = {
       core: {
@@ -179,13 +170,9 @@ export class ScoringService {
       restDayReason: parsed.restDayReason ?? null,
       contextTags: parsed.contextTags ? JSON.stringify(parsed.contextTags) : null,
       habitCompletionRate:
-        scoredHabits.length > 0
-          ? Math.round((completedCount / scoredHabits.length) * 100)
-          : 0,
+        scoredHabits.length > 0 ? Math.round((completedCount / scoredHabits.length) * 100) : 0,
       routineCompletionRate:
-        routineLogs.length > 0
-          ? Math.round((routineCompletedCount / routineLogs.length) * 100)
-          : 0,
+        routineLogs.length > 0 ? Math.round((routineCompletedCount / routineLogs.length) * 100) : 0,
       calculationData: JSON.stringify({
         timestamp: new Date().toISOString(),
         breakdown,
@@ -195,9 +182,17 @@ export class ScoringService {
       }),
     });
 
-    invalidateDashboard(userId);
-    invalidateAnalyticsCache(userId);
-    invalidateInsights(userId);
+    // Fire `SCORE_THRESHOLD` automations. Fire-and-forget: an automation must
+    // never fail score computation, and the score is already persisted above.
+    automationService
+      .handleEvent(userId, {
+        type: 'SCORE_THRESHOLD',
+        date: parsed.date,
+        totalScore: result.totalScore,
+      })
+      .catch((err: unknown) => {
+        console.error('Failed to run automations after scoring:', err);
+      });
 
     return this.withBreakdown(persisted);
   }
@@ -248,7 +243,7 @@ export class ScoringService {
       sortOrder?: 'asc' | 'desc';
       limit?: number;
       offset?: number;
-    } = {}
+    } = {},
   ): Promise<ScoreHistoryRange> {
     const parsed = scoreQuerySchema.parse(query);
     const endDate = parsed.endDate ?? new Date().toISOString().slice(0, 10);
@@ -336,16 +331,14 @@ export class ScoringService {
     tiers: HabitTier[],
     habits: HabitForScoring[],
     logMap: Map<string, HabitLog>,
-    weights: TierWeights
+    weights: TierWeights,
   ): {
     score: number;
     maxScore: number;
     percentage: number | null;
     contributions: HabitScoreContribution[];
   } {
-    const bucketHabits = habits.filter(
-      (habit) => habit.tier && tiers.includes(habit.tier)
-    );
+    const bucketHabits = habits.filter((habit) => habit.tier && tiers.includes(habit.tier));
 
     if (bucketHabits.length === 0) {
       return { score: 0, maxScore: 0, percentage: null, contributions: [] };
@@ -376,8 +369,7 @@ export class ScoringService {
           contribution: Math.round(contribution * 100) / 100,
         });
       } else if (log?.status === 'PARTIAL') {
-        const contribution =
-          points * weight * CALCULATION_RULES.partialCompletion.scoreMultiplier;
+        const contribution = points * weight * CALCULATION_RULES.partialCompletion.scoreMultiplier;
         score += contribution;
 
         contributions.push({

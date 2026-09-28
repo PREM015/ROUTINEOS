@@ -27,7 +27,7 @@ const FEATURE_LINKS: SidebarLink[] = [
   { label: 'Journal', href: '/journal', icon: BookOpen },
   { label: 'Analytics', href: '/analytics', icon: BarChart3 },
   { label: 'Achievements', href: '/achievements', icon: Trophy },
-  { label: 'Weekly Recap', href: '/recap', icon: RotateCcw },
+  { label: 'Recap', href: '/recap', icon: RotateCcw },
   { label: 'Settings', href: '/settings', icon: Settings },
 ];
 

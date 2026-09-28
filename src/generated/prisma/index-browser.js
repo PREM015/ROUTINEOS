@@ -209,6 +209,12 @@ exports.Prisma.UserSettingsScalarFieldEnum = {
   smsNotifications: 'smsNotifications',
   quietHoursStart: 'quietHoursStart',
   quietHoursEnd: 'quietHoursEnd',
+  routineStartNotifications: 'routineStartNotifications',
+  upcomingRoutineNotifications: 'upcomingRoutineNotifications',
+  sleepReminderNotifications: 'sleepReminderNotifications',
+  habitReminderNotifications: 'habitReminderNotifications',
+  goalReminderNotifications: 'goalReminderNotifications',
+  advanceNotificationMinutes: 'advanceNotificationMinutes',
   dailyReminder: 'dailyReminder',
   dailyReminderTime: 'dailyReminderTime',
   habitReminders: 'habitReminders',
@@ -715,6 +721,7 @@ exports.Prisma.FocusSessionScalarFieldEnum = {
   actualDuration: 'actualDuration',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
+  abortedAt: 'abortedAt',
   pausedAt: 'pausedAt',
   focusRating: 'focusRating',
   productivityRating: 'productivityRating',
@@ -1044,7 +1051,8 @@ exports.Prisma.DeviceSessionScalarFieldEnum = {
   lastActiveAt: 'lastActiveAt',
   expiresAt: 'expiresAt',
   isActive: 'isActive',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.DataExportScalarFieldEnum = {
@@ -1390,6 +1398,7 @@ exports.TemplateType = exports.$Enums.TemplateType = {
 };
 
 exports.NotificationType = exports.$Enums.NotificationType = {
+  AUTOMATION: 'AUTOMATION',
   HABIT_REMINDER: 'HABIT_REMINDER',
   ROUTINE_REMINDER: 'ROUTINE_REMINDER',
   GOAL_DEADLINE: 'GOAL_DEADLINE',
@@ -1411,6 +1420,7 @@ exports.NotificationType = exports.$Enums.NotificationType = {
   HABIT_STREAK_AT_RISK: 'HABIT_STREAK_AT_RISK',
   GOAL_AT_RISK: 'GOAL_AT_RISK',
   GOAL_COMPLETED: 'GOAL_COMPLETED',
+  ROUTINE_START: 'ROUTINE_START',
   ROUTINE_COMPLETED: 'ROUTINE_COMPLETED',
   ROUTINE_MISSED: 'ROUTINE_MISSED',
   DAILY_RESET: 'DAILY_RESET',
@@ -1476,6 +1486,7 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   HABIT_CREATED: 'HABIT_CREATED',
   HABIT_UPDATED: 'HABIT_UPDATED',
   HABIT_ARCHIVED: 'HABIT_ARCHIVED',
+  HABIT_RESTORED: 'HABIT_RESTORED',
   HABIT_DELETED: 'HABIT_DELETED',
   HABIT_PAUSED: 'HABIT_PAUSED',
   HABIT_RESUMED: 'HABIT_RESUMED',
@@ -1498,7 +1509,10 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
   PASSWORD_RESET_REQUESTED: 'PASSWORD_RESET_REQUESTED',
   PASSWORD_RESET_COMPLETED: 'PASSWORD_RESET_COMPLETED',
+  LOGOUT: 'LOGOUT',
   LOGOUT_ALL_SESSIONS: 'LOGOUT_ALL_SESSIONS',
+  TWO_FACTOR_ENABLED: 'TWO_FACTOR_ENABLED',
+  TWO_FACTOR_DISABLED: 'TWO_FACTOR_DISABLED',
   EMAIL_VERIFIED: 'EMAIL_VERIFIED',
   SETTINGS_UPDATED: 'SETTINGS_UPDATED'
 };

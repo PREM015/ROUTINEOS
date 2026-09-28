@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 
-export function GoalStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
-  const [goal, setGoal] = useState('');
-
+export function GoalStep({
+  goal,
+  onChange,
+  onNext,
+  onBack,
+  saving,
+}: {
+  goal: string;
+  onChange: (value: string) => void;
+  onNext: () => void;
+  onBack: () => void;
+  saving: boolean;
+}) {
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -20,14 +29,16 @@ export function GoalStep({ onNext, onBack }: { onNext: () => void; onBack: () =>
           label="Monthly goal"
           placeholder="e.g. Launch my side project, Run 50 miles"
           value={goal}
-          onChange={(e) => setGoal(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={200}
+          helperText="Leave blank to skip."
         />
 
         <div className="flex gap-4 pt-4">
-          <Button type="button" variant="outline" onClick={onBack} className="flex-1">
+          <Button type="button" variant="outline" onClick={onBack} className="flex-1" disabled={saving}>
             Back
           </Button>
-          <Button type="button" onClick={onNext} className="flex-1">
+          <Button type="button" onClick={onNext} className="flex-1" isLoading={saving}>
             Continue
           </Button>
         </div>

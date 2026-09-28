@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FolderKanban, Plus } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
-import type { ProjectItem } from '@/store/projects.store';
+import type { ProjectItem } from '@/types/projects';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui';
 import ProjectList from '@/components/projects/ProjectList';

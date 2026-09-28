@@ -42,6 +42,8 @@ interface ProfileResponse {
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [stats, setStats] = useState<ProfileStats | null>(null);
+  /** Stats could not load; the tiles below are omitted rather than zeroed. */
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -69,10 +71,18 @@ export default function ProfilePage() {
     let cancelled = false;
     const load = async () => {
       try {
+        setStatsError(null);
         const data = await apiRequest<ProfileResponse>(`/api/users/${user.id}/profile`);
         if (!cancelled) setStats(data.stats);
-      } catch {
-        // Stats are non-critical; ignore failures.
+      } catch (err) {
+        // Reported. `stats` stays null, so the stat tiles rendered as zeros or
+        // were omitted entirely — indistinguishable from an account that has
+        // genuinely recorded nothing. The empty `catch` here was the reason.
+        if (!cancelled) {
+          setStatsError(
+            err instanceof Error ? err.message : 'Could not load your statistics'
+          );
+        }
       }
     };
     void load();
@@ -129,6 +139,12 @@ export default function ProfilePage() {
           <p className="text-muted-foreground">{user.email}</p>
         </div>
       </div>
+
+      {statsError && (
+        <p role="alert" className="mb-6 text-sm text-destructive">
+          {statsError}. Your profile details below are unaffected.
+        </p>
+      )}
 
       {stats && (
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">

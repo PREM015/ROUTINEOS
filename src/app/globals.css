@@ -796,3 +796,37 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted-foreground);
 }
+
+/* ============================================================================
+   Appearance preferences (UserSettings.animationsEnabled / compactMode)
+   These classes are toggled on <html> by `applyAppearance()` in
+   `src/store/settings.store.ts` so the Settings > Appearance switches take
+   effect app-wide without a reload.
+   ========================================================================= */
+
+/* "Animations" off: suppress decorative motion but keep functional
+   transitions short enough not to feel broken. */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* "Compact mode": tighten vertical rhythm for list-dense screens. */
+.compact-mode {
+  --radius-card: 0.5rem;
+}
+
+.compact-mode .glass-panel,
+.compact-mode [data-slot='card'] {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+}
+
+.compact-mode main {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}

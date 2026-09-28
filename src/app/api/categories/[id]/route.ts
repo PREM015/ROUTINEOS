@@ -5,22 +5,23 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
     }
 
     const categoryRepository = new CategoryRepository();
-    const category = await categoryRepository.findById(params.id, session.user.id);
+    const category = await categoryRepository.findById(id, session.user.id);
 
     if (!category) {
       return NextResponse.json(notFoundResponse('Category'), { status: 404 });
     }
 
-    await categoryRepository.delete(params.id, session.user.id);
+    await categoryRepository.delete(id, session.user.id);
 
     return NextResponse.json(successResponse({ deleted: true }));
   } catch (error) {

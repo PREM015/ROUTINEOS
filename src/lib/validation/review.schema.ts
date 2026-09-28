@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { weeklyReviewSchema } from '@/schemas/weekly-review.schema';
-import { MonthlyResetSchema } from '@/schemas/monthly-reset.schema';
 
-export { weeklyReviewSchema, MonthlyResetSchema };
+export { weeklyReviewSchema };
 
 export const createWeeklyReviewSchema = weeklyReviewSchema;
 
@@ -42,6 +41,8 @@ export const createMonthlyResetSchema = z.object({
     .optional(),
   goalsCompleted: z.array(z.string().cuid()).optional(),
   goalsInProgress: z.array(z.string().cuid()).optional(),
+  /** Goals the user chose to drop; archived rather than completed. */
+  goalsDropped: z.array(z.string().cuid()).optional(),
   goalsReviewNotes: z.string().max(2000).optional(),
   nextMonthPriorities: z.array(z.string().max(300)).optional(),
   nextMonthGoals: z

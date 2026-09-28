@@ -22,6 +22,7 @@ interface SystemStats {
 export function SystemStats() {
   const [stats, setStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability -- hoisted helper called on mount
@@ -30,13 +31,23 @@ export function SystemStats() {
 
   async function fetchStats() {
     try {
+      setError(null);
       const res = await fetch('/api/admin/stats');
+      if (!res.ok) {
+        throw new Error(`Could not load system statistics (status ${res.status})`);
+      }
       const data = await res.json();
       if (data.success) {
         setStats(data.data);
+      } else {
+        throw new Error(data.error || 'Could not load system statistics');
       }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+    } catch (err) {
+      // Previously `console.error` only; the UI fell through to a bare
+      // "Failed to load statistics" with no reason and no way to retry.
+      setError(
+        err instanceof Error ? err.message : 'Could not load system statistics'
+      );
     } finally {
       setLoading(false);
     }
@@ -58,7 +69,21 @@ export function SystemStats() {
   }
 
   if (!stats) {
-    return <div>Failed to load statistics</div>;
+    return (
+      <div>
+        <p role="alert" className="text-destructive">{error ?? 'Failed to load statistics'}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            void fetchStats();
+          }}
+          className="mt-2 text-sm font-semibold text-primary hover:underline"
+        >
+          Try again
+        </button>
+      </div>
+    );
   }
 
   return (

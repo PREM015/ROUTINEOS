@@ -15,16 +15,31 @@ interface StreakData {
 export function StreakCard() {
   const [streak, setStreak] = useState<StreakData | null>(null);
   const [loading, setLoading] = useState(true);
+  /**
+   * A failed load is reported rather than hidden.
+   *
+   * The card previously did `if (!streak) return null` for both "still
+   * loading" and "the request failed", and never checked `res.ok`. A 500 or an
+   * expired session made the streak card silently disappear from `/today` with
+   * no gap and no message — indistinguishable from a deliberate hide.
+   */
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStreak = useCallback(async () => {
+    setError(null);
     try {
       const res = await fetch('/api/streak');
+      if (!res.ok) {
+        throw new Error(`Could not load your streak (status ${res.status})`);
+      }
       const data = await res.json();
       if (data.success) {
         setStreak(data.data);
+      } else {
+        throw new Error(data.error || 'Could not load your streak');
       }
-    } catch (error) {
-      console.error('Error fetching streak:', error);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load your streak');
     } finally {
       setLoading(false);
     }
@@ -32,7 +47,7 @@ export function StreakCard() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    fetchStreak().catch(() => undefined);
+    void fetchStreak();
   }, [fetchStreak]);
 
   if (loading) {
@@ -42,6 +57,26 @@ export function StreakCard() {
           <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
           <div className="h-4 bg-muted rounded w-1/2"></div>
         </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            void fetchStreak();
+          }}
+          className="mt-2 text-sm font-semibold text-primary hover:underline"
+        >
+          Try again
+        </button>
       </Card>
     );
   }

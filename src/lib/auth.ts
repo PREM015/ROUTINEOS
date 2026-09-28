@@ -249,10 +249,15 @@ export const authOptions = {
       if (!('token' in message) || !message.token?.id) {
         return;
       }
+      // `signOut` fires for both a single-device sign-out and an explicit
+      // "sign out everywhere", and this event cannot tell them apart. Logging
+      // `LOGOUT_ALL_SESSIONS` for every ordinary sign-out made the audit log
+      // useless, so record the accurate action; the "everywhere" variant is
+      // already audited by `AuthService.logoutAll`.
       await prisma.auditLog.create({
         data: {
           userId: message.token.id as string,
-          action: 'LOGOUT_ALL_SESSIONS',
+          action: 'LOGOUT',
         },
       });
     },

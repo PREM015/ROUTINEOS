@@ -8,6 +8,12 @@ const dayModeSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   mode: z.enum(['MINIMUM', 'REST', 'DAY_TYPE', 'CLEAR']).optional(),
   dayType: dayTypeSchema.optional(),
+  /**
+   * Selects a specific custom day type. `dayType` alone cannot: the enum has
+   * only six values and every user-defined day type collapses to `CUSTOM`, so
+   * without this the choice was neither displayed nor restorable.
+   */
+  dayTypeId: z.string().min(1).optional(),
   reason: z.string().optional(),
   templateId: z.string().optional(),
 });
@@ -65,12 +71,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, mode, dayType, reason, templateId } = validated.data;
+    const { date, mode, dayType, dayTypeId, reason, templateId } = validated.data;
 
     const result = await dayModeService.setDayMode(session.user.id, {
       date,
       mode: mode ?? 'DAY_TYPE',
       dayType,
+      dayTypeId,
       reason,
       templateId,
     });

@@ -8,6 +8,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { BODY_CLASS, FOOTER_CLASS, GRAIN_CLASS, HEADER_CLASS, OVERLAY_CLASS, PANEL_CLASS } from './modal-frame';
 
 const SIZE_CLASSES = {
   sm: 'max-w-sm',
@@ -57,16 +58,12 @@ export function Dialog({
         </DialogPrimitive.Trigger>
       )}
       <DialogPrimitive.Portal>
-<DialogPrimitive.Overlay className="fixed inset-0 z-50 overlay-glass noise-overlay" />
-        <DialogPrimitive.Content
-          className={cn(
-            'fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card border border-border p-6 shadow-modal outline-none text-foreground content-in',
-            SIZE_CLASSES[size],
-            className,
-          )}
-        >
+        <DialogPrimitive.Overlay className={OVERLAY_CLASS}>
+          <div className={GRAIN_CLASS} aria-hidden="true" />
+        </DialogPrimitive.Overlay>
+        <DialogPrimitive.Content className={cn(PANEL_CLASS, 'content-in', SIZE_CLASSES[size], className)}>
           {title && (
-            <div className="mb-4 flex items-center justify-between gap-4">
+            <div className={HEADER_CLASS}>
               <DialogPrimitive.Title className="text-lg font-semibold text-foreground">
                 {title}
               </DialogPrimitive.Title>
@@ -76,14 +73,12 @@ export function Dialog({
             </div>
           )}
           {description && (
-            <DialogPrimitive.Description className="mb-4 text-sm text-muted-foreground">
+            <DialogPrimitive.Description className="mb-4 shrink-0 text-sm text-muted-foreground">
               {description}
             </DialogPrimitive.Description>
           )}
-          <div className="text-sm text-foreground">{children}</div>
-          {footer && (
-            <div className="mt-6 flex flex-wrap justify-end gap-2">{footer}</div>
-          )}
+          <div className={cn(BODY_CLASS, 'text-sm text-foreground')}>{children}</div>
+          {footer && <div className={FOOTER_CLASS}>{footer}</div>}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
@@ -101,15 +96,11 @@ export function DialogContent({
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 overlay-glass noise-overlay" />
-      <DialogPrimitive.Content
-        className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card border border-border p-6 shadow-long outline-none text-foreground content-in',
-          className,
-        )}
-        {...props}
-      >
-        {children}
+      <DialogPrimitive.Overlay className={OVERLAY_CLASS}>
+        <div className={GRAIN_CLASS} aria-hidden="true" />
+      </DialogPrimitive.Overlay>
+      <DialogPrimitive.Content className={cn(PANEL_CLASS, className)} {...props}>
+        <div className={BODY_CLASS}>{children}</div>
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
           <X className="h-4 w-4" />
         </DialogPrimitive.Close>

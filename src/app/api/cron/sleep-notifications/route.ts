@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { authorizeCron } from '@/lib/cron-auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
 
 /**
@@ -14,10 +15,8 @@ import { sleepSessionService } from '@/server/services/sleep-session.service';
  */
 
 export async function GET(request: NextRequest) {
-  const requestAuth = request.headers.get('authorization');
-  if (requestAuth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
+  const denied = authorizeCron(request);
+  if (denied) return denied;
 
   try {
     const result = await sleepSessionService.processSleepNotifications();

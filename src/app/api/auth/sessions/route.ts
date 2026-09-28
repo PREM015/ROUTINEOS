@@ -8,18 +8,24 @@ const revokeSessionSchema = z.object({
 });
 
 /**
- * GET /api/auth/sessions
+ * GET /api/auth/sessions?deviceId=<id>
  * List all active device sessions for the authenticated user.
+ *
+ * `deviceId` is the caller's own localStorage fingerprint; it is what marks a
+ * row `isCurrent`. Omitting it marks nothing as current rather than guessing
+ * from `lastActiveAt` (which flagged every recently-used device).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const deviceId = request.nextUrl.searchParams.get('deviceId');
+
     const userService = new UserService();
-    const sessions = await userService.getSessions(session.user.id);
+    const sessions = await userService.getSessions(session.user.id, deviceId);
 
     return NextResponse.json({ success: true, data: sessions });
   } catch (error) {

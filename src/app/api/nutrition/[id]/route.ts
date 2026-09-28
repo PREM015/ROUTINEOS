@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -20,6 +20,7 @@ interface RouteContext {
  * Fetch a single nutrition entry owned by the user.
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const nutritionRepository = new NutritionRepository();
-    const entry = await nutritionRepository.findById(session.user.id, params.id);
+    const entry = await nutritionRepository.findById(session.user.id, paramId);
 
     if (!entry) {
       return NextResponse.json({ error: 'Nutrition entry not found' }, { status: 404 });
@@ -45,6 +46,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update a nutrition entry owned by the user.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -61,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const nutritionRepository = new NutritionRepository();
-    const existing = await nutritionRepository.findById(session.user.id, params.id);
+    const existing = await nutritionRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Nutrition entry not found' }, { status: 404 });
     }
@@ -70,7 +72,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: true, data: existing });
     }
 
-    const entry = await nutritionRepository.update(session.user.id, params.id, validated.data);
+    const entry = await nutritionRepository.update(session.user.id, paramId, validated.data);
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
     console.error('Error updating nutrition entry:', error);
@@ -89,6 +91,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * Delete a nutrition entry owned by the user.
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -96,13 +99,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const nutritionRepository = new NutritionRepository();
-    const existing = await nutritionRepository.findById(session.user.id, params.id);
+    const existing = await nutritionRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Nutrition entry not found' }, { status: 404 });
     }
 
-    await nutritionRepository.delete(session.user.id, params.id);
-    return NextResponse.json({ success: true, data: { id: params.id } });
+    await nutritionRepository.delete(session.user.id, paramId);
+    return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting nutrition entry:', error);
     return NextResponse.json({ error: 'Failed to delete nutrition entry' }, { status: 500 });

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { timeToMinutes } from '@/lib/dates';
 import { dayTypeSchema } from '@/lib/validation/routine.schema';
-import { isDayType } from '@/constants/routine';
+import { slugToDayType } from '@/constants/routine';
 import type { DayType } from '@/generated/prisma';
 
 const createTemplateSchema = z.object({
@@ -21,11 +21,15 @@ const HH_MM = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 // Standalone routine block shape (used by AppContext / Today / Routine pages).
 // A block is stored under a per-dayType template that is auto-provisioned.
+// `dayTypeId` is a DayTypeDefinition primary key, which Prisma generates as a
+// cuid — validating it as a uuid rejected every real id with "Invalid uuid".
+const dayTypeIdSchema = z.string().cuid().optional();
+
 const createBlockSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100),
   startTime: z.string().regex(HH_MM, 'Start time must be HH:mm'),
   endTime: z.string().regex(HH_MM, 'End time must be HH:mm'),
-  dayTypeId: z.string().uuid().optional(),
+  dayTypeId: dayTypeIdSchema,
   dayType: dayTypeSchema.optional(),
   category: z.string().optional(),
   color: z.string().optional(),
@@ -41,7 +45,7 @@ const updateBlockSchema = z.object({
   title: z.string().min(1).max(100).optional(),
   startTime: z.string().regex(HH_MM, 'Start time must be HH:mm').optional(),
   endTime: z.string().regex(HH_MM, 'End time must be HH:mm').optional(),
-  dayTypeId: z.string().uuid().optional(),
+  dayTypeId: dayTypeIdSchema,
   dayType: dayTypeSchema.optional(),
   category: z.string().optional(),
   color: z.string().optional(),
@@ -54,6 +58,19 @@ const updateBlockSchema = z.object({
 
 const deleteBlockSchema = z.object({ id: z.string().min(1) });
 
+/**
+ * Classify a template's day type.
+ *
+ * A template connected to a DayTypeDefinition only carries a coarse fallback in
+ * its `dayType` column ('CUSTOM'), so the definition's slug is authoritative:
+ * 'work-day' is WORKDAY, not the non-existent 'WORK_DAY'.
+ */
+function templateDayType(template: {
+  dayType: DayType;
+  dayTypeDef?: { slug: string } | null;
+}): DayType {
+  return template.dayTypeDef ? slugToDayType(template.dayTypeDef.slug) : template.dayType;
+}
 
 function toBlockDto(block: {
   id: string;
@@ -67,8 +84,11 @@ function toBlockDto(block: {
   description?: string | null;
   energyLevel?: string | null;
   category?: { name?: string } | null;
-  template?: { id?: string; dayType?: string } | null;
   templateId?: string;
+  template?: { id?: string; dayType?: string; dayTypeId?: string | null } | null;
+  /** Resolved classification/identity, when the caller already derived them. */
+  dayType?: DayType;
+  dayTypeId?: string | null;
 }) {
   return {
     id: block.id,
@@ -76,7 +96,8 @@ function toBlockDto(block: {
     startTime: block.startTime,
     endTime: block.endTime,
     templateId: block.templateId ?? block.template?.id,
-    dayType: block.template?.dayType ?? 'CUSTOM',
+    dayType: block.dayType ?? block.template?.dayType ?? 'CUSTOM',
+    dayTypeId: block.dayTypeId ?? block.template?.dayTypeId,
     category: block.category?.name,
     color: block.color ?? undefined,
     icon: block.icon ?? undefined,
@@ -103,9 +124,25 @@ export async function GET(_request: NextRequest) {
       session.user.id
     );
 
+    // Derive each template's classification from its day-type definition so the
+    // list agrees with the single-block create response; otherwise a block added
+    // to a 'work-day' tab would appear as WORKDAY until the next refresh, when
+    // the stored 'CUSTOM' fallback took over again.
+    const data = templates.map((template) => {
+      const dayType = templateDayType(template);
+      return {
+        ...template,
+        dayType,
+        dayTypeId: template.dayTypeId ?? undefined,
+        blocks: template.blocks.map((block) =>
+          toBlockDto({ ...block, dayType, dayTypeId: template.dayTypeId } as never)
+        ),
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      data: templates,
+      data,
     });
   } catch (error) {
     console.error('Error fetching routine templates:', error);
@@ -224,19 +261,14 @@ export async function POST(request: NextRequest) {
           where: { id: template.dayTypeId },
         });
         if (dayTypeDef) {
-          // Slugs are not enum values: 'low-energy-day' -> 'LOW_ENERGY_DAY', which
-          // is not a DayType. Only adopt the derived value when it really is one.
-          const derived = dayTypeDef.slug.toUpperCase().replace(/-/g, '_');
-          if (isDayType(derived)) {
-            responseDayType = derived;
-          }
+          responseDayType = slugToDayType(dayTypeDef.slug);
         }
       }
 
       return NextResponse.json(
         {
           success: true,
-          data: { ...toBlockDto({ ...block, template: { ...template, dayType: responseDayType } } as never), ...(overlaps ? { overlapWarning: true } : {}) },
+          data: { ...toBlockDto({ ...block, dayType: responseDayType, dayTypeId: template.dayTypeId } as never), ...(overlaps ? { overlapWarning: true } : {}) },
         },
         { status: 201 }
       );
@@ -317,7 +349,7 @@ export async function PUT(request: NextRequest) {
 
       const existing = await routineRepository['prisma'].routineBlock.findFirst({
         where: { id, userId },
-        include: { template: true },
+        include: { template: { include: { dayTypeDef: true } } },
       });
       if (!existing) {
         return NextResponse.json({ error: 'Routine block not found' }, { status: 404 });
@@ -328,7 +360,11 @@ export async function PUT(request: NextRequest) {
       });
       return NextResponse.json({
         success: true,
-        data: toBlockDto({ ...updated, template: existing.template } as never),
+        data: toBlockDto({
+          ...updated,
+          dayType: templateDayType(existing.template),
+          dayTypeId: existing.template.dayTypeId,
+        } as never),
       });
     }
 

@@ -11,6 +11,7 @@
 import * as React from 'react';
 import Tooltip from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { MOOD_COLORS } from '../journal/JournalEntry';
 
 const WEEKS = 17;
@@ -67,7 +68,11 @@ export default function MoodCalendar({ moodByDate, onSelectDate, className }: Mo
     return rows;
   }, [cells]);
 
-  const todayString = new Date().toISOString().slice(0, 10);
+  // The user's today. `new Date().toISOString().slice(0, 10)` is the **UTC**
+  // date, so the "today" cell highlighted in the heatmap was a day out for
+  // everyone not on UTC — most visibly in the evening, when a user in
+  // `America/New_York` saw yesterday highlighted.
+  const { today: todayString } = useUserTimezone();
 
   return (
     <div className={cn('w-full', className)}>

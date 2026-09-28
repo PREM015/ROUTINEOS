@@ -1,7 +1,4 @@
 import { z } from 'zod';
-import { UpdateProfileSchema } from '@/schemas/user.schema';
-
-export { UpdateProfileSchema };
 
 const timezoneSchema = z
   .string()
@@ -12,15 +9,31 @@ const timezoneSchema = z
     'Timezone must be a valid IANA identifier such as Asia/Kolkata'
   );
 
+/**
+ * `displayName`, `bio` and `avatarUrl` are nullable so they can be *cleared*.
+ *
+ * The profile page used to send `undefined` for an emptied field, but
+ * `JSON.stringify` drops undefined properties, so the key never reached the
+ * server and clearing a bio or display name silently did nothing. Sending `''`
+ * was not an option for `avatarUrl` because it fails `.url()`.
+ */
 export const updateProfileSchema = z.object({
   name: z
     .string()
     .min(2, 'Name must be at least 2 characters')
     .max(50, 'Name must be 50 characters or less')
     .optional(),
-  displayName: z.string().max(50, 'Display name must be 50 characters or less').optional(),
-  bio: z.string().max(500, 'Bio must be 500 characters or less').optional(),
-  avatarUrl: z.string().url('Avatar URL must be a valid URL').optional(),
+  displayName: z
+    .string()
+    .max(50, 'Display name must be 50 characters or less')
+    .nullable()
+    .optional(),
+  bio: z.string().max(500, 'Bio must be 500 characters or less').nullable().optional(),
+  avatarUrl: z
+    .string()
+    .url('Avatar URL must be a valid URL')
+    .nullable()
+    .optional(),
   timezone: timezoneSchema.optional(),
   preferredLanguage: z.string().min(2).max(10).optional(),
 });

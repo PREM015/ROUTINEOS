@@ -24,12 +24,24 @@ export type DayMode = 'MINIMUM' | 'REST' | 'DAY_TYPE' | 'CLEAR';
 export interface DayModeSnapshot {
   date: string;
   dayType: DayType;
+  /**
+   * The user's `DayTypeDefinition` for this date, when there is one.
+   *
+   * `dayType` is a six-value enum in which every custom day type collapses to
+   * `CUSTOM`, so on its own it cannot say *which* custom type is active. The
+   * client needs this id to highlight the right option in the selector and to
+   * re-send it on the next change.
+   */
+  dayTypeId: string | null;
+  dayTypeName: string | null;
   naturalDayType: DayType;
   templateId: string | null;
   hasException: boolean;
   exception: {
     id: string;
     dayType: DayType;
+    dayTypeId: string | null;
+    dayTypeName: string | null;
     templateId: string | null;
     reason: string | null;
   } | null;
@@ -42,6 +54,8 @@ export interface SetDayModeInput {
   date: string;
   mode: DayMode;
   dayType?: DayType;
+  /** Selects a specific custom day type. Omit for a built-in one. */
+  dayTypeId?: string;
   reason?: string;
   templateId?: string;
 }
@@ -77,6 +91,8 @@ export class DayModeService {
     return {
       date,
       dayType: resolved.dayType,
+      dayTypeId: resolved.dayTypeId ?? exception?.dayTypeId ?? null,
+      dayTypeName: resolved.dayTypeName ?? exception?.dayTypeDef?.name ?? null,
       naturalDayType: resolveNaturalDayType(date, timezone),
       templateId: resolved.templateId,
       hasException: Boolean(exception),
@@ -84,6 +100,8 @@ export class DayModeService {
         ? {
             id: exception.id,
             dayType: exception.dayType,
+            dayTypeId: exception.dayTypeId,
+            dayTypeName: exception.dayTypeDef?.name ?? null,
             templateId: exception.templateId,
             reason: exception.reason,
           }
@@ -101,7 +119,7 @@ export class DayModeService {
     userId: string,
     input: SetDayModeInput
   ): Promise<Record<string, unknown>> {
-    const { date, mode, dayType, reason, templateId } = input;
+    const { date, mode, dayType, dayTypeId, reason, templateId } = input;
 
     if (mode === 'MINIMUM') {
       const breakdown = await this.scoringService.calculateDailyScore(userId, date, {
@@ -125,7 +143,7 @@ export class DayModeService {
 
     if (mode === 'CLEAR') {
       await this.routineService.clearException(userId, date);
-      return { mode: 'CLEAR', dayType: null, exception: null };
+      return { mode: 'CLEAR', dayType: null, dayTypeId: null, exception: null };
     }
 
     // mode === 'DAY_TYPE': persist an exception so routine resolution for this
@@ -134,9 +152,22 @@ export class DayModeService {
       throw new Error('dayType is required for DAY_TYPE mode');
     }
 
+    // A custom day type always stores `dayType: 'CUSTOM'` (the enum has no
+    // room for user-defined values) *plus* the `dayTypeId` that identifies
+    // which one, so a caller that sends only `dayTypeId` still gets a
+    // consistent row.
+    const resolvedDefinitionId = dayTypeId ?? null;
+    if (resolvedDefinitionId) {
+      const definitions = await this.routineService.listDayTypes(userId);
+      if (!definitions.some((d) => d.id === resolvedDefinitionId)) {
+        throw new Error('Day type not found');
+      }
+    }
+
     const exception = await this.routineService.upsertException(userId, {
       date,
       dayType,
+      dayTypeId: resolvedDefinitionId,
       templateId: templateId ?? null,
       note: reason ?? null,
     });
@@ -144,10 +175,14 @@ export class DayModeService {
     return {
       mode: 'DAY_TYPE',
       dayType,
+      dayTypeId: exception.dayTypeId,
+      dayTypeName: exception.dayTypeDef?.name ?? null,
       templateId: exception.templateId,
       exception: {
         id: exception.id,
         dayType: exception.dayType,
+        dayTypeId: exception.dayTypeId,
+        dayTypeName: exception.dayTypeDef?.name ?? null,
         templateId: exception.templateId,
         reason: exception.reason,
       },

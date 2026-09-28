@@ -10,12 +10,32 @@ const STATIC_ASSETS = [
   '/manifest.json',
 ];
 
-// Install event
+/**
+ * Install event.
+ *
+ * This used to be `cache.addAll(STATIC_ASSETS)`, which is all-or-nothing: a
+ * single non-ok response rejects the whole promise, and because that rejection
+ * was passed to `event.waitUntil(...)` the install failed, the worker never
+ * activated, and every downstream feature that needs an active registration
+ * (push subscribe, offline fallback, notification clicks) silently did nothing.
+ *
+ * That is exactly what happened: `/offline` was listed here but the route did
+ * not exist, so it 404'd and killed the install. Each asset is now added
+ * individually and failures are reported but not fatal, so a missing or renamed
+ * route degrades to "that one asset is not precached" instead of "the entire
+ * offline/push system is dead and nothing says so".
+ */
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        STATIC_ASSETS.map((url) =>
+          cache.add(new Request(url, { cache: 'reload' })).catch((error) => {
+            console.warn('[sw] precache skipped', url, error && error.message);
+          })
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -98,8 +118,12 @@ self.addEventListener('push', (event) => {
   const title = data && typeof data.title === 'string' ? data.title : 'RoutineOS';
   const options = {
     body: data && typeof data.body === 'string' ? data.body : '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    // These pointed at '/icon-192.png', which does not exist — the real files
+    // live in /icons/ with the PWA-standard size suffixes. Every notification
+    // was therefore rendered with a broken image (or no image at all on some
+    // platforms, which suppresses the notification entirely on Android).
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-96x96.png',
     data: {
       url: data && typeof data.url === 'string' ? data.url : '/today',
       actions: Array.isArray(data && data.actions) ? data.actions : [],

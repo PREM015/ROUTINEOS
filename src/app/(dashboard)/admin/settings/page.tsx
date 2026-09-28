@@ -75,18 +75,27 @@ export default function AdminSettingsPage() {
       [SIGNUPS_KEY, 'signupsEnabled'],
     ];
     const next: Record<string, boolean> = {};
+    const failures: string[] = [];
     for (const [key] of checks) {
       try {
         const result = await apiRequest<{ enabled: boolean }>('/api/feature-flags/check', {
           query: { key },
         });
         next[key] = result.enabled;
-      } catch {
-        // Unknown flag keys are treated as unavailable/disabled.
-        next[key] = false;
+      } catch (err) {
+        // Defaulting to `false` silently reported "disabled" for a flag whose
+        // real state was never read. For `maintenanceMode` and
+        // `signupsEnabled` that is the misleading direction: the admin sees a
+        // confident toggle state that is really "could not load". The failure
+        // is now collected and surfaced, and the key is left out so the UI
+        // shows an unknown state rather than a wrong one.
+        failures.push(`${key}: ${err instanceof Error ? err.message : 'unknown error'}`);
       }
     }
     setRemote(next);
+    if (failures.length > 0) {
+      setRefreshError(`Could not load some feature flags — ${failures.join('; ')}`);
+    }
     setRefreshing(false);
   };
 

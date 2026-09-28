@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/Progress';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SCORE_GRADES, type ScoreGrade } from '@/types/score';
+import { apiRequest, ApiError } from '@/lib/api-client';
 import { useCountUp } from '@/components/motion/useCountUp';
 import { Mount } from '@/components/motion/Mount';
 
@@ -16,20 +18,27 @@ export function TodayScore({ date }: TodayScoreProps) {
   const [score, setScore] = useState<number | null>(null);
   const [grade, setGrade] = useState<ScoreGrade | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const display = useCountUp(score || 0, 1);
 
   const fetchScore = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/score/${date}`);
-      const data = await res.json();
-
-      if (data.success) {
-        setScore(data.data.totalScore);
-        setGrade(data.data.overallGrade);
-      }
-    } catch {
-      // Score might not exist yet
-      setScore(0);
+      // `apiRequest` unwraps `{ success, data }`. This route used to return the
+      // bare score row, so the `if (data.success)` guard below never passed and
+      // the card permanently rendered 0 / Grade F.
+      const data = await apiRequest<{ totalScore: number; overallGrade: ScoreGrade }>(
+        `/api/score/${date}`
+      );
+      setScore(data.totalScore);
+      setGrade(data.overallGrade);
+    } catch (err) {
+      // Previously `catch { setScore(0) }`, which reported a failed request to
+      // the user as a genuinely terrible day. An unavailable score now says so.
+      setScore(null);
+      setGrade(null);
+      setError(err instanceof ApiError ? err.message : "Couldn't load today's score");
     } finally {
       setLoading(false);
     }
@@ -48,6 +57,23 @@ export function TodayScore({ date }: TodayScoreProps) {
           <Skeleton className="h-24 w-40 max-w-full" />
           <Skeleton className="h-24 flex-1" />
         </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6" role="alert">
+        <h3 className="text-lg font-semibold">Today&apos;s Score</h3>
+        <p className="mt-2 text-sm text-destructive">{error}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => void fetchScore()}
+        >
+          Try again
+        </Button>
       </Card>
     );
   }

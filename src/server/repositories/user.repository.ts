@@ -1,4 +1,4 @@
-import type { User, UserSettings, Prisma } from '@/generated/prisma';
+import type { User, UserSettings, Prisma, DeviceType } from '@/generated/prisma';
 import { createLogger } from '@/lib/monitoring/logger';
 import { BaseRepository } from './base.repository';
 
@@ -221,6 +221,10 @@ export class UserRepository extends BaseRepository {
   /**
    * Find settings for all users with sleep prompts enabled and a bedtime set.
    * Used by the sleep-notifications cron to create/auto-start prompts.
+   *
+   * `sleepReminderNotifications: { not: false }` respects the per-category
+   * "Sleep reminder" switch on the Settings > Notifications page, which is
+   * separate from the `sleepReminder` master switch configured on Settings > Sleep.
    */
   async findUsersWithSleepPromptsEnabled() {
     try {
@@ -228,6 +232,7 @@ export class UserRepository extends BaseRepository {
         where: {
           sleepReminder: true,
           targetBedtime: { not: null },
+          sleepReminderNotifications: { not: false },
         },
         include: { user: true },
       });
@@ -314,6 +319,78 @@ export class UserRepository extends BaseRepository {
     }
   }
 
+  /**
+   * Public leaderboard candidates: active, non-deleted users with identity
+   * fields only.
+   *
+   * The leaderboard previously called `/api/users/search?q=` once and then
+   * fetched each user's profile individually — 26 requests to draw one table,
+   * and it always returned nothing because `searchUsers` rejects an empty
+   * query. Worse, 25 of those were `/api/users/[id]/profile` calls, which are
+   * rate limited to 30/min, so simply reloading the page twice could 429.
+   *
+   * No opt-in visibility flag is applied because the schema has none, and
+   * `/api/users/[id]/profile` already serves any signed-in caller the same
+   * identity fields for every active user. This widens nothing.
+   */
+  async getLeaderboardCandidates(limit: number) {
+    try {
+      return await this.prisma.user.findMany({
+        where: {
+          isDeleted: false,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          displayName: true,
+          avatarUrl: true,
+          streak: {
+            select: {
+              currentStreak: true,
+              longestStreak: true,
+              totalCompletedDays: true,
+            },
+          },
+        },
+        take: limit,
+      });
+    } catch (error) {
+      this.handleError(error, 'getLeaderboardCandidates');
+    }
+  }
+
+  /**
+   * Average total score per user over a date window.
+   *
+   * Returns one row per user who has at least one scored day in the window;
+   * users with no data are absent rather than present with a zero average,
+   * because a zero would look like a real score rather than "no data".
+   */
+  async getAverageScores(sinceDate: string, limit: number) {
+    try {
+      const rows = await this.prisma.dailyScore.groupBy({
+        by: ['userId'],
+        where: {
+          date: { gte: sinceDate },
+          totalScore: { not: null },
+        },
+        _avg: { totalScore: true },
+        _count: { _all: true },
+        orderBy: { _avg: { totalScore: 'desc' } },
+        take: limit,
+      });
+
+      return rows.map((row) => ({
+        userId: row.userId,
+        averageScore: row._avg.totalScore ?? 0,
+        scoredDays: row._count._all,
+      }));
+    } catch (error) {
+      this.handleError(error, 'getAverageScores');
+    }
+  }
+
   // ============================================================================
   // Device sessions
   // ============================================================================
@@ -346,6 +423,60 @@ export class UserRepository extends BaseRepository {
   }
 
   /**
+   * Create or refresh the device session for a user.
+   *
+   * NextAuth runs the `jwt` strategy, so no session row is ever written for the
+   * user by the framework — the `DeviceSession` table was orphaned and
+   * `/settings/sessions` was permanently empty. The client registers its device
+   * explicitly (see `POST /api/auth/device-session`) and this upsert is keyed on
+   * `(userId, deviceId)` so a returning device refreshes rather than duplicates.
+   */
+  async upsertDeviceSession(
+    userId: string,
+    data: {
+      deviceId: string;
+      deviceName?: string | null;
+      deviceType?: DeviceType | null;
+      userAgent?: string | null;
+      ipAddress?: string | null;
+      location?: string | null;
+      expiresAt: Date;
+    }
+  ) {
+    try {
+      return await this.prisma.deviceSession.upsert({
+        where: { userId_deviceId: { userId, deviceId: data.deviceId } },
+        create: { userId, ...data, isActive: true, lastActiveAt: new Date() },
+        update: {
+          deviceName: data.deviceName ?? undefined,
+          deviceType: data.deviceType ?? undefined,
+          userAgent: data.userAgent ?? undefined,
+          ipAddress: data.ipAddress ?? undefined,
+          location: data.location ?? undefined,
+          expiresAt: data.expiresAt,
+          isActive: true,
+          lastActiveAt: new Date(),
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'upsertDeviceSession');
+    }
+  }
+
+  /**
+   * Find a device session by its per-user device id.
+   */
+  async findDeviceSessionByDeviceId(userId: string, deviceId: string) {
+    try {
+      return await this.prisma.deviceSession.findUnique({
+        where: { userId_deviceId: { userId, deviceId } },
+      });
+    } catch (error) {
+      this.handleError(error, 'findDeviceSessionByDeviceId');
+    }
+  }
+
+  /**
    * Delete a single device session.
    */
   async deleteDeviceSession(sessionId: string): Promise<void> {
@@ -365,6 +496,28 @@ export class UserRepository extends BaseRepository {
       return result.count;
     } catch (error) {
       this.handleError(error, 'deleteAllDeviceSessions');
+    }
+  }
+
+  /**
+   * Increment `sessionVersion`, which invalidates every issued JWT at once.
+   *
+   * `session.sessionVersion` (see `lib/auth.ts`) snapshots this value at
+   * sign-in and rejects any token whose snapshot no longer matches. Without
+   * this bump, "sign out all devices" and "change password" could only delete
+   * `DeviceSession` rows — the stateless JWTs those devices were holding stayed
+   * valid until their 6-hour absolute expiry.
+   */
+  async bumpSessionVersion(userId: string): Promise<number> {
+    try {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { sessionVersion: { increment: 1 } },
+        select: { sessionVersion: true },
+      });
+      return user.sessionVersion;
+    } catch (error) {
+      this.handleError(error, 'bumpSessionVersion');
     }
   }
 }

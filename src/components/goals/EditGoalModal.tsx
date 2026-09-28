@@ -56,12 +56,14 @@ export default function EditGoalModal({ goal, onClose }: EditGoalModalProps) {
     try {
       await updateGoal(goal.id, {
         title: title.trim(),
-        description: description.trim() || undefined,
+        // `null`, not `undefined`: `JSON.stringify` drops undefined keys, so
+        // clearing a field sent nothing at all and the old value survived.
+        description: description.trim() || null,
         priority,
         status,
         targetValue: goal.type === 'DAILY' ? 1 : target,
         currentValue: Math.min(current, goal.type === 'DAILY' ? 1 : target),
-        unit: unit.trim() || undefined,
+        unit: unit.trim() || null,
         endDate: endDate || goal.endDate,
       });
       onClose();

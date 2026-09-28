@@ -1,37 +1,7 @@
 import { auth } from '@/lib/auth';
 import { reviewService } from '@/server/services/review.service';
+import { createMonthlyResetSchema } from '@/lib/validation/review.schema';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-
-const monthlyResetSchema = z.object({
-  month: z.string().regex(/^\d{4}-\d{2}$/),
-  habitsToKeep: z.array(z.string()).optional(),
-  habitsToRemove: z.array(z.string()).optional(),
-  habitsToModify: z.array(z.object({
-    habitId: z.string(),
-    changes: z.record(z.unknown()),
-  })).optional(),
-  newHabitsToAdd: z.array(z.object({
-    name: z.string(),
-    tier: z.string(),
-    frequencyType: z.string(),
-  })).optional(),
-  goalsCompleted: z.array(z.string()).optional(),
-  goalsInProgress: z.array(z.string()).optional(),
-  goalsReviewNotes: z.string().optional(),
-  nextMonthPriorities: z.array(z.string()).optional(),
-  nextMonthGoals: z.array(z.object({
-    title: z.string(),
-    targetValue: z.number(),
-    unit: z.string().optional(),
-  })).optional(),
-  nextMonthFocus: z.string().optional(),
-  monthHighlights: z.string().optional(),
-  monthChallenges: z.string().optional(),
-  overallSatisfaction: z.number().int().min(1).max(5).optional(),
-  personalGrowth: z.number().int().min(1).max(5).optional(),
-  goalProgress: z.number().int().min(1).max(5).optional(),
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +11,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validated = monthlyResetSchema.safeParse(body);
+    // The shared schema in `lib/validation/review.schema` is the real
+    // contract. This route previously carried a second, weaker inline copy that
+    // typed `tier`/`frequencyType` as bare strings and skipped the cuid checks,
+    // so invalid input reached the service unvalidated.
+    const validated = createMonthlyResetSchema.safeParse(body);
 
     if (!validated.success) {
       return NextResponse.json(
@@ -50,7 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Archiving dropped habits and recording the reset are both service concerns.
+    // Archiving dropped habits, applying goal decisions and recording the reset
+    // are all service concerns.
     const reset = await reviewService.createMonthlyReset(
       session.user.id,
       validated.data

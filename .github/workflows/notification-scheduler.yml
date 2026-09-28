@@ -1,0 +1,106 @@
+name: Notification Scheduler
+
+# Free, external 5-minute ticker for RoutineOS notifications.
+#
+# WHY THIS EXISTS
+# ---------------
+# Vercel Cron on a Hobby plan is limited to ~2 invocations per day. That cannot
+# deliver reminders scheduled at 05:15, 09:00, 14:30 and 21:00. The app therefore
+# needs a scheduler that lives outside Vercel.
+#
+# WHY GITHUB ACTIONS
+# -----------------
+# Free for public repositories, and 2,000 minutes/month for private ones. Each
+# run below is a couple of `curl` calls, so actual billed time is seconds, not
+# minutes. GitHub allows a 5-minute minimum for `schedule:` triggers.
+#
+# KNOWN LIMITATIONS (stated, not hidden)
+#   * GitHub explicitly warns that scheduled workflows "may be delayed during
+#     peak load, especially at the start of every hour." A reminder can arrive
+#     several minutes late.
+#   * A delay is NOT a lost notification. The dispatcher selects everything with
+#     `scheduledFor <= now`, so a late tick delivers the whole backlog at once.
+#   * If GitHub Actions is down, the in-app catch-up in GET /api/notifications
+#     clears the backlog the moment the user next opens RoutineOS.
+#   * A private repo gets 2,000 min/month, which this workflow fits inside with
+#     room to spare. A public repo is effectively unlimited.
+#   * GitHub disables scheduled workflows in public repos after 60 days of
+#     repository inactivity.
+#
+# ONE-TIME SETUP
+#   Settings -> Secrets and variables -> Actions
+#     Variable: NOTIFICATION_BASE_URL  = https://your-app.vercel.app
+#     Secret:  CRON_SECRET             = (same value as in the app's env)
+#   Then run this workflow manually once from the Actions tab to confirm it works.
+
+on:
+  schedule:
+    # Every 5 minutes. Deliberately minute-of-hour 1,6,11,... rather than
+    # 0,5,10,... to avoid landing exactly on the hour, which is GitHub's most
+    # contended window and the most likely to be delayed.
+    - cron: '1,6,11,16,21,26,31,36,41,46,51,56 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  # Never let two ticks overlap. The dispatcher is already claim-safe, but
+  # serialising also stops a slow run from delaying the next one.
+  group: notification-scheduler
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    name: Create and dispatch due notifications
+    runs-on: ubuntu-latest
+    # Hard ceiling so a hung curl cannot burn the free minutes.
+    timeout-minutes: 3
+    env:
+      BASE_URL: ${{ vars.NOTIFICATION_BASE_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Check configuration
+        if: ${{ env.BASE_URL == '' }}
+        run: |
+          echo "::error::Repository variable NOTIFICATION_BASE_URL is not set."
+          echo "Add it under Settings -> Secrets and variables -> Actions -> Variables."
+          exit 1
+
+      - name: Check secret
+        if: ${{ env.CRON_SECRET == '' }}
+        run: |
+          echo "::error::Repository secret CRON_SECRET is not set."
+          echo "Add it under Settings -> Secrets and variables -> Actions -> Secrets."
+          exit 1
+
+      # Order matters.
+      #   1. sleep-notifications  - creates the bedtime prompt. SLEEP_PROMPT is
+      #                             excluded from the generic dispatcher, and
+      #                             this step pushes it immediately.
+      #   2. schedule-routine-*   - queues rows for routine blocks, the daily
+      #                             nudge, per-habit and per-goal reminders.
+      #   3. dispatch-*           - sends everything now due, so a reminder
+      #                             created in step 2 fires in the same tick
+      #                             instead of waiting another 5 minutes.
+      #
+      # `continue-on-error` so one failing step does not skip the dispatch that
+      # would clear the backlog.
+
+      - name: Sleep prompts
+        continue-on-error: true
+        run: |
+          curl -sS --max-time 30 --fail-with-body \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE_URL}/api/cron/sleep-notifications"
+
+      - name: Schedule routine, habit and goal reminders
+        continue-on-error: true
+        run: |
+          curl -sS --max-time 60 --fail-with-body \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE_URL}/api/cron/schedule-routine-notifications"
+
+      - name: Dispatch due notifications
+        continue-on-error: true
+        run: |
+          curl -sS --max-time 60 --fail-with-body \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE_URL}/api/cron/dispatch-notifications"

@@ -101,12 +101,17 @@ export class FocusRepository extends BaseRepository {
   }
 
   /**
-   * Find the active focus session for a user
+   * Find the genuinely-running focus session for a user.
+   *
+   * `abortedAt: null` is part of the filter: a session the user stopped or
+   * skipped is *ended*, not running, and must not be reported as the live
+   * session. Before `abortedAt` existed, such rows were indistinguishable from
+   * an in-flight timer.
    */
   async findActiveByUserId(userId: string): Promise<FocusSession | null> {
     try {
       return await this.prisma.focusSession.findFirst({
-        where: { userId, completedAt: null },
+        where: { userId, completedAt: null, abortedAt: null },
         orderBy: { startedAt: 'desc' },
       });
     } catch (error) {

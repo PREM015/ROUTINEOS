@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -20,6 +20,7 @@ interface RouteContext {
  * Fetch a single health metric owned by the user.
  */
 export async function GET(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const healthMetricRepository = new HealthMetricRepository();
-    const metric = await healthMetricRepository.findById(session.user.id, params.id);
+    const metric = await healthMetricRepository.findById(session.user.id, paramId);
 
     if (!metric) {
       return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
@@ -45,6 +46,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
  * Update a health metric owned by the user.
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -61,7 +63,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const healthMetricRepository = new HealthMetricRepository();
-    const existing = await healthMetricRepository.findById(session.user.id, params.id);
+    const existing = await healthMetricRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
     }
@@ -70,7 +72,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: true, data: existing });
     }
 
-    const metric = await healthMetricRepository.update(session.user.id, params.id, validated.data);
+    const metric = await healthMetricRepository.update(session.user.id, paramId, validated.data);
     return NextResponse.json({ success: true, data: metric });
   } catch (error) {
     console.error('Error updating health metric:', error);
@@ -89,6 +91,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
  * Delete a health metric owned by the user.
  */
 export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+  const { id: paramId } = await params;
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -96,13 +99,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     }
 
     const healthMetricRepository = new HealthMetricRepository();
-    const existing = await healthMetricRepository.findById(session.user.id, params.id);
+    const existing = await healthMetricRepository.findById(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
     }
 
-    await healthMetricRepository.delete(session.user.id, params.id);
-    return NextResponse.json({ success: true, data: { id: params.id } });
+    await healthMetricRepository.delete(session.user.id, paramId);
+    return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting health metric:', error);
     return NextResponse.json({ error: 'Failed to delete health metric' }, { status: 500 });

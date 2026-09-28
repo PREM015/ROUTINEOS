@@ -56,3 +56,7 @@ test-results/
 
 FILE.MD
 AGENTS.md
+ERROR.md
+
+# User data exports (written outside public/ so they are not statically served)
+.data/
