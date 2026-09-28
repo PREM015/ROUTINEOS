@@ -164,16 +164,42 @@ export class PushService {
         const message =
           error instanceof Error ? error.message : 'Unknown push delivery error';
 
+        /**
+         * `web-push` collapses some responses to a generic "Received unexpected
+         * response code" and puts the real explanation in `err.body`. Without
+         * this, a device whose subscription was created with a different VAPID
+         * key failed with a message that named neither the cause nor the fix.
+         */
+        const bodyText =
+          error && typeof error === 'object' && 'body' in error
+            ? String((error as { body?: unknown }).body ?? '').trim()
+            : '';
+
         if (status === 404 || status === 410 || status === 400) {
           // Subscription is dead or unauthorized: prune it.
           await this.pushSubscriptionRepository
             .delete(sub.userId, sub.id)
             .catch(() => undefined);
           errors.push(`${sub.deviceName ?? 'device'}: subscription expired (${status})`);
+        } else if (status === 403 && /do not correspond to the credentials/i.test(bodyText)) {
+          /**
+           * The subscription was created with a different VAPID public key than
+           * the one this server signs with — a key rotation, or a client that
+           * used a stale build-time key. Re-registering the device on the current
+           * origin is the only fix, so say exactly that instead of leaving the
+           * user with a dead device.
+           */
+          errors.push(
+            `${sub.deviceName ?? 'device'}: registered with a different VAPID key ` +
+              `(HTTP 403). Delete this device and re-add it from this site to fix it.`
+          );
         } else {
           // Previously swallowed with no log at all, so a VAPID mismatch or a
           // network failure looked identical to a successful send.
-          errors.push(`${sub.deviceName ?? 'device'}: ${message}`);
+          errors.push(
+            `${sub.deviceName ?? 'device'}: ${message}${status ? ` (HTTP ${status})` : ''}` +
+              (bodyText ? ` — ${bodyText.slice(0, 200)}` : '')
+          );
         }
       }
     }

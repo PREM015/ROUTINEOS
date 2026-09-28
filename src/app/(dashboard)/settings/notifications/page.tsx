@@ -131,6 +131,8 @@ export default function NotificationsSettingsPage() {
   const [pushSupported, setPushSupported] = useState(false);
   const [permissionState, setPermissionState] = useState<NotificationPermission>('default');
   const [vapidPublicKey, setVapidPublicKey] = useState<string | null>(null);
+  /** Why the runtime VAPID key is unavailable, if it is. */
+  const [keyFetchError, setKeyFetchError] = useState<string | null>(null);
   const [registering, setRegistering] = useState(false);
 
   // Plain function rather than `useCallback`: it is only ever invoked, never
@@ -175,15 +177,42 @@ export default function NotificationsSettingsPage() {
       }
     }
 
-    // The VAPID public key is served at runtime so a key rotation does not
-    // require a rebuild. Falls back to the build-time value if the route fails.
+    /**
+     * The VAPID public key must come from the server at runtime.
+     *
+     * This used to fall back to `process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY` when
+     * the `/api/push-config` request failed. `NEXT_PUBLIC_*` values are inlined
+     * into the client bundle **at build time**, so after a key change that
+     * fallback hands the browser a stale key. Registering with it produces a
+     * subscription that is permanently rejected by the push service:
+     *
+     *   403 "the VAPID credentials in the authorization header do not
+     *       correspond to the credentials used to create the subscriptions"
+     *
+     * with no way for the user to tell — registration reports success and the
+     * device silently receives nothing. So a failed fetch is now surfaced
+     * instead of being papered over.
+     */
     let cancelled = false;
     void apiRequest<{ vapidPublicKey: string | null }>('/api/push-config')
       .then((data) => {
-        if (!cancelled && data.vapidPublicKey) setVapidPublicKey(data.vapidPublicKey);
+        if (cancelled) return;
+        if (data.vapidPublicKey) {
+          setVapidPublicKey(data.vapidPublicKey);
+          setKeyFetchError(null);
+        } else {
+          setVapidPublicKey(null);
+          setKeyFetchError(
+            'The server did not return a VAPID key, so this browser cannot register for push without creating a subscription that would never receive anything.'
+          );
+        }
       })
       .catch(() => {
-        if (!cancelled) setVapidPublicKey(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null);
+        if (cancelled) return;
+        setVapidPublicKey(null);
+        setKeyFetchError(
+          'Could not load the push configuration from the server, so this browser cannot be registered safely.'
+        );
       });
 
     return () => {
@@ -246,7 +275,12 @@ export default function NotificationsSettingsPage() {
       }
 
       if (!vapidPublicKey) {
-        setDeviceMessage({ success: false, message: 'VAPID key not configured. Check server environment.' });
+        setDeviceMessage({
+          success: false,
+          message:
+            keyFetchError ??
+            'The server did not provide a VAPID key, so this browser cannot be registered for push.',
+        });
         return;
       }
 
@@ -544,6 +578,15 @@ export default function NotificationsSettingsPage() {
               )}
               {deviceMessage.message}
             </div>
+          )}
+
+          {keyFetchError && (
+            <p
+              role="alert"
+              className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {keyFetchError}
+            </p>
           )}
 
           {/*
