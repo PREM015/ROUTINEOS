@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Check, CheckCheck, Loader2, X } from 'lucide-react';
+import { Bell, Check, CheckCheck, X } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import {
   CATEGORY_META,
@@ -51,7 +51,7 @@ const PAGE_SIZE = 20;
  *    month, week, year notification selection."
  *
  * Previously the bell was a plain `Link` to /settings/notifications, and nothing
- * in the app consumed `GET /api/notifications` at all — the endpoint existed
+ * in the app consumed `GET /api/notifications` at all â€” the endpoint existed
  * with no reader.
  */
 export function NotificationBell() {
@@ -73,6 +73,15 @@ export function NotificationBell() {
 
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  /** Carries the active filters across to the full history page. */
+  const allHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (period !== 'all') params.set('period', period);
+    const qs = params.toString();
+    return qs ? `/notifications?${qs}` : '/notifications';
+  }, [category, period]);
 
   const load = useCallback(
     async (opts: { append?: boolean; category?: NotificationCategory; period?: PeriodFilter } = {}) => {
@@ -149,18 +158,27 @@ export function NotificationBell() {
   }, [load]);
 
   const markAllRead = useCallback(async () => {
-    setRows((prev) => prev.map((r) => ({ ...r, readAt: r.readAt ?? new Date().toISOString() })));
+    /**
+     * Previously this looped over the **loaded page** only.
+     *
+     * With 70 notifications and a 20-row page, "Mark all as read" marked 20 of
+     * them and then the next poll re-read the real unread count â€” so the badge
+     * immediately reappeared and it looked like the button did nothing. The
+     * repository already has a single-query `markAllRead`, which is both correct
+     * and far cheaper than N requests.
+     */
     setUnread(0);
+    setRows((prev) => prev.map((r) => ({ ...r, readAt: r.readAt ?? new Date().toISOString() })));
     try {
-      for (const r of rows) {
-        if (!r.readAt) {
-          await apiRequest(`/api/notifications/${r.id}`, { method: 'PATCH', body: { action: 'read' } });
-        }
-      }
+      await apiRequest<{ updated: number }>('/api/notifications', {
+        method: 'POST',
+        body: { action: 'markAllRead' },
+      });
+      await load();
     } catch {
-      void load();
+      await load();
     }
-  }, [rows, load]);
+  }, [load]);
 
   return (
     <div className="relative">
@@ -197,7 +215,7 @@ export function NotificationBell() {
               <h2 className="text-sm font-semibold">Notifications</h2>
               <p className="text-xs text-muted-foreground">
                 {total === 0 ? 'Nothing here' : `${total} in this view`}
-                {unread > 0 ? ` · ${unread} unread` : ''}
+                {unread > 0 ? ` Â· ${unread} unread` : ''}
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -223,7 +241,7 @@ export function NotificationBell() {
             </div>
           </div>
 
-          {/* Period filter — ERROR.md L asks for day / week / month / year. */}
+          {/* Period filter â€” ERROR.md L asks for day / week / month / year. */}
           <div className="flex flex-wrap gap-1.5 border-b border-border px-4 py-2">
             {PERIOD_FILTERS.map((p) => (
               <button
@@ -392,15 +410,20 @@ export function NotificationBell() {
 
             {hasMore && (
               <div className="px-4 py-3 text-center">
-                <button
-                  type="button"
-                  onClick={() => void load({ append: true })}
-                  disabled={loading}
-                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                {/*
+                  "Load more" used to append to the panel's list. With a large
+                  history that grows the panel's DOM without bound, which is what
+                  the user is asked to avoid for frontend performance, so the
+                  panel now stays a short, cheap summary and the full history
+                  lives on its own page where it can be paginated server-side.
+                */}
+                <Link
+                  href={allHref}
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
                 >
-                  {loading && <Loader2 className="h-3 w-3 animate-spin" />}
-                  Load more
-                </button>
+                  View all {total} notifications
+                </Link>
               </div>
             )}
           </div>

@@ -160,6 +160,44 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const markAllSchema = z.object({
+  action: z.literal('markAllRead'),
+});
+
+/**
+ * POST /api/notifications
+ * `markAllRead` in one query.
+ *
+ * The bell previously implemented "mark all read" by issuing one PATCH per
+ * loaded row. With 70 notifications and a 20-row page that marked 20 and left
+ * the rest, so the unread badge reappeared on the next poll and the button
+ * looked broken. `NotificationRepository.markAllRead` does it in a single
+ * statement.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const parsed = markAllSchema.safeParse(await request.json().catch(() => ({})));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: 'Unsupported action' },
+        { status: 400 }
+      );
+    }
+    const updated = await new NotificationRepository().markAllRead(session.user.id);
+    return NextResponse.json({ success: true, data: { updated } });
+  } catch (error) {
+    console.error('Error marking notifications read:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to mark notifications as read' },
+      { status: 500 }
+    );
+  }
+}
+
 /** The `YYYY-MM-DD` an instant falls on in the user's zone. */
 function localDateOf(instant: Date, timezone: string): string {
   try {

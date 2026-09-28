@@ -3,6 +3,11 @@ import { NotificationType } from '@/generated/prisma';
 import { differenceInMinutes } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
+import { resolveDayTypeFromException } from '@/lib/scheduling/resolve-routine';
+import { RoutineRepository } from '@/server/repositories/routine.repository';
+
+/** Shared with the rest of the app so reminders cannot disagree with /routine. */
+const routineRepository = new RoutineRepository();
 
 /**
  * Notification Scheduler
@@ -319,23 +324,103 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
         ? 0
         : Math.max(0, preferences?.advanceNotificationMinutes ?? 0);
 
-    // Get all active routine blocks for the user
-    // We need to include the template to get dayType
-    const routineBlocks = await prisma.routineBlock.findMany({
-      where: {
-        userId,
-        isRecurring: true,
+    /**
+     * Only the blocks belonging to the template that is **actually in effect**
+     * for each upcoming day.
+     *
+     * This used to load every recurring block for the user and let
+     * `getNextOccurrence` filter purely by weekday. A user with a College
+     * (WORKDAY) template, a Rest Day (LOW_ENERGY) one, a Weekend one and a
+     * PLACEMENT (CUSTOM) one therefore got reminders for all of them at once —
+     * a placement-day "Job Applications" reminder firing on a College day. On
+     * top of that, `getNextOccurrence` treated every non-WORKDAY/WEEKEND day
+     * type as "matches any day", so `CUSTOM` templates were scheduled daily.
+     *
+     * The fix is to resolve each day the same way the app itself does —
+     * `RoutineException` first, then the natural weekday — and schedule only
+     * that template's blocks. Reminders then always match what `/routine` shows.
+     */
+    const routineBlocks: Array<{
+      id: string;
+      title: string;
+      startTime: string;
+      endTime: string;
+      isOvernight: boolean;
+      isRecurring: boolean;
+      template: { dayType: string; isActive: boolean; name: string } | null;
+    }> = [];
+
+    const todayLocal = getTodayString(timezone);
+    const seenBlockIds = new Set<string>();
+
+    for (let dayOffset = 0; dayOffset < 8; dayOffset += 1) {
+      const localDate = shiftCalendarDay(todayLocal, dayOffset);
+
+      // Same resolution order as `RoutineService.getRoutineForDate`, via the
+      // shared pure helper: an explicit per-date override wins, otherwise the
+      // natural weekday decides.
+      const exception = await routineRepository.findException(userId, localDate);
+      const resolved = resolveDayTypeFromException(localDate, timezone, exception ?? undefined);
+      const dayType = resolved.dayType;
+
+      const templateId = exception?.dayTypeId
+        ? exception.dayTypeId
+        : (await routineRepository.findTemplateByDayType(userId, dayType))?.id;
+
+      if (!templateId) continue;
+      const template = await routineRepository.findTemplateWithBlocks(templateId, userId);
+      if (template) await collectBlocks(template as never, localDate, dayOffset);
+    }
+
+    /**
+     * Add a resolved template's active recurring blocks to the work list, tagged
+     * with the local date they apply to and the template's display name (used
+     * for the day-type tag on the notification).
+     */
+    async function collectBlocks(
+      template: {
+        id: string;
+        name: string;
+        dayType: string;
+        isActive: boolean;
+        blocks?: Array<{
+          id: string;
+          title: string;
+          startTime: string;
+          endTime: string;
+          isOvernight: boolean;
+          isRecurring: boolean;
+        }>;
       },
-      include: {
-        template: {
-          select: {
-            dayType: true,
-            isActive: true,
+      localDate: string,
+      dayOffset: number
+    ): Promise<void> {
+      if (!template.isActive) return;
+      for (const block of template.blocks ?? []) {
+        if (!block.isRecurring) continue;
+        // A block that recurs every day appears once per future day; only the
+        // earliest occurrence should produce a notification, so the first date it
+        // is seen for wins.
+        if (seenBlockIds.has(block.id)) continue;
+        seenBlockIds.add(block.id);
+        routineBlocks.push({
+          id: block.id,
+          title: block.title,
+          startTime: block.startTime,
+          endTime: block.endTime,
+          isOvernight: block.isOvernight,
+          isRecurring: block.isRecurring,
+          template: {
+            dayType: template.dayType,
+            isActive: template.isActive,
+            name: template.name,
           },
-        },
-      },
-      take: 200,
-    });
+          localDate,
+        } as never);
+      }
+      void localDate;
+      void dayOffset;
+    }
 
     const notifications = [];
     const seenBlocks = new Set<string>();
@@ -416,6 +501,13 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
           routineTitle: block.title,
           startTime: block.startTime,
           endTime: block.endTime,
+          /**
+           * The day type this block belongs to, taken from the template it lives
+           * in. Rendered as a tag on the notification so "College /" and a
+           * placement block are distinguishable at a glance instead of both
+           * reading as a generic "Routine".
+           */
+          dayType: block.template?.name ?? null,
         },
       });
     }
