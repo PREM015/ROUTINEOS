@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bell, CheckCheck, Loader2, Settings } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import {
   CATEGORY_META,
@@ -43,12 +43,19 @@ const PAGE_SIZE = 25;
 const CATEGORIES = new Set<string>(CATEGORY_ORDER);
 
 /**
- * Full notification history with category + period filters and server-side paging.
+ * Full notification history at `/notifications`.
  *
- * Filters live in the URL so the view is shareable, survives a refresh, and can
- * be linked to directly from the bell. Paging appends, but only one page at a
- * time, and the request is server-side â€” the bell panel deliberately does not
- * do this so it stays cheap.
+ * ERROR.md L asked for the navbar bell to show notification history with
+ * category and period filters. The bell now navigates here directly, so this
+ * page owns the whole experience:
+ *
+ *   * a **settings** icon at the top, because the bell no longer doubles as the
+ *     route to /settings/notifications and that link would otherwise be
+ *     unreachable;
+ *   * period filters (All / Day / Week / Month / Year) computed in the user's
+ *     own timezone;
+ *   * category filters with live counts;
+ *   * server-side paging, so the DOM stays bounded regardless of history size.
  */
 export function NotificationHistory({
   searchParams,
@@ -59,10 +66,11 @@ export function NotificationHistory({
 
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Record<NotificationCategory, number>>(
-    () => Object.fromEntries(CATEGORY_ORDER.map((c) => [c, 0])) as Record<
-      NotificationCategory,
-      number
-    >
+    () =>
+      Object.fromEntries(CATEGORY_ORDER.map((c) => [c, 0])) as Record<
+        NotificationCategory,
+        number
+      >
   );
   const [unread, setUnread] = useState(0);
   const [total, setTotal] = useState(0);
@@ -75,7 +83,8 @@ export function NotificationHistory({
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Read the initial filters from the URL exactly once.
+  // Read the initial filters from the URL once, so the bell can deep-link into a
+  // pre-filtered view.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -94,8 +103,10 @@ export function NotificationHistory({
 
   const load = useCallback(
     async (nextOffset: number, append: boolean) => {
-      append ? setLoadingMore(true) : setLoading(true);
+      if (append) setLoadingMore(true);
+      else setLoading(true);
       setError(null);
+
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
         offset: String(nextOffset),
@@ -145,7 +156,10 @@ export function NotificationHistory({
     setUnread(0);
     setRows((prev) => prev.map((r) => ({ ...r, readAt: r.readAt ?? new Date().toISOString() })));
     try {
-      await apiRequest('/api/notifications', { method: 'POST', body: { action: 'markAllRead' } });
+      await apiRequest('/api/notifications', {
+        method: 'POST',
+        body: { action: 'markAllRead' },
+      });
     } finally {
       void load(offset, false);
     }
@@ -169,20 +183,36 @@ export function NotificationHistory({
               Notifications
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {loading ? 'Loadingâ€¦' : `${total} in this view`}
-              {unread > 0 ? ` Â· ${unread} unread` : ''}
+              {loading ? 'Loading…' : `${total} in this view`}
+              {unread > 0 ? ` · ${unread} unread` : ''}
             </p>
           </div>
-          {unread > 0 && (
-            <button
-              type="button"
-              onClick={() => void markAllRead()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+
+          <div className="flex items-center gap-2">
+            {unread > 0 && (
+              <button
+                type="button"
+                onClick={() => void markAllRead()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <CheckCheck className="h-4 w-4" aria-hidden="true" />
+                Mark all as read
+              </button>
+            )}
+
+            {/*
+              The bell now navigates here, so it no longer doubles as the route
+              to notification settings. This gear keeps that reachable.
+            */}
+            <Link
+              href="/settings/notifications"
+              title="Notification settings"
+              aria-label="Notification settings"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <CheckCheck className="h-4 w-4" aria-hidden="true" />
-              Mark all as read
-            </button>
-          )}
+              <Settings className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -259,7 +289,7 @@ export function NotificationHistory({
       )}
 
       {loading ? (
-        <ul className="space-y-2" aria-busy="true">
+        <ul className="space-y-2" aria-busy="true" aria-label="Loading notifications">
           {Array.from({ length: 6 }).map((_, i) => (
             <li key={i} className="h-20 animate-pulse rounded-xl bg-muted/60" />
           ))}
@@ -282,9 +312,7 @@ export function NotificationHistory({
                 <div
                   className={cn(
                     'flex items-start gap-3 rounded-xl border px-4 py-3 transition-colors',
-                    isUnread
-                      ? 'border-primary/30 bg-primary/5'
-                      : 'border-border bg-card'
+                    isUnread ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
                   )}
                 >
                   <span
