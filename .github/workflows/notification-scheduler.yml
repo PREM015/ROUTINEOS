@@ -4,9 +4,20 @@ name: Notification Scheduler
 #
 # WHY THIS EXISTS
 # ---------------
-# Vercel Cron on a Hobby plan is limited to ~2 invocations per day. That cannot
-# deliver reminders scheduled at 05:15, 09:00, 14:30 and 21:00. The app therefore
-# needs a scheduler that lives outside Vercel.
+# Vercel Cron on a Hobby plan is limited to ~2 invocations per day, and Hobby
+# *rejects the deployment outright* for any expression that runs more than once
+# per day. The project previously had `*/5 * * * *`, `*/15 * * * *` and
+# `0 * * * *` in vercel.json, which failed every build with:
+#
+#   Hobby accounts are limited to daily cron jobs.
+#   This cron expression would run more than once per day.
+#
+# Those three entries were therefore removed from vercel.json. The two that
+# remain (`0 1 * * *` daily scores, `0 2 * * 0` weekly insights) are
+# once-per-day and deploy cleanly. This workflow is what delivers notifications.
+#
+# If the project is ever upgraded to Pro, the Vercel crons can be re-added as a
+# redundant second driver — the endpoint is idempotent, so two drivers are safe.
 #
 # WHY GITHUB ACTIONS
 # -----------------
