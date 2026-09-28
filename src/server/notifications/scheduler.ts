@@ -9,6 +9,9 @@ import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
  * Queue and schedule notifications
  */
 
+/** How long the "Snooze" notification button postpones a reminder. */
+const SNOOZE_MINUTES = 10;
+
 export async function scheduleNotification(
   userId: string,
   type: NotificationType,
@@ -20,6 +23,14 @@ export async function scheduleNotification(
     relatedEntityId?: string;
     /** Serialized into the `actionData` JSON column. */
     data?: Record<string, unknown>;
+    /**
+     * Action buttons to render on the push notification.
+     *
+     * Stored in `actionData.actions` so the dispatcher can forward them to the
+     * service worker, and so the `/api/notifications/action` endpoint can be
+     * reached from a button press while the app is closed.
+     */
+    actions?: Array<{ action: string; title: string }>;
   }
 ) {
   return await prisma.notificationLog.create({
@@ -30,7 +41,10 @@ export async function scheduleNotification(
       body: data.body,
       actionUrl: data.actionUrl,
       relatedEntityId: data.relatedEntityId,
-      actionData: data.data ? JSON.stringify(data.data) : undefined,
+      actionData:
+        data.data || data.actions
+          ? JSON.stringify({ ...(data.data ?? {}), ...(data.actions ? { actions: data.actions } : {}) })
+          : undefined,
       scheduledFor,
       status: 'PENDING',
     },
@@ -380,6 +394,22 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
         actionUrl: `/today?block=${block.id}`,
         relatedEntityId: block.id,
         scheduledFor: scheduledTime,
+        /**
+         * Action buttons rendered on the push itself.
+         *
+         * Chrome shows at most two, so this is deliberately two and not three.
+         * `DONE` and `SNOOZE` are the two that actually change state; a third
+         * "open" button would be rendered greyed and useless, and the body of
+         * the notification is already clickable to open the app.
+         *
+         * They are wired to `/api/notifications/action` by the service worker's
+         * `notificationclick` handler, so acknowledging a reminder does not
+         * require opening the app.
+         */
+        actions: [
+          { action: 'DONE', title: '✓ Done' },
+          { action: 'SNOOZE', title: `Snooze ${SNOOZE_MINUTES}m` },
+        ],
         // Include block info in data for reference
         data: {
           blockId: block.id,
@@ -403,6 +433,7 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
             actionUrl: n.actionUrl,
             relatedEntityId: n.relatedEntityId,
             data: n.data,
+            actions: n.actions,
           }
         ))
       );

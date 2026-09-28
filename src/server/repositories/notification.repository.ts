@@ -49,6 +49,12 @@ export interface DispatchCandidate {
   title: string;
   body: string | null;
   actionUrl: string | null;
+  /**
+   * The `actionData` JSON column, needed to forward action buttons to the push
+   * payload. Absent from this type previously, so the dispatcher could never
+   * reach the buttons the routine producer writes.
+   */
+  actionData: string | null;
   retryCount: number;
   user: {
     email: string | null;
@@ -256,6 +262,39 @@ export class NotificationRepository extends BaseRepository {
    * Guarded on `status: PENDING`, so a concurrent dispatcher that already
    * claimed the row makes this a no-op instead of double-sending.
    */
+  /**
+   * Postpone a pending notification, used by the notification action buttons.
+   *
+   * Scoped to `userId` and to `status: PENDING` so a snooze can only ever
+   * affect the caller's own not-yet-sent row. Resets the retry budget because a
+   * snoozed reminder is a fresh attempt, not a repeat of a failure.
+   *
+   * @returns the number of rows changed (0 when it was not claimable).
+   */
+  async snooze(
+    userId: string,
+    notificationId: string,
+    scheduledFor: Date,
+  ): Promise<number> {
+    try {
+      const result = await this.prisma.notificationLog.updateMany({
+        where: {
+          id: notificationId,
+          userId,
+          status: NotificationStatus.PENDING,
+        },
+        data: {
+          scheduledFor,
+          retryCount: 0,
+          errorMessage: null,
+        },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'snooze');
+    }
+  }
+
   async markSent(
     userId: string,
     notificationId: string,
@@ -349,6 +388,7 @@ export class NotificationRepository extends BaseRepository {
           title: true,
           body: true,
           actionUrl: true,
+          actionData: true,
           retryCount: true,
           user: {
             select: {

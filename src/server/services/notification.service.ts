@@ -84,6 +84,47 @@ export interface CreateNotificationInput {
   status?: NotificationStatus;
 }
 
+/**
+ * Split the `actionData` JSON column into the parts the push payload needs.
+ *
+ * `actions` is lifted out because it is a structured field, not free-form data.
+ * The remainder is forwarded to the service worker untouched. Malformed JSON is
+ * tolerated: a malformed column must not stop the notification being delivered.
+ */
+function parseActionData(raw: string | null | undefined): {
+  actions: Array<{ action: string; title: string }>;
+  rest: Record<string, unknown>;
+  promptId?: string;
+} {
+  if (!raw) return { actions: [], rest: {} };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { actions: [], rest: {} };
+  }
+  if (typeof parsed !== 'object' || parsed === null) return { actions: [], rest: {} };
+
+  const record = parsed as Record<string, unknown>;
+  const rawActions = Array.isArray(record.actions) ? record.actions : [];
+  const actions = rawActions
+    .filter(
+      (a): a is { action: string; title: string } =>
+        typeof a === 'object' &&
+        a !== null &&
+        typeof (a as { action?: unknown }).action === 'string' &&
+        typeof (a as { title?: unknown }).title === 'string'
+    )
+    .slice(0, 2);
+
+  const { actions: _omitted, ...rest } = record;
+  return {
+    actions,
+    rest,
+    promptId: typeof record.promptId === 'string' ? record.promptId : undefined,
+  };
+}
+
 export class NotificationService {
   private notificationRepository: NotificationRepository;
 
@@ -339,10 +380,25 @@ export class NotificationService {
 
       if (settings?.pushNotifications ?? true) {
         try {
+          /**
+           * Forward the action buttons and the row's own id.
+           *
+           * Without `notificationId` the service worker has nothing to send an
+           * action button to, so a reminder could only ever be opened, never
+           * acknowledged. `actionData` carries `{ actions: [...] }` as written
+           * by the routine producer.
+           */
+          const actionData = parseActionData(notification.actionData);
           const push = await pushService.sendToUser(notification.userId, {
             title: notification.title,
             body: notification.body ?? undefined,
             url: notification.actionUrl ?? undefined,
+            ...(actionData.actions.length > 0 ? { actions: actionData.actions } : {}),
+            data: {
+              ...actionData.rest,
+              notificationId: notification.id,
+              ...(actionData.promptId ? { promptId: actionData.promptId } : {}),
+            },
           });
           if (push.sent > 0) channels.push = true;
           /**
