@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Flame, LogOut, Settings, User, Bell } from 'lucide-react';
+import { Flame, LogOut, Settings, User } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
@@ -37,15 +38,15 @@ export function Header() {
           <span className="hidden sm:inline">Active Streak</span>
         </Link>
 
-        {/* Notifications Icon link */}
-        <Link
-          href="/settings/notifications"
-          className="p-2 text-muted-foreground hover:text-foreground rounded-lg transition-colors"
-          title="Notifications"
-          aria-label="Notifications"
-        >
-          <Bell className="w-4 h-4" />
-        </Link>
+        {/*
+          ERROR.md L: the bell used to be a plain link to
+          /settings/notifications, so clicking it opened settings instead of the
+          notification history, and nothing in the app read
+          `GET /api/notifications` at all. `NotificationBell` renders the
+          history with category and period filters plus an unread badge; settings
+          is still reachable from the foot of the panel.
+        */}
+        <NotificationBell />
 
         <ThemeToggle />
 
