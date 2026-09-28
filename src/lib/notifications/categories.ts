@@ -1,16 +1,25 @@
 import type { NotificationType } from '@/generated/prisma';
 
 /**
- * Notification categories.
+ * Notification categories, tags and filters.
  *
- * ERROR.md L asks the navbar bell to "categorize notifications by what type of
- * notification it is and what it relates to", with a filter per category.
+ * ERROR.md L asks for the navbar bell to categorise notifications "by what type
+ * of notification it is and what it relates to", show tags, and offer filters
+ * for both category and period.
+ *
+ * The user then asked for two more things:
+ *
+ *   1. the **labels they set on routine blocks** (DSA, Personal, GATE,
+ *      College, Health, ...) to appear as tags and be filterable. Those are
+ *      stored on `RoutineBlock.categoryId -> Category.name`, so the producer
+ *      captures the name into the notification's `actionData.category`.
+ *   2. filters for Habit, Achievement, Recap, Analytics, Focus mode, Journal
+ *      and Settings alongside the existing ones.
  *
  * There are 40+ `NotificationType` values, so filtering by raw type would be
  * unusable. These buckets are what the user actually thinks in. The mapping is
- * exhaustive and lives in one file, so a new enum member cannot be forgotten —
- * `CATEGORY_OF` falls back to `system`, and `tests/lib/enums.test.ts` style
- * checking is not required for correctness here.
+ * exhaustive and lives in one file, and anything unmapped falls back to
+ * `system` rather than disappearing.
  */
 export type NotificationCategory =
   | 'routine'
@@ -23,8 +32,19 @@ export type NotificationCategory =
   | 'reviews'
   | 'achievements'
   | 'insights'
+  | 'journal'
+  | 'settings'
   | 'system';
 
+/**
+ * Filter order and labels.
+ *
+ * `reviews` is labelled "Recap" and `insights` "Analytics" because that is the
+ * vocabulary the user asked for. `journal` is present as a filter, but note
+ * there is currently **no** `NotificationType` for journal entries, so it will
+ * show zero until journal reminders are implemented — it is not hidden, because
+ * hiding it would make the absence invisible.
+ */
 export const CATEGORY_ORDER: readonly NotificationCategory[] = [
   'routine',
   'habits',
@@ -36,6 +56,8 @@ export const CATEGORY_ORDER: readonly NotificationCategory[] = [
   'reviews',
   'achievements',
   'insights',
+  'journal',
+  'settings',
   'system',
 ] as const;
 
@@ -54,17 +76,17 @@ export const CATEGORY_META: Record<NotificationCategory, CategoryMeta> = {
     chipClass: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
   },
   habits: {
-    label: 'Habits',
+    label: 'Habit',
     tag: 'Habit',
     chipClass: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
   },
   goals: {
-    label: 'Goals',
+    label: 'Goal',
     tag: 'Goal',
     chipClass: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
   },
   tasks: {
-    label: 'Tasks',
+    label: 'Task',
     tag: 'Task',
     chipClass: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
   },
@@ -74,29 +96,39 @@ export const CATEGORY_META: Record<NotificationCategory, CategoryMeta> = {
     chipClass: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
   },
   focus: {
-    label: 'Focus',
+    label: 'Focus mode',
     tag: 'Focus',
     chipClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
   },
   streaks: {
-    label: 'Streaks',
+    label: 'Streak',
     tag: 'Streak',
     chipClass: 'bg-orange-500/15 text-orange-600 dark:text-orange-400',
   },
   reviews: {
-    label: 'Reviews',
-    tag: 'Review',
+    label: 'Recap',
+    tag: 'Recap',
     chipClass: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
   },
   achievements: {
-    label: 'Achievements',
+    label: 'Achievement',
     tag: 'Achievement',
     chipClass: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400',
   },
   insights: {
-    label: 'Insights',
-    tag: 'Insight',
+    label: 'Analytics',
+    tag: 'Analytics',
     chipClass: 'bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400',
+  },
+  journal: {
+    label: 'Journal',
+    tag: 'Journal',
+    chipClass: 'bg-rose-500/15 text-rose-600 dark:text-rose-400',
+  },
+  settings: {
+    label: 'Settings',
+    tag: 'Settings',
+    chipClass: 'bg-slate-500/15 text-slate-600 dark:text-slate-300',
   },
   system: {
     label: 'System',
@@ -145,7 +177,7 @@ const CATEGORY_OF: Record<NotificationType, NotificationCategory> = {
   STREAK_MILESTONE: 'streaks',
   STREAK_BROKEN: 'streaks',
 
-  // Reviews
+  // Recap (weekly / monthly / quarterly / yearly review and reset)
   WEEKLY_REVIEW: 'reviews',
   MONTHLY_REVIEW: 'reviews',
   QUARTERLY_REVIEW: 'reviews',
@@ -158,15 +190,26 @@ const CATEGORY_OF: Record<NotificationType, NotificationCategory> = {
   // Achievements
   ACHIEVEMENT_UNLOCKED: 'achievements',
 
-  // Insights
+  // Analytics / insights
   DAILY_SUMMARY: 'insights',
   DAILY_RESET: 'insights',
   MOTIVATIONAL: 'insights',
   PRODUCTIVITY_INSIGHT: 'insights',
 
-  // System
-  AUTOMATION: 'system',
-  SYSTEM_UPDATE: 'system',
+  // Journal
+  //
+  // There is no `NotificationType` for journal entries, so nothing maps here
+  // yet. The `journal` filter is still offered so the absence is visible
+  // rather than hidden — and it will start working the day a journal reminder
+  // type is added, with no change to this file's shape beyond one line.
+  //
+  // It is deliberately NOT faked with a synthetic type: inventing an enum
+  // member here would need a schema change and a migration, and would report a
+  // filter as working when nothing can ever produce it.
+
+  // Settings / system
+  AUTOMATION: 'settings',
+  SYSTEM_UPDATE: 'settings',
 };
 
 export function categoryFor(type: NotificationType): NotificationCategory {
@@ -196,24 +239,60 @@ export const PERIOD_DAYS: Record<Exclude<PeriodFilter, 'all'>, number> = {
   year: 365,
 };
 
-/** Turn a type + relatedEntityId into the tag(s) shown on a row. */
-export function tagsFor(type: NotificationType, relatedEntityId?: string | null): string[] {
-  const category = categoryFor(type);
-  const tags = [CATEGORY_META[category].tag];
+/** What a notification is about, for the "relates to" half of ERROR.md L. */
+export interface NotificationTags {
+  /** The category tag, e.g. "Routine". */
+  category: string;
+  /** The user's own label for a routine block, e.g. "DSA" or "Personal". */
+  userCategory: string | null;
+  /** The entity the notification is attached to, e.g. "Block" or "Goal". */
+  entity: string | null;
+  /** Everything above, in display order, de-duplicated. */
+  all: string[];
+}
 
-  // A related entity means the notification is about something specific, which
-  // is the "what it relates to" half of the ERROR.md L requirement.
+const ENTITY_LABEL: Record<string, string> = {
+  routine: 'Block',
+  habit: 'Habit',
+  goal: 'Goal',
+  task: 'Task',
+  sleep: 'Sleep',
+};
+
+/**
+ * Build the tag set for a notification.
+ *
+ * @param type             The `NotificationType`.
+ * @param relatedEntityId  `<entity>:<id>:<localDate>` for scheduled rows.
+ * @param userCategory     The block's own label, read from `actionData.category`
+ *                         at schedule time. `null` for non-routine rows.
+ */
+export function tagsFor(
+  type: NotificationType,
+  relatedEntityId?: string | null,
+  userCategory?: string | null
+): NotificationTags {
+  const category = CATEGORY_META[categoryFor(type)]?.tag ?? 'System';
+
+  let entity: string | null = null;
   if (relatedEntityId) {
-    const entity = relatedEntityId.split(':')[0];
-    const label: Record<string, string> = {
-      routine: 'Block',
-      habit: 'Habit',
-      goal: 'Goal',
-      task: 'Task',
-      sleep: 'Sleep',
-    };
-    if (entity && label[entity]) tags.push(label[entity]);
+    const key = relatedEntityId.split(':')[0];
+    entity = key && ENTITY_LABEL[key] ? ENTITY_LABEL[key] : null;
   }
 
-  return tags;
+  const all: string[] = [category];
+  if (userCategory) all.push(userCategory);
+  if (entity) all.push(entity);
+
+  return {
+    category,
+    userCategory: userCategory ?? null,
+    entity,
+    all: [...new Set(all)],
+  };
+}
+
+/** A stable, comparable key for filtering on a user-defined tag. */
+export function normaliseTag(tag: string): string {
+  return tag.trim().toLowerCase();
 }

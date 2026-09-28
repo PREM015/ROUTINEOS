@@ -347,6 +347,7 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
       endTime: string;
       isOvernight: boolean;
       isRecurring: boolean;
+      category: string | null;
       template: { dayType: string; isActive: boolean; name: string } | null;
     }> = [];
 
@@ -390,6 +391,7 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
           endTime: string;
           isOvernight: boolean;
           isRecurring: boolean;
+          category: string | null;
         }>;
       },
       localDate: string,
@@ -410,6 +412,7 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
           endTime: block.endTime,
           isOvernight: block.isOvernight,
           isRecurring: block.isRecurring,
+          category: block.category ?? null,
           template: {
             dayType: template.dayType,
             isActive: template.isActive,
@@ -508,6 +511,16 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
            * reading as a generic "Routine".
            */
           dayType: block.template?.name ?? null,
+          /**
+           * The user's own label for this block (DSA, Personal, GATE, College,
+           * Health, ...), stored on `RoutineBlock.categoryId`.
+           *
+           * The user asked for these to appear as tags on the notification and
+           * to be filterable, so the name is captured at schedule time. Reading
+           * it per notification at display time would mean a join on every row of
+           * the history list.
+           */
+          category: block.category ?? null,
         },
       });
     }

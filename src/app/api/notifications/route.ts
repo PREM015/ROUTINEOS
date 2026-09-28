@@ -8,6 +8,8 @@ import {
   CATEGORY_ORDER,
   PERIOD_DAYS,
   categoryFor,
+  normaliseTag,
+  tagsFor,
   type NotificationCategory,
 } from '@/lib/notifications/categories';
 import { getTodayString, shiftCalendarDay, DEFAULT_TZ } from '@/lib/dates';
@@ -36,10 +38,19 @@ const lastCatchUp = new Map<string, number>();
 const querySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
-  category: z.enum([
-    'routine', 'habits', 'goals', 'tasks', 'sleep', 'focus',
-    'streaks', 'reviews', 'achievements', 'insights', 'system',
-  ]).optional(),
+  category: z
+    .enum([
+      'routine', 'habits', 'goals', 'tasks', 'sleep', 'focus',
+      'streaks', 'reviews', 'achievements', 'insights', 'journal',
+      'settings', 'system',
+    ])
+    .optional(),
+  /**
+   * Filter by a specific tag. Accepts either a fixed tag ("Routine", "Habit",
+   * "Achievement", ...) or one of the user's own block labels ("DSA",
+   * "Personal", ...), matched case-insensitively.
+   */
+  tag: z.string().min(1).max(60).optional(),
   period: z.enum(['all', 'day', 'week', 'month', 'year']).default('all'),
   unreadOnly: z
     .enum(['true', 'false'])
@@ -82,7 +93,7 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { limit, offset, category, period, unreadOnly } = parsed.data;
+    const { limit, offset, category, tag, period, unreadOnly } = parsed.data;
 
     const repository = new NotificationRepository();
     const timezone =
@@ -115,39 +126,62 @@ export async function GET(request: NextRequest) {
         const local = localDateOf(n.scheduledFor, timezone);
         if (local < cutoffLocal) return false;
       }
+      if (tag) {
+        // Match any tag on the row, so `?tag=DSA` finds the notification whether
+        // it matched on the user's own block label or on a fixed tag.
+        const wanted = normaliseTag(tag);
+        if (!tagsFor(n.type, n.relatedEntityId, userCategoryOf(n)).all.some(
+          (t) => normaliseTag(t) === wanted
+        )) {
+          return false;
+        }
+      }
       return true;
     });
 
     const page = filtered.slice(offset, offset + limit);
 
-    // Per-category totals for the filter chips, computed over the same window so
-    // the counts agree with what the list shows.
+    // Per-category and per-tag totals for the filter chips, computed over the
+    // same window so the counts agree with what the list shows.
     const counts = {} as Record<NotificationCategory, number>;
     for (const c of CATEGORY_ORDER) counts[c] = 0;
-    for (const n of filtered) counts[categoryFor(n.type)] += 1;
+    const tagCounts: Record<string, number> = {};
+    for (const n of filtered) {
+      counts[categoryFor(n.type)] += 1;
+      for (const t of tagsFor(n.type, n.relatedEntityId, userCategoryOf(n)).all) {
+        const key = normaliseTag(t);
+        tagCounts[key] = (tagCounts[key] ?? 0) + 1;
+      }
+    }
 
     void runCatchUp(userId);
 
     return NextResponse.json({
       success: true,
       data: {
-        notifications: page.map((n) => ({
-          id: n.id,
-          type: n.type,
-          category: categoryFor(n.type),
-          title: n.title,
-          body: n.body,
-          actionUrl: n.actionUrl,
-          scheduledFor: n.scheduledFor,
-          sentAt: n.sentAt,
-          readAt: n.readAt,
-          status: n.status,
-          errorMessage: n.errorMessage,
-        })),
+        notifications: page.map((n) => {
+          const tags = tagsFor(n.type, n.relatedEntityId, userCategoryOf(n));
+          return {
+            id: n.id,
+            type: n.type,
+            category: categoryFor(n.type),
+            title: n.title,
+            body: n.body,
+            actionUrl: n.actionUrl,
+            scheduledFor: n.scheduledFor,
+            sentAt: n.sentAt,
+            readAt: n.readAt,
+            status: n.status,
+            errorMessage: n.errorMessage,
+            tags: tags.all,
+            userCategory: tags.userCategory,
+          };
+        }),
         unreadCount: await notificationService.getUnreadCount(userId),
         total: filtered.length,
         hasMore: filtered.length > offset + limit,
         counts,
+        tagCounts,
         timezone,
       },
     });
@@ -195,6 +229,23 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to mark notifications as read' },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * The user's own block label for this notification, if any.
+ *
+ * The routine producer stores the block's `Category.name` (DSA, Personal, …) in
+ * `actionData.category` at schedule time. Reading it here — rather than joining
+ * `RoutineBlock` per row — keeps the history list to a single query.
+ */
+function userCategoryOf(n: { actionData: string | null }): string | null {
+  if (!n.actionData) return null;
+  try {
+    const parsed = JSON.parse(n.actionData) as { category?: unknown };
+    return typeof parsed.category === 'string' ? parsed.category : null;
+  } catch {
+    return null;
   }
 }
 

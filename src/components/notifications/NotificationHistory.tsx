@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Bell, CheckCheck, Loader2, Settings } from 'lucide-react';
@@ -9,7 +9,7 @@ import {
   CATEGORY_META,
   CATEGORY_ORDER,
   PERIOD_FILTERS,
-  tagsFor,
+  normaliseTag,
   type NotificationCategory,
   type PeriodFilter,
 } from '@/lib/notifications/categories';
@@ -27,6 +27,9 @@ interface Row {
   readAt: string | null;
   status: string;
   errorMessage: string | null;
+  /** Category tag + the user's own block label (DSA, Personal, …) + entity. */
+  tags: string[];
+  userCategory: string | null;
 }
 
 interface Response {
@@ -35,6 +38,8 @@ interface Response {
   total: number;
   hasMore: boolean;
   counts: Record<NotificationCategory, number>;
+  /** Every tag present in the current window, lowercased, with counts. */
+  tagCounts: Record<string, number>;
   timezone: string;
 }
 
@@ -76,6 +81,8 @@ export function NotificationHistory({
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [category, setCategory] = useState<NotificationCategory | undefined>(undefined);
+  const [tag, setTag] = useState<string | undefined>(undefined);
+  const [tagCounts, setTagCounts] = useState<Record<string, number>>({});
   const [period, setPeriod] = useState<PeriodFilter>('all');
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -94,6 +101,8 @@ export function NotificationHistory({
       if (c && CATEGORIES.has(c)) setCategory(c as NotificationCategory);
       const p = typeof sp.period === 'string' ? sp.period : 'all';
       if (PERIOD_FILTERS.some((f) => f.value === p)) setPeriod(p as PeriodFilter);
+      const t = typeof sp.tag === 'string' ? sp.tag : undefined;
+      if (t) setTag(t);
       setReady(true);
     })();
     return () => {
@@ -113,11 +122,13 @@ export function NotificationHistory({
         period,
       });
       if (category) params.set('category', category);
+      if (tag) params.set('tag', tag);
 
       try {
         const data = await apiRequest<Response>(`/api/notifications?${params}`);
         setRows((prev) => (append ? [...prev, ...data.notifications] : data.notifications));
         setCounts(data.counts);
+        setTagCounts(data.tagCounts ?? {});
         setUnread(data.unreadCount);
         setTotal(data.total);
         setHasMore(data.hasMore);
@@ -129,7 +140,7 @@ export function NotificationHistory({
         setLoadingMore(false);
       }
     },
-    [category, period]
+    [category, tag, period]
   );
 
   useEffect(() => {
@@ -138,19 +149,49 @@ export function NotificationHistory({
   }, [ready, load]);
 
   const applyFilter = useCallback(
-    (next: { category?: NotificationCategory | undefined; period?: PeriodFilter }) => {
+    (next: {
+      category?: NotificationCategory | undefined;
+      period?: PeriodFilter;
+      tag?: string | undefined;
+    }) => {
       const c = 'category' in next ? next.category : category;
       const p = next.period ?? period;
+      const t = 'tag' in next ? next.tag : tag;
       setCategory(c);
       setPeriod(p);
+      setTag(t);
       const params = new URLSearchParams();
       if (c) params.set('category', c);
       if (p !== 'all') params.set('period', p);
+      if (t) params.set('tag', t);
       const qs = params.toString();
       router.replace(qs ? `/notifications?${qs}` : '/notifications');
     },
-    [category, period, router]
+    [category, period, tag, router]
   );
+
+  /** Display label for a tag key, preferring the row's own capitalisation. */
+  const tagLabel = useCallback(
+    (key: string) => {
+      for (const r of rows) {
+        const match = r.tags.find((t) => normaliseTag(t) === key);
+        if (match) return match;
+      }
+      return key.charAt(0).toUpperCase() + key.slice(1);
+    },
+    [rows]
+  );
+
+  /** Fixed domain tags first, then the user's own labels, then the rest. */
+  const orderedTags = useMemo(() => {
+    const fixed = new Set(CATEGORY_ORDER.map((c) => CATEGORY_META[c].tag.toLowerCase()));
+    return Object.keys(tagCounts).sort((a, b) => {
+      const fa = fixed.has(a) ? 0 : 1;
+      const fb = fixed.has(b) ? 0 : 1;
+      if (fa !== fb) return fa - fb;
+      return (tagCounts[b] ?? 0) - (tagCounts[a] ?? 0) || a.localeCompare(b);
+    });
+  }, [tagCounts]);
 
   const markAllRead = useCallback(async () => {
     setUnread(0);
@@ -273,6 +314,58 @@ export function NotificationHistory({
         })}
       </div>
 
+      {/*
+        Tag filter — the labels the user set on their routine blocks (DSA,
+        Personal, GATE, College, Health, …) plus the fixed domain tags, all
+        filterable together. This sits below the category filter so both can be
+        combined: e.g. category=Routine + tag=DSA.
+      */}
+      {orderedTags.length > 0 && (
+        <div className="mb-6 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Tags
+          </span>
+          <button
+            type="button"
+            onClick={() => applyFilter({ tag: undefined })}
+            aria-pressed={tag === undefined}
+            className={cn(
+              'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+              tag === undefined
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            )}
+          >
+            All tags
+          </button>
+          {orderedTags.map((key) => {
+            const n = tagCounts[key] ?? 0;
+            const active = tag !== undefined && normaliseTag(tag) === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => applyFilter({ tag: active ? undefined : key })}
+                aria-pressed={active}
+                className={cn(
+                  'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                  active
+                    ? 'bg-primary text-primary-foreground'
+                    : CATEGORY_META[
+                        (CATEGORY_ORDER.find(
+                          (c) => CATEGORY_META[c].tag.toLowerCase() === key
+                        ) ?? 'system') as NotificationCategory
+                      ].chipClass
+                )}
+              >
+                {tagLabel(key)}
+                {n > 0 && <span className="ml-1 tabular-nums opacity-70">{n}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
           <p role="alert" className="text-sm text-destructive">
@@ -335,17 +428,28 @@ export function NotificationHistory({
                       <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {tagsFor(n.type as never, null).map((t) => (
-                        <span
-                          key={t}
-                          className={cn(
-                            'rounded-full px-2 py-0.5 text-[11px] font-medium',
-                            meta.chipClass
-                          )}
-                        >
-                          {t}
-                        </span>
-                      ))}
+                      {/*
+                        Tags come from the API, not recomputed here, so the user's
+                        own block label (DSA, Personal, …) is shown. It is
+                        highlighted so it is visually distinct from the fixed
+                        category tag.
+                      */}
+                      {n.tags.map((t) => {
+                        const isUserTag = n.userCategory !== null && t === n.userCategory;
+                        return (
+                          <span
+                            key={t}
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                              isUserTag
+                                ? 'bg-primary/15 text-primary'
+                                : meta.chipClass
+                            )}
+                          >
+                            {t}
+                          </span>
+                        );
+                      })}
                       {n.status === 'FAILED' && (
                         <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-medium text-destructive">
                           Not delivered
