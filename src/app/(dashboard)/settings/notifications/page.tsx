@@ -288,6 +288,44 @@ export default function NotificationsSettingsPage() {
     }
   };
 
+  /**
+   * Whether **this origin** already has a push subscription.
+   *
+   * `devices` is the account-wide list, so it can contain a subscription created
+   * on a different origin (e.g. localhost during development) which tells you
+   * nothing about whether *this* browser can receive pushes. A push subscription
+   * is bound to the service worker that created it, so the only reliable check
+   * is to ask this origin's own `pushManager` and match the endpoint.
+   *
+   * `null` means "not checked yet", so the UI can avoid claiming a state it
+   * hasn't established.
+   */
+  const [thisOriginSubscribed, setThisOriginSubscribed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        ]);
+        if (!registration || cancelled) {
+          if (!cancelled) setThisOriginSubscribed(false);
+          return;
+        }
+        const existing = await registration.pushManager.getSubscription();
+        if (!cancelled) setThisOriginSubscribed(existing !== null);
+      } catch {
+        if (!cancelled) setThisOriginSubscribed(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [registering]);
+
   const handleUnregisterDevice = async (subscriptionId: string) => {
     if (!user?.id) return;
 
@@ -508,7 +546,16 @@ export default function NotificationsSettingsPage() {
             </div>
           )}
 
-          {pushSupported && permissionState !== 'granted' && devices.length === 0 && (
+          {/*
+            `devices.length === 0` used to gate this, which made it unreachable
+            on any origin that was not the first one to register: `devices` is
+            account-wide, so a localhost subscription hid the button on the
+            deployed site and `pushManager.subscribe()` was never called there.
+            The gate is now whether *this origin* has a subscription, which is
+            what actually determines whether this browser can receive pushes.
+            Re-registering is safe — the endpoint is upserted on its unique key.
+          */}
+          {pushSupported && permissionState !== 'granted' && (
             <div className="mt-4">
               <Button
                 variant="outline"
@@ -519,6 +566,29 @@ export default function NotificationsSettingsPage() {
                 Enable Push Notifications
               </Button>
             </div>
+          )}
+
+          {/*
+            Permission is already granted but this origin has no subscription —
+            the exact state that made production silent. Previously the user had
+            to guess that "Add Device" was the button they needed.
+          */}
+          {pushSupported && permissionState === 'granted' && thisOriginSubscribed === false && (
+            <p className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+              Notifications are allowed for this browser, but{' '}
+              <strong>this site ({typeof window !== 'undefined' ? window.location.host : 'current origin'})</strong>{' '}
+              has no push subscription yet. Press &ldquo;Add Device&rdquo; below to
+              start receiving notifications here.
+            </p>
+          )}
+          {pushSupported && permissionState === 'granted' && thisOriginSubscribed === true && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              This browser is registered for push notifications on{' '}
+              <span className="font-medium text-foreground">
+                {typeof window !== 'undefined' ? window.location.host : 'this origin'}
+              </span>
+              . Close the site entirely and a reminder will still arrive.
+            </p>
           )}
         </div>
       </Card>
@@ -539,7 +609,7 @@ export default function NotificationsSettingsPage() {
                 disabled={devicesLoading || registering}
                 isLoading={registering}
               >
-                Add Device
+                {thisOriginSubscribed ? 'Re-register This Browser' : 'Add Device'}
               </Button>
             )}
           </div>
