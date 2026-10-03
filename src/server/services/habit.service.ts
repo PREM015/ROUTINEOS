@@ -3,6 +3,7 @@ import { format, parseISO, subDays } from 'date-fns';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
+import { ValidationError } from '@/lib/errors/app-error';
 import type { HabitWithRelations, CreateHabitInput, UpdateHabitInput, LogHabitInput } from '@/types/habit';
 import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
 import { calculateHabitEligibility } from '@/lib/habits/eligibility';
@@ -42,6 +43,32 @@ export class HabitService {
     return this.habitRepository.findAll(userId, filters);
   }
 
+  /**
+   * How many habits match the same filters `listHabits` was given.
+   *
+   * Exists so the route can report a real total. It previously returned
+   * `meta.total = habits.length`, i.e. the length of the *page*: a client that
+   * trusted it to decide "have I loaded everything?" stopped at exactly `limit`
+   * records and believed it had the whole set, which is the same silent
+   * truncation the high `limit` was meant to hide.
+   */
+  /**
+   * A single habit with its day-type, tag and category relations, or `null`.
+   *
+   * Returns `null` rather than throwing so the route can answer 404 for a habit
+   * that does not belong to the caller without inspecting an error type.
+   */
+  async getHabitWithRelations(habitId: string, userId: string) {
+    return this.habitRepository.findWithRelations(habitId, userId);
+  }
+
+  async countHabits(
+    userId: string,
+    filters: Parameters<HabitRepository['findAll']>[1] = {}
+  ) {
+    return this.habitRepository.countAll(userId, filters);
+  }
+
 
   /**
    * Today's eligible habits with their completion state.
@@ -59,9 +86,24 @@ export class HabitService {
 
     const logMap = new Map(logs.map((log) => [log.habitId, log]));
 
+    /**
+     * Resolved once and threaded into every eligibility check.
+     *
+     * `calculateHabitEligibility` needs the user's timezone for the frequency
+     * schedule and the resolved day type for day-type restrictions. Letting it
+     * fetch those itself meant one `UserSettings` read per habit — 11 habits on
+     * /today meant 11 identical settings queries on the hottest read in the
+     * app. The habit row itself is still fetched per habit, which is pre-existing.
+     */
+    const timezone =
+      (await new UserRepository()
+        .getSettings(userId)
+        .then((s) => s?.timezone || DEFAULT_TZ)
+        .catch(() => DEFAULT_TZ)) ?? DEFAULT_TZ;
+
     const evaluated = await Promise.all(
       habits.map(async (habit) => {
-        const eligibility = await calculateHabitEligibility(habit.id, userId, date);
+        const eligibility = await calculateHabitEligibility(habit.id, userId, date, timezone);
 
         return {
           id: habit.id,
@@ -92,11 +134,11 @@ export class HabitService {
   ): Promise<HabitWithRelations> {
     // Validate input
     if (!input.name?.trim()) {
-      throw new Error('Habit name is required');
+      throw new ValidationError('Habit name is required');
     }
 
     if (input.name.length > 100) {
-      throw new Error('Habit name must be 100 characters or less');
+      throw new ValidationError('Habit name must be 100 characters or less');
     }
 
     // Set default tier weight if not provided
@@ -157,33 +199,54 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     // Validate name if provided
     if (input.name && input.name.length > 100) {
-      throw new Error('Habit name must be 100 characters or less');
+      throw new ValidationError('Habit name must be 100 characters or less');
     }
 
     const { appliesEveryDay, dayTypeIds, tagIds, ...updateData } = input;
 
-    // Update habit
+    // Update habit.
+    //
+    // Every key is tested with `!== undefined`, never truthiness. A `&&` guard
+    // silently drops `null`, so the Edit modal's "clear the reminder" and
+    // "clear the colour" sent `{ reminderTime: null }`, the service skipped the
+    // key, the PATCH answered 200, and the field came back on the next load.
+    // `undefined` still means "not mentioned, leave it alone" -- that is what
+    // `JSON.stringify` dropping undefined keys and `z.partial()` both rely on.
     await this.habitRepository.update(habitId, userId, {
-      ...(updateData.name && { name: updateData.name }),
+      ...(updateData.name !== undefined && { name: updateData.name }),
       ...(updateData.description !== undefined && { description: updateData.description }),
-      ...(updateData.tier && { tier: updateData.tier }),
-      ...(updateData.status && { status: updateData.status }),
+      ...(updateData.tier !== undefined && { tier: updateData.tier }),
+      ...(updateData.status !== undefined && { status: updateData.status }),
       ...(updateData.categoryId !== undefined && {
         category: updateData.categoryId
           ? { connect: { id: updateData.categoryId } }
           : { disconnect: true },
       }),
-      ...(updateData.color && { color: updateData.color }),
-      ...(updateData.icon && { icon: updateData.icon }),
-      ...(updateData.frequencyType && { frequencyType: updateData.frequencyType }),
+      ...(updateData.color !== undefined && { color: updateData.color }),
+      ...(updateData.icon !== undefined && { icon: updateData.icon }),
+      ...(updateData.frequencyType !== undefined && { frequencyType: updateData.frequencyType }),
       ...(updateData.frequencyValue !== undefined && { frequencyValue: updateData.frequencyValue }),
       ...(updateData.targetCount !== undefined && { targetCount: updateData.targetCount }),
-      ...(updateData.reminderTime && { reminderTime: updateData.reminderTime }),
+      // Declared on `createHabitSchema`, so they are legal input here, but they
+      // were never forwarded. Editing them answered 200 and reverted.
+      //
+      // `startDate` is `NOT NULL` with a `@default(now())`, so Prisma's
+      // `HabitUpdateInput` types it as `Date | string` with no `null` and
+      // "clearing" it is not expressible; only a real value is forwarded.
+      // `endDate` is nullable, so `null` genuinely clears it.
+      ...(updateData.startDate && { startDate: new Date(updateData.startDate) }),
+      ...(updateData.endDate !== undefined && {
+        endDate: updateData.endDate ? new Date(updateData.endDate) : null,
+      }),
+      ...(updateData.points !== undefined && { points: updateData.points }),
+      ...(updateData.estimatedDuration !== undefined && { estimatedDuration: updateData.estimatedDuration }),
+      ...(updateData.difficulty !== undefined && { difficulty: updateData.difficulty }),
+      ...(updateData.reminderTime !== undefined && { reminderTime: updateData.reminderTime }),
       ...(updateData.reminderEnabled !== undefined && { reminderEnabled: updateData.reminderEnabled }),
       ...(updateData.isPublic !== undefined && { isPublic: updateData.isPublic }),
       ...(appliesEveryDay !== undefined && { appliesEveryDay }),
@@ -225,13 +288,31 @@ export class HabitService {
     // Verify habit ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     // Check if habit is eligible for this date
     const eligibility = await calculateHabitEligibility(habitId, userId, date);
-    if (!eligibility.isEligible && status === 'COMPLETED') {
-      throw new Error(`Habit is not eligible for ${date}: ${eligibility.reason}`);
+    if (!eligibility.isEligible) {
+      /*
+       * Both `COMPLETED` and `MISSED` are refused for a day the habit was never
+       * scheduled on. `COMPLETED` is the obvious one and was always checked.
+       * `MISSED` was not, and that is the damaging case: `/habits` un-ticking a
+       * habit writes `MISSED`, so a user with a `MONTHLY_TARGET` habit, or a
+       * habit past its `endDate`, or one restricted to "Weekend", could record a
+       * miss on an arbitrary day. That row is then counted as a scheduled day
+       * that was not completed by both `getHabitHealth` (which derives
+       * `expectedDays` from the logs themselves) and the daily score, so one
+       * stray un-tick permanently depressed the habit's 28-day rate and its
+       * streak.
+       *
+       * `SKIPPED`, `PARTIAL` and `NOT_APPLICABLE` are still allowed: those are
+       * exactly the statuses that describe a day the habit did not apply to,
+       * and the `/today` skip flow depends on being able to record them.
+       */
+      if (status === 'COMPLETED' || status === 'MISSED') {
+        throw new ValidationError(`Habit is not eligible for ${date}: ${eligibility.reason}`);
+      }
     }
 
     // Create or update log
@@ -331,7 +412,7 @@ export class HabitService {
   ): Promise<HabitLog> {
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
     return this.habitRepository.setLogNote(habitId, userId, date, note);
   }
@@ -347,7 +428,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     await this.habitRepository.archive(habitId, userId);
@@ -375,7 +456,7 @@ export class HabitService {
   async restoreHabit(userId: string, habitId: string) {
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     if (habit.status !== 'ARCHIVED') {
@@ -408,7 +489,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     // Update status
@@ -416,7 +497,16 @@ export class HabitService {
 
     // Create override if resumeDate provided
     if (resumeDate) {
-      const today = new Date().toISOString().split('T')[0];
+      /*
+        The override's start date is bucketed to a CALENDAR day, so it has to be
+        the user's today. This was `new Date().toISOString().split('T')[0]`, which
+        is UTC: for a user at UTC+5:30 it wrote *yesterday* for much of the day,
+        and the habit's own PAUSE override then started before the pause did. The
+        symptom is "it unpaused a day early", which reads as a scheduling bug
+        rather than a timezone one.
+      */
+      const settings = await new UserRepository().getSettings(userId).catch(() => null);
+      const today = getTodayString(settings?.timezone || DEFAULT_TZ);
       await this.habitRepository.createOverride({
         habit: { connect: { id: habitId } },
         user: { connect: { id: userId } },
@@ -436,11 +526,11 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     if (habit.status !== 'PAUSED') {
-      throw new Error('Habit is not paused');
+      throw new ValidationError('Habit is not paused');
     }
 
     // Update status
@@ -572,10 +662,10 @@ export class HabitService {
     // Verify ownership + active status
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
     if (habit.status !== 'ACTIVE') {
-      throw new Error('Only active habits can be added to today');
+      throw new ValidationError('Only active habits can be added to today');
     }
 
     const existing = await this.habitRepository.findActiveOverrides(habitId, userId, date);
@@ -632,7 +722,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     // Create skip override
@@ -666,7 +756,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     // Cascade delete of logs/overrides/tags/day-types is owned by the repository.
@@ -694,7 +784,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new Error('Habit not found');
+      throw new ValidationError('Habit not found');
     }
 
     // Get logs for range

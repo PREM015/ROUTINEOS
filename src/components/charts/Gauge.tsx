@@ -71,8 +71,15 @@ export function Gauge({
       height={size}
       className={cn('block', className)}
       role="img"
-      aria-label={`${ariaLabel}: ${Math.round(clamped)}%`}
-      aria-valuetext={label ?? undefined}
+      aria-label={
+        /*
+          `aria-valuetext` is a range-widget attribute and `role="img"` does not
+          support it, so it was silently dropped by every screen reader — the
+          label a sighted user reads next to the arc was never announced. One
+          label carrying both, rather than two attributes where one is ignored.
+        */
+        label ? `${ariaLabel}: ${label}` : `${ariaLabel}: ${Math.round(clamped)}%`
+      }
     >
       <path d={trackPath} fill="none" stroke={trackColor} strokeWidth={strokeWidth} strokeLinecap="round" />
       <motion.path

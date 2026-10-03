@@ -67,10 +67,10 @@ export function ColorPicker({
   return (
     <div className={cn('w-full space-y-3', className)}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-medium text-foreground">{label}</label>
       )}
       <div className="flex items-center gap-3">
-        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-gray-300 shadow-sm">
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border">
           <input
             type="color"
             value={isValidHex(value) ? value.toLowerCase() : '#000000'}
@@ -86,7 +86,7 @@ export function ColorPicker({
           placeholder="#000000"
           spellCheck={false}
           aria-invalid={textValue.length > 0 && !isValidHex(textValue)}
-          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 aria-invalid:border-red-400"
+          className="block w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
         />
       </div>
       <div className="flex flex-wrap gap-2">
@@ -101,7 +101,7 @@ export function ColorPicker({
               aria-label={`Select color ${preset}`}
               aria-pressed={selected}
               style={{ backgroundColor: preset }}
-              className="relative h-6 w-6 rounded-full border border-gray-200 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              className="relative h-6 w-6 rounded-full border border-border transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {selected && (
                 <Check className="absolute inset-0 m-auto h-3.5 w-3.5 text-white drop-shadow" />

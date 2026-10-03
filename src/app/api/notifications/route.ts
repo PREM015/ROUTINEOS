@@ -1,18 +1,19 @@
 import { auth } from '@/lib/auth';
 import { notificationService } from '@/server/services/notification.service';
-import { NotificationRepository } from '@/server/repositories/notification.repository';
-import { UserRepository } from '@/server/repositories/user.repository';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import {
-  CATEGORY_ORDER,
-  PERIOD_DAYS,
-  categoryFor,
-  normaliseTag,
-  tagsFor,
-  type NotificationCategory,
-} from '@/lib/notifications/categories';
-import { getTodayString, shiftCalendarDay, DEFAULT_TZ } from '@/lib/dates';
+
+/**
+ * Notification History Route (ERROR.md L)
+ *
+ * GET  /api/notifications – the filtered history behind the navbar bell
+ * POST /api/notifications – `markAllRead`
+ *
+ * The period/category/tag filtering, the timezone window and the facet counts all
+ * live in `NotificationService.getHistory`. They are domain rules — in
+ * particular, "Today" means the *user's* today — and they were previously
+ * unreachable from anywhere except this handler.
+ */
 
 /**
  * Minimum gap between catch-up attempts, per user.
@@ -30,8 +31,8 @@ const CATCH_UP_THROTTLE_MS = 5 * 60 * 1000;
  *
  * Deliberately not persisted. This is a rate limiter, not source of truth: if
  * the process restarts or a second server instance handles the request, the worst
- * case is one extra idempotent dispatch, which is harmless because
- * `markSent` is guarded on `status = PENDING`.
+ * case is one extra idempotent dispatch, which is harmless because `markSent` is
+ * guarded on `status = PENDING`.
  */
 const lastCatchUp = new Map<string, number>();
 
@@ -61,16 +62,11 @@ const querySchema = z.object({
 /**
  * GET /api/notifications
  *
- * The notification history behind the navbar bell (ERROR.md L).
- *
- * Supports the filters that spec asks for:
+ * Supports the filters ERROR.md L asks for:
  *   ?category=routine|habits|goals|tasks|sleep|focus|streaks|reviews|achievements|insights|system
  *   ?period=all|day|week|month|year
  *   ?unreadOnly=true
- *   ?limit=&offset=            (paging)
- *
- * `period` is evaluated against the **user's** timezone, so "Today" means their
- * today rather than UTC's.
+ *   ?limit=&offset=
  *
  * Also runs a throttled catch-up dispatch, which is the self-healing layer for
  * the free scheduler: anything the GitHub Actions ticker missed is still
@@ -93,98 +89,12 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { limit, offset, category, tag, period, unreadOnly } = parsed.data;
 
-    const repository = new NotificationRepository();
-    const timezone =
-      (await new UserRepository().getSettings(userId).catch(() => null))?.timezone ??
-      DEFAULT_TZ;
-
-    /**
-     * Fetch, then filter in memory.
-     *
-     * The window is deliberately computed from the user's own calendar day. The
-     * alternative — comparing `scheduledFor` against a UTC day boundary — showed
-     * an evening reminder as "yesterday" for anyone east of UTC.
-     */
-    const windowDays = period === 'all' ? null : PERIOD_DAYS[period];
-    const scanLimit = windowDays === null ? limit + offset : 400;
-    const candidates = await repository.findAll(userId, {
-      limit: scanLimit,
-      offset: 0,
-      unreadOnly,
-    });
-
-    const todayLocal = getTodayString(timezone);
-    const cutoffLocal =
-      windowDays === null ? null : shiftCalendarDay(todayLocal, -(windowDays - 1));
-
-    const filtered = candidates.filter((n) => {
-      if (category && categoryFor(n.type) !== category) return false;
-      if (cutoffLocal !== null) {
-        // Compare calendar days in the user's zone, not raw instants.
-        const local = localDateOf(n.scheduledFor, timezone);
-        if (local < cutoffLocal) return false;
-      }
-      if (tag) {
-        // Match any tag on the row, so `?tag=DSA` finds the notification whether
-        // it matched on the user's own block label or on a fixed tag.
-        const wanted = normaliseTag(tag);
-        if (!tagsFor(n.type, n.relatedEntityId, userCategoryOf(n)).all.some(
-          (t) => normaliseTag(t) === wanted
-        )) {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    const page = filtered.slice(offset, offset + limit);
-
-    // Per-category and per-tag totals for the filter chips, computed over the
-    // same window so the counts agree with what the list shows.
-    const counts = {} as Record<NotificationCategory, number>;
-    for (const c of CATEGORY_ORDER) counts[c] = 0;
-    const tagCounts: Record<string, number> = {};
-    for (const n of filtered) {
-      counts[categoryFor(n.type)] += 1;
-      for (const t of tagsFor(n.type, n.relatedEntityId, userCategoryOf(n)).all) {
-        const key = normaliseTag(t);
-        tagCounts[key] = (tagCounts[key] ?? 0) + 1;
-      }
-    }
+    const data = await notificationService.getHistory(userId, parsed.data);
 
     void runCatchUp(userId);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        notifications: page.map((n) => {
-          const tags = tagsFor(n.type, n.relatedEntityId, userCategoryOf(n));
-          return {
-            id: n.id,
-            type: n.type,
-            category: categoryFor(n.type),
-            title: n.title,
-            body: n.body,
-            actionUrl: n.actionUrl,
-            scheduledFor: n.scheduledFor,
-            sentAt: n.sentAt,
-            readAt: n.readAt,
-            status: n.status,
-            errorMessage: n.errorMessage,
-            tags: tags.all,
-            userCategory: tags.userCategory,
-          };
-        }),
-        unreadCount: await notificationService.getUnreadCount(userId),
-        total: filtered.length,
-        hasMore: filtered.length > offset + limit,
-        counts,
-        tagCounts,
-        timezone,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return NextResponse.json(
@@ -205,8 +115,7 @@ const markAllSchema = z.object({
  * The bell previously implemented "mark all read" by issuing one PATCH per
  * loaded row. With 70 notifications and a 20-row page that marked 20 and left
  * the rest, so the unread badge reappeared on the next poll and the button
- * looked broken. `NotificationRepository.markAllRead` does it in a single
- * statement.
+ * looked broken. `NotificationService.markAllRead` does it in a single statement.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -221,7 +130,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const updated = await new NotificationRepository().markAllRead(session.user.id);
+    const updated = await notificationService.markAllRead(session.user.id);
     return NextResponse.json({ success: true, data: { updated } });
   } catch (error) {
     console.error('Error marking notifications read:', error);
@@ -229,37 +138,6 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to mark notifications as read' },
       { status: 500 }
     );
-  }
-}
-
-/**
- * The user's own block label for this notification, if any.
- *
- * The routine producer stores the block's `Category.name` (DSA, Personal, …) in
- * `actionData.category` at schedule time. Reading it here — rather than joining
- * `RoutineBlock` per row — keeps the history list to a single query.
- */
-function userCategoryOf(n: { actionData: string | null }): string | null {
-  if (!n.actionData) return null;
-  try {
-    const parsed = JSON.parse(n.actionData) as { category?: unknown };
-    return typeof parsed.category === 'string' ? parsed.category : null;
-  } catch {
-    return null;
-  }
-}
-
-/** The `YYYY-MM-DD` an instant falls on in the user's zone. */
-function localDateOf(instant: Date, timezone: string): string {
-  try {
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(instant);
-  } catch {
-    return getTodayString(DEFAULT_TZ);
   }
 }
 

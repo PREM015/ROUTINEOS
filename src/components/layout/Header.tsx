@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Flame, LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { StreakBadge } from '@/components/streak/StreakBadge';
 import { signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { Logo } from '@/components/layout/Logo';
 import { EASE } from '@/lib/motion';
+import { DateSwitcher } from '@/components/layout/DateSwitcher';
+import { JumpTo } from '@/components/layout/JumpTo';
 
 export function Header() {
   const { data: session } = useSession();
@@ -29,14 +32,33 @@ export function Header() {
         </div>
       </div>
 
+      {/*
+        The spec's top bar: "Left: wordmark, small and quiet. Center: Date
+        Switcher. Right: a ⌘K search trigger, a notification bell with a dot, and
+        the avatar."
+
+        The centre slot is new. It replaces the need for a separate
+        calendar-navigation section on every page, because the selected date is
+        global (`AppContext.selectedDate`) and the dashboard, analytics, recap
+        and habits pages all read it.
+      */}
+      <div className="hidden md:flex flex-1 justify-center px-4">
+        <DateSwitcher />
+      </div>
+
       <div className="flex items-center gap-3 sm:gap-4">
-        <Link
-          href="/achievements"
-          className="glow-primary flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 rounded-full text-xs font-semibold transition-colors"
-        >
-          <Flame className="w-4 h-4 fill-current" />
-          <span className="hidden sm:inline">Active Streak</span>
-        </Link>
+        <JumpTo />
+
+        {/*
+          The streak badge used to be a static flame link labelled "Active
+          Streak" with no number, pointing at /achievements. It was decoration in
+          shared code: it claimed a streak without ever showing one, on every page
+          in the app. `StreakBadge` reads the real value, tiers it grey -> orange
+          -> gold, and only reaches gold at the top tier (A2's scarcity rule), so
+          the two-pixel detail pays off everywhere rather than only on the
+          dashboard.
+        */}
+        <StreakBadge />
 
         {/*
           ERROR.md L: the bell used to be a plain link to

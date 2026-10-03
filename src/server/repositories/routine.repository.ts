@@ -837,7 +837,25 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Find logs for date
    */
-  async findLogsByDate(userId: string, date: string): Promise<RoutineLog[]> {
+  async findLogsByDate(
+    userId: string,
+    date: string
+  ): Promise<
+    Prisma.RoutineLogGetPayload<{
+      include: {
+        routineBlock: {
+          select: {
+            id: true;
+            title: true;
+            startTime: true;
+            endTime: true;
+            category: true;
+            templateId: true;
+          };
+        };
+      };
+    }>[]
+  > {
     try {
       return await this.prisma.routineLog.findMany({
         where: { userId, date },
@@ -849,6 +867,7 @@ export class RoutineRepository extends BaseRepository {
               startTime: true,
               endTime: true,
               category: true,
+              templateId: true,
             },
           },
         },
@@ -876,6 +895,7 @@ export class RoutineRepository extends BaseRepository {
             startTime: true;
             endTime: true;
             category: true;
+            templateId: true;
           };
         };
       };
@@ -898,6 +918,7 @@ export class RoutineRepository extends BaseRepository {
               startTime: true,
               endTime: true,
               category: true,
+              templateId: true,
             },
           },
         },

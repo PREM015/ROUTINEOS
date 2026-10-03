@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { TemplateRepository } from '@/server/repositories/template.repository';
+import { templateService } from '@/server/services/template.service';
 import { createTemplateSchema, templateQuerySchema } from '@/schemas/template.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -38,8 +38,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const templateRepository = new TemplateRepository();
-    const templates = await templateRepository.findAll(session.user.id, {
+    const templates = await templateService.listForUser(session.user.id, {
       category: validated.data.category,
       search: validated.data.search,
       limit: validated.data.limit,
@@ -81,8 +80,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const templateRepository = new TemplateRepository();
-    const template = await templateRepository.createTemplate(session.user.id, {
+    const template = await templateService.create(session.user.id, {
       type: validated.data.type,
       name: validated.data.name,
       description: validated.data.description,

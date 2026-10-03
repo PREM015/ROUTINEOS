@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Logo } from '@/components/layout/Logo';
+import { CookiePreferencesButton } from '@/components/privacy/CookiePreferencesButton';
 import { cn } from '@/lib/utils';
 
 export interface FooterLink {
@@ -62,6 +63,17 @@ const DEFAULT_COLUMNS: FooterColumn[] = [
       { label: 'Settings', href: '/settings' },
     ],
   },
+  {
+    // Legal documents were previously absent from the entire site. Beyond being
+    // a compliance requirement, an unlinked privacy policy is worse than none:
+    // a regulator or a user cannot find it, and the consent banner references
+    // it as if it existed.
+    title: 'Legal',
+    links: [
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
+    ],
+  },
 ];
 
 const BRAND_TAGLINE =
@@ -118,7 +130,7 @@ export function Footer({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-16">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
             {resolvedColumns.map((column) => (
               <nav key={column.title} aria-label={column.title}>
                 <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -147,6 +159,12 @@ export function Footer({
           </span>
           <span className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
             {children}
+            {/*
+              Consent must be withdrawable after the first visit, so the
+              reopen control lives permanently here rather than only in the
+              one-time banner.
+            */}
+            <CookiePreferencesButton className="transition-colors hover:text-primary" />
             <span>Built for consistent days.</span>
           </span>
         </div>

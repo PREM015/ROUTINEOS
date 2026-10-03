@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { logHabitSchema } from '@/schemas/habit.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -36,6 +37,30 @@ export async function POST(
     const habitService = new HabitService();
     const result = await habitService.logHabit(session.user.id, validated.data);
 
+    /**
+     * Recompute the day's score so `/today` reflects the tick immediately.
+     *
+     * The `DailyScore` row was previously only written by the nightly
+     * `compute-daily-scores` cron, so the Score and Streak cards on `/today` kept
+     * showing yesterday's numbers until the next morning — the client refetched
+     * on `today-sync` and faithfully received the same stale row.
+     *
+     * Scoring reads habit logs, so this must run after the write. It is
+     * fire-and-forget with a `.catch`: a scoring failure must not turn a
+     * successful habit check into an error, and the next cron repairs any row
+     * left behind.
+     *
+     * Dynamic import mirrors `SleepService` and avoids a service-level circular
+     * import (`scoring.service` reads habit repositories).
+     */
+    void import('@/server/services/scoring.service')
+      .then(({ ScoringService }) =>
+        new ScoringService().recalculateDate(session.user!.id!, validated.data.date)
+      )
+      .catch((error) => {
+        console.error('Score recalculation failed after habit log:', error);
+      });
+
     return NextResponse.json({
       success: true,
       data: {
@@ -47,16 +72,13 @@ export async function POST(
   } catch (error) {
     console.error('Error logging habit:', error);
 
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to log habit' },
-      { status: 500 }
-    );
+    /**
+     * `HabitService` raises typed `AppError`s for every domain outcome the user
+     * is meant to read (`Habit not found`, `Habit is not eligible for …`), and
+     * `handleError` returns those messages verbatim with their own status.
+     * Anything else — a Prisma failure, a dropped connection — is now masked as
+     * `Internal server error` in production instead of being echoed back.
+     */
+    return handleError(error);
   }
 }

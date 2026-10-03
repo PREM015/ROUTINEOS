@@ -1,4 +1,12 @@
 ﻿import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { normalizeDayTypeSlug } from '@/lib/routine/day-type-slug';
+
+// Re-exported so existing server call sites keep one import path. The
+// implementation lives in `lib/routine/day-type-slug` because it is pure and
+// clients need it too, and this file cannot be imported from a `'use client'`
+// component: it reaches `RoutineRepository` -> `BaseRepository` -> `@/lib/prisma`,
+// which throws at import time without a `DATABASE_URL`.
+export { normalizeDayTypeSlug };
 
 /**
  * Day Type Service
@@ -35,21 +43,9 @@ export interface UpdateDayTypeInput {
 }
 
 /**
- * Normalise a user-entered slug: trim, lowercase, collapse spaces/underscores
- * to hyphens, and strip anything that is not a valid slug character.
- *
- * Without this, "Work Day" and "work-day" are two different day types to the
- * unique index, and `ENUM_TO_SLUG`-style lookups miss.
+ * Normalise a user-entered slug. See `lib/routine/day-type-slug` for why this
+ * lives outside this file.
  */
-export function normalizeDayTypeSlug(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_]+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
 
 export class DayTypeService {
   private routineRepository: RoutineRepository;

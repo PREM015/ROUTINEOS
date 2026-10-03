@@ -1,11 +1,15 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { ChallengeRepository } from '@/server/repositories/challenge.repository';
+import { challengeService } from '@/server/services/challenge.service';
 import { createChallengeSchema } from '@/schemas/challenge.schema';
 
 /**
  * GET /api/challenges
  * List public challenges and challenges the user has joined.
+ *
+ * The response assembly (merging active + joined, de-duplicating by id, and
+ * flattening the `creator` / `_count.members` relations onto the row) now lives in
+ * `ChallengeService.listForUser`; this route only authenticates.
  */
 export async function GET(_request: NextRequest) {
   try {
@@ -14,42 +18,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const repository = new ChallengeRepository();
-    const [active, joined] = await Promise.all([
-      repository.listActive(),
-      repository.listByUser(session.user.id),
-    ]);
-
-    const joinedIds = new Set(joined.map((challenge) => challenge.id));
-    const byId = new Map<string, (typeof active)[number]>();
-
-    for (const challenge of [...active, ...joined]) {
-      const existing = byId.get(challenge.id);
-      if (!existing) {
-        byId.set(challenge.id, challenge);
-      }
-    }
-
-    const data = Array.from(byId.values()).map((challenge) => {
-      const withMeta = challenge as typeof challenge & {
-        creator?: { id: string; name: string | null; displayName: string | null; avatarUrl: string | null };
-        _count?: { members: number };
-      };
-      return {
-        id: challenge.id,
-        title: challenge.title,
-        description: challenge.description,
-        startDate: challenge.startDate,
-        endDate: challenge.endDate,
-        isPublic: challenge.isPublic,
-        maxMembers: challenge.maxMembers,
-        rules: challenge.rules,
-        rewards: challenge.rewards,
-        creator: withMeta.creator,
-        memberCount: withMeta._count?.members ?? 0,
-        isJoined: joinedIds.has(challenge.id),
-      };
-    });
+    const data = await challengeService.listForUser(session.user.id);
 
     return NextResponse.json({
       success: true,
@@ -85,10 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const challenge = await new ChallengeRepository().create(
-      session.user.id,
-      validated.data
-    );
+    const challenge = await challengeService.create(session.user.id, validated.data);
 
     return NextResponse.json(
       { success: true, data: challenge },

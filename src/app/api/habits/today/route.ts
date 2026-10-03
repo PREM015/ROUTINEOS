@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { getTodayString } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
@@ -80,12 +81,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating today\'s habits:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to update habits' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

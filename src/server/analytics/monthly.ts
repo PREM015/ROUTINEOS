@@ -1,11 +1,13 @@
 import type { HabitTier, SleepLog } from '@/generated/prisma';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
+import { loadPeriodHabits } from '@/server/analytics/period-habits';
+import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
 import {
   analyzeSleep,
   type SleepLogLike,
@@ -18,7 +20,6 @@ import type { DateRange } from '@/types/analytics';
  * focus time, journal activity, and goal milestones.
  */
 
-const habitRepository = new HabitRepository();
 const scoreRepository = new ScoreRepository();
 const sleepRepository = new SleepRepository();
 const focusRepository = new FocusRepository();
@@ -29,7 +30,9 @@ export interface MonthlyHabitReliability {
   habitId: string;
   habitName: string;
   tier: HabitTier;
-  completionRate: number;
+  /** `null` when the habit was never due this month. */
+  completionRate: number | null;
+  /** One entry per Monday-anchored week overlapping the month; `null` = nothing due. */
   weeklyRates: Array<number | null>;
 }
 
@@ -43,11 +46,12 @@ export interface MonthlySummary {
     worstDay: { date: string; score: number } | null;
     byTier: Array<{ tier: HabitTier; count: number; completionRate: number }>;
   };
-  habits: {
+habits: {
     totalCompleted: number;
     totalMissed: number;
     totalSkipped: number;
-    averageCompletionRate: number;
+    /** `null` when nothing was due all month, so an empty month is not 0%. */
+    averageCompletionRate: number | null;
     perHabit: MonthlyHabitReliability[];
   };
   focus: {
@@ -118,8 +122,21 @@ function monthWeeks(startDate: string, endDate: string): Array<{ index: number; 
 
 /**
  * Monthly summary for a `YYYY-MM` month string.
+ *
+ * `timezone` drives the focus window. The range used to be built with
+ * `new Date('2026-01-01T00:00:00.000Z')`, i.e. a UTC boundary, while every other
+ * number on the page was resolved in the user's own zone. For a user east of UTC
+ * that pushed the first local hours of the 1st out of the month, and for a user
+ * west of UTC it pulled the last local hours of the last day in from the month
+ * after.
  */
-export async function monthlySummary(userId: string, month: string): Promise<MonthlySummary> {
+export async function monthlySummary(
+  userId: string,
+  month: string,
+  timezone: string,
+  today?: string,
+  preloadedHabits?: PeriodHabitModel
+): Promise<MonthlySummary> {
   // Number() yields NaN for malformed input, and NaN is not nullish, so a `?? 0`
   // fallback here would never fire and would silently produce a range like
   // "2026-09-NaN". Validate the shape instead.
@@ -137,19 +154,26 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
   const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
   const endDate = `${month}-${String(lastDay).padStart(2, '0')}`;
   const period: DateRange = { startDate, endDate };
+  const dayToday = today ?? endDate;
 
-  const [scores, habits, sleepLogs, focusStats, journalCount, dailyGoals] = await Promise.all([
-    scoreRepository.findByRange(userId, startDate, endDate),
-    habitRepository.findAll(userId, { status: 'ACTIVE' }),
-    sleepRepository.findByRange(userId, startDate, endDate),
-    focusRepository.getStats(
-      userId,
-      new Date(`${startDate}T00:00:00.000Z`),
-      new Date(`${endDate}T23:59:59.999Z`)
-    ),
-      journalRepository.countByMonth(userId, year, monthNumber),
-    goalRepository.findAll(userId, {}),
-  ]);
+  const rangeStart = fromZonedTime(`${startDate}T00:00:00`, timezone);
+  const rangeEnd = fromZonedTime(`${endDate}T23:59:59.999`, timezone);
+
+  const [scores, habitModel, sleepLogs, focusStats, journalCount, dailyGoals, milestones] =
+    await Promise.all([
+      scoreRepository.findByRange(userId, startDate, endDate),
+      preloadedHabits ?? loadPeriodHabits(userId, startDate, endDate, dayToday),
+      sleepRepository.findByRange(userId, startDate, endDate),
+      focusRepository.getStats(userId, rangeStart, rangeEnd),
+      journalRepository.countByRange(userId, startDate, endDate),
+      goalRepository.findAll(userId, {}),
+      /*
+        One range query instead of `getMilestones(goal.id)` per goal. A user with
+        20 goals paid 20 round trips to count milestones that a single date-bounded
+        query returns directly.
+      */
+      goalRepository.findCompletedMilestones(userId, rangeStart, rangeEnd),
+    ]);
 
   const scoredDays = scores.filter(score => score.totalScore !== null);
   const average = scoredDays.length > 0
@@ -169,62 +193,46 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
   );
 
   const weeks = monthWeeks(startDate, endDate);
-  const perHabit: MonthlyHabitReliability[] = [];
-  let totalCompleted = 0;
-  let totalMissed = 0;
-  let totalSkipped = 0;
 
-  const tierStats = new Map<HabitTier, { count: number; completionRate: number }>();
-
-  for (const habit of habits) {
-    const logs = await habitRepository.findLogsByRange(habit.id, userId, startDate, endDate);
-    const completed = logs.filter(log => log.status === 'COMPLETED').length;
-    const missed = logs.filter(log => log.status === 'MISSED').length;
-    const skipped = logs.filter(log => log.status === 'SKIPPED').length;
-    totalCompleted += completed;
-    totalMissed += missed;
-    totalSkipped += skipped;
-
-    // Oversight/override-aware scheduling: SKIPPED and NOT_APPLICABLE days are
-    // intentional non-performances — they must not count against the
-    // scheduled (denominator) total.
-    const scheduled = logs.filter(
-      log => log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE'
-    ).length;
-    const completionRate = scheduled > 0 ? (completed / scheduled) * 100 : 0;
-    const tierBucket = tierStats.get(habit.tier) ?? { count: 0, completionRate: 0 };
-    tierBucket.count++;
-    tierBucket.completionRate += completionRate;
-    tierStats.set(habit.tier, tierBucket);
-
-    const weeklyRates = weeks.map(week => {
-      const weekLogs = logs.filter(log => log.date >= week.start && log.date <= week.end);
-      const weekScheduled = weekLogs.filter(
-        log => log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE'
-      ).length;
-      return weekScheduled > 0
-        ? round((weekLogs.filter(log => log.status === 'COMPLETED').length / weekScheduled) * 100)
-        : null;
+  const perHabit: MonthlyHabitReliability[] = habitModel.perHabit.map((habit) => {
+    // Weekly slices come from the same per-day ids, so a week rate cannot disagree
+    // with the month rate it is a slice of.
+    const weeklyRates = weeks.map((week) => {
+      const daysInWeek = habitModel.days.filter(
+        (day) => day.date >= week.start && day.date <= week.end
+      );
+      const weekScheduled = daysInWeek.reduce(
+        (sum, day) => sum + day.scheduledHabitIds.filter((id) => id === habit.habitId).length,
+        0
+      );
+      if (weekScheduled === 0) return null;
+      const weekCompleted = daysInWeek.reduce(
+        (sum, day) => sum + day.completedHabitIds.filter((id) => id === habit.habitId).length,
+        0
+      );
+      return round((weekCompleted / weekScheduled) * 100);
     });
 
-    perHabit.push({
-      habitId: habit.id,
-      habitName: habit.name,
+    return {
+      habitId: habit.habitId,
+      habitName: habit.habitName,
       tier: habit.tier,
-      completionRate: round(completionRate),
+      completionRate: habit.rate,
       weeklyRates,
-    });
-  }
+    };
+  });
 
-  const byTier = Array.from(tierStats.entries()).map(([tier, stats]) => ({
-    tier,
-    count: stats.count,
-    completionRate: stats.count > 0 ? round(stats.completionRate / stats.count) : 0,
+  const totalCompleted = habitModel.totals.completed;
+  const totalMissed = habitModel.perHabit.reduce((sum, habit) => sum + habit.missed, 0);
+  const totalSkipped = habitModel.perHabit.reduce((sum, habit) => sum + habit.skipped, 0);
+
+  const byTier = habitModel.byTier.map((tier) => ({
+    tier: tier.tier,
+    count: tier.count,
+    completionRate: tier.rate ?? 0,
   }));
 
-  const averageCompletionRate = perHabit.length > 0
-    ? round(mean(perHabit.map(habit => habit.completionRate)))
-    : 0;
+  const averageCompletionRate = habitModel.totals.rate;
 
   const sleepAnalysis = analyzeSleep(
     sleepLogs.map(toSleepLogLike),
@@ -237,17 +245,8 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
   const goalsCompleted = dailyGoals.filter(goal =>
     goal.status === 'COMPLETED' &&
     goal.completedAt !== null &&
-    goal.completedAt.toISOString().slice(0, 10) >= startDate &&
-    goal.completedAt.toISOString().slice(0, 10) <= endDate
-  ).length;
-
-  const milestones = await Promise.all(
-    dailyGoals.map(goal => goalRepository.getMilestones(goal.id))
-  );
-  const milestonesHit = milestones.flat().filter(milestone =>
-    milestone.completedAt !== null &&
-    milestone.completedAt.toISOString().slice(0, 10) >= startDate &&
-    milestone.completedAt.toISOString().slice(0, 10) <= endDate
+    formatInTimeZone(goal.completedAt, timezone, 'yyyy-MM-dd') >= startDate &&
+    formatInTimeZone(goal.completedAt, timezone, 'yyyy-MM-dd') <= endDate
   ).length;
 
   return {
@@ -275,9 +274,9 @@ export async function monthlySummary(userId: string, month: string): Promise<Mon
     journal: {
       entryCount: journalCount,
     },
-    goals: {
+goals: {
       completed: goalsCompleted,
-      milestonesHit,
+      milestonesHit: milestones.length,
     },
     sleep: {
       averageDuration: Math.round(sleepAnalysis.averageDuration),

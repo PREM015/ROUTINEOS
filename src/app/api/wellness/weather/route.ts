@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { WeatherRepository } from '@/server/repositories/weather.repository';
+import { weatherService } from '@/server/services/weather.service';
 import { weatherLogSchema, weatherQuerySchema } from '@/schemas/wellness.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -36,8 +36,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const weatherRepository = new WeatherRepository();
-    const logs = await weatherRepository.findByUserId(session.user.id, {
+    const logs = await weatherService.listForUser(session.user.id, {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       limit: validated.data.limit,
@@ -77,8 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const weatherRepository = new WeatherRepository();
-    const log = await weatherRepository.upsert(session.user.id, validated.data);
+    const log = await weatherService.log(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: log });
   } catch (error) {

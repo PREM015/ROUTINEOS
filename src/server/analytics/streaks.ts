@@ -78,6 +78,65 @@ function milestonesFromRuns(
 }
 
 /**
+ * The subset of the `Streak` row the dashboard snapshot needs.
+ *
+ * `AnalyticsService` used to call the full `streakAnalytics` with an
+ * all-time window purely to render eight numbers, which loaded every `DailyScore`
+ * the user has ever had into memory to compute a timeline and a milestone list
+ * that the dashboard then discarded. `longest` and `current` are already
+ * maintained on the row by the write path, so the only thing genuinely missing
+ * was the projection.
+ */
+export interface StreakRowSnapshot {
+  currentStreak: number;
+  longestStreak: number;
+  coreStreak: number;
+  growthStreak: number;
+  minimumDayStreak: number;
+  lastCompletedDate: string | null;
+}
+
+/**
+ * Risk of losing the streak, from the cached row and today's date.
+ *
+ * Identical rule to the branch inside `streakAnalytics`, minus the score scan:
+ * a zero streak, a never-completed streak, or one whose last completion is older
+ * than the warning threshold is HIGH; anything else is MEDIUM. There is no LOW -
+ * a live streak that still needs today's tick is one day away from being at risk,
+ * and saying otherwise would be reassuring fiction.
+ */
+export function streakProjections(
+  row: StreakRowSnapshot | null,
+  today: string
+): {
+  current: number;
+  longest: number;
+  riskLevel: 'MEDIUM' | 'HIGH';
+  nextMilestone: number | null;
+  daysToNextMilestone: number | null;
+} {
+  const current = row?.currentStreak ?? 0;
+
+  let riskLevel: 'MEDIUM' | 'HIGH';
+  if (current === 0) {
+    riskLevel = 'HIGH';
+  } else if (!row?.lastCompletedDate || row.lastCompletedDate < today) {
+    riskLevel = 'HIGH';
+  } else {
+    const gap = Math.round((toMs(today) - toMs(row.lastCompletedDate)) / MS_PER_DAY);
+    riskLevel = gap > THRESHOLDS.warnings.streakAtRisk ? 'HIGH' : 'MEDIUM';
+  }
+
+  return {
+    current,
+    longest: row?.longestStreak ?? 0,
+    riskLevel,
+    nextMilestone: nextStreakMilestone(current),
+    daysToNextMilestone: daysUntilMilestone(current),
+  };
+}
+
+/**
  * Full streak report with a daily timeline, milestone history, and risk
  * projection based on how recently the streak was last completed.
  */

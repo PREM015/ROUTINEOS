@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { habitQuerySchema, createHabitSchema } from '@/schemas/habit.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -38,6 +39,9 @@ export async function GET(request: NextRequest) {
       includeArchived:
         searchParams.get('includeArchived') === 'true' ? true : undefined,
       dayTypeId: searchParams.get('dayTypeId') || undefined,
+      // `tagId` was declared on `habitQuerySchema` but never read here, so the
+      // tag filter could not be sent at all.
+      tagId: searchParams.get('tagId') || undefined,
     };
 
     // Validate query
@@ -49,15 +53,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const habits = await new HabitService().listHabits(session.user.id, validated.data);
+    const service = new HabitService();
+    const offset = validated.data.offset ?? 0;
+    const [habits, total] = await Promise.all([
+      service.listHabits(session.user.id, validated.data),
+      // `meta.total` used to be `habits.length`, i.e. the length of the page
+      // being returned. A client that trusted it to answer "is there more?" was
+      // correct exactly once per page and wrong in the one case that mattered —
+      // when `limit` had been reached. Now it is a real count of everything
+      // matching the filters.
+      service.countHabits(session.user.id, validated.data),
+    ]);
 
     return NextResponse.json({
       success: true,
       data: habits,
       meta: {
-        total: habits.length,
+        total,
         limit: validated.data.limit,
-        offset: validated.data.offset,
+        offset,
+        hasMore: offset + habits.length < total,
       },
     });
   } catch (error) {
@@ -105,17 +120,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error creating habit:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to create habit' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

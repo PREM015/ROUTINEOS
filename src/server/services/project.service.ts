@@ -53,7 +53,7 @@ export class ProjectService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_CREATED',
+      action: 'PROJECT_CREATED',
       entityType: 'PROJECT',
       entityId: project.id,
       metadata: input.goalIds?.length ? { goalIds: input.goalIds } : undefined,
@@ -124,7 +124,7 @@ export class ProjectService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_UPDATED',
+      action: 'PROJECT_UPDATED',
       entityType: 'PROJECT',
       entityId: projectId,
     });
@@ -142,7 +142,7 @@ export class ProjectService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_UPDATED',
+      action: 'PROJECT_UPDATED',
       entityType: 'PROJECT',
       entityId: projectId,
       metadata: { status: 'ARCHIVED' },
@@ -161,7 +161,7 @@ export class ProjectService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_DELETED',
+      action: 'PROJECT_DELETED',
       entityType: 'PROJECT',
       entityId: projectId,
     });

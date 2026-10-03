@@ -1,25 +1,21 @@
 import { auth } from '@/lib/auth';
-import type { IntegrationProvider } from '@/generated/prisma';
-import { IntegrationRepository } from '@/server/repositories/integration.repository';
-import { integrationUpdateSchema } from '@/schemas/integration.schema';
-import { INTEGRATIONS, getIntegrationConfig } from '@/lib/constants/integrations';
-import { normalizeConnection } from '@/lib/integrations/manager';
 import { NextRequest, NextResponse } from 'next/server';
+import { integrationService } from '@/server/services/integration.service';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { integrationUpdateSchema } from '@/schemas/integration.schema';
 
 /**
  * Integration by Provider Route
  * GET   /api/integrations/[provider] – fetch one integration
  * PATCH /api/integrations/[provider] – update isActive / tokens
+ *
+ * The slug→enum mapping that used to be copy-pasted into all three
+ * `/[provider]/*` routes is now `IntegrationService.providerFromSlug`, so the set
+ * of reachable providers cannot differ between them.
  */
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
-}
-
-function providerFromSlug(slug: string): IntegrationProvider | null {
-  const normalized = slug.toLowerCase();
-  const keys = Object.keys(INTEGRATIONS) as IntegrationProvider[];
-  return keys.find(provider => provider.toLowerCase().replace(/_/g, '-') === normalized) ?? null;
 }
 
 /**
@@ -34,27 +30,18 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const provider = providerFromSlug(paramProvider);
-    if (!provider) {
-      return NextResponse.json({ error: 'Unknown integration provider' }, { status: 400 });
-    }
+    const provider = integrationService.providerFromSlug(paramProvider);
+    const data = await integrationService.getForUser(session.user.id, provider);
 
-    const integrationRepository = new IntegrationRepository();
-    const integration = await integrationRepository.findByProvider(session.user.id, provider);
-
-    if (!integration) {
-      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...normalizeConnection(integration),
-        providerName: getIntegrationConfig(provider).name,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching integration:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
+    }
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Failed to fetch integration' }, { status: 500 });
   }
 }
@@ -71,10 +58,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const provider = providerFromSlug(paramProvider);
-    if (!provider) {
-      return NextResponse.json({ error: 'Unknown integration provider' }, { status: 400 });
-    }
+    const provider = integrationService.providerFromSlug(paramProvider);
 
     const body = await request.json();
     const validated = integrationUpdateSchema.safeParse(body);
@@ -85,41 +69,21 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const integrationRepository = new IntegrationRepository();
-    const existing = await integrationRepository.findByProvider(session.user.id, provider);
-    if (!existing) {
-      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
-    }
+    const data = await integrationService.update(
+      session.user.id,
+      provider,
+      validated.data
+    );
 
-    let integration = existing;
-    if (validated.data.isActive !== undefined) {
-      integration = await integrationRepository.updateStatus(
-        session.user.id,
-        existing.id,
-        validated.data.isActive
-      );
-    }
-    if (
-      validated.data.accessToken !== undefined ||
-      validated.data.refreshToken !== undefined ||
-      validated.data.expiresAt !== undefined
-    ) {
-      integration = await integrationRepository.updateTokens(session.user.id, existing.id, {
-        accessToken: validated.data.accessToken,
-        refreshToken: validated.data.refreshToken,
-        expiresAt: validated.data.expiresAt,
-      });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...normalizeConnection(integration),
-        providerName: getIntegrationConfig(provider).name,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error updating integration:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
+    }
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

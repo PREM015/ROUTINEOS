@@ -64,8 +64,22 @@ export function Form<T extends Record<string, unknown>>({
   const [values, setValues] = useState<T>(() => (initialValues ?? {}) as T);
   const [submitting, setSubmitting] = useState(false);
 
+  /*
+    The latest values, in a ref never written during render.
+
+    `valuesRef.current = values` mutated a ref in the render body. Under a
+    discarded concurrent render the ref would hold values that never committed,
+    and `setFieldValue` spreads it — so a keystroke could merge a field into a
+    stale object. Assigning in an effect keeps the ref to committed values.
+
+    It is still written eagerly inside `setFieldValue`, which is correct: that is
+    an event handler, and keeping the ref hot avoids a stale read when two fields
+    are set in the same tick before React re-renders.
+  */
   const valuesRef = useRef(values);
-  valuesRef.current = values;
+  useEffect(() => {
+    valuesRef.current = values;
+  }, [values]);
 
   const onValuesChangeRef = useRef(onValuesChange);
   useEffect(() => {

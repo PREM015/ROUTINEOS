@@ -10,6 +10,47 @@ import type {
 import { BaseRepository } from './base.repository';
 
 /**
+ * `sortBy` values the query schema accepts, mapped to real `Habit` columns.
+ *
+ * `buildOrderQuery` in `base.repository.ts` interpolates the string straight
+ * into `orderBy`, so anything that is not a column reaches Prisma verbatim and
+ * the query fails. `streak` is the only API name that is not a column (the
+ * cached one is `streakCount`), so `GET /api/habits?sortBy=streak` used to 500
+ * with "Unknown field `streak` for orderBy". Unknown keys fall back to
+ * `createdAt` rather than propagating.
+ */
+const HABIT_SORT_COLUMNS: Record<string, string> = {
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  streak: 'streakCount',
+  longestStreak: 'longestStreak',
+  completionRate: 'completionRate',
+  points: 'points',
+};
+
+/**
+ * Options accepted by the list and count reads.
+ *
+ * Extracted because `findAll` and `countAll` have to accept the same thing, and
+ * the service derives its parameter type from this method's signature — an
+ * inline type literal on one of the two would silently narrow the other.
+ */
+export interface HabitFindAllOptions {
+  status?: HabitStatus | HabitStatus[];
+  tier?: HabitTier | HabitTier[];
+  categoryId?: string;
+  includeArchived?: boolean;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+  dayTypeId?: string;
+  tagId?: string;
+  search?: string;
+}
+
+/**
  * Habit Repository
  * Database operations for Habit and related models
  */
@@ -66,51 +107,11 @@ export class HabitRepository extends BaseRepository {
    */
   async findAll(
     userId: string,
-    options?: {
-      status?: HabitStatus | HabitStatus[];
-      tier?: HabitTier | HabitTier[];
-      categoryId?: string;
-      includeArchived?: boolean;
-      sortBy?: string;
-      sortOrder?: 'asc' | 'desc';
-      limit?: number;
-      offset?: number;
-      dayTypeId?: string;
-    }
+    options?: HabitFindAllOptions
   ) {
     try {
-      const where: Prisma.HabitWhereInput = { userId };
-
-      // Status filter
-      if (options?.status) {
-        where.status = Array.isArray(options.status)
-          ? { in: options.status }
-          : options.status;
-      } else if (!options?.includeArchived) {
-        where.status = { not: HabitStatus.ARCHIVED };
-      }
-
-      // Tier filter
-      if (options?.tier) {
-        where.tier = Array.isArray(options.tier)
-          ? { in: options.tier }
-          : options.tier;
-      }
-
-      // Category filter
-      if (options?.categoryId) {
-        where.categoryId = options.categoryId;
-      }
-
-      // Day type filter
-      if (options?.dayTypeId) {
-        where.dayTypeAssignments = {
-          some: { dayTypeId: options.dayTypeId },
-        };
-      }
-
       return await this.prisma.habit.findMany({
-        where,
+        where: this.buildWhere(userId, options),
         include: {
           category: true,
           tags: {
@@ -126,12 +127,104 @@ export class HabitRepository extends BaseRepository {
             },
           },
         },
-        orderBy: this.buildOrderQuery(options?.sortBy || 'createdAt', options?.sortOrder),
+        orderBy: this.buildOrderQuery(
+          HABIT_SORT_COLUMNS[options?.sortBy || 'createdAt'] ?? 'createdAt',
+          options?.sortOrder
+        ),
         ...this.buildPaginationQuery(options?.limit, options?.offset),
       });
     } catch (error) {
       this.handleError(error, 'findAll');
     }
+  }
+
+  /**
+   * Row count for the same filter set as `findAll`.
+   *
+   * Shares `buildWhere` rather than restating the predicate, because two
+   * hand-maintained copies of these filters eventually disagree — the count would
+   * then describe a different set than the rows actually returned, and the
+   * symptom is a "have I loaded everything?" check that is quietly wrong instead
+   * of one that visibly fails.
+   */
+  async countAll(userId: string, options?: HabitFindAllOptions) {
+    try {
+      return await this.prisma.habit.count({
+        where: this.buildWhere(userId, options),
+      });
+    } catch (error) {
+      this.handleError(error, 'countAll');
+    }
+  }
+
+  /**
+   * The single `where` for every habit list/count read.
+   *
+   * Kept private and shared on purpose: `findAll` and `countAll` must agree, and
+   * the filters below are the ones the API advertises on `habitQuerySchema`.
+   */
+  private buildWhere(
+    userId: string,
+    options?: HabitFindAllOptions
+  ): Prisma.HabitWhereInput {
+    const where: Prisma.HabitWhereInput = { userId };
+
+    // Status filter
+    if (options?.status) {
+      where.status = Array.isArray(options.status)
+        ? { in: options.status }
+        : options.status;
+    } else if (!options?.includeArchived) {
+      where.status = { not: HabitStatus.ARCHIVED };
+    }
+
+    // Tier filter
+    if (options?.tier) {
+      where.tier = Array.isArray(options.tier)
+        ? { in: options.tier }
+        : options.tier;
+    }
+
+    // Category filter
+    if (options?.categoryId) {
+      where.categoryId = options.categoryId;
+    }
+
+    // Day type filter
+    if (options?.dayTypeId) {
+      where.dayTypeAssignments = {
+        some: { dayTypeId: options.dayTypeId },
+      };
+    }
+
+    // Tag filter. Declared on `habitQuerySchema` and returned by
+    // `getHabitsForTags`, but `findAll` never applied it, so the filter could not
+    // narrow anything.
+    if (options?.tagId) {
+      where.tags = { some: { tagId: options.tagId } };
+    }
+
+    /*
+     * Free-text search.
+     *
+     * `search` was validated by `habitQuerySchema` and then silently dropped: the
+     * route read it off the query string, Zod accepted it, and the repository
+     * built a `where` that ignored it — so the search narrowed nothing while
+     * looking like it worked.
+     *
+     * `mode: 'insensitive'` is required because `name` is a plain `String` and
+     * Postgres would otherwise match "water" only against a literal lowercase
+     * "water". Description is `@db.Text` and matches on the same terms.
+     */
+    const search = options?.search?.trim();
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    return where;
   }
 
   /**
@@ -529,6 +622,37 @@ export class HabitRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'findActiveOverrides');
+    }
+  }
+
+  /**
+   * Every override that is active at any point within `[startDate, endDate]`.
+   *
+   * `findActiveOverrides` answers "which overrides cover this one date", so
+   * evaluating a habit across a year called it 365 times per habit. The
+   * contribution heatmap needs exactly the same rule over a whole calendar year,
+   * so this is the range form: one query, then the per-date matching is done in
+   * memory against the returned rows.
+   *
+   * `endDate: null` is an open-ended override, which is why the OR clause is
+   * required rather than just a `lte` on start.
+   */
+  async findOverridesByUserRange(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<HabitOverride[]> {
+    try {
+      return await this.prisma.habitOverride.findMany({
+        where: {
+          userId,
+          startDate: { lte: endDate },
+          OR: [{ endDate: null }, { endDate: { gte: startDate } }],
+        },
+        orderBy: { startDate: 'asc' },
+      });
+    } catch (error) {
+      this.handleError(error, 'findOverridesByUserRange');
     }
   }
 

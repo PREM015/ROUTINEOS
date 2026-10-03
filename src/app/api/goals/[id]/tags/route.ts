@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { GoalRepository } from '@/server/repositories/goal.repository';
-import { TagRepository } from '@/server/repositories/tag.repository';
-import type { Prisma } from '@/generated/prisma';
+import { GoalService } from '@/server/services/goal.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -29,19 +28,18 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid goal id' }, { status: 400 });
     }
 
-    const goalRepository = new GoalRepository();
-    const goal = await goalRepository.findWithRelations(id, session.user.id);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
+    const tags = await new GoalService().getTags(session.user.id, id);
 
     return NextResponse.json({
       success: true,
-      data: goal.tags,
-      meta: { goalId: id, total: goal.tags.length },
+      data: tags,
+      meta: { goalId: id, total: tags.length },
     });
   } catch (error) {
     console.error('Error fetching goal tags:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to fetch goal tags' }, { status: 500 });
   }
 }
@@ -71,40 +69,26 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const userId = session.user.id;
-    const goalRepository = new GoalRepository();
-    const tagRepository = new TagRepository();
-
-    const goal = await goalRepository.findById(id, userId);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-
-    const tagIds = [...new Set(validated.data.tagIds)];
-    for (const tagId of tagIds) {
-      const tag = await tagRepository.findById(userId, tagId);
-      if (!tag) {
-        return NextResponse.json({ error: `Tag not found: ${tagId}` }, { status: 404 });
-      }
-    }
-
-    await goalRepository.update(id, userId, {
-      tags: {
-        deleteMany: {},
-        create: tagIds.map((tagId) => ({ tagId })),
-      },
-    } as Prisma.GoalUpdateInput);
-
-    const updated = await goalRepository.findWithRelations(id, userId);
+    const tags = await new GoalService().setTags(
+      session.user.id,
+      id,
+      validated.data.tagIds
+    );
 
     return NextResponse.json({
       success: true,
-      data: updated?.tags,
-      meta: { goalId: id, total: updated?.tags.length ?? 0 },
+      data: tags,
+      meta: { goalId: id, total: tags.length },
     });
   } catch (error) {
     console.error('Error updating goal tags:', error);
 
+    if (error instanceof NotFoundError) {
+      // `NotFoundError` carries either "Goal" or "Tag <id>", so the message
+      // distinguishes a missing goal from a tag the caller does not own — the
+      // same distinction the route drew inline.
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

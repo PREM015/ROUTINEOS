@@ -1,16 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId } from 'react';
 import { Modal, Input, Select, Button, Checkbox } from '@/components/ui';
 import { useApp, type HabitTier, type FrequencyType } from '@/context/AppContext';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import type { DayTypeDefinition } from '@/types/routine';
 import { fetchWithAuth } from '@/lib/api-client';
+import { TagPicker } from './TagPicker';
 
 
 interface AddHabitModalProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Called after a habit is successfully persisted, never on cancel or failure.
+   *
+   * `/habits` uses it to refetch the 28-day health strip: a brand new habit has
+   * no logs, so it must appear as `NO_DATA` rather than keep whatever the
+   * previous habit's row said until the next full page load.
+   */
+  onSaved?: () => void;
 }
 
 const TIERS: Array<{ label: string; value: HabitTier }> = [
@@ -39,33 +48,45 @@ const WEEKDAYS = [
   { label: 'Sat', value: '6' },
 ];
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const PRESET_COLORS = [
+  '#10b981',
+  '#3b82f6',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#ec4899',
+  '#14b8a6',
+  '#6366f1',
+  '#0ea5e9',
+  '#a855f7',
+  '#22c55e',
+  '#f97316',
+];
 
-export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
+const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
+export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalProps) {
   const { addHabit } = useApp();
   const { today: userToday } = useUserTimezone();
+  const formId = useId();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [tier, setTier] = useState<HabitTier>('GROWTH');
   const [frequencyType, setFrequencyType] = useState<FrequencyType>('DAILY');
   const [weekdays, setWeekdays] = useState<string[]>(['1', '2', '3', '4', '5']);
   const [targetCount, setTargetCount] = useState('');
-  const [color, setColor] = useState<string>(COLORS[0] as string);
+  const [color, setColor] = useState<string>(PRESET_COLORS[0] as string);
+  const [colorInput, setColorInput] = useState<string>(PRESET_COLORS[0] as string);
+  const [colorError, setColorError] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appliesEveryDay, setAppliesEveryDay] = useState(true);
   const [dayTypeIds, setDayTypeIds] = useState<string[]>([]);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
   const [dayTypesLoading, setDayTypesLoading] = useState(true);
   const [dayTypesError, setDayTypesError] = useState<string | null>(null);
-
-  // Fetch day types on mount
-  useEffect(() => {
-    if (open) {
-      loadDayTypes();
-    }
-  }, [open]);
 
   const loadDayTypes = async () => {
     try {
@@ -92,6 +113,16 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
     }
   };
 
+  // Declared before the effect that calls it: reading a `const` from above its
+  // declaration worked, but the reference could not update if it ever changed,
+  // and the linter is right to flag it.
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
+      void loadDayTypes();
+    }
+  }, [open]);
+
   const reset = () => {
     setName('');
     setDescription('');
@@ -99,12 +130,43 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
     setFrequencyType('DAILY');
     setWeekdays(['1', '2', '3', '4', '5']);
     setTargetCount('');
-    setColor(COLORS[0] as string);
+    setColor(PRESET_COLORS[0] as string);
+    setColorInput(PRESET_COLORS[0] as string);
+    setColorError(null);
     setReminderTime('');
     setError(null);
     setSubmitting(false);
     setAppliesEveryDay(true);
     setDayTypeIds([]);
+    setTagIds([]);
+  };
+
+  /**
+   * Commit a typed colour only when it is a complete, valid 6-digit hex.
+   *
+   * Typing `#FF5` is a legitimate intermediate state, so an invalid partial
+   * value is reported but never written — otherwise the row would flicker
+   * through whatever the browser could parse, and a mistake would be saved
+   * instead of surfaced. `createHabitSchema` only accepts `/^#[0-9A-F]{6}$/i`
+   * (`src/schemas/habit.schema.ts:26`), so the field is validated against the
+   * same rule rather than a looser local approximation.
+   */
+  const commitColor = (raw: string) => {
+    const candidate = raw.trim().startsWith('#') ? raw.trim() : `#${raw.trim()}`;
+    if (!HEX_PATTERN.test(candidate)) {
+      setColorError('Enter a 6-digit hex colour, for example #FF5733.');
+      return;
+    }
+    setColorError(null);
+    const normalised = candidate.toLowerCase();
+    setColor(normalised);
+    setColorInput(normalised);
+  };
+
+  const pickPreset = (value: string) => {
+    setColor(value);
+    setColorInput(value);
+    setColorError(null);
   };
 
   const toggleWeekday = (value: string) => {
@@ -136,6 +198,9 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
       if (reminderTime && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminderTime)) {
         throw new Error('Reminder time must be HH:mm');
       }
+      if (!HEX_PATTERN.test(color)) {
+        throw new Error('Colour must be a 6-digit hex value, for example #FF5733.');
+      }
       if (!appliesEveryDay && dayTypeIds.length === 0) {
         // Name the cause: with a failed day-type load the picker is empty, so
         // "Pick at least one day type" is unachievable and unexplained.
@@ -165,9 +230,11 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
         reminderEnabled: Boolean(reminderTime),
         appliesEveryDay,
         dayTypeIds: appliesEveryDay ? [] : dayTypeIds,
+        tagIds,
       });
 
       reset();
+      onSaved?.();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create habit');
@@ -183,8 +250,22 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
   };
 
   return (
-    <Modal isOpen={open} onClose={close} title="Add New Habit">
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+    <Modal
+      isOpen={open}
+      onClose={close}
+      title="Add New Habit"
+      footer={
+        <>
+          <Button type="button" variant="ghost" onClick={close} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button type="submit" form={formId} variant="primary" disabled={!name.trim() || submitting}>
+            {submitting ? 'Adding…' : 'Add Habit'}
+          </Button>
+        </>
+      }
+    >
+      <form id={formId} onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
         <Input
           label="Habit Name"
           value={name}
@@ -316,21 +397,101 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <span className="block text-sm font-medium mb-2 text-foreground">Colour</span>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/*
+            Colour. The six hard-coded swatches were the whole palette, so a user
+            who wanted #A020F0 had no way to express it and the stored colour was
+            always one of six arbitrary values. Presets stay as the fast path,
+            with a free-form hex field and a native picker beside them.
+          */}
+          <div className="min-w-0">
+            <span className="mb-2 block text-sm font-medium text-foreground">Colour</span>
+
             <div className="flex flex-wrap gap-2">
-              {COLORS.map((c) => (
+              {PRESET_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
-                  onClick={() => setColor(c)}
+                  onClick={() => pickPreset(c)}
                   aria-label={`Colour ${c}`}
                   aria-pressed={color === c}
-                  className={`w-7 h-7 rounded-full border-2 transition ${color === c ? 'border-foreground scale-110' : 'border-transparent'}`}
-                  style={{ backgroundColor: c }}
+                  className="h-7 w-7 shrink-0 rounded-full transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  style={{
+                    backgroundColor: c,
+                    // A ring rather than a border swap, so the selected swatch
+                    // stays distinguishable against a dark swatch.
+                    boxShadow:
+                      color === c
+                        ? `0 0 0 2px var(--color-background), 0 0 0 4px ${c}`
+                        : undefined,
+                  }}
                 />
               ))}
+            </div>
+
+            <div className="mt-3 flex items-center gap-2">
+              <label className="sr-only" htmlFor={`${formId}-color-native`}>
+                Pick a custom colour
+              </label>
+              <input
+                id={`${formId}-color-native`}
+                type="color"
+                value={color}
+                onChange={(e) => pickPreset(e.target.value.toLowerCase())}
+                className="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-border bg-background p-1"
+              />
+              <label className="sr-only" htmlFor={`${formId}-color-hex`}>
+                Hex colour value
+              </label>
+              <input
+                id={`${formId}-color-hex`}
+                value={colorInput}
+                onChange={(e) => {
+                  setColorInput(e.target.value);
+                  const trimmed = e.target.value.trim();
+                  const candidate = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+                  if (HEX_PATTERN.test(candidate)) {
+                    setColorError(null);
+                    setColor(candidate.toLowerCase());
+                  } else {
+                    setColorError('Enter a 6-digit hex colour, for example #FF5733.');
+                  }
+                }}
+                onBlur={() => commitColor(colorInput)}
+                placeholder="#FF5733"
+                spellCheck={false}
+                autoComplete="off"
+                inputMode="text"
+                aria-invalid={colorError ? true : undefined}
+                aria-describedby={colorError ? `${formId}-color-error` : undefined}
+                className={`h-9 min-w-0 flex-1 rounded-lg border bg-background px-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
+                  colorError ? 'border-destructive' : 'border-border'
+                }`}
+              />
+            </div>
+
+            {colorError && (
+              <p
+                id={`${formId}-color-error`}
+                role="alert"
+                className="mt-1.5 text-xs text-destructive"
+              >
+                {colorError}
+              </p>
+            )}
+
+            {/* Live preview — the point of a colour picker is seeing the result. */}
+            <div className="mt-3 flex items-center gap-2.5 rounded-lg bg-muted/50 px-3 py-2">
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/20"
+                style={{ backgroundColor: color }}
+              />
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{name.trim() || 'New habit'}</span>
+                {' · '}
+                {color}
+              </span>
             </div>
           </div>
           <Input
@@ -341,17 +502,21 @@ export default function AddHabitModal({ open, onClose }: AddHabitModalProps) {
           />
         </div>
 
-        {error && (
-          <p role="alert" className="text-sm text-red-500 dark:text-red-400">{error}</p>
-        )}
+        <TagPicker value={tagIds} onChange={setTagIds} />
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
-          <Button type="button" variant="ghost" onClick={close} disabled={submitting} className="flex-1">Cancel</Button>
-          <Button type="submit" variant="primary" disabled={!name.trim() || submitting} className="flex-1">
-            {submitting ? 'Adding...' : 'Add Habit'}
-          </Button>
-        </div>
+        {error && (
+          <p role="alert" className="text-sm text-destructive">{error}</p>
+        )}
       </form>
+
+      {/*
+        The actions live in `Modal`'s `footer`, not at the bottom of the form.
+        The body is the only scrolling region, so buttons placed after a long
+        form sit below the fold on a phone — the user scrolls a form to reach
+        the button that submits it. `form=` points the submit button back at the
+        form across the portal boundary. Every other `Modal` in the app has this
+        problem; this one is fixed.
+      */}
     </Modal>
   );
 }

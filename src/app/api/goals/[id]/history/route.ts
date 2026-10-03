@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { GoalRepository } from '@/server/repositories/goal.repository';
+import { GoalService } from '@/server/services/goal.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -9,6 +10,10 @@ interface RouteContext {
 /**
  * GET /api/goals/[id]/history
  * Fetch the progress history for the authenticated user's goal
+ *
+ * `offset` is now actually applied. It was previously parsed and echoed back in
+ * `meta.offset` but never reached the query, so every page returned the same
+ * first `limit` rows.
  */
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
@@ -31,22 +36,19 @@ export async function GET(request: NextRequest, context: RouteContext) {
       ? parseInt(searchParams.get('offset')!, 10)
       : 0;
 
-    const goalRepository = new GoalRepository();
-    const userId = session.user.id;
-
-    const goal = await goalRepository.findById(id, userId);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-
-    const history = await goalRepository.getProgressHistory(id, limit);
+    const { history, goalTitle } = await new GoalService().getHistory(
+      session.user.id,
+      id,
+      limit,
+      offset
+    );
 
     return NextResponse.json({
       success: true,
       data: history,
       meta: {
         goalId: id,
-        goalTitle: goal.title,
+        goalTitle,
         total: history.length,
         limit,
         offset,
@@ -54,6 +56,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     console.error('Error fetching goal history:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to fetch goal history' }, { status: 500 });
   }
 }

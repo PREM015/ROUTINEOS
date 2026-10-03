@@ -145,7 +145,7 @@ export function QuoteDisplay() {
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 mb-8">
+    <div className="glass-panel glass-panel-lift mb-8 rounded-[20px] p-5">
       <div className="flex items-start gap-4">
         <span className="text-3xl leading-none text-primary select-none" aria-hidden="true">
           <QuoteIcon className="h-6 w-6" />

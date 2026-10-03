@@ -87,6 +87,8 @@ const CATEGORY_ROWS: ToggleRow[] = [
   { key: 'routineStartNotifications', label: 'Routine Start', description: 'Notify when a scheduled routine block begins.' },
   { key: 'upcomingRoutineNotifications', label: 'Upcoming Routine', description: 'Notify before a routine block starts (advance notice).' },
   { key: 'sleepReminderNotifications', label: 'Sleep Reminder', description: "Remind you when it's time to sleep." },
+  { key: 'sleepPreWarningNotifications', label: 'Sleep Pre-Warning', description: 'Notify 1 hour before bedtime to start winding down.' },
+  { key: 'wakeConfirmationNotifications', label: 'Wake Confirmation', description: 'Ask for actual wake time at target wake time.' },
   { key: 'habitReminderNotifications', label: 'Habit Reminder', description: 'Prompt for scheduled habits.' },
   { key: 'goalReminderNotifications', label: 'Goal Reminder', description: 'Nudge for goal check-ins and deadlines.' },
 ];
@@ -247,6 +249,8 @@ export default function NotificationsSettingsPage() {
       routineStartNotifications: settings.routineStartNotifications,
       upcomingRoutineNotifications: settings.upcomingRoutineNotifications,
       sleepReminderNotifications: settings.sleepReminderNotifications,
+      sleepPreWarningNotifications: settings.sleepPreWarningNotifications,
+      wakeConfirmationNotifications: settings.wakeConfirmationNotifications,
       habitReminderNotifications: settings.habitReminderNotifications,
       goalReminderNotifications: settings.goalReminderNotifications,
       advanceNotificationMinutes: settings.advanceNotificationMinutes,
@@ -734,19 +738,49 @@ export default function NotificationsSettingsPage() {
                 </div>
               </div>
 
-              <div>
-                <h2 className="mb-3 text-sm font-semibold text-foreground">Routine Notifications</h2>
+<div>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">Other Reminders</h2>
                 <div className="space-y-3">
-                  {CATEGORY_ROWS.map((row) => (
+                  {general.map((row) => (
                     <Switch
                       key={row.key}
                       checked={settings[row.key]}
                       onChange={(checked) => patchLocal({ [row.key]: checked })}
                       label={row.label}
                       description={row.description}
-                      disabled={!settings.notificationsEnabled || !settings.pushNotifications}
+                      disabled={!settings.notificationsEnabled}
                     />
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <h2 className="mb-3 text-sm font-semibold text-foreground">Sleep Notifications</h2>
+                <div className="space-y-3">
+                  <Switch
+                    key="sleepReminderNotifications"
+                    checked={settings.sleepReminderNotifications}
+                    onChange={(checked) => patchLocal({ sleepReminderNotifications: checked })}
+                    label="Sleep Reminder"
+                    description="Remind you when it's time to sleep."
+                    disabled={!settings.notificationsEnabled || !settings.pushNotifications}
+                  />
+                  <Switch
+                    key="sleepPreWarningNotifications"
+                    checked={settings.sleepPreWarningNotifications}
+                    onChange={(checked) => patchLocal({ sleepPreWarningNotifications: checked })}
+                    label="Sleep Pre-Warning"
+                    description="Notify 1 hour before bedtime to start winding down."
+                    disabled={!settings.notificationsEnabled || !settings.pushNotifications || !settings.sleepReminderNotifications}
+                  />
+                  <Switch
+                    key="wakeConfirmationNotifications"
+                    checked={settings.wakeConfirmationNotifications}
+                    onChange={(checked) => patchLocal({ wakeConfirmationNotifications: checked })}
+                    label="Wake Confirmation"
+                    description="Ask for actual wake time at target wake time."
+                    disabled={!settings.notificationsEnabled || !settings.pushNotifications || !settings.sleepReminderNotifications}
+                  />
                 </div>
               </div>
 

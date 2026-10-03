@@ -101,10 +101,10 @@ export function IconPicker({
             aria-label={`Select icon ${icon.name}`}
             aria-pressed={selected}
             className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:opacity-50',
+              'flex h-10 w-10 items-center justify-center rounded-md border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
               selected
-                ? 'border-blue-600 bg-blue-50 text-blue-600'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
             )}
           >
             <IconComp className="h-5 w-5" />

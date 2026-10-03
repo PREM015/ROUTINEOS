@@ -1,11 +1,12 @@
 import { auth } from '@/lib/auth';
 import { dayModeService } from '@/server/services/day-mode.service';
-import { dayTypeSchema } from '@/lib/validation/routine.schema';
+import { calendarDateSchema, dayTypeSchema } from '@/lib/validation/routine.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 const dayModeSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date: calendarDateSchema,
   mode: z.enum(['MINIMUM', 'REST', 'DAY_TYPE', 'CLEAR']).optional(),
   dayType: dayTypeSchema.optional(),
   /**
@@ -31,10 +32,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || undefined;
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const parsedDate = calendarDateSchema.safeParse(searchParams.get('date'));
+    if (!parsedDate.success) {
       return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
     }
+    const date = parsedDate.data;
 
     const snapshot = await dayModeService.getDayMode(session.user.id, date);
 
@@ -85,14 +87,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error activating day mode:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to activate day mode' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

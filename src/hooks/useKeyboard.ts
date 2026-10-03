@@ -40,8 +40,19 @@ export function useKeyboard(
   options: KeyboardHookOptions = {}
 ) {
   const { enabled = true } = options;
+  /*
+    The latest handler, in a ref that is never written during render.
+
+    `handlerRef.current = handler` in the render body mutates a ref mid-render,
+    which under StrictMode's double invoke or a discarded concurrent render leaves
+    the ref pointing at a handler from a render that never committed — so a
+    keystroke could invoke a closure over stale props. Assigning in an effect means
+    the ref only ever holds a committed handler.
+  */
   const handlerRef = useRef<KeyboardHandler>(handler);
-  handlerRef.current = handler;
+  useEffect(() => {
+    handlerRef.current = handler;
+  }, [handler]);
 
   useEffect(() => {
     if (!enabled) return;

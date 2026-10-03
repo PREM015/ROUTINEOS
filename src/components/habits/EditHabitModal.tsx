@@ -5,11 +5,20 @@ import { Modal, Input, Select, Button, Checkbox } from '@/components/ui';
 import { useApp, type Habit, type HabitTier, type FrequencyType } from '@/context/AppContext';
 import { fetchWithAuth } from '@/lib/api-client';
 import type { DayTypeDefinition } from '@/types/routine';
+import { TagPicker } from './TagPicker';
 
 
 interface EditHabitModalProps {
   habit: Habit | null;
   onClose: () => void;
+  /**
+   * Called after the update is persisted, never on cancel or failure.
+   *
+   * `/habits` uses it to refetch the 28-day health strip so a changed
+   * `frequencyType`/`frequencyValue` -- which changes how many days a habit
+   * *should* have been logged on -- is reflected immediately.
+   */
+  onSaved?: () => void;
 }
 
 const TIERS: Array<{ label: string; value: HabitTier }> = [
@@ -42,19 +51,27 @@ const WEEKDAYS = [
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-export default function EditHabitModal({ habit, onClose }: EditHabitModalProps) {
+export default function EditHabitModal({ habit, onClose, onSaved }: EditHabitModalProps) {
   if (!habit) return null;
 
   return (
     <Modal isOpen={!!habit} onClose={onClose} title="Edit Habit">
       {/* Keyed by habit id so each habit gets fresh form state without
           syncing props to state inside an effect. */}
-      <EditHabitForm key={habit.id} habit={habit} onClose={onClose} />
+      <EditHabitForm key={habit.id} habit={habit} onClose={onClose} onSaved={onSaved} />
     </Modal>
   );
 }
 
-function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }) {
+function EditHabitForm({
+  habit,
+  onClose,
+  onSaved,
+}: {
+  habit: Habit;
+  onClose: () => void;
+  onSaved?: () => void;
+}) {
   const { updateHabit } = useApp();
   const [name, setName] = useState(habit.name);
   const [description, setDescription] = useState(habit.description ?? '');
@@ -70,14 +87,14 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
   const [error, setError] = useState<string | null>(null);
   const [appliesEveryDay, setAppliesEveryDay] = useState(habit.appliesEveryDay ?? true);
   const [dayTypeIds, setDayTypeIds] = useState<string[]>(habit.dayTypeAssignments?.map(dta => dta.dayTypeId) || []);
+  // Seeded from the join rows the list already carries, so opening Edit shows
+  // the tags currently on the habit without a second fetch.
+  const [tagIds, setTagIds] = useState<string[]>(
+    (habit.tags ?? []).map(t => t.tagId)
+  );
   const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
   const [dayTypesLoading, setDayTypesLoading] = useState(true);
   const [dayTypesError, setDayTypesError] = useState<string | null>(null);
-
-  // Fetch day types on mount
-  useEffect(() => {
-    loadDayTypes();
-  }, []);
 
   const loadDayTypes = async () => {
     try {
@@ -102,6 +119,22 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
       setDayTypesLoading(false);
     }
   };
+
+  /*
+    Fetch day types on mount.
+
+    Declared BELOW `loadDayTypes` deliberately. This effect used to sit above the
+    `const loadDayTypes = …` it calls, which is a temporal dead zone read: it
+    works only because an effect body runs after the whole component body has
+    evaluated. Move either declaration and it throws at runtime, which is a trap
+    rather than a style preference.
+
+    Mount-only: this modal reads the user's day-type definitions once, and saving
+    owns every later change.
+  */
+  useEffect(() => {
+    void loadDayTypes();
+  }, []);
 
   const toggleWeekday = (value: string) => {
     setWeekdays((prev) =>
@@ -154,7 +187,9 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
         reminderEnabled: Boolean(reminderTime),
         appliesEveryDay,
         dayTypeIds: appliesEveryDay ? [] : dayTypeIds,
+        tagIds,
       });
+      onSaved?.();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update habit');
@@ -289,10 +324,12 @@ function EditHabitForm({ habit, onClose }: { habit: Habit; onClose: () => void }
               ))}
             </div>
           </div>
-          <Input label="Reminder (optional)" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} />
+        <Input label="Reminder (optional)" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} />
         </div>
 
-        {error && <p role="alert" className="text-sm text-red-500 dark:text-red-400">{error}</p>}
+        <TagPicker value={tagIds} onChange={setTagIds} />
+
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
         <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={submitting} className="flex-1">Cancel</Button>

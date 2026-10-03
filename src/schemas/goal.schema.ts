@@ -59,4 +59,41 @@ export const updateGoalSchema = createGoalSchema.partial().extend({
   status: z
     .enum(['ACTIVE', 'COMPLETED', 'MISSED', 'CARRIED_OVER', 'ON_HOLD', 'CANCELLED'] as const)
     .optional(),
+
+  /**
+   * `completedAt` is now declared.
+   *
+   * `GoalService.updateGoal` has read `input.completedAt` for a long time, but
+   * this schema is a plain `z.object`, which **silently drops keys it does not
+   * declare**. So the value could never arrive: a caller setting it got a 200 and
+   * a row whose `completedAt` was unchanged. That is the same failure mode as the
+   * missing `status` noted above, on a field whose service branch has always been
+   * dead.
+   *
+   * Nullable, because clearing it is a real operation — and `updateGoal` now
+   * derives it from `status` anyway, so this is the explicit override for when a
+   * caller wants a specific timestamp.
+   */
+  completedAt: z.date().nullable().optional(),
 });
+
+/**
+ * Per-day check-off for DAILY goals.
+ *
+ * Was declared inline in `src/app/api/goals/[id]/checkin/route.ts`, which meant
+ * the service could not validate its own input — it had to trust the route had
+ * already done so.
+ */
+export const goalCheckinSchema = z.object({
+  /**
+   * A bare `YYYY-MM-DD`, not a timestamp.
+   *
+   * Anchored so a full ISO datetime is rejected outright: the service stores this
+   * as `new Date(\`${date}T00:00:00.000Z\`)`, and a value that already carried a
+   * time component would be silently reinterpreted.
+   */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  completed: z.boolean(),
+});
+
+export type GoalCheckinInput = z.infer<typeof goalCheckinSchema>;

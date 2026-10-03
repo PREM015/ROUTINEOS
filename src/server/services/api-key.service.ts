@@ -1,9 +1,9 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { ApiKeyRepository } from '@/server/repositories/api-key.repository';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { z } from 'zod';
 import type { APIKey } from '@/generated/prisma';
-import { API_KEY_PREFIX } from '@/constants/api';
+import { API_KEY_PREFIX, API_KEY_ENTROPY_BYTES } from '@/constants/api';
 
 /**
  * API Key Service
@@ -54,11 +54,99 @@ function hasExpectedShape(rawKey: string): boolean {
   return rawKey.startsWith(API_KEY_PREFIX) && rawKey.length > API_KEY_PREFIX.length;
 }
 
+/**
+ * Zod shape for issuing a key.
+ *
+ * Lives here, not in the route, so the service can validate its own input —
+ * `POST /api/api-keys` was the only route still reaching `ApiKeyRepository`
+ * directly, and it validated with a private copy of this schema.
+ */
+const createApiKeySchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Name is required')
+    .max(100, 'Name must be 100 characters or less'),
+  description: z
+    .string()
+    .max(500, 'Description must be 500 characters or less')
+    .optional(),
+});
+
+/**
+ * Project an `APIKey` row into the shape the client is allowed to see.
+ *
+ * The raw key is never stored, so there is nothing to mask. `keyFingerprint` is
+ * the first 8 characters of the *hash*, purely as a stable identifier so the UI
+ * can tell two keys apart; it is not derived from the secret and reveals nothing
+ * usable. `maskedKey` is likewise built from the hash, not the secret.
+ */
+function toSafeApiKey(key: APIKey) {
+  return {
+    id: key.id,
+    name: key.name,
+    description: key.description,
+    keyFingerprint: key.keyHash.slice(0, 8),
+    maskedKey: `••••••••${key.keyHash.slice(-4)}`,
+    isActive: key.isActive,
+    scopes: key.scopes,
+    rateLimit: key.rateLimit,
+    usageCount: key.usageCount,
+    lastUsedAt: key.lastUsedAt,
+    expiresAt: key.expiresAt,
+    createdAt: key.createdAt,
+  };
+}
+
 export class ApiKeyService {
   private apiKeyRepository: ApiKeyRepository;
 
   constructor() {
     this.apiKeyRepository = new ApiKeyRepository();
+  }
+
+  /**
+   * Every key owned by the user, projected into the safe response shape.
+   *
+   * The projection is here rather than in the route because it is the thing that
+   * decides what leaves the server. A route that forgot to apply it would return
+   * `keyHash` — and while that is a hash rather than the secret, it is still the
+   * value `authenticate` matches on.
+   */
+  async listForUser(userId: string) {
+    const keys = await this.apiKeyRepository.findAllByUser(userId);
+    return keys.map(toSafeApiKey);
+  }
+
+  /**
+   * Issue a key. The raw value is returned exactly once, here, and is never
+   * stored — only its SHA-256 hash is persisted.
+   *
+   * Hashing goes through the same `hashApiKey` that `authenticate` matches
+   * against, so issuing and verifying cannot drift apart; a divergence would make
+   * every key unverifiable and would not fail loudly.
+   */
+  async issue(userId: string, input: { name: string; description?: string }) {
+    const parsed = createApiKeySchema.safeParse(input);
+    if (!parsed.success) {
+      // Carries the flattened Zod error as `details` so the 400 body is
+      // byte-identical to the one the route used to return, which included
+      // `details: validated.error.flatten()`.
+      throw new ValidationError(
+        'Invalid input',
+        parsed.error.flatten() as unknown as Record<string, string[]>
+      );
+    }
+
+    const rawKey = `${API_KEY_PREFIX}${randomBytes(API_KEY_ENTROPY_BYTES).toString('hex')}`;
+
+    const created = await this.apiKeyRepository.create({
+      name: parsed.data.name,
+      description: parsed.data.description,
+      keyHash: hashApiKey(rawKey),
+      user: { connect: { id: userId } },
+    });
+
+    return { ...toSafeApiKey(created), key: rawKey };
   }
 
   /**

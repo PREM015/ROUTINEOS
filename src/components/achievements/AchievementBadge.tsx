@@ -22,7 +22,7 @@
  */
 
 import { Award, Lock } from 'lucide-react';
-import { ACHIEVEMENT_RARITIES, type AchievementRarity } from '@/lib/constants/achievements';
+import { ACHIEVEMENT_RARITIES, rarityChipStyle, rarityTint, type AchievementRarity } from '@/lib/constants/achievements';
 import { cn, formatDate } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -70,8 +70,16 @@ export function AchievementBadge({ achievement, className }: AchievementBadgePro
             achievement.unlocked ? 'ring-2 ring-offset-2' : 'grayscale'
           )}
           style={{
-            backgroundColor: achievement.unlocked ? `${accentColor}1a` : '#f3f4f6',
-            ...(achievement.unlocked ? { boxShadow: `0 0 0 2px ${accentColor}` } : {}),
+            // A locked tile used to hardcode `#f3f4f6`, a near-white grey, so in
+            // dark mode every locked achievement rendered as a bright block
+            // against a dark card — the loudest thing on the page, and the exact
+            // inverse of what it means. `muted` follows the theme instead.
+            backgroundColor: achievement.unlocked
+              ? rarityTint(accentColor)
+              : 'var(--muted)',
+            ...(achievement.unlocked
+              ? { boxShadow: `0 0 0 2px ${rarityTint(accentColor)}` }
+              : {}),
           }}
         >
           <span aria-hidden="true">{achievement.icon ?? '🎖️'}</span>
@@ -87,7 +95,7 @@ export function AchievementBadge({ achievement, className }: AchievementBadgePro
           </Badge>
           <Badge
             className="text-[10px]"
-            style={{ color: rarity.color }}
+            style={rarityChipStyle(rarity.color)}
           >
             {rarity.icon} {rarity.label}
           </Badge>
@@ -98,15 +106,21 @@ export function AchievementBadge({ achievement, className }: AchievementBadgePro
         {achievement.unlocked ? (
           <Award className="h-4 w-4 shrink-0" style={{ color: accentColor }} />
         ) : (
-          <Lock className="h-4 w-4 shrink-0 text-gray-400" />
+          <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
         )}
-        <h3 className="truncate text-sm font-semibold text-gray-900" title={achievement.name}>
+        {/*
+          `text-gray-900` / `text-gray-500` were hardcoded Tailwind greys, not
+          theme tokens. `gray-900` is near-black, so every achievement name
+          rendered near-invisible on the dark card while looking correct on the
+          light one — the clearest instance of ERROR.md I3.
+        */}
+        <h3 className="truncate text-sm font-semibold text-foreground" title={achievement.name}>
           {achievement.name}
         </h3>
       </div>
 
       {achievement.description && (
-        <p className="mt-1 line-clamp-2 text-xs text-gray-500">
+        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
           {achievement.description}
         </p>
       )}
@@ -124,7 +138,7 @@ export function AchievementBadge({ achievement, className }: AchievementBadgePro
       )}
 
       {achievement.unlockedAt && achievement.unlocked && (
-        <p className="mt-3 text-[11px] text-gray-400">
+        <p className="mt-3 text-[11px] text-muted-foreground">
           {formatDate(new Date(achievement.unlockedAt))}
         </p>
       )}

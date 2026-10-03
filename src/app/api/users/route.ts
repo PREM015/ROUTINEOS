@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { adminRepository } from '@/server/repositories/admin.repository';
+import { adminUserService } from '@/server/services/admin-user.service';
+import { AuthorizationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -13,10 +14,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || undefined;
     const limit = Math.min(
@@ -25,10 +22,11 @@ export async function GET(request: NextRequest) {
     );
     const offset = Math.max(Number(searchParams.get('offset')) || 0, 0);
 
-    const [users, total] = await Promise.all([
-      adminRepository.listUsers({ limit, offset, search }),
-      adminRepository.countUsers(search),
-    ]);
+    const { users, total } = await adminUserService.listForAdmin(session.user.id, {
+      limit,
+      offset,
+      search,
+    });
 
     return NextResponse.json({
       success: true,
@@ -43,6 +41,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error listing users:', error);
 
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

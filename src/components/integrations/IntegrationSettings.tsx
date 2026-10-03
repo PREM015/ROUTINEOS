@@ -72,7 +72,7 @@ export default function IntegrationSettings({
   const [error, setError] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<string | null>(null);
 
-  const load = async () => {
+  const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -85,16 +85,17 @@ export default function IntegrationSettings({
     } finally {
       setLoading(false);
     }
-  };
+  }, [provider]);
 
   React.useEffect(() => {
-    if (open) {
-      setConfirmingDisconnect(false);
-      setError(null);
-      setMessage(null);
-      void load();
-    }
-  }, [open, provider]);
+    if (!open) return;
+    setConfirmingDisconnect(false);
+    setError(null);
+    setMessage(null);
+    void load();
+    // `load` is stable per `provider`, and `provider` is already a dependency, so
+    // this fires on open and on a provider change — not on every render.
+  }, [open, load]);
 
   const save = async () => {
     if (saving) return;

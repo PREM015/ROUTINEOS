@@ -1,14 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { BarChart3, CalendarRange, Flame, Moon, Target } from 'lucide-react';
+import { useCallback, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  BarChart3,
+  BookOpen,
+  CalendarRange,
+  Flame,
+  Loader2,
+  Moon,
+  Target,
+  TrendingUp,
+} from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
-import { shiftAnchor, type Period } from '@/lib/period-range';
+import { usePeriodUrlState } from '@/hooks/usePeriodUrlState';
 import { PeriodControl } from '@/components/shared/PeriodControl';
 import type { AnalyticsDashboard } from '@/types/analytics';
+import type { Period } from '@/lib/period-range';
 import { Spinner } from '@/components/ui';
-import { BarChart } from '@/components/charts/BarChart';
+import { deltaText, percentText } from '@/lib/analytics/format';
+import PeriodChart from '@/components/analytics/PeriodChart';
 import StreakPanel from '@/components/analytics/StreakPanel';
 import TierMixBar from '@/components/analytics/TierMixBar';
 import FocusSummaryCard from '@/components/analytics/FocusSummaryCard';
@@ -25,11 +36,30 @@ import JournalCard from '@/components/recap/JournalCard';
 import AchievementsStrip from '@/components/analytics/AchievementsStrip';
 
 /**
- * Analytics Page — real data only.
- * Day / Week / Month / Year periods fetched from /api/analytics/dashboard and
- * rendered as a period-scoped bento dashboard: score hero, consistency charts,
- * and the widget grid. Period navigation is shared with the Recap page via
- * PeriodControl.
+ * Analytics — one period, one set of definitions, detail on request.
+ *
+ * ## What this page is for
+ *
+ * Answering "how did this period go, and what changed?" and then letting the user
+ * drill into whichever domain the answer points at. It is a *reporting* surface,
+ * which drives three decisions:
+ *
+ *  - **The period lives in the URL.** A view of last month's habits is a result,
+ *    not a transient UI state, so it is linkable, bookmarkable and back-navigable.
+ *  - **Stale data is shown and labelled, never silently.** See
+ *    `usePeriodUrlState` for the race guard that stops a slow response from
+ *    overwriting a fast one.
+ *  - **Domain detail is grouped and collapsible.** Twelve equally-weighted cards
+ *    competed for attention and none of them led; the overview now answers the
+ *    question first and the detail is one click away.
+ *
+ * ## Where the numbers come from
+ *
+ * Every figure is computed server-side in `AnalyticsService`, on one definition
+ * per metric. The habit rate in particular is `completed / scheduled` with
+ * `scheduled` derived from the eligibility rule — see
+ * `lib/analytics/period-habits`, which replaced four denominators that disagreed
+ * between the day, week, month and year tabs. This page never derives a rate.
  */
 
 function formatDuration(minutes: number): string {
@@ -40,81 +70,65 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
-function chartLabel(period: Period): string {
-  if (period === 'day') return 'Habit status today';
-  if (period === 'week') return 'Habit consistency';
-  if (period === 'month') return 'Habit consistency';
-  return 'Habit consistency';
+/** What chart 1 shows, per period. The label must match the data's real range. */
+function habitChartCopy(period: Period, label: string): { title: string; description: string } {
+  if (period === 'day') {
+    return {
+      title: 'Habits today',
+      description: 'How each habit ended on this day.',
+    };
+  }
+  return {
+    title: 'Habit consistency',
+    description: `Share of due days completed per habit, ${label}.`,
+  };
 }
 
-function chart2Label(period: Period): string {
-  if (period === 'day') return 'Tier completion today';
-  if (period === 'week') return 'Tier completion (this month)';
-  if (period === 'month') return 'Tier completion';
-  return 'Monthly average score';
+function tierChartCopy(period: Period, label: string): { title: string; description: string } {
+  if (period === 'year') {
+    return {
+      title: 'Monthly average score',
+      description: `Average score per month across ${label}. Months with no scored day are left empty.`,
+    };
+  }
+  return {
+    title: 'Tier completion',
+    description: `Share of due days completed, by tier, across ${label}.`,
+  };
 }
 
 export default function AnalyticsPage() {
-  const [period, setPeriod] = useState<Period>('day');
-  // Anchored to the user's today. The `useState` initialiser runs before the
-  // settings row has loaded, so it starts empty and is seeded from the hook in
-  // an effect below; the hook's value is the only one that is ever committed.
   const { today: userToday, timezone } = useUserTimezone();
-  const [anchorDate, setAnchorDate] = useState<string>('');
-  const [data, setData] = useState<AnalyticsDashboard | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
-  const [dismissedInsightId, setDismissedInsightId] = useState<string | null>(null);
 
   const load = useCallback(
-    async (nextPeriod: Period, anchor: string) => {
-      try {
-        setError(null);
-        const result = await apiRequest<AnalyticsDashboard>(
-          `/api/analytics/dashboard?period=${nextPeriod}&date=${anchor}`
-        );
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load analytics');
-      }
-    },
+    async (period: Period, anchor: string): Promise<AnalyticsDashboard> =>
+      apiRequest<AnalyticsDashboard>(`/api/analytics/dashboard?period=${period}&date=${anchor}`),
     []
   );
 
-  useEffect(() => {
-    // Seed the anchor once the settings row resolves, and only while the user
-    // has not navigated. `userToday` starts as the browser zone and settles to
-    // the stored value, so committing the first render's value would freeze the
-    // chart on the wrong day for anyone whose stored zone differs.
-    setAnchorDate((current) => current || userToday);
-  }, [userToday]);
+  const { period, anchorDate, data, error, isLoading, isStale, setPeriod, step, reset, retry } =
+    usePeriodUrlState<AnalyticsDashboard>(load, {
+      period: 'day',
+      today: userToday,
+      timezone,
+    });
 
-  useEffect(() => {
-    if (!anchorDate) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    void load(period, anchorDate);
-  }, [period, anchorDate, load, retryKey]);
+  const [dismissedInsightId, setDismissedInsightId] = useState<string | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
-  const navigate = (delta: number) => setAnchorDate(shiftAnchor(anchorDate, period, delta));
-
-  const habitChartData = useMemo(
-    () => (data?.chart1 ?? []).map((point) => ({ name: point.name, value: point.value })),
-    [data]
-  );
-
-  const tierChartData = useMemo(
-    () => (data?.chart2 ?? []).map((point) => ({ name: point.name, value: point.value })),
-    [data]
-  );
-
-  if (error) {
+  /*
+    Hard failure with nothing to show: the retry is the only useful thing on the
+    page, so it takes the whole screen rather than being buried under an empty
+    dashboard whose zeros look like data.
+  */
+  if (error && data === null) {
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
         <p role="alert" className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </p>
         <button
-          onClick={() => setRetryKey((k) => k + 1)}
+          onClick={retry}
           className="mt-4 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors duration-200 ease-out-expo hover:bg-primary/90 active:scale-[0.97]"
         >
           Retry
@@ -131,9 +145,10 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { hero, tiles } = data;
-  const today = userToday;
+  const { hero, tiles, habits, range } = data;
   const heroPct = hero.total != null ? Math.min(Math.max(hero.total, 0), 100) : 0;
+  const habitChart = habitChartCopy(period, range.label);
+  const tierChart = tierChartCopy(period, range.label);
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -146,215 +161,340 @@ export default function AnalyticsPage() {
             <span className="animated-gradient-text">Analytics</span>
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Your dashboard for <span className="font-semibold text-foreground">{data.range.label}</span>.
+            {period === 'day' ? 'Your day' : 'Your'} report for{' '}
+            <span className="font-semibold text-foreground">{range.label}</span>
+            {range.isCurrent ? ' (so far)' : ''}.
           </p>
         </div>
 
-        <PeriodControl
-          period={period}
-          onPeriodChange={setPeriod}
-          label={data.range.label}
-        onPrev={() => navigate(-1)}
-        onNext={() => navigate(1)}
-        onToday={() => setAnchorDate(today)}
-        anchorDate={anchorDate}
-        maxAnchor={userToday}
-        timezone={timezone}
-      />
+        <div className="flex flex-col items-end gap-2">
+          <PeriodControl
+            period={period}
+            onPeriodChange={setPeriod}
+            label={range.label}
+            onPrev={() => step(-1)}
+            onNext={() => step(1)}
+            onToday={reset}
+            anchorDate={anchorDate}
+            maxAnchor={userToday}
+            timezone={timezone}
+          />
+          {/*
+            Status region rather than a full-screen spinner. The previous numbers
+            stay readable underneath, but the page never claims they are current
+            while they are not — which is how a user ends up reading last week's
+            average as today's.
+          */}
+          <p
+            role="status"
+            aria-live="polite"
+            className="flex min-h-4 items-center gap-1.5 text-xs text-muted-foreground"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                Updating…
+              </>
+            ) : error ? (
+              <span className="text-destructive">{error} — showing the last loaded period.</span>
+            ) : isStale ? (
+              'Updating…'
+            ) : null}
+          </p>
+        </div>
       </div>
 
-      {/* Bento hero — mixed-size cards, one accent per metric */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <section className="glass-panel glow-primary relative overflow-hidden rounded-2xl p-6 shadow-soft lg:col-span-2">
-          <div
-            className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/10 blur-3xl"
-            aria-hidden="true"
-          />
+      <div
+        className={`transition-opacity duration-200 ${isStale ? 'opacity-60' : 'opacity-100'}`}
+        aria-busy={isLoading}
+      >
+        {/* ── Overview: the answer first ─────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <section className="glass-panel glow-primary relative overflow-hidden rounded-2xl p-6 shadow-soft lg:col-span-2">
+            <div
+              className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-primary/10 blur-3xl"
+              aria-hidden="true"
+            />
 
-          <p className="shimmer-active inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary">
-            <Target className="h-3.5 w-3.5" aria-hidden="true" />
-            {data.range.label}
-          </p>
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-primary">
+              <Target className="h-3.5 w-3.5" aria-hidden="true" />
+              {range.label}
+              {range.isCurrent ? ' so far' : ''}
+            </p>
 
-          <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row">
-            <div className="relative h-32 w-32 shrink-0 rounded-full">
-              <div
-                className="conic-gradient-ring absolute inset-0 rounded-full"
-                style={{ '--p': `${heroPct}%` } as CSSProperties}
-                aria-hidden="true"
+            <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row">
+              {/*
+                A ring that is empty when there is no score, rather than a ring at
+                zero. The two are different facts: "you scored nothing" and "no score
+                was recorded" are not the same sentence.
+              */}
+              <div className="relative h-32 w-32 shrink-0 rounded-full">
+                {hero.total != null ? (
+                  <div
+                    className="conic-gradient-ring absolute inset-0 rounded-full"
+                    style={{ '--p': `${heroPct}%` } as CSSProperties}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <div className="absolute inset-0 rounded-full border-4 border-dashed border-border" aria-hidden="true" />
+                )}
+                <div className="absolute inset-1.5 flex items-center justify-center rounded-full glass-panel shadow-soft">
+                  <span className="text-3xl font-black tabular-nums text-foreground">
+                    {hero.total != null ? Math.round(hero.total) : '—'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {hero.grade != null
+                    ? `Grade ${hero.grade}${period === 'day' ? '' : ' (average)'}`
+                    : 'No score recorded for this period'}
+                </p>
+
+                {/*
+                  Only compare like with like. A part-lived week against a whole one
+                  is not a comparison, so the service sends `null` and nothing is
+                  claimed — rather than a flattering delta.
+                */}
+                {data.comparison?.delta != null ? (
+                  <p className="flex items-center gap-1.5 text-sm">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                    <span className="tabular-nums text-foreground">
+                      {deltaText(data.comparison.delta)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      vs {data.comparison.start} – {data.comparison.end}
+                    </span>
+                  </p>
+                ) : data.comparison ? (
+                  <p className="text-sm text-muted-foreground">
+                    No score recorded in {data.comparison.start} – {data.comparison.end} to
+                    compare against.
+                  </p>
+                ) : null}
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: 'Core', value: hero.core, accent: 'text-sky-400' },
+                    { label: 'Growth', value: hero.growth, accent: 'text-violet-400' },
+                    { label: 'Bonus', value: hero.bonus, accent: 'text-amber-400' },
+                    {
+                      label: 'Habit reliability',
+                      value: hero.habitReliability,
+                      accent: 'text-emerald-400',
+                    },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-xl bg-card/70 p-3">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p
+                        className={`mt-1 text-2xl font-bold tabular-nums ${item.accent}`}
+                        title={
+                          item.value === null
+                            ? 'No measurement for this period'
+                            : undefined
+                        }
+                      >
+                        {item.value != null ? Math.round(item.value) : '—'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Tile
+                label="Routine"
+                value={tiles.routine != null ? `${Math.round(tiles.routine.completionRate)}%` : '—'}
+                hint={
+                  tiles.routine != null
+                    ? `${tiles.routine.completed} of ${tiles.routine.total} blocks`
+                    : 'Nothing tracked'
+                }
               />
-              <div className="absolute inset-1.5 flex items-center justify-center rounded-full glass-panel shadow-soft">
-                <span className="text-3xl font-black tabular-nums text-foreground">
-                  {hero.total != null ? Math.round(hero.total) : '—'}
-                </span>
-              </div>
-            </div>
+              <Tile
+                label="Habits"
+                value={percentText(habits.rate)}
+                hint={
+                  habits.scheduled > 0
+                    ? `${habits.completed} of ${habits.scheduled} due`
+                    : 'Nothing was due'
+                }
+              />
+              <Tile
+                label="Sleep"
+                value={
+                  tiles.sleepMinutes != null
+                    ? `${Math.round(tiles.sleepMinutes / 60)}h${period === 'day' ? '' : ' avg'}`
+                    : '—'
+                }
+                icon={<Moon className="h-3.5 w-3.5 text-sky-400" aria-hidden="true" />}
+                hint={
+                  data.sleep?.periodStats?.loggedDays != null
+                    ? `${data.sleep.periodStats.loggedDays} nights logged`
+                    : 'Not logged'
+                }
+              />
+              <Tile
+                label="Mood"
+                value={tiles.mood != null ? `${tiles.mood}/5` : '—'}
+                hint={tiles.mood != null ? 'Average of logged days' : 'Not logged'}
+              />
+            </dl>
+          </section>
 
-            <div className="flex-1 space-y-3">
-              <p className="text-sm text-muted-foreground">
-                {hero.grade != null
-                  ? `Grade ${hero.grade}${data.period === 'day' ? '' : ' (average)'}`
-                  : 'No score yet'}
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {[
-                  { label: 'Core', value: hero.core, accent: 'text-sky-400 bg-sky-400/10' },
-                  { label: 'Growth', value: hero.growth, accent: 'text-violet-400 bg-violet-400/10' },
-                  { label: 'Bonus', value: hero.bonus, accent: 'text-amber-400 bg-amber-400/10' },
-                  { label: 'Habit reliability', value: hero.habitReliability, accent: 'text-emerald-400 bg-emerald-400/10' },
-                ].map((item) => (
-                  <div key={item.label} className="rounded-xl bg-card/70 p-3">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      {item.label}
-                    </p>
-                    <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">
-                      {item.value !== null && item.value !== undefined ? Math.round(item.value) : '—'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-1">
+            <SideStat
+              icon={<CalendarRange className="h-4 w-4" />}
+              tag={range.label}
+              label="Average score"
+              value={hero.total != null ? String(Math.round(hero.total)) : '—'}
+              hint={hero.grade != null ? `Grade ${hero.grade}` : 'No scores yet'}
+              accentClass="from-emerald-500/80 to-emerald-500"
+              glowClass="text-emerald-400 bg-emerald-500/10"
+            />
+            <SideStat
+              icon={<Moon className="h-4 w-4" />}
+              tag="Sleep"
+              label="Average per night"
+              value={tiles.sleepMinutes != null ? formatDuration(tiles.sleepMinutes) : '—'}
+              hint={
+                data.sleep?.periodStats?.loggedDays != null
+                  ? `${data.sleep.periodStats.loggedDays} nights logged`
+                  : 'No sleep logged'
+              }
+              accentClass="from-amber-500/80 to-amber-500"
+              glowClass="text-amber-400 bg-amber-500/10"
+            />
+            {/*
+              Streaks are all-time by nature. Labelling the tag "All time" is the
+              whole fix: the previous version tagged the card with the selected
+              period, implying a period-scoped streak that does not exist.
+            */}
+            <SideStat
+              icon={<Flame className="h-4 w-4" />}
+              tag="All time"
+              label="Current streak"
+              value={`${data.streaks.current} day${data.streaks.current === 1 ? '' : 's'}`}
+              hint={
+                data.streaks.nextMilestone != null
+                  ? `Next milestone ${data.streaks.nextMilestone}d`
+                  : `Longest ${data.streaks.longest}`
+              }
+              accentClass="from-rose-500/80 to-rose-500"
+              glowClass="text-rose-400 bg-rose-500/10"
+            />
           </div>
+        </div>
 
-          <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-xl border border-border/60 bg-card/60 p-3">
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Routine</dt>
-              <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {tiles.routine != null ? `${Math.round(tiles.routine.completionRate)}%` : '—'}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border/60 bg-card/60 p-3">
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Habits</dt>
-              <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {tiles.habitCompletion != null ? `${Math.round(tiles.habitCompletion)}% completed` : '—'}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border/60 bg-card/60 p-3">
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Sleep</dt>
-              <dd className="mt-1 flex items-center gap-1 font-semibold tabular-nums text-foreground">
-                <Moon className="h-3.5 w-3.5 text-sky-400" aria-hidden="true" />
-                {tiles.sleepMinutes != null
-                  ? `${Math.round(tiles.sleepMinutes / 60)}h${data.period === 'day' ? '' : ' avg'}`
-                  : '—'}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-border/60 bg-card/60 p-3">
-              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Mood</dt>
-              <dd className="mt-1 font-semibold tabular-nums text-foreground">
-                {tiles.mood != null ? `${tiles.mood}/5` : '—'}
-              </dd>
-            </div>
-          </dl>
-        </section>
-
-        {/* Side rail — period stats, streak */}
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-1">
-          <SideStat
-            icon={<CalendarRange className="h-4 w-4" />}
-            tag={data.range.label}
-            label="Average score"
-            value={hero.total != null ? String(Math.round(hero.total)) : '—'}
-            hint={hero.grade != null ? `Grade ${hero.grade}` : 'No scores yet'}
-            accentClass="from-emerald-500/80 to-emerald-500"
-            glowClass="text-emerald-400 bg-emerald-500/10"
-          />
-          <SideStat
-            icon={<Moon className="h-4 w-4" />}
-            tag="Sleep"
-            label="Average per night"
-            value={tiles.sleepMinutes != null ? formatDuration(tiles.sleepMinutes) : '—'}
-            hint={
-              data.sleep?.periodStats?.loggedDays != null
-                ? `${data.sleep.periodStats.loggedDays} nights logged`
-                : 'No sleep logged'
+        {/* ── The two trends, side by side ───────────────────────────────── */}
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <PeriodChart
+            title={habitChart.title}
+            description={habitChart.description}
+            data={data.chart1}
+            unit={period === 'day' ? 'score' : 'percent'}
+            emptyMessage={
+              period === 'day'
+                ? 'No habits were scheduled on this day.'
+                : 'No habits were due in this period.'
             }
-            accentClass="from-amber-500/80 to-amber-500"
-            glowClass="text-amber-400 bg-amber-500/10"
+            gradient={{ id: 'habitGradient', from: '#10b981', to: '#059669' }}
           />
-          <SideStat
-            icon={<Flame className="h-4 w-4" />}
-            tag="Streak"
-            label="Current streak"
-            value={`${data.streaks.current} day${data.streaks.current === 1 ? '' : 's'}`}
-            hint={
-              data.streaks.nextMilestone != null
-                ? `Next milestone ${data.streaks.nextMilestone}d`
-                : `Longest ${data.streaks.longest}`
+          <PeriodChart
+            title={tierChart.title}
+            description={tierChart.description}
+            data={data.chart2}
+            unit={period === 'year' ? 'score' : 'percent'}
+            emptyMessage={
+              period === 'year' ? 'No days were scored in this year.' : 'Nothing was due in this period.'
             }
-            accentClass="from-rose-500/80 to-rose-500"
-            glowClass="text-rose-400 bg-rose-500/10"
+            gradient={{ id: 'tierGradient', from: '#8b5cf6', to: '#6d28d9' }}
           />
         </div>
-      </div>
 
-      {/* Charts */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="glass-panel spotlight-hover rounded-2xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground">{chartLabel(period)}</h2>
-          {habitChartData.length > 0 ? (
-            <div className="mt-4 h-72">
-              <BarChart
-                data={habitChartData}
-                xKey="name"
-                dataKey="value"
-                height={288}
-                ariaLabel={`${chartLabel(period)} chart`}
-                gradient={{ id: 'habitGradient', from: '#10b981', to: '#059669' }}
-              />
+        {/* ── Detail, on request ─────────────────────────────────────────── */}
+        <section className="mt-6">
+          <button
+            type="button"
+            onClick={() => setDetailOpen((open) => !open)}
+            aria-expanded={detailOpen}
+            className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-card/50 px-5 py-4 text-left transition-colors hover:bg-card/70"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+              Explore every domain
+              <span className="font-normal text-muted-foreground">
+                — habits, routine, wellbeing, focus, goals
+              </span>
+            </span>
+            <span className="text-sm font-medium text-primary">
+              {detailOpen ? 'Hide' : 'Show'}
+            </span>
+          </button>
+
+          {detailOpen && (
+            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <StreakPanel streaks={data.streaks} />
+              <TierMixBar tierMix={data.tierMix} />
+              <FocusSummaryCard focus={data.focus} periodLabel={range.label} />
+              <TimeAllocationCard allocation={data.timeAllocation} />
+              <RoutineDetailCard routine={data.routine} />
+              <TaskQuadrantCard tasks={data.tasks} />
+              <ProjectProgressList projects={data.projects} />
+              <MilestoneHitsCard milestones={data.milestones} title="Milestones" accent="emerald" />
+              <SleepSnapshotCard sleep={data.sleep} />
+              <NutritionHealthCard nutrition={data.nutrition} health={data.health} />
+              <JournalCard journal={data.journal} />
+              <AchievementsStrip achievements={data.achievements} />
             </div>
-          ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No habit activity in this period.
-            </p>
           )}
         </section>
 
-        <section className="glass-panel spotlight-hover rounded-2xl p-6 shadow-soft">
-          <h2 className="text-lg font-semibold text-foreground">{chart2Label(period)}</h2>
-          {tierChartData.length > 0 ? (
-            <div className="mt-4 h-72">
-              <BarChart
-                data={tierChartData}
-                xKey="name"
-                dataKey="value"
-                height={288}
-                ariaLabel={`${chart2Label(period)} chart`}
-                gradient={{ id: 'tierGradient', from: '#8b5cf6', to: '#6d28d9' }}
-              />
-            </div>
-          ) : (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No tier data in this period.
-            </p>
-          )}
-        </section>
-      </div>
-
-      {/* Widget grid — each tile renders its own empty state from real data */}
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <StreakPanel streaks={data.streaks} />
-        <TierMixBar tierMix={data.tierMix} />
-        <FocusSummaryCard focus={data.focus} periodLabel={data.range.label} />
-        <TimeAllocationCard allocation={data.timeAllocation} />
-        <RoutineDetailCard routine={data.routine} />
-        <TaskQuadrantCard tasks={data.tasks} />
-        <ProjectProgressList projects={data.projects} />
-        <MilestoneHitsCard milestones={data.milestones} title="Milestones" accent="emerald" />
-        <SleepSnapshotCard sleep={data.sleep} />
-        <NutritionHealthCard nutrition={data.nutrition} health={data.health} />
-        <JournalCard journal={data.journal} />
-        <AchievementsStrip achievements={data.achievements} />
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <MoodPulseCard moodPulse={data.moodPulse} />
-        <div>
-          <AICalloutCard
-            insight={data.aiInsight && data.aiInsight.id !== dismissedInsightId ? data.aiInsight : null}
-            onDismiss={(id) => setDismissedInsightId(id)}
-          />
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <MoodPulseCard moodPulse={data.moodPulse} />
+          {/*
+            Rendered only when a real insight exists. The cron that generates them
+            is still a stub, so the previous always-on empty state was a permanent
+            "your insights will appear here" card promising content the app cannot
+            produce — dead weight that read as a missing feature.
+          */}
+          {data.aiInsight && data.aiInsight.id !== dismissedInsightId ? (
+            <AICalloutCard
+              insight={data.aiInsight}
+              onDismiss={(id) => setDismissedInsightId(id)}
+            />
+          ) : null}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Tile({
+  label,
+  value,
+  hint,
+  icon,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+  icon?: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-3">
+      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-1 font-semibold tabular-nums text-foreground">
+        <span className="flex items-center gap-1">
+          {icon}
+          {value}
+        </span>
+      </dd>
+      <dd className="mt-0.5 text-[11px] text-muted-foreground">{hint}</dd>
     </div>
   );
 }

@@ -20,7 +20,7 @@ import { Button, Card, Dialog, Input, Select, Spinner } from '@/components/ui';
 import JournalCalendar from '@/components/journal/JournalCalendar';
 import JournalList from '@/components/journal/JournalList';
 import JournalEditor from '@/components/journal/JournalEditor';
-import JournalVersionHistory from '@/components/journal/JournalVersionHistory';
+import { Stagger } from '@/components/today/ui';import JournalVersionHistory from '@/components/journal/JournalVersionHistory';
 import { formatDate } from '@/lib/utils';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 
@@ -198,11 +198,30 @@ export default function JournalPage() {
     entry.title && entry.title.length > 0 ? entry.title : 'Untitled entry';
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold">
-            <BookOpen className="h-7 w-7 text-primary" />
+    <div className="container relative mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      {/*
+        ERROR.md G1/G2: "placement of blocks is not good and can be better", and
+        the page is "very boring and not mobile responsive".
+
+        The structure was already two columns at `lg` (a 320px sidebar beside the
+        entry list), so the problem was not the grid — it was that the header sat
+        outside it, the editor opened *above* the grid and pushed the whole page
+        down instead of taking the space it was using, and nothing moved. So: the
+        gradient mesh and `Stagger` entrance to match the other pages, and the
+        editor promoted into the main column so the sidebar (calendar, reflection
+        prompt) stays on screen while you write.
+      */}
+      <div
+        className="gradient-mesh-animated pointer-events-none absolute inset-0 -z-10 opacity-60"
+        aria-hidden="true"
+      />
+
+      <div className="relative">
+      <Stagger>
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            <BookOpen className="h-7 w-7 text-primary" aria-hidden="true" />
             Journal
           </h1>
           <p className="mt-2 text-muted-foreground">
@@ -215,12 +234,14 @@ export default function JournalPage() {
               setEditingId(null);
               setCreating(true);
             }}
+            className="justify-center"
           >
             <Plus className="mr-1.5 h-4 w-4" />
             New entry
           </Button>
         )}
       </div>
+      </Stagger>
 
       {error && (
         <p role="alert" className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -234,30 +255,12 @@ export default function JournalPage() {
         </p>
       )}
 
-      {(creating || editing) && (
-        <div className="mb-8">
-          <div className="mb-2 flex justify-end">
-            <Button variant="ghost" size="sm" onClick={closeEditor}>
-              <X className="mr-1.5 h-4 w-4" />
-              Close editor
-            </Button>
-          </div>
-          <JournalEditor
-            key={editing?.id ?? 'new'}
-            entry={editing ?? undefined}
-            availableTags={tags}
-            onSaved={handleSaved}
-            onCancel={closeEditor}
-          />
-        </div>
-      )}
-
       {!entries ? (
         <div className="flex justify-center py-16">
           <Spinner className="h-6 w-6" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[320px_1fr]">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_1fr] lg:gap-8">
           <div className="space-y-6">
             <Card className="h-fit p-5">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -403,7 +406,38 @@ export default function JournalPage() {
             </Card>
           </div>
 
-          <div>
+          <div className="min-w-0">
+            {/*
+              The editor lives here, in the main column, replacing the entry list
+              rather than sitting above the whole grid.
+
+              It used to render *before* the grid, full width. Three consequences:
+              the 320px sidebar (calendar, reflection prompt, tag filters) was
+              pushed off the bottom of the viewport the moment you clicked "New
+              entry", so the navigation you need while writing disappeared; the
+              page grew by the editor's full height and the entry list you were
+              editing had to be scrolled back to afterwards; and on `lg` the
+              editor spanned the sidebar column too, so a form intended for a
+              comfortable measure was stretched across the full 6xl.
+            */}
+            {(creating || editing) ? (
+              <>
+                <div className="mb-3 flex justify-end">
+                  <Button variant="ghost" size="sm" onClick={closeEditor}>
+                    <X className="mr-1.5 h-4 w-4" />
+                    Close editor
+                  </Button>
+                </div>
+                <JournalEditor
+                  key={editing?.id ?? 'new'}
+                  entry={editing ?? undefined}
+                  availableTags={tags}
+                  onSaved={handleSaved}
+                  onCancel={closeEditor}
+                />
+              </>
+            ) : (
+              <>
             <h2 className="mb-4 text-lg font-semibold text-foreground">
               Recent entries
               {filtered.length !== (entries?.length ?? 0) && (
@@ -465,9 +499,12 @@ export default function JournalPage() {
                 )}
               />
             )}
+              </>
+            )}
           </div>
         </div>
       )}
+      </div>
 
       <Dialog
         open={pendingDelete !== null}

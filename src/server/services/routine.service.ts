@@ -38,7 +38,69 @@ import { UserRepository } from '@/server/repositories/user.repository';
  * casting to it only worked by accident and broke the moment the query's
  * inferred payload changed.
  */
-type ProgressTemplate = Pick<RoutineTemplate, 'id' | 'dayType'> & { blocks: RoutineBlock[] };
+type ProgressTemplate = Pick<RoutineTemplate, 'id' | 'dayType' | 'name'> & {
+  blocks: RoutineBlock[];
+  /**
+   * The linked day-type preset. `findAllTemplates` selects it, and without it a
+   * per-preset comparison has nothing to label its rows with — every user-defined
+   * preset collapses to the `CUSTOM` enum, so the enum alone would render several
+   * identical "Custom" rows.
+   */
+  dayTypeDef?: { id: string; name: string; slug: string; color: string | null } | null;
+};
+
+/**
+ * A `RoutineLog`, reduced to the two facts attribution needs.
+ *
+ * Structural rather than a Prisma payload so both `findLogsByDate` and
+ * `findLogsByRange` can be passed in without either one having to satisfy the
+ * other's exact include list.
+ */
+type AttributableLog = { status: string; routineBlock: { templateId: string } };
+
+/**
+ * Group a date's routine logs by the template their blocks belong to.
+ *
+ * ## Why this exists
+ *
+ * `RoutineLog` is keyed by `routineBlockId` alone, so a log does not record *which
+ * schedule* it was ticked against. Changing a date's day type afterwards — a
+ * `RoutineException` pointing at a different template — makes the date resolve a
+ * *different* block set, and the earlier logs fall outside it.
+ *
+ * The failure this caused was silent, and it hid real work. With 4 blocks completed
+ * against "College Day" and an exception then pointing the day at "PLACEMENT", the
+ * resolved day held PLACEMENT's blocks, the join matched nothing, and progress
+ * reported **0 completed, 0%** for a day with four completions in the database.
+ * Meanwhile `DailyScore.routineCompletionRate` — which counts log rows and never
+ * joins to blocks — reported a confident **100%** for the same day. Neither number
+ * was wrong on its own terms; the contradiction is what exposed the broken join.
+ *
+ * ## The rule
+ *
+ * Attribution is by the template on the log's block, which is a fact about the log
+ * rather than a guess about which schedule was active. A caller pairs that with the
+ * block count of the matching template, so a day whose logs and resolved template
+ * disagree is still scored against something real instead of being zeroed.
+ *
+ * The honest limitation: when a day's logs span two templates the caller has to pick
+ * one, and that is a choice rather than a measurement. Making it exact means
+ * recording `templateId` on `RoutineLog` at write time — a schema change, not done
+ * here.
+ */
+export function attributeLogsByTemplate(
+  logs: readonly AttributableLog[]
+): Map<string, { templateId: string; total: number; completed: number }> {
+  const byTemplate = new Map<string, { templateId: string; total: number; completed: number }>();
+  for (const log of logs) {
+    const templateId = log.routineBlock.templateId;
+    const row = byTemplate.get(templateId) ?? { templateId, total: 0, completed: 0 };
+    row.total += 1;
+    if (log.status === 'COMPLETED') row.completed += 1;
+    byTemplate.set(templateId, row);
+  }
+  return byTemplate;
+}
 
 export class RoutineService {
   private routineRepository: RoutineRepository;
@@ -87,6 +149,18 @@ export class RoutineService {
         totalBlocks: 0,
         completedBlocks: 0,
         completionRate: 0,
+        offScheduleLogs: [],
+        dayTypeId: resolved.dayTypeId ?? null,
+        dayTypeName: null,
+        dayTypeSource: resolved.source,
+        templateIsActive: null,
+        score: {
+          totalScore: null,
+          routineCompletionRate: 0,
+          habitCompletionRate: null,
+          overallGrade: null,
+          calculationData: null,
+        },
       };
     }
 
@@ -104,21 +178,72 @@ export class RoutineService {
       notes: block.notes,
       color: block.color,
       icon: block.icon,
-      category: block.category
+category: block.category
         ? {
             id: block.category.id,
             name: block.category.name,
             color: block.category.color,
+            icon: block.category.icon,
           }
-        : null,
-      energyLevel: block.energyLevel,
+          : null,
+        categoryId: block.categoryId ?? null,
+        energyLevel: block.energyLevel,
       trackCompletion: block.trackCompletion,
       durationMinutes: calculateBlockDuration(block.startTime, block.endTime),
       isOvernight: isOvernightBlock(block.startTime, block.endTime),
       log: logMap.get(block.id) || null,
     }));
 
-    const completedBlocks = logs.filter((log) => log.status === 'COMPLETED').length;
+    /*
+     * Completion, attributed to the template the logs were written against.
+     *
+     * This counted EVERY log for the date over `blocks.length`, which is ONE
+     * template's block count. So a numerator drawn from one schedule was divided by
+     * a denominator from another, and it disagreed with `getRoutineProgress` - which
+     * matched logs to the resolved blocks and reported 0 - for the same day.
+     *
+     * `RoutineLog` stores only its `routineBlockId`, so changing the day's day type
+     * afterwards orphans those rows from the block set the date now resolves. With
+     * work completed under one schedule and the day switched to another, that
+     * reported 0 completions for a day the user had genuinely finished.
+     *
+     * See `attributeLogsByTemplate` for the rule.
+     */
+    const logsByTemplate = attributeLogsByTemplate(logs);
+    const offScheduleIds = [...logsByTemplate.keys()].filter((id) => id !== template.id);
+
+    const offScheduleLogs: NonNullable<DayRoutine['offScheduleLogs']> = [];
+    for (const templateId of offScheduleIds) {
+      const source = await this.routineRepository.findTemplateWithBlocks(templateId, userId);
+      if (!source) continue;
+      const counts = logsByTemplate.get(templateId);
+      for (const log of logs) {
+        if (log.routineBlock.templateId !== templateId || log.status !== 'COMPLETED') continue;
+        offScheduleLogs.push({
+          blockId: log.routineBlockId,
+          title: log.routineBlock.title,
+          templateId,
+          templateName: source.name,
+          completed: counts?.completed ?? 0,
+        });
+      }
+    }
+
+    // Scored against the schedule the work was done under when that differs from the
+    // one the date resolves to; otherwise against the resolved template, which is
+    // every ordinary day.
+    let scoredTotal = blocks.length;
+    let scoredCompleted = logsByTemplate.get(template.id)?.completed ?? 0;
+    if (offScheduleLogs.length > 0) {
+      const sourceTemplateId = offScheduleLogs[0]!.templateId;
+      const source = await this.routineRepository.findTemplateWithBlocks(sourceTemplateId, userId);
+      if (source && source.blocks.length > 0) {
+        scoredTotal = source.blocks.length;
+        scoredCompleted = logsByTemplate.get(sourceTemplateId)?.completed ?? 0;
+      }
+    }
+    const completedBlocks = Math.min(scoredCompleted, scoredTotal);
+    const attributedRate = scoredTotal > 0 ? Math.round((completedBlocks / scoredTotal) * 100) : 0;
 
     return {
       date: dateStr,
@@ -126,9 +251,22 @@ export class RoutineService {
       template,
       exception,
       blocks,
-      totalBlocks: blocks.length,
+      totalBlocks: scoredTotal,
       completedBlocks,
-      completionRate: blocks.length > 0 ? Math.round((completedBlocks / blocks.length) * 100) : 0,
+      completionRate: attributedRate,
+      offScheduleLogs,
+      dayTypeId: resolved.dayTypeId ?? template?.dayTypeId ?? null,
+      dayTypeName: template?.dayTypeDef?.name ?? null,
+      dayTypeSource: resolved.source,
+      templateIsActive: template?.isActive ?? null,
+      score: {
+        totalScore: null,
+        routineCompletionRate: attributedRate,
+        habitCompletionRate: null,
+        
+        overallGrade: null,
+        calculationData: null,
+      },
     };
   }
 
@@ -171,6 +309,14 @@ export class RoutineService {
         templatesByDayType.set(dayType, template);
       }
     }
+    // Fallback label for a template with no linked preset row.
+    const templatesByDayTypeName = new Map<DayType, string>();
+    for (const template of templates) {
+      if (template.dayTypeDef) continue;
+      if (!templatesByDayTypeName.has(template.dayType)) {
+        templatesByDayTypeName.set(template.dayType, template.name);
+      }
+    }
     const templatesById = new Map<string, ProgressTemplate>();
     for (const template of templates) {
       templatesById.set(template.id, template);
@@ -187,6 +333,28 @@ export class RoutineService {
     const statusByKey = new Map<string, string>();
     for (const log of logs) {
       statusByKey.set(`${log.date}::${log.routineBlockId}`, log.status);
+    }
+
+    /*
+     * Logs indexed by date AND by the template their block belongs to.
+     *
+     * `statusByKey` above can only answer for blocks in the template a date
+     * resolves to, which is exactly the blind spot this fixes. Built once for the
+     * whole range so the per-day lookup stays O(1) rather than rescanning every
+     * log for every date — a year is 365 dates.
+     */
+    const logsByDateAndTemplate = new Map<string, Map<string, { total: number; completed: number }>>();
+    for (const log of logs) {
+      const templateId = log.routineBlock.templateId;
+      let perTemplate = logsByDateAndTemplate.get(log.date);
+      if (!perTemplate) {
+        perTemplate = new Map();
+        logsByDateAndTemplate.set(log.date, perTemplate);
+      }
+      const row = perTemplate.get(templateId) ?? { total: 0, completed: 0 };
+      row.total += 1;
+      if (log.status === 'COMPLETED') row.completed += 1;
+      perTemplate.set(templateId, row);
     }
 
     const allDays = eachDayOfInterval({
@@ -208,10 +376,14 @@ export class RoutineService {
         return {
           date,
           dayType,
+          dayTypeName: dayType,
+          dayTypeColor: null,
           scheduled: false,
           total: 0,
           completed: 0,
           completionRate: 0,
+          // No template resolved, so no schedule switch could have been measured.
+          scheduleSwitched: false,
           blocks: [],
         };
       }
@@ -222,17 +394,56 @@ export class RoutineService {
         startTime: block.startTime,
         endTime: block.endTime,
         status: (statusByKey.get(`${date}::${block.id}`) ?? null) as RoutineLog['status'],
+        trackCompletion: block.trackCompletion,
       }));
 
-      const completed = blocks.filter((block) => block.status === 'COMPLETED').length;
+      /*
+       * Attributed, for the same reason the day view is — see
+       * `attributeLogsByTemplate`.
+       *
+       * `statusByKey` only holds logs whose block is in THIS template, so a log
+       * written against a schedule the date no longer resolves to is invisible to
+       * the `blocks.filter` below and the day silently reports zero completions.
+       *
+       * `logsByDateAndTemplate` is precomputed per date above so this stays a map
+       * lookup rather than a scan, and the off-schedule template is scored with its
+       * own block count so the rate stays a real fraction rather than a percentage
+       * of an unrelated schedule.
+       */
+      const perTemplate = logsByDateAndTemplate.get(date);
+      const attributed = perTemplate ? [...perTemplate.entries()] : [];
+      const attributedElsewhere = attributed.filter(([id]) => id !== template.id);
+      const candidates = attributedElsewhere.length > 0 ? attributedElsewhere : attributed;
+      const dominant = candidates.sort(
+        (a, b) => b[1].completed - a[1].completed || b[1].total - a[1].total
+      )[0];
+
+      let scoredTotal = blocks.length;
+      let scoredCompleted = blocks.filter((block) => block.status === 'COMPLETED').length;
+      let scheduleSwitched = false;
+
+      if (dominant && dominant[0] !== template.id) {
+        const source = templatesById.get(dominant[0]);
+        if (source && source.blocks.length > 0) {
+          scoredTotal = source.blocks.length;
+          scoredCompleted = Math.min(dominant[1].completed, scoredTotal);
+          scheduleSwitched = true;
+        }
+      }
 
       return {
         date,
         dayType,
+        // The preset's real name. `dayType` is the six-value enum and collapses every
+        // user-defined preset to CUSTOM, so a comparison grouped on it alone renders
+        // several identical "Custom" rows.
+        dayTypeName: template.dayTypeDef?.name ?? template.name,
+        dayTypeColor: template.dayTypeDef?.color ?? null,
         scheduled: blocks.length > 0,
-        total: blocks.length,
-        completed,
-        completionRate: blocks.length > 0 ? Math.round((completed / blocks.length) * 100) : 0,
+        total: scoredTotal,
+        completed: scoredCompleted,
+        completionRate: scoredTotal > 0 ? Math.round((scoredCompleted / scoredTotal) * 100) : 0,
+        scheduleSwitched,
         blocks,
       };
     });

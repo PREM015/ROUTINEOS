@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { ChallengeRepository } from '@/server/repositories/challenge.repository';
+import { challengeService } from '@/server/services/challenge.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -9,6 +10,9 @@ interface RouteContext {
 /**
  * POST /api/challenges/[id]/leave
  * Leave a challenge the authenticated user has joined.
+ *
+ * Not-a-member is a 404, unchanged — it refers to the caller's own membership
+ * row rather than to a conflicting state.
  */
 export async function POST(_request: NextRequest, context: RouteContext) {
   try {
@@ -22,20 +26,14 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid challenge id' }, { status: 400 });
     }
 
-    const repository = new ChallengeRepository();
-    const isMember = await repository.isMember(id, session.user.id);
-    if (!isMember) {
-      return NextResponse.json(
-        { error: 'You have not joined this challenge' },
-        { status: 404 }
-      );
-    }
-
-    const left = await repository.leave(id, session.user.id);
+    const left = await challengeService.leave(id, session.user.id);
 
     return NextResponse.json({ success: true, data: { left } });
   } catch (error) {
     console.error('Error leaving challenge:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'Failed to leave challenge' },
       { status: 500 }

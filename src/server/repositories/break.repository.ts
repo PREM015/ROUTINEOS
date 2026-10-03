@@ -1,4 +1,4 @@
-import type { Break, Prisma } from '@/generated/prisma';
+import type { Break, BreakType, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 
 /**
@@ -13,7 +13,16 @@ interface CreateBreakData {
   startedAt?: Date;
   endedAt?: Date;
   durationMinutes?: number;
-  breakType?: string;
+  /**
+   * The stored `BreakType` enum, not free text.
+   *
+   * The column changed from `String?` to an enum in the focus-lifecycle
+   * migration, so this is a closed union at the type level rather than a `string`
+   * the caller is trusted to have spelled correctly.
+   * `prisma/sql/focus-lifecycle.sql` maps any pre-existing unmapped value to
+   * CUSTOM before the ALTER runs, so the conversion cannot fail.
+   */
+  breakType?: BreakType | null;
   quality?: number;
   notes?: string;
 }
@@ -21,7 +30,7 @@ interface CreateBreakData {
 interface BreakQueryParams {
   from?: DateFilter;
   to?: DateFilter;
-  breakType?: string;
+  breakType?: BreakType;
   limit?: number;
   offset?: number;
 }

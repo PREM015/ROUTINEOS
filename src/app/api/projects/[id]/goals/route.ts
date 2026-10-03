@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { ProjectRepository } from '@/server/repositories/project.repository';
-import { GoalRepository } from '@/server/repositories/goal.repository';
-import type { Prisma } from '@/generated/prisma';
+import { GoalService } from '@/server/services/goal.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -29,15 +28,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid project id' }, { status: 400 });
     }
 
-    const userId = session.user.id;
-    const projectRepository = new ProjectRepository();
-
-    const project = await projectRepository.findById(userId, id);
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
-
-    const goals = await projectRepository.getGoals(userId, id);
+    const goals = await new GoalService().getProjectGoals(session.user.id, id);
 
     return NextResponse.json({
       success: true,
@@ -46,6 +37,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     console.error('Error fetching project goals:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to fetch project goals' }, { status: 500 });
   }
 }
@@ -53,6 +47,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 /**
  * POST /api/projects/[id]/goals
  * Attach an existing goal to the authenticated user's project
+ *
+ * The `project: { connect }` write is a goal update, so it happens inside
+ * `GoalService` rather than being handed to `GoalRepository` from here.
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
@@ -75,25 +72,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const userId = session.user.id;
-    const projectRepository = new ProjectRepository();
-    const goalRepository = new GoalRepository();
-
-    const project = await projectRepository.findById(userId, id);
-    if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
-
-    const goal = await goalRepository.findById(validated.data.goalId, userId);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-
-    await goalRepository.update(validated.data.goalId, userId, {
-      project: { connect: { id } },
-    } as Prisma.GoalUpdateInput);
-
-    const goals = await projectRepository.getGoals(userId, id);
+    const goals = await new GoalService().attachToProject(
+      session.user.id,
+      id,
+      validated.data.goalId
+    );
 
     return NextResponse.json({
       success: true,
@@ -103,6 +86,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   } catch (error) {
     console.error('Error attaching goal to project:', error);
 
+    if (error instanceof NotFoundError) {
+      // The message distinguishes a missing project from a missing goal.
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

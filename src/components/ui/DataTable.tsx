@@ -129,15 +129,30 @@ export function DataTable<T>({
               {columns.map((column) => {
                 const isSorted = activeSort?.key === column.key;
                 return (
-                  <th key={column.key} className={cn('px-4 py-3 font-medium text-gray-600', column.className)}>
+                  <th
+                    key={column.key}
+                    scope="col"
+                    // `aria-sort` belongs on the `columnheader`, not on the
+                    // button inside it. On the button it was dropped as an
+                    // unsupported attribute, so a screen reader announced a
+                    // sortable column with no indication of WHICH column was
+                    // sorted or in which direction.
+                    aria-sort={
+                      column.sortable && isSorted
+                        ? activeSort?.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : column.sortable
+                          ? 'none'
+                          : undefined
+                    }
+                    className={cn('px-4 py-3 font-medium text-gray-600', column.className)}
+                  >
                     {column.sortable ? (
                       <button
                         type="button"
                         onClick={() => toggleSort(column.key)}
                         aria-label={`Sort by ${column.key}`}
-                        aria-sort={
-                          isSorted ? (activeSort?.direction === 'asc' ? 'ascending' : 'descending') : undefined
-                        }
                         className="inline-flex items-center gap-1.5 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                       >
                         <span>{column.header}</span>

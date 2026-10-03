@@ -2,6 +2,11 @@ import { auth } from '@/lib/auth';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  AUTH_RATE_LIMITS,
+  checkAuthRateLimit,
+  rateLimited,
+} from '@/lib/security/auth-rate-limit';
 
 const verifyTwoFactorSchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Code must be a 6-digit code'),
@@ -13,6 +18,14 @@ const verifyTwoFactorSchema = z.object({
  * authenticated user.
  */
 export async function POST(request: NextRequest) {
+  // A 6-digit TOTP space is small (1e6) and `verifyTotpCode` accepts three
+  // adjacent windows, so an unthrottled endpoint would eventually be walked
+  // by a persistent attacker.
+  const limit = checkAuthRateLimit(request, 'twoFactor', AUTH_RATE_LIMITS.twoFactor);
+  if (!limit.ok) {
+    return rateLimited(limit.retryAfterSeconds);
+  }
+
   try {
     const session = await auth();
     if (!session?.user?.id) {

@@ -68,9 +68,110 @@ export class UserService {
   }
 
   /**
+   * A public profile, or `null` when it must not be shown.
+   *
+   * Two independent reasons a profile is withheld, and both are 404 rather than
+   * 403 — a stranger must not be able to tell "this profile is private" from
+   * "this user does not exist":
+   *
+   *  1. The account is deleted or inactive.
+   *  2. `UserSettings.profilePublic === false` and the viewer is not the owner.
+   *     This used to be enforced in the route and, before that, was not enforced
+   *     at all: the Settings > Privacy switch saved correctly but every profile
+   *     was still returned to anyone who asked, which is precisely the audience
+   *     the switch exists to exclude.
+   *
+   * The owner always sees their own profile, so a signed-in user is never
+   * surprised by a 404 on their own record.
+   *
+   * Only the fields listed here are returned. Deliberately excluded: `role`
+   * (privilege information), `email`, `timezone` and `preferredLanguage` (locale
+   * and approximate-location signals), and `onboardingCompletedAt` (an
+   * account-age signal useful for fingerprinting).
+   */
+  async getPublicProfile(
+    userId: string,
+    viewerId?: string
+  ): Promise<{
+    id: string;
+    // Nullable on the model. The client renders a fallback, and coercing it to
+    // `''` here would turn "no name set" into "name is the empty string".
+    name: string | null;
+    displayName: string | null;
+    bio: string | null;
+    avatarUrl: string | null;
+    createdAt: Date;
+  } | null> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || user.isDeleted || !user.isActive) {
+      return null;
+    }
+
+    const settings = await this.userRepository.getSettings(userId);
+    const isSelf = viewerId === userId;
+    if (settings && settings.profilePublic === false && !isSelf) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      displayName: user.displayName,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+    };
+  }
+
+  /**
+   * A public profile plus coarse aggregate stats, or `null` when withheld.
+   *
+   * The privacy check is the same `getPublicProfile` gate, deliberately.
+   * `GET /api/users/[id]` honoured `UserSettings.profilePublic` but this route
+   * did not — it re-read the user and returned the profile and stats to anyone
+   * who asked. The Settings > Privacy switch was therefore only half-enforced:
+   * a user who set their profile private was still fully visible through this
+   * endpoint, which leaked both the profile fields and the activity counts.
+   */
+  async getPublicProfileWithStats(
+    userId: string,
+    viewerId?: string
+  ): Promise<{
+    profile: {
+      id: string;
+      name: string | null;
+      displayName: string | null;
+      bio: string | null;
+      avatarUrl: string | null;
+      createdAt: Date;
+    };
+    stats: Awaited<ReturnType<UserService['getUserStats']>>;
+  } | null> {
+    const profile = await this.getPublicProfile(userId, viewerId);
+    if (!profile) {
+      return null;
+    }
+
+    return { profile, stats: await this.getUserStats(userId) };
+  }
+
+  /**
+   * Whether an email is already registered.
+   *
+   * Powers `POST /api/auth/check-email`. The route is a deliberate
+   * email-enumeration oracle — the signup form needs it — and is rate limited at
+   * the HTTP boundary for exactly that reason; the lookup itself is a
+   * pass-through, so it lives here with the rest of the user reads rather than
+   * as a repository call in a route.
+   */
+  async emailExists(email: string): Promise<boolean> {
+    return this.userRepository.emailExists(email);
+  }
+
+  /**
    * Resolve the user's timezone (falling back to the app default).
    */
-  async getTimezone(userId: string): Promise<string> {
+    async getTimezone(userId: string): Promise<string> {
     const settings = await this.userRepository.getSettings(userId);
     return settings?.timezone || DEFAULT_TZ;
   }
@@ -108,6 +209,32 @@ export class UserService {
       throw new Error('User not found');
     }
 
+    /*
+      The AUTHORITATIVE timezone write goes first, and it is allowed to fail.
+
+      `UserSettings.timezone` is what every date-bucketing read resolves. The
+      profile path previously wrote `User.timezone` first inside a try/catch that
+      only logged, then mirrored into settings - so a failure in the second write
+      left `/profile` displaying the NEW zone while the app kept bucketing by the
+      OLD one, with no user-visible sign. The log line is in a scheduler nobody
+      reads.
+
+      Reversed: if the settings write fails the whole update throws, so the user
+      is told the change did not happen. If the mirror write fails, nothing is
+      wrong, because nothing reads `User.timezone` for bucketing.
+    */
+    const newTimezone = typeof parsed.data.timezone === 'string' ? parsed.data.timezone : null;
+    if (newTimezone) {
+      const existing = await this.userRepository.getSettings(userId);
+      if (existing) {
+        await this.userRepository.updateSettings(userId, {
+          timezone: newTimezone,
+        } as Prisma.UserSettingsUpdateInput);
+      } else {
+        await this.userRepository.createSettings(userId, { timezone: newTimezone });
+      }
+    }
+
     const updated = await this.userRepository.update(userId, {
       name: parsed.data.name,
       displayName: parsed.data.displayName,
@@ -117,25 +244,15 @@ export class UserService {
       preferredLanguage: parsed.data.preferredLanguage,
     });
 
-    // Mirror into the authoritative settings column. Best-effort: a failure here
-    // must not roll back the profile fields the user actually asked to change,
-    // so it is logged rather than thrown.
-    if (typeof parsed.data.timezone === 'string' && parsed.data.timezone) {
+    if (newTimezone) {
+      // Mirror only. A failure here is cosmetic and must not undo a timezone
+      // change the app has already started honouring.
       try {
-        const existing = await this.userRepository.getSettings(userId);
-        if (existing) {
-          await this.userRepository.updateSettings(userId, {
-            timezone: parsed.data.timezone,
-          } as Prisma.UserSettingsUpdateInput);
-        } else {
-          await this.userRepository.createSettings(userId, {
-            timezone: parsed.data.timezone,
-          });
-        }
+        await this.userRepository.update(userId, { timezone: newTimezone });
       } catch (err) {
         console.error(
-          '[user.updateProfile] failed to sync UserSettings.timezone; ' +
-            'date bucketing will keep using the previous value:',
+          '[user.updateProfile] failed to mirror User.timezone; the authoritative ' +
+            'UserSettings.timezone is already correct:',
           err
         );
       }

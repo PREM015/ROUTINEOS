@@ -1,11 +1,13 @@
 import type { HabitTier, SleepLog } from '@/generated/prisma';
 import { addDays } from 'date-fns';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';
 import { GoalRepository } from '@/server/repositories/goal.repository';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
+import { loadPeriodHabits } from '@/server/analytics/period-habits';
+import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
 import {
   analyzeSleep,
   type SleepLogLike,
@@ -17,7 +19,6 @@ import type { DateRange } from '@/types/analytics';
  * Aggregated weekly summary with score, habit, sleep, goal, and streak data.
  */
 
-const habitRepository = new HabitRepository();
 const scoreRepository = new ScoreRepository();
 const sleepRepository = new SleepRepository();
 const goalRepository = new GoalRepository();
@@ -30,8 +31,10 @@ export interface WeeklyHabitPerformance {
   completed: number;
   missed: number;
   skipped: number;
+  /** Days the habit was actually due in the week. */
   scheduled: number;
-  completionRate: number;
+  /** `completed / scheduled`, or `null` when the habit was never due. */
+  completionRate: number | null;
 }
 
 export interface WeeklySummary {
@@ -48,7 +51,8 @@ export interface WeeklySummary {
   };
   habits: {
     activeCount: number;
-    averageCompletionRate: number;
+    /** `null` when nothing was due all week, so an empty week is not 0%. */
+    averageCompletionRate: number | null;
     mostCompleted: WeeklyHabitPerformance | null;
     mostMissed: WeeklyHabitPerformance | null;
     perHabit: WeeklyHabitPerformance[];
@@ -117,41 +121,82 @@ function weekRange(dateStr: string): DateRange {
 }
 
 /**
- * Net change in a goal's progress value during the week, derived from its
- * progress logs. Zero when there is no in-week progress history.
+ * Net change across every goal's progress during the week.
+ *
+ * One range query for the whole user, grouped by goal in memory. The previous
+ * version called `getProgressHistory(goalId, 100)` per goal — one round trip each,
+ * pulling up to 100 rows to keep the handful inside one week.
+ *
+ * `GoalProgress.date` is a `DateTime`, so each row is bucketed into a calendar day
+ * **in the user's timezone** before being compared to the week bounds. Passing
+ * strings here, or bucketing in UTC, moves a late-evening check-in into the
+ * neighbouring week for every user not on UTC — and the old per-goal version was
+ * careful about this, so a bulk rewrite that dropped it would be a regression
+ * dressed as an optimisation.
+ *
+ * A goal with no in-week rows contributes nothing, which is the same `0` the old
+ * per-goal version returned for it.
  */
-async function goalProgressDelta(goalId: string, range: DateRange): Promise<number> {
-  const history = await goalRepository.getProgressHistory(goalId, 100);
-  const inWeek = history
-    .filter(entry => {
-      const day = entry.date.toISOString().slice(0, 10);
-      return day >= range.startDate && day <= range.endDate;
-    })
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
+function groupProgressDelta(
+  rows: Array<{ goalId: string; date: Date; value: number }>,
+  range: DateRange,
+  timezone: string
+): Map<string, number> {
+  const first = new Map<string, number>();
+  const last = new Map<string, number>();
 
-  if (inWeek.length === 0) return 0;
-  const newest = inWeek[inWeek.length - 1];
-  const oldest = inWeek[0];
-  return (newest?.value ?? 0) - (oldest?.value ?? 0);
+  for (const row of rows) {
+    const day = formatInTimeZone(row.date, timezone, 'yyyy-MM-dd');
+    if (day < range.startDate || day > range.endDate) continue;
+    if (!first.has(row.goalId)) first.set(row.goalId, row.value);
+    last.set(row.goalId, row.value);
+  }
+
+  const deltas = new Map<string, number>();
+  for (const [goalId, firstValue] of first) {
+    deltas.set(goalId, (last.get(goalId) ?? firstValue) - firstValue);
+  }
+  return deltas;
 }
 
 /**
  * Weekly summary starting from a Monday (YYYY-MM-DD). Compares the week
  * against the immediately preceding week.
+ *
+ * `timezone` is required for every `Date`-typed column that has to be bucketed
+ * into a calendar day. `.toISOString().slice(0, 10)` is UTC, so a goal completed
+ * at 01:00 on the 1st in Auckland was counted in the previous month, and the same
+ * off-by-one hit every user east of UTC. It is a parameter rather than a default
+ * because a caller that forgot it would reintroduce exactly the bug this
+ * signature is here to prevent.
  */
-export async function weeklySummary(userId: string, monday: string): Promise<WeeklySummary> {
+export async function weeklySummary(
+  userId: string,
+  monday: string,
+  timezone: string,
+  today?: string,
+  preloadedHabits?: PeriodHabitModel
+): Promise<WeeklySummary> {
   const range = weekRange(monday);
   const previousStart = formatDate(addDays(range.startDate, -7));
   const previousEnd = formatDate(addDays(range.endDate, -7));
   const previousRange: DateRange = { startDate: previousStart, endDate: previousEnd };
+  const dayToday = today ?? range.endDate;
 
-  const [scores, previousScores, habits, sleepLogs, streak] = await Promise.all([
-    scoreRepository.findByRange(userId, range.startDate, range.endDate),
-    scoreRepository.findByRange(userId, previousStart, previousEnd),
-    habitRepository.findAll(userId, { status: 'ACTIVE' }),
-    sleepRepository.findByRange(userId, range.startDate, range.endDate),
-    streakRepository.findByUserId(userId),
-  ]);
+  const [scores, previousScores, habitModel, sleepLogs, streak, goals, progressRows] =
+    await Promise.all([
+      scoreRepository.findByRange(userId, range.startDate, range.endDate),
+      scoreRepository.findByRange(userId, previousStart, previousEnd),
+      preloadedHabits ?? loadPeriodHabits(userId, range.startDate, range.endDate, dayToday),
+      sleepRepository.findByRange(userId, range.startDate, range.endDate),
+      streakRepository.findByUserId(userId),
+      goalRepository.findAll(userId, {}),
+      goalRepository.findProgressByUserRange(
+        userId,
+        fromZonedTime(`${range.startDate}T00:00:00`, timezone),
+        fromZonedTime(`${range.endDate}T23:59:59.999`, timezone)
+      ),
+    ]);
 
   const scoredDays = scores.filter(score => score.totalScore !== null);
   const average = scoredDays.length > 0
@@ -175,41 +220,39 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
   const growthDays = scores.filter(score => score.growthScore !== null);
   const bonusDays = scores.filter(score => score.bonusScore !== null);
 
-  const perHabit = await Promise.all(
-    habits.map(async habit => {
-      const logs = await habitRepository.findLogsByRange(habit.id, userId, range.startDate, range.endDate);
-      const completed = logs.filter(log => log.status === 'COMPLETED').length;
-      const missed = logs.filter(log => log.status === 'MISSED').length;
-      const skipped = logs.filter(log => log.status === 'SKIPPED').length;
-      // Oversight/override-aware scheduling: SKIPPED and NOT_APPLICABLE days
-      // are intentional non-performances — they must not count against the
-      // scheduled (denominator) total.
-      const scheduled = logs.filter(
-        log => log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE'
-      ).length;
-      return {
-        habitId: habit.id,
-        habitName: habit.name,
-        tier: habit.tier,
-        completed,
-        missed,
-        skipped,
-        scheduled,
-        completionRate: scheduled > 0 ? round((completed / scheduled) * 100) : 0,
-      };
-    })
-  );
+  const perHabit: WeeklyHabitPerformance[] = habitModel.perHabit.map((habit) => ({
+    habitId: habit.habitId,
+    habitName: habit.habitName,
+    tier: habit.tier,
+    completed: habit.completed,
+    missed: habit.missed,
+    skipped: habit.skipped,
+    scheduled: habit.scheduled,
+    completionRate: habit.rate,
+  }));
 
   const withActivity = perHabit.filter(habit => habit.scheduled > 0);
   const mostCompleted = withActivity.length > 0
-    ? withActivity.reduce((best, current) => (current.completionRate > best.completionRate ? current : best))
+    ? withActivity.reduce((best, current) =>
+        (current.completionRate ?? -1) > (best.completionRate ?? -1) ? current : best
+      )
     : null;
   const mostMissed = perHabit.filter(habit => habit.missed > 0)
     .sort((a, b) => b.missed - a.missed || b.skipped - a.skipped)[0] ?? null;
 
-  const averageCompletionRate = withActivity.length > 0
-    ? round(mean(withActivity.map(habit => habit.completionRate)))
-    : 0;
+  /*
+    Pooled, not the mean of the per-habit rates.
+
+    The mean of rates gives a one-off habit the same vote as a twice-a-day one, so
+    a user with one rare habit and one daily habit had their weekly number decided
+    by whichever happened to deviate more. Pooling sums the numerators and the
+    denominators, which is the same arithmetic `DailyScore.habitCompletionRate`
+    uses, so the week total and the day tiles now agree by construction.
+  */
+  const completedTotal = habitModel.totals.completed;
+  const scheduledTotal = habitModel.totals.scheduled;
+  const averageCompletionRate =
+    scheduledTotal > 0 ? round((completedTotal / scheduledTotal) * 100) : null;
 
   const previousAverage = previousScores.length > 0
     ? mean(previousScores.filter(s => s.totalScore !== null).map(s => s.totalScore ?? 0))
@@ -224,19 +267,16 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
   ).length;
   const daysFeltRested = await sleepRepository.countRestedDays(userId, range.startDate, range.endDate);
 
-  const goals = await goalRepository.findAll(userId, { status: 'ACTIVE' });
-  const progressDeltas = await Promise.all(
-    goals.map(goal => goalProgressDelta(goal.id, range))
-  );
-    // A completed goal is no longer ACTIVE, so the first call cannot see it and a
-    // second query is genuinely required. Narrow it in the database rather than
-    // fetching every goal and filtering in JS; the date part still needs JS because
-    // it depends on completedAt.
-    const goalsCompleted = (await goalRepository.findAll(userId, { status: 'COMPLETED' })).filter(goal =>
-      goal.completedAt !== null &&
-      goal.completedAt.toISOString().slice(0, 10) >= range.startDate &&
-      goal.completedAt.toISOString().slice(0, 10) <= range.endDate
-    ).length;
+  const progressDeltas = groupProgressDelta(progressRows, range, timezone);
+
+  // A completed goal is no longer ACTIVE, so a status filter could not see it.
+  // The date part still needs the user's zone, because `completedAt` is an instant.
+  const goalsCompleted = goals.filter(goal =>
+    goal.status === 'COMPLETED' &&
+    goal.completedAt !== null &&
+    formatInTimeZone(goal.completedAt, timezone, 'yyyy-MM-dd') >= range.startDate &&
+    formatInTimeZone(goal.completedAt, timezone, 'yyyy-MM-dd') <= range.endDate
+  ).length;
 
   return {
     period: range,
@@ -251,7 +291,7 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
       averageBonus: bonusDays.length > 0 ? round(mean(bonusDays.map(s => s.bonusScore ?? 0))) : null,
     },
     habits: {
-      activeCount: habits.length,
+      activeCount: habitModel.perHabit.length,
       averageCompletionRate,
       mostCompleted,
       mostMissed,
@@ -271,7 +311,9 @@ export async function weeklySummary(userId: string, monday: string): Promise<Wee
     },
     goals: {
       completed: goalsCompleted,
-      progressDelta: round(progressDeltas.reduce((sum, delta) => sum + delta, 0)),
+      progressDelta: round(
+        goals.reduce((sum, goal) => sum + (progressDeltas.get(goal.id) ?? 0), 0)
+      ),
     },
     streaks: {
       current: streak?.currentStreak ?? 0,

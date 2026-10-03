@@ -1,22 +1,41 @@
 'use client';
 
+/**
+ * Habit Health - the dashboard's ONLY habits surface, and a 28-day pattern view.
+ *
+ * ## Why the checkbox is gone
+ *
+ * This card used to render a live tick button per habit. On a page whose entire
+ * premise is "no card here is a checkbox", that was a control with no owner: it
+ * wrote `HabitLog` rows from a page that is supposed to be read-only, and it was
+ * a second surface for the same action as `/today`'s checklist. Tapping a row now
+ * navigates to `/habits/[id]`. Logging lives on `/today` and `/habits`, full stop.
+ *
+ * ## Why "due today" is gone too
+ *
+ * Audit F6 / 17.3: this card counted `useApp().habits` filtered to `ACTIVE` -
+ * every active habit, with no day-type or frequency filtering - while the
+ * `HabitsMetric` beside it counted `GET /api/habits/today`, which applies
+ * eligibility. A habit restricted to another day type was in this card's
+ * denominator and neither of the others', so the same screen showed two
+ * different numbers both labelled "done today" and neither said which set it
+ * used. The `HabitsMetric` is deleted, and with it the second definition. There is
+ * no competing "due today" left to disagree with.
+ *
+ * ## Tabs
+ *
+ * Bucketed Healthy / At risk / Unhealthy with counts, so the card answers "which
+ * habits need me" rather than dumping every habit at every height. The 28-day
+ * window is stated in the header so it can never be mistaken for a same-day
+ * checklist.
+ */
+
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { CheckCircle2, Circle, Flame } from 'lucide-react';
-import { useApp } from '@/context/AppContext';
-import { getTodayString } from '@/lib/dates';
-import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { HEALTH_META } from '@/components/dashboard-ui/tokens';
+import { DOMAIN_ACCENT, accentRing } from '@/components/dashboard-ui/accent';
+import { Panel, PanelEmpty } from '@/components/dashboard-ui';
 import { cn } from '@/lib/utils';
-import { EASE } from '@/lib/motion';
-import { ScrollableCard } from '@/components/dashboard/ScrollableCard';
-
-interface Habit {
-  name: string;
-  completionRate: number;
-  streak: number;
-  tier: string;
-}
 
 interface HealthHabit {
   habitId: string;
@@ -36,249 +55,288 @@ interface HealthSummary {
   overallCompletionRate: number | null;
 }
 
-interface HabitHealthWidgetProps {
-  habits?: Habit[];
-}
+type Bucket = 'HEALTHY' | 'AT_RISK' | 'UNHEALTHY';
 
-const HEALTH_META: Record<
-  HealthHabit['health'],
-  { label: string; bar: string; text: string }
-> = {
-  HEALTHY: { label: 'Healthy', bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400' },
-  AT_RISK: { label: 'At risk', bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' },
-  UNHEALTHY: { label: 'Unhealthy', bar: 'bg-red-500', text: 'text-red-600 dark:text-red-400' },
-  NO_DATA: { label: 'No data', bar: 'bg-muted', text: 'text-muted-foreground' },
+const BUCKETS: { key: Bucket; label: string }[] = [
+  { key: 'HEALTHY', label: 'Healthy' },
+  { key: 'AT_RISK', label: 'At risk' },
+  { key: 'UNHEALTHY', label: 'Unhealthy' },
+];
+
+const BAR: Record<HealthHabit['health'], string> = {
+  HEALTHY: 'rgb(16 185 129)',
+  AT_RISK: 'rgb(245 158 11)',
+  UNHEALTHY: 'var(--destructive)',
+  NO_DATA: 'var(--muted)',
 };
 
-const TIER_DOT: Record<string, string> = {
-  GROWTH: 'bg-emerald-500',
-  BONUS: 'bg-sky-500',
-  LIFESTYLE: 'bg-amber-500',
-  FLEXIBLE: 'bg-violet-500',
-  EXPERIMENTAL: 'bg-pink-500',
-  OPTIONAL: 'bg-zinc-400',
-};
-
-/**
- * Habit Health card: live habit list with today's toggle plus a rolling
- * completion-rate / health summary pulled from GET /api/habits/health.
- * Falls back to a static `habits` prop (stories/tests) when provided.
- */
-export function HabitHealthWidget({ habits: habitsProp }: HabitHealthWidgetProps) {
-  const { habits, getLogForDate, logHabit, selectedDate } = useApp();
-  const { timezone } = useUserTimezone();
-  const today = selectedDate || getTodayString(timezone);
-  const reduce = useReducedMotion();
-
-  const [healthData, setHealthData] = useState<HealthHabit[]>([]);
-  const [healthSummary, setHealthSummary] = useState<HealthSummary | null>(null);
+export function HabitHealthWidget() {
+  const [rows, setRows] = useState<HealthHabit[]>([]);
+  const [summary, setSummary] = useState<HealthSummary | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bucket, setBucket] = useState<Bucket | null>(null);
+  /** `GET /api/habits/health` returns its own `window`; the chip must not lie. */
+  const [windowDays, setWindowDays] = useState<number | null>(null);
+  /** Bumped to re-run the fetch from the error state's retry. */
+  const [nonce, setNonce] = useState(0);
 
-  const fetchHealth = useCallback(async () => {
-    try {
-      const res = await fetch('/api/habits/health?days=28');
-      if (!res.ok) {
-        // Previously an empty `catch`, so a failed health request left the
-        // bars and percentages silently missing with no way to tell that apart
-        // from a habit that simply has no history.
-        setError(`Could not load habit health (status ${res.status})`);
-        return;
-      }
-      const result = await res.json();
-      if (result.success) {
-        setHealthData(result.data.habits as HealthHabit[]);
-        setHealthSummary(result.data.summary as HealthSummary);
-        setError(null);
-      } else {
-        setError(result.error ?? 'Could not load habit health');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load habit health');
-    }
+  const retry = useCallback(() => {
+    setLoading(true);
+    setNonce((n) => n + 1);
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    fetchHealth();
-  }, [fetchHealth]);
+    let cancelled = false;
 
-  const healthByHabit = useMemo(
-    () => new Map(healthData.map((h) => [h.habitId, h])),
-    [healthData]
+    /*
+      The one place a fetch can fail is the one that has to say so: a bare `catch`
+      left the bars and percentages silently missing, indistinguishable from a
+      habit that simply has no history. State is written inside the promise
+      callbacks, and every write is guarded by `cancelled` so a slow response
+      arriving after unmount cannot update a component that is gone.
+    */
+    fetch('/api/habits/health?days=28')
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`Could not load habit health (status ${res.status})`);
+        }
+        return (await res.json()) as {
+          success: boolean;
+          error?: string;
+          data?: { habits: HealthHabit[]; summary: HealthSummary; window?: { days: number } };
+        };
+      })
+      .then((result) => {
+        if (cancelled) return;
+        if (result.success && result.data) {
+          setRows(result.data.habits);
+          setSummary(result.data.summary);
+          setWindowDays(result.data.window?.days ?? null);
+          setError(null);
+        } else {
+          setError(result.error ?? 'Could not load habit health');
+        }
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'Could not load habit health');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nonce]);
+
+  /**
+   * Which bucket each habit falls in, from the health endpoint's own
+   * classification.
+   *
+   * A habit with no history is `NO_DATA`, which is not one of the three tabs. It
+   * is shown under whichever tab is active and greyed, so it never silently
+   * disappears - a habit missing from a "28-day pattern" list reads as "this
+   * habit does not exist", which is a different and much worse claim than "this
+   * habit has no history yet".
+   */
+  const grouped = useMemo(() => {
+    const map: Record<Bucket, HealthHabit[]> = { HEALTHY: [], AT_RISK: [], UNHEALTHY: [] };
+    for (const row of rows) {
+      if (row.health in map) map[row.health as Bucket].push(row);
+    }
+    for (const key of Object.keys(map) as Bucket[]) {
+      map[key].sort((a, b) => (a.completionRate ?? -1) - (b.completionRate ?? -1));
+    }
+    return map;
+  }, [rows]);
+
+  const counts = useMemo(() => {
+    const byHealth = (h: Bucket) =>
+      rows.filter((r) => r.health === h).length;
+    return {
+      HEALTHY: byHealth('HEALTHY'),
+      AT_RISK: byHealth('AT_RISK'),
+      UNHEALTHY: byHealth('UNHEALTHY'),
+    } as Record<Bucket, number>;
+  }, [rows]);
+
+  /** `null` bucket means "show everything", which is the default tab state. */
+  const visible = useMemo(() => {
+    if (bucket === null) return rows;
+    const exact = grouped[bucket];
+    const noData = rows.filter((r) => r.health === 'NO_DATA');
+    return [...exact, ...(bucket === 'HEALTHY' ? [] : noData)];
+  }, [bucket, grouped, rows]);
+
+  const action = (
+    <Link href="/habits" className="shrink-0 text-xs font-semibold text-primary hover:underline">
+      Manage
+    </Link>
   );
 
-  if (habitsProp) {
+  if (error && rows.length === 0) {
     return (
-      <ScrollableCard
-        title="Habit Health"
-        isEmpty={habitsProp.length === 0}
-        emptyMessage="No habits to display"
-        action={
-          <Link href="/habits" className="shrink-0 text-xs font-semibold text-primary hover:underline">
-            Manage
-          </Link>
-        }
-      >
-        {habitsProp.map((habit, idx) => (
-          <div key={idx} className="h-14 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5 py-1.5 flex flex-col justify-center">
-            <div className="flex justify-between items-center gap-2 mb-1">
-              <span className="truncate text-[13px] font-semibold text-foreground">{habit.name}</span>
-              <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
-                {habit.completionRate}% · 🔥 {habit.streak}
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-              <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${habit.completionRate}%` }} />
-            </div>
-          </div>
-        ))}
-      </ScrollableCard>
+      <Panel
+        title="Habit health"
+        subtitle="28-day pattern"
+        domain="habits"
+        error={error}
+        onRetry={retry}
+      />
     );
   }
 
-  const active = habits.filter((h) => h.status === 'ACTIVE');
-  const doneCount = active.filter((h) => getLogForDate(h.id, today)?.status === 'COMPLETED').length;
-
-  const toggle = (habitId: string) => {
-    const log = getLogForDate(habitId, today);
-    // `logHabit` applies the tick optimistically and rolls back on failure, so
-    // swallowing the rejection made a failed save look like the tick springing
-    // back on its own. The user was never told the write did not land.
-    logHabit(habitId, today, log?.status === 'COMPLETED' ? 'MISSED' : 'COMPLETED')
-      .catch((err: unknown) => {
-        setError(
-          err instanceof Error ? err.message : 'Could not save habit for today'
-        );
-      });
-  };
-
-  const summary = healthSummary;
-  const overallRate = summary?.overallCompletionRate;
-
-  const chips = summary
-    ? [
-        { label: 'Healthy', count: summary.healthyCount, className: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-        { label: 'At risk', count: summary.atRiskCount, className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-        { label: 'Unhealthy', count: summary.unhealthyCount, className: 'bg-red-500/10 text-red-600 dark:text-red-400' },
-      ]
-    : [];
-
-  if (error) {
+  if (loading) {
     return (
-      <ScrollableCard title="Habit Health">
-        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-        <button
-          type="button"
-          onClick={() => void fetchHealth()}
-          className="mt-2 text-sm font-semibold text-primary hover:underline"
-        >
-          Try again
-        </button>
-      </ScrollableCard>
+      <Panel
+        title="Habit health"
+        subtitle="28-day pattern"
+        domain="habits"
+        loading
+        loadingRows={4}
+        minHeightClass="min-h-[15rem]"
+      />
     );
   }
+
+  const overall = summary?.overallCompletionRate ?? null;
 
   return (
-    <ScrollableCard
-      title="Habit Health"
-      isEmpty={active.length === 0}
-      emptyMessage="No active habits yet."
-      action={
-        <Link href="/habits" className="shrink-0 text-xs font-semibold text-primary hover:underline">
-          Manage
-        </Link>
-      }
-      summary={
-        <div className="mb-3 shrink-0 space-y-1.5">
-          <p className="text-xs text-muted-foreground tabular-nums">
-            {doneCount} of {active.length} done today
-            {overallRate !== null && overallRate !== undefined
-              ? ` · ${overallRate}% completion`
-              : ''}
-          </p>
-          {chips.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {chips.map((chip) => (
-                <span
-                  key={chip.label}
-                  className={cn('rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums', chip.className)}
-                >
-                  {chip.count} {chip.label}
-                </span>
-              ))}
-              {summary?.totalActive != null && summary.totalActive > 0 && (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground tabular-nums">
-                  28-day view
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+    <Panel
+      title="Habit health"
+      // Stated in the header so it is never mistaken for a same-day checklist.
+      subtitle={`${windowDays ?? 28}-day pattern`}
+      domain="habits"
+      action={action}
+      minHeightClass="min-h-[15rem]"
+      isEmpty={rows.length === 0}
+      empty={
+        <PanelEmpty
+          title="No active habits yet"
+          description="Add a habit and this fills in with a 28-day view of how it is holding up."
+        />
       }
     >
-      {active.map((habit) => {
-        const done = getLogForDate(habit.id, today)?.status === 'COMPLETED';
-        const dot = TIER_DOT[habit.tier] ?? 'bg-sky-500';
-        const health = healthByHabit.get(habit.id);
-        const healthMeta = health ? HEALTH_META[health.health] : null;
-        return (
-          <motion.div
-            key={habit.id}
-            layout={reduce ? false : true}
-            transition={reduce ? undefined : { layout: { duration: 0.4, ease: EASE } }}
-            className="flex items-center gap-2.5 min-h-[56px] rounded-lg border border-border bg-muted/30 px-2.5 py-2 hover:bg-muted/50 transition-colors"
-          >
-            <motion.span
-              key={done ? 'done' : 'open'}
-              initial={reduce ? false : { scale: done ? 0.6 : 1 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-              className="shrink-0"
-            >
-              <button
-                onClick={() => toggle(habit.id)}
-                aria-label={done ? `Mark ${habit.name} not done` : `Mark ${habit.name} done`}
-                className={`transition-colors ${done ? 'text-emerald-500' : 'text-muted-foreground hover:text-emerald-500'}`}
-              >
-                {done ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
-              </button>
-            </motion.span>
-            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} title={`Tier: ${habit.tier}`} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className={cn('truncate text-[13px] font-semibold transition-colors duration-300', done ? 'text-muted-foreground line-through' : 'text-foreground')}>
-                  {habit.name}
-                </p>
-                {healthMeta && (
-                  <span className={cn('shrink-0 text-[11px] font-medium', healthMeta.text)}>
-                    {health?.completionRate !== null && health?.completionRate !== undefined
-                      ? `${health.completionRate}%`
-                      : healthMeta.label}
-                  </span>
-                )}
-              </div>
-              {health?.completionRate !== null && health?.completionRate !== undefined && (
-                <div className="mt-1 w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={`${healthMeta?.bar ?? 'bg-emerald-500'} h-1.5 rounded-full transition-all duration-500`}
-                    style={{ width: `${health.completionRate}%` }}
-                  />
-                </div>
-              )}
-            </div>
-            {(habit.streakCount ?? 0) > 0 && (
-              <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-semibold text-amber-500 tabular-nums">
-                <Flame className="h-3 w-3" aria-hidden="true" />
-                {habit.streakCount}
-              </span>
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-5">
+        {/* A failed refetch degrades to a banner; the bars below stay valid. */}
+        {error && (
+          <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {error} — showing the last successful load.
+          </p>
+        )}
+
+        {overall !== null && (
+          <p className="text-xs text-muted-foreground">
+            <span className="font-display text-base font-bold tabular-nums text-foreground">
+              {overall}%
+            </span>{' '}
+            average completion across {summary?.totalActive ?? rows.length} active habits
+          </p>
+        )}
+
+        {/* The three tabs, with counts. */}
+        <div role="tablist" aria-label="Habit health buckets" className="flex flex-wrap gap-1.5">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={bucket === null}
+            onClick={() => setBucket(null)}
+            className={cn(
+              'rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums transition-colors motion-reduce:transition-none',
+              bucket === null
+                ? 'bg-foreground text-background'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
             )}
-          </motion.div>
-        );
-      })}
-    </ScrollableCard>
+          >
+            All {rows.length}
+          </button>
+          {BUCKETS.map((b) => (
+            <button
+              key={b.key}
+              role="tab"
+              type="button"
+              aria-selected={bucket === b.key}
+              onClick={() => setBucket(b.key)}
+              disabled={counts[b.key] === 0}
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums transition-colors motion-reduce:transition-none',
+                bucket === b.key ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                counts[b.key] === 0 && 'opacity-40'
+              )}
+              style={
+                bucket === b.key
+                  ? {
+                      background: accentRing(HEALTH_META[b.key].tone ? statusHue(b.key) : 'var(--muted)', 16),
+                      boxShadow: `inset 0 0 0 1px ${accentRing(statusHue(b.key), 45)}`,
+                    }
+                  : undefined
+              }
+            >
+              {b.label} {counts[b.key]}
+            </button>
+          ))}
+        </div>
+
+        <ul className="flex-1 space-y-1.5">
+          {visible.map((habit) => {
+            const meta = HEALTH_META[habit.health];
+            return (
+              <li key={habit.habitId}>
+                {/*
+                  A link, not a button. Navigating to the habit is the dashboard's
+                  whole relationship with it: the page shows the pattern and the
+                  destination page handles the action.
+                */}
+                <Link
+                  href={`/habits/${habit.habitId}`}
+                  className="flex items-center gap-3 rounded-[14px] border border-border/60 px-3 py-2 transition-colors hover:border-primary/40 hover:bg-muted/40 motion-reduce:transition-none"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p
+                        className={cn(
+                          'truncate text-[13px] font-medium',
+                          habit.health === 'NO_DATA' ? 'text-muted-foreground' : 'text-foreground'
+                        )}
+                      >
+                        {habit.name}
+                      </p>
+                      <span className={cn('shrink-0 text-[11px] font-medium', meta.text)}>
+                        {habit.completionRate !== null
+                          ? `${habit.completionRate}%`
+                          : meta.label}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full transition-[width] duration-500 ease-out-expo motion-reduce:transition-none"
+                        style={{
+                          width: `${Math.max(0, Math.min(100, habit.completionRate ?? 0))}%`,
+                          background: BAR[habit.health],
+                        }}
+                      />
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </Panel>
   );
+}
+
+/** The hue behind a health tab's selected state. */
+function statusHue(bucket: Bucket): string {
+  const tone = HEALTH_META[bucket].tone;
+  if (tone === 'success') return DOMAIN_ACCENT.habits.hue;
+  if (tone === 'warning') return 'rgb(245 158 11)';
+  if (tone === 'danger') return 'var(--destructive)';
+  return 'var(--muted-foreground)';
 }
 
 export default HabitHealthWidget;

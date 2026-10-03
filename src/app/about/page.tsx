@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { pageMetadata } from '@/lib/seo';
 import {
   ArrowRight,
   Award,
@@ -13,11 +14,12 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
-export const metadata: Metadata = {
-  title: 'About — RoutineOS',
+export const metadata: Metadata = pageMetadata({
+  title: 'About',
   description:
     'RoutineOS is a calm workspace for habits, routines, goals, focus, and reflection — built on honest progress, privacy, and planned rest.',
-};
+  path: '/about',
+});
 
 const VALUES = [
   {

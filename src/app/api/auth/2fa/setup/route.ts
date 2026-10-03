@@ -1,38 +1,30 @@
 import { auth } from '@/lib/auth';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-
-const setupTwoFactorSchema = z.object({
-  secret: z.string().min(1).optional(),
-});
+import { checkAuthRateLimit, rateLimited } from '@/lib/security/auth-rate-limit';
 
 /**
  * POST /api/auth/2fa/setup
  * Generate (or return the existing) TOTP secret and provisioning URI for
  * the authenticated user.
+ *
+ * The secret is generated server-side. It previously accepted a
+ * caller-supplied `secret`, which let the client choose the shared secret.
  */
 export async function POST(request: NextRequest) {
+  const limit = checkAuthRateLimit(request, '2fa-setup', { max: 10, windowMs: 60_000 });
+  if (!limit.ok) {
+    return rateLimited(limit.retryAfterSeconds);
+  }
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json().catch(() => ({} as Record<string, unknown>));
-    const validated = setupTwoFactorSchema.safeParse(body);
-    if (!validated.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validated.error.flatten() },
-        { status: 400 }
-      );
-    }
-
     const authService = new AuthService();
-    const result = await authService.setupTwoFactor(
-      session.user.id,
-      validated.data.secret
-    );
+    const result = await authService.setupTwoFactor(session.user.id);
 
     return NextResponse.json({
       success: true,

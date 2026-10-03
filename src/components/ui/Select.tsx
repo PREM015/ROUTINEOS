@@ -53,3 +53,40 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   }
 );
 Select.displayName = 'Select';
+
+/**
+ * SelectValue — displays the currently selected value.
+ * 
+ * This is a separate component (following Radix UI pattern) that renders the
+ * currently selected option's label. It reads the value from the parent
+ * Select's context or can be controlled via the `value` prop.
+ */
+interface SelectValueProps {
+  /** The select value to display */
+  value?: string;
+  /** Placeholder when no value is selected */
+  placeholder?: string;
+  /** The options to resolve labels from values */
+  options: { value: string; label: string }[];
+  className?: string;
+}
+
+export const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
+  ({ value, placeholder, options, className, ...props }, ref) => {
+    const option = options.find(opt => opt.value === value);
+    const display = option?.label ?? placeholder ?? '';
+    
+    return (
+      <span
+        ref={ref}
+        className={`inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground ${className}`}
+        {...props}
+      >
+        {display}
+      </span>
+    );
+  }
+);
+SelectValue.displayName = 'SelectValue';
+
+export { SelectValue };

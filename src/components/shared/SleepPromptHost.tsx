@@ -16,25 +16,64 @@ import { useSleepSession } from '@/hooks/useSleepSession';
 export function SleepPromptHost() {
   const pathname = usePathname();
   const { state, busy, error, respond, loading } = useSleepSession();
-  const [removed, setRemoved] = useState(false);
 
   const prompt = state?.prompt ?? null;
 
-  // A dismissed/completed prompt should not reappear mid-session.
+  /*
+    A dismissed/completed prompt should not reappear mid-session.
+
+    Derived rather than an effect: `removed` only ever needs resetting when the
+    prompt goes away, and `promptKey` is the prompt's identity. Keeping the flag
+    keyed to WHAT it applies to — rather than a boolean that a new prompt has to
+    reset — means a new prompt can never inherit a previous dismissal.
+  */
+  const promptKey = prompt?.id ?? null;
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  const removed = dismissedKey !== null && dismissedKey === promptKey;
+
+  /*
+    The countdown, ticking.
+
+    `Date.now()` in the render body is an impure read — two renders of identical
+    state can disagree, so the value is not snapshot-able. It also only updated
+    when something else happened to re-render, so a prompt left open would sit on
+    a stale number.
+
+    A one-second interval reads the clock in an effect and publishes it as state,
+    which makes the countdown both pure to render and self-updating. Gated on a
+    live prompt so the timer does not run on every page of the app.
+  */
+  const promptScheduledFor = prompt?.scheduledFor ?? null;
+  const autoStartAfter = prompt?.autoStartAfterMinutes ?? null;
+
+  const [nowMs, setNowMs] = useState<number | null>(null);
   useEffect(() => {
-    if (!prompt) setRemoved(false);
-  }, [prompt]);
+    if (promptScheduledFor === null || autoStartAfter === null) return;
+    /*
+      Seeded on the interval rather than synchronously: calling `setNowMs` in the
+      effect body is a cascading render for a value that is under a second away
+      anyway.
+    */
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [promptScheduledFor, autoStartAfter]);
+
+  const deadlineMs =
+    promptScheduledFor !== null && autoStartAfter !== null
+      ? Date.parse(promptScheduledFor) + autoStartAfter * 60_000
+      : null;
+  const secondsLeft =
+    deadlineMs !== null && nowMs !== null
+      ? Math.max(0, Math.round((deadlineMs - nowMs) / 1000))
+      : null;
+  const countdown =
+    secondsLeft === null
+      ? ''
+      : `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`;
 
   if (loading || removed) return null;
   if (pathname === '/today') return null;
   if (!prompt) return null;
-
-  const deadlineMs =
-    Date.parse(prompt.scheduledFor) + prompt.autoStartAfterMinutes * 60_000;
-  const secondsLeft = Math.max(0, Math.round((deadlineMs - Date.now()) / 1000));
-  const countdown = `${Math.floor(secondsLeft / 60)}:${String(
-    secondsLeft % 60
-  ).padStart(2, '0')}`;
 
   return (
       // Stacked clear of `FloatingFocusBar`, which occupies the same corner:
@@ -74,7 +113,8 @@ export function SleepPromptHost() {
             className="flex-1"
             onClick={() => {
               void respond('NOT_YET');
-              setRemoved(true);
+              // Dismiss THIS prompt. Keyed, so a new prompt is not born dismissed.
+    setDismissedKey(promptKey);
             }}
             isLoading={busy === 'respond'}
           >

@@ -8,6 +8,7 @@ import { CalendarDays, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { shiftAnchor, type Period } from '@/lib/period-range';
+import { orNull, percentText } from '@/lib/analytics/format';
 import { PeriodControl } from '@/components/shared/PeriodControl';
 import DailyRecap from '@/components/recap/DailyRecap';
 import WeeklyRecap from '@/components/recap/WeeklyRecap';
@@ -226,11 +227,15 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
   }
 
   if (period === 'year' && report.year) {
+    // Months with no scored day are dropped rather than shown as 0, so a year the
+    // user has not finished does not read as a year of zeroes.
     const yearRows =
-      report.year.monthlyScoreTrend?.map((entry) => ({
-        label: monthName(entry.month),
-        value: entry.averageScore,
-      })) ?? [];
+      report.year.monthlyScoreTrend
+        ?.filter((entry) => entry.averageScore !== null)
+        .map((entry) => ({
+          label: monthName(entry.month),
+          value: entry.averageScore ?? 0,
+        })) ?? [];
     return (
       <div className="space-y-6">
         <YearlyRecap year={report.year} />
@@ -238,7 +243,7 @@ function RecapDashboard({ period, report }: { period: Period; report: RecapRepor
           title="Monthly average scores"
           rows={yearRows}
           accent="#6366f1"
-          headline={`${Math.round(report.year.averageScore)}`}
+          headline={orNull(report.year.averageScore) !== null ? `${Math.round(report.year.averageScore ?? 0)}` : '—'}
           className="w-full"
         />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -291,7 +296,7 @@ function ExtrasGrid({ extras }: { extras: RecapExtras }) {
 function dayShareStats(day: NonNullable<RecapReport['day']>): ShareStat[] {
   return [
     { label: 'Score', value: day.score.total != null ? String(Math.round(day.score.total)) : '—' },
-    { label: 'Habit reliability', value: `${Math.round(day.habitReliability)}%` },
+    { label: 'Habit reliability', value: percentText(day.habitReliability) },
     { label: 'Routine', value: day.routine.total > 0 ? `${Math.round(day.routine.completionRate)}%` : '—' },
     {
       label: 'Sleep',
@@ -303,7 +308,7 @@ function dayShareStats(day: NonNullable<RecapReport['day']>): ShareStat[] {
 function weekShareStats(week: NonNullable<RecapReport['week']>): ShareStat[] {
   return [
     { label: 'Average score', value: String(Math.round(week.scores.average)) },
-    { label: 'Habit completion', value: `${Math.round(week.habits.averageCompletionRate)}%` },
+    { label: 'Habit completion', value: percentText(week.habits.averageCompletionRate) },
     { label: 'Streak', value: `${week.streaks.current} day${week.streaks.current === 1 ? '' : 's'}` },
     {
       label: 'Avg sleep',
@@ -326,7 +331,7 @@ function monthShareStats(month: NonNullable<RecapReport['month']>): ShareStat[] 
 
 function yearShareStats(year: NonNullable<RecapReport['year']>): ShareStat[] {
   return [
-    { label: 'Average score', value: String(Math.round(year.averageScore)) },
+    { label: 'Average score', value: orNull(year.averageScore) !== null ? String(Math.round(year.averageScore as number)) : '—' },
     { label: 'Days scored', value: String(year.totalDaysScored) },
     { label: 'Habits completed', value: String(year.habits.totalCompleted) },
     { label: 'Longest streak', value: `${year.streaks.longest} days` },
@@ -354,7 +359,7 @@ function weekMilestones(week: NonNullable<RecapReport['week']>): Milestone[] {
   if (week.habits.mostCompleted) {
     milestones.push({
       label: 'Most consistent',
-      value: `${week.habits.mostCompleted.habitName} (${Math.round(week.habits.mostCompleted.completionRate)}%)`,
+      value: `${week.habits.mostCompleted.habitName} (${percentText(week.habits.mostCompleted.completionRate)})`,
       tone: 'habit',
     });
   }
@@ -519,9 +524,11 @@ function Highlights({ period, report }: { period: Period; report: RecapReport })
 
   if (period === 'month' && month) {
     const best = month.scores.bestDay;
+    // `null` is not sortable against a number, so habits that were never due are
+    // excluded here rather than being pushed to the bottom as if they scored 0.
     const reliable = month.habits.perHabit
       .filter((habit) => habit.weeklyRates.some((rate) => rate !== null))
-      .sort((a, b) => b.completionRate - a.completionRate)[0];
+      .sort((a, b) => (b.completionRate ?? -1) - (a.completionRate ?? -1))[0];
     return (
       <div className="glass-panel shadow-soft rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground">Month at a glance</h2>
@@ -533,7 +540,7 @@ function Highlights({ period, report }: { period: Period; report: RecapReport })
                 ? `Best day: ${format(parseISO(best.date), 'MMM d')} (${Math.round(best.score)})`
                 : null,
               reliable
-                ? `Most reliable: ${reliable.habitName} (${Math.round(reliable.completionRate)}%)`
+                ? `Most reliable: ${reliable.habitName} (${percentText(reliable.completionRate)})`
                 : null,
               month.journal.entryCount > 0
                 ? `${month.journal.entryCount} journal entries`

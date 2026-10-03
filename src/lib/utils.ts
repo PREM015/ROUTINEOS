@@ -64,3 +64,64 @@ export function getPercentageColor(percentage: number): string {
   if (percentage >= 30) return 'text-orange-600';
   return 'text-red-600';
 }
+
+// ============================================================================
+// User-chosen accent colours
+// ============================================================================
+
+/**
+ * Style for a chip or badge tinted by a colour the *user* picked (a tag, an
+ * achievement rarity, a habit colour, a focus mode).
+ *
+ * The recurring bug this exists to prevent: a user-chosen hex is a **mid-tone**
+ * colour chosen to read as a swatch, and the failure is always the same — it
+ * gets used directly as a `color` on text, where it fails WCAG AA on a light
+ * background while looking fine on a dark one. Concretely, against a white card:
+ *
+ *   `#22c55e` 2.3:1    `#3b82f6` 3.7:1
+ *   `#f59e0b` 2.2:1    `#8b5cf6` 4.2:1
+ *
+ * Mixing the hue toward `var(--foreground)` fixes it without a second
+ * hand-tuned palette: `--foreground` is near-black in light mode (so the result
+ * is a *darker* hue) and near-white in dark mode (so it is a *lighter* hue), and
+ * one declaration is legible in both. The background mixes toward `--card` for
+ * the same reason.
+ *
+ * Do **not** append an `1a`-style alpha to a user hex to get a tint — that
+ * suffix is only defined against the light background it was tuned on, and
+ * produces a near-invisible chip in dark mode.
+ */
+export function accentChipStyle(accent: string): {
+  backgroundColor: string;
+  color: string;
+} {
+  return {
+    backgroundColor: `color-mix(in oklab, ${accent} 16%, var(--card))`,
+    color: `color-mix(in oklab, ${accent} 72%, var(--foreground))`,
+  };
+}
+
+/**
+ * A user accent as a border, ring or track — anywhere no text contrast is
+ * involved, so the raw hue is kept.
+ */
+export function accentTint(accent: string): string {
+  return `color-mix(in oklab, ${accent} 45%, transparent)`;
+}
+
+/**
+ * A solid fill from a user accent, dark enough that **white text on it clears
+ * WCAG AA** (4.5:1).
+ *
+ * For buttons and tabs, where the label sits on the colour rather than beside
+ * it. Using the raw hue here is what made the Focus page's active tab
+ * unreadable: `text-white` on `#22c55e` is 2.2:1 and on `#f59e0b` is 2.1:1.
+ * Pulling 30% toward near-black lifts every mid-tone to roughly 5:1 or better
+ * while keeping the hue recognisable.
+ *
+ * Deliberately theme-independent: a filled control should look the same in both
+ * themes, so it is mixed toward a literal `#0a0a0a` rather than a token.
+ */
+export function accentFill(accent: string): string {
+  return `color-mix(in oklab, ${accent} 70%, #0a0a0a)`;
+}

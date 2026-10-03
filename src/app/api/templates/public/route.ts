@@ -1,9 +1,12 @@
-import { TemplateRepository } from '@/server/repositories/template.repository';
+import { templateService } from '@/server/services/template.service';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Public Templates Route
  * GET /api/templates/public – list public templates (no auth required)
+ *
+ * The limit/offset bounds are validated here rather than in the service because
+ * they describe the request, not the domain; the service takes them as given.
  */
 
 /**
@@ -26,8 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'offset must be a non-negative integer' }, { status: 400 });
     }
 
-    const templateRepository = new TemplateRepository();
-    const templates = await templateRepository.listPublic(limit, offset);
+    const templates = await templateService.listPublic(limit, offset);
 
     return NextResponse.json({
       success: true,

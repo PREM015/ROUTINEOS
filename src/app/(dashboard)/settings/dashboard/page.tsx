@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import {
   DASHBOARD_WIDGETS,
   DASHBOARD_WIDGETS_KEY,
+  emitPreferencesChanged,
   type DashboardWidgetPref,
 } from '@/components/dashboard/DashboardWidgets';
 
@@ -67,6 +68,13 @@ function persist(widgets: DashboardWidgetPref[]): void {
     // Storage unavailable (private mode); the in-memory state still applies for
     // this page view.
   }
+  /*
+    Tell the gates mounted on `/dashboard`.
+    `localStorage.setItem` fires the `storage` event in OTHER tabs only, so
+    without this signal a toggle changed nothing on a dashboard already open
+    behind this page - while the copy below claims "Changes apply immediately."
+  */
+  emitPreferencesChanged();
 }
 
 export default function DashboardSettingsPage() {

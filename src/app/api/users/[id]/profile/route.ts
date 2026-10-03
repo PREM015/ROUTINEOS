@@ -1,5 +1,5 @@
-import { UserRepository } from '@/server/repositories/user.repository';
-import { UserService } from '@/server/services/user.service';
+import { userService } from '@/server/services/user.service';
+import { auth } from '@/lib/auth';
 import { RateLimiter } from '@/lib/middleware/rate-limit';
 import { RateLimitError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,14 +10,17 @@ interface RouteContext {
 
 /**
  * Public profiles are intentionally unauthenticated — the leaderboard and the
- * profile page both read other users. That makes this route an enumeration
- * oracle unless it is constrained, so it is rate-limited per client IP.
+ * profile page both read other users. That makes this route an enumeration oracle
+ * unless it is constrained, so it is rate-limited per client IP.
  *
- * Deliberately NOT exposed here: `role` (privilege information),
- * `preferredLanguage` and `timezone` (locale / approximate-location signals),
- * `onboardingCompletedAt` (an account-age signal useful for fingerprinting) and
- * `email`. The signed-in user's own copy of these comes from
- * `/api/user/profile`, which is authenticated.
+ * Which fields are exposed, and the `profilePublic` privacy switch, are enforced
+ * in `UserService.getPublicProfileWithStats`. This route previously re-read the
+ * user directly and skipped that check entirely, so a profile the owner had set
+ * private was still served here in full, along with their activity counts —
+ * while `GET /api/users/[id]`, serving the same data, correctly returned 404.
+ *
+ * The rate limiter stays in the route: it is keyed on the request's client IP,
+ * which only exists at the HTTP boundary.
  */
 const publicProfileLimiter = new RateLimiter({
   max: 30,
@@ -38,27 +41,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
     }
 
-    const user = await new UserRepository().findById(id);
-    if (!user || user.isDeleted || !user.isActive) {
+    const viewerId = (await auth())?.user?.id;
+
+    const data = await userService.getPublicProfileWithStats(id, viewerId);
+    if (!data) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const stats = await new UserService().getUserStats(id);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        profile: {
-          id: user.id,
-          name: user.name,
-          displayName: user.displayName,
-          bio: user.bio,
-          avatarUrl: user.avatarUrl,
-          createdAt: user.createdAt,
-        },
-        stats,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     if (error instanceof RateLimitError) {
       return NextResponse.json({ error: error.message }, { status: 429 });

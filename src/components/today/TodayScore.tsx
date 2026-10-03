@@ -1,126 +1,149 @@
 'use client';
 
-import { useCallback, useEffect, useState, type CSSProperties } from 'react';
-import { Card } from '@/components/ui/Card';
+import { useCallback, useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/Button';
-import { Progress } from '@/components/ui/Progress';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { SCORE_GRADES, type ScoreGrade } from '@/types/score';
+import { GlassPanel, PanelHeader, PanelSkeleton, Tag } from '@/components/today/ui';
+  import { DailyScoreBreakdown, type DailyScoreView } from '@/components/today/ScoreBreakdown';
+  import { ScoreTrend } from '@/components/today/ScoreTrend';
+import { Trophy } from 'lucide-react';
 import { apiRequest, ApiError } from '@/lib/api-client';
-import { useCountUp } from '@/components/motion/useCountUp';
-import { Mount } from '@/components/motion/Mount';
+import { onTodayDataChanged } from '@/lib/today-sync';
+import { formatDisplayDate } from '@/lib/dates';
+import type { ScoreGrade } from '@/types/score';
 
 interface TodayScoreProps {
   date: string;
 }
 
+const EMPTY: DailyScoreView = {
+  totalScore: null,
+  overallGrade: null,
+  coreScore: null,
+  growthScore: null,
+  bonusScore: null,
+  habitCompletionRate: null,
+  routineCompletionRate: null,
+  sleepScore: null,
+};
+
 export function TodayScore({ date }: TodayScoreProps) {
-  const [score, setScore] = useState<number | null>(null);
-  const [grade, setGrade] = useState<ScoreGrade | null>(null);
+  const [data, setData] = useState<DailyScoreView>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const display = useCountUp(score || 0, 1);
 
-  const fetchScore = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // `apiRequest` unwraps `{ success, data }`. This route used to return the
-      // bare score row, so the `if (data.success)` guard below never passed and
-      // the card permanently rendered 0 / Grade F.
-      const data = await apiRequest<{ totalScore: number; overallGrade: ScoreGrade }>(
-        `/api/score/${date}`
-      );
-      setScore(data.totalScore);
-      setGrade(data.overallGrade);
-    } catch (err) {
-      // Previously `catch { setScore(0) }`, which reported a failed request to
-      // the user as a genuinely terrible day. An unavailable score now says so.
-      setScore(null);
-      setGrade(null);
-      setError(err instanceof ApiError ? err.message : "Couldn't load today's score");
-    } finally {
-      setLoading(false);
-    }
-  }, [date]);
+  const fetchScore = useCallback(
+    async (options: { background?: boolean } = {}) => {
+      /**
+       * Same `background` rule as the habit card: a refetch triggered by a write
+       * elsewhere on the page must swap the data **in place**. Showing the
+       * skeleton would tear down and rebuild the whole card on every habit
+       * tick, and make the number the user just changed flicker away and back.
+       */
+      if (!options.background) setLoading(true);
+      setError(null);
+      try {
+        // `apiRequest` unwraps `{ success, data }`.
+        const res = await apiRequest<DailyScoreView>(`/api/score/${date}`);
+        setData({
+          totalScore: res.totalScore ?? null,
+          overallGrade: (res.overallGrade as ScoreGrade | undefined) ?? null,
+          coreScore: res.coreScore ?? null,
+          growthScore: res.growthScore ?? null,
+          bonusScore: res.bonusScore ?? null,
+          habitCompletionRate: res.habitCompletionRate ?? null,
+          routineCompletionRate: res.routineCompletionRate ?? null,
+          sleepScore: res.sleepScore ?? null,
+        });
+      } catch (err) {
+        // Previously `catch { setScore(0) }`, which reported a failed request to
+        // the user as a genuinely terrible day. An unavailable score now says so.
+        if (!options.background) setData(EMPTY);
+        setError(err instanceof ApiError ? err.message : "Couldn't load today's score");
+      } finally {
+        if (!options.background) setLoading(false);
+      }
+    },
+    [date]
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- mount data fetch
-    fetchScore();
+    void fetchScore();
   }, [fetchScore]);
 
+  // A habit tick, a routine-block log or a sleep write all change this row
+  // server-side.
+  useEffect(
+    () => onTodayDataChanged(() => void fetchScore({ background: true })),
+    [fetchScore]
+  );
+
   if (loading) {
-    return (
-      <Card className="p-6" aria-busy="true" aria-label="Loading today's score">
-        <Skeleton shine className="mb-4 h-6 w-1/3" />
-        <div className="flex gap-6">
-          <Skeleton className="h-24 w-40 max-w-full" />
-          <Skeleton className="h-24 flex-1" />
-        </div>
-      </Card>
-    );
+    return <PanelSkeleton rows={6} className="min-h-[16rem]" />;
   }
-
-  if (error) {
-    return (
-      <Card className="p-6" role="alert">
-        <h3 className="text-lg font-semibold">Today&apos;s Score</h3>
-        <p className="mt-2 text-sm text-destructive">{error}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4"
-          onClick={() => void fetchScore()}
-        >
-          Try again
-        </Button>
-      </Card>
-    );
-  }
-
-  const scoreValue = score || 0;
-  const gradeInfo = grade ? SCORE_GRADES[grade] : SCORE_GRADES['F'];
 
   return (
-    <Mount>
-      <Card className="glow-primary p-6">
-        <h3 className="text-lg font-semibold mb-4">Today&apos;s Score</h3>
+    <GlassPanel accent="score" className="h-full">
+      <PanelHeader
+        title="Score"
+        icon={<Trophy className="h-4 w-4 text-accent-score" aria-hidden="true" />}
+        action={
+          error ? (
+            <Tag tone="danger">Unavailable</Tag>
+          ) : (
+            <span className="text-xs capitalize text-muted-foreground">
+              {formatDisplayDate(date)}
+            </span>
+          )
+        }
+      />
 
-        <div className="flex items-center gap-6">
-          <div className="flex flex-col items-center gap-3">
-            <div className="relative h-28 w-28 rounded-full">
-              <div
-                className="conic-gradient-ring absolute inset-0 rounded-full"
-                style={{ '--p': `${scoreValue}%` } as CSSProperties}
-                aria-hidden="true"
-              />
-              <div className="absolute inset-1.5 flex items-center justify-center rounded-full glass-panel shadow-soft">
-                <span
-                  className="text-3xl font-bold tabular-nums transition-[color] duration-500"
-                  style={{ color: gradeInfo.color }}
-                >
-                  {Math.round(display)}
-                </span>
-              </div>
-            </div>
-            <div
-              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-[background-color,color] duration-500"
-              style={{
-                backgroundColor: `${gradeInfo.color}20`,
-                color: gradeInfo.color,
-              }}
+      <div className="px-5 pb-5">
+        {error ? (
+          <div className="flex flex-col">
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 self-start"
+              onClick={() => void fetchScore()}
             >
-              <span>{gradeInfo.label}</span>
-              <span>Grade</span>
-            </div>
+              Try again
+            </Button>
           </div>
+        ) : data.totalScore === null ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+            {/*
+              A static element, deliberately NOT a `Skeleton`. `Skeleton`
+              defaults to `animate-pulse`, so using one here meant an infinite
+              shimmer sat where the score goes — all day, for anyone who had
+              logged nothing.
+            */}
+            <Trophy className="h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+            <p className="text-sm font-medium text-foreground">No score yet for today</p>
+            <p className="max-w-[22rem] text-xs text-muted-foreground">
+              Tick a habit, complete a routine block, or log some sleep and this fills in
+              straight away.
+            </p>
+          </div>
+        ) : (
+          <>
+            <DailyScoreBreakdown data={data} />
+            {/*
+              A seven-day trend, inside this card rather than beside it.
 
-          <div className="flex-1">
-            <Progress value={scoreValue} className="h-4 mb-2" />
-            <p className="text-sm text-muted-foreground">{gradeInfo.description}</p>
-          </div>
-        </div>
-      </Card>
-    </Mount>
+              Adds a question the page previously could not answer — "am I
+              improving?" — without adding a ninth card. Renders nothing until
+              there are at least three scored days, so a new user sees exactly the
+              card they saw before.
+            */}
+            <ScoreTrend date={date} />
+          </>
+        )}
+      </div>
+    </GlassPanel>
   );
 }

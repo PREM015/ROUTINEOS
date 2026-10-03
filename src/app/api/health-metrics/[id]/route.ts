@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
-import { HealthMetricRepository } from '@/server/repositories/health-metric.repository';
-import { updateHealthMetricSchema } from '@/schemas/health-metric.schema';
+import { healthMetricService } from '@/server/services/health-metric.service';
 import { NotFoundError } from '@/lib/errors/app-error';
+import { updateHealthMetricSchema } from '@/schemas/health-metric.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -27,16 +27,14 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const healthMetricRepository = new HealthMetricRepository();
-    const metric = await healthMetricRepository.findById(session.user.id, paramId);
-
-    if (!metric) {
-      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
-    }
+    const metric = await healthMetricService.getForUser(session.user.id, paramId);
 
     return NextResponse.json({ success: true, data: metric });
   } catch (error) {
     console.error('Error fetching health metric:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to fetch health metric' }, { status: 500 });
   }
 }
@@ -62,17 +60,11 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const healthMetricRepository = new HealthMetricRepository();
-    const existing = await healthMetricRepository.findById(session.user.id, paramId);
-    if (!existing) {
-      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
-    }
-
-    if (Object.keys(validated.data).length === 0) {
-      return NextResponse.json({ success: true, data: existing });
-    }
-
-    const metric = await healthMetricRepository.update(session.user.id, paramId, validated.data);
+    const metric = await healthMetricService.update(
+      session.user.id,
+      paramId,
+      validated.data
+    );
     return NextResponse.json({ success: true, data: metric });
   } catch (error) {
     console.error('Error updating health metric:', error);
@@ -98,16 +90,15 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const healthMetricRepository = new HealthMetricRepository();
-    const existing = await healthMetricRepository.findById(session.user.id, paramId);
-    if (!existing) {
-      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
-    }
-
-    await healthMetricRepository.delete(session.user.id, paramId);
+    await healthMetricService.delete(session.user.id, paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting health metric:', error);
+    // Previously unmapped, so a metric deleted between the existence check and
+    // the delete surfaced as a 500 instead of the 404 the other two verbs return.
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to delete health metric' }, { status: 500 });
   }
 }

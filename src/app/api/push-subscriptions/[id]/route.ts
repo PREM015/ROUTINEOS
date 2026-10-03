@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { PushSubscriptionRepository } from '@/server/repositories/push-subscription.repository';
+import { pushSubscriptionService } from '@/server/services/push-subscription.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -23,16 +24,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const pushSubscriptionRepository = new PushSubscriptionRepository();
-    const existing = await pushSubscriptionRepository.findById(session.user.id, paramId);
-    if (!existing) {
-      return NextResponse.json({ error: 'Push subscription not found' }, { status: 404 });
-    }
-
-    await pushSubscriptionRepository.delete(session.user.id, paramId);
+    await pushSubscriptionService.remove(session.user.id, paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting push subscription:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Push subscription not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to delete push subscription' }, { status: 500 });
   }
 }

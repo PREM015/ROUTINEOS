@@ -97,6 +97,96 @@ export class ScoreRepository extends BaseRepository {
   }
 
   /**
+   * Count distinct days with any recorded score in the range.
+   *
+   * Added for F1. `buildWorldState` was computing this as
+   * `new Set(scores.filter(...).map(s => s.date)).size`, which meant loading every
+   * `DailyScore` row for two years — including the `calculationData` JSON
+   * breakdown — purely to take the length of a set. `dailyScore.date` is already
+   * one row per day, so a plain `count()` under the same predicate is exactly
+   * equivalent and never leaves the database.
+   */
+  async countActiveDays(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<number> {
+    try {
+      return await this.prisma.dailyScore.count({
+        where: {
+          userId,
+          date: { gte: startDate, lte: endDate },
+          OR: [{ isMinimumDay: true }, { coreScore: { not: null } }],
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'countActiveDays');
+    }
+  }
+
+  /**
+   * Only the dates of qualifying days.
+   *
+   * Added for F1. `perfectWeeks` buckets perfect days into calendar weeks, so it
+   * genuinely needs the individual dates — but nothing else about the rows. This
+   * selects the single column it needs instead of a full `DailyScore`, which drops
+   * the `calculationData` JSON payload per row. The result set is also far
+   * smaller than the full range, since only scores at or above the threshold
+   * qualify.
+   */
+  async findPerfectDayDates(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    threshold: number
+  ): Promise<string[]> {
+    try {
+      const rows = await this.prisma.dailyScore.findMany({
+        where: {
+          userId,
+          date: { gte: startDate, lte: endDate },
+          totalScore: { gte: threshold },
+        },
+        select: { date: true },
+        orderBy: { date: 'asc' },
+      });
+      return rows.map((r) => r.date);
+    } catch (error) {
+      this.handleError(error, 'findPerfectDayDates');
+    }
+  }
+
+  /**
+   * Only the dates of days that recorded any score.
+   *
+   * Added for F1 — the narrow companion to {@link countActiveDays}. `dailyScore.date`
+   * is unique per day, so this and that count describe the same set; the split
+   * lets a caller that needs the *list* (achievement evaluation) pay for one
+   * column instead of a full row, while a caller that needs only the number
+   * (the dashboard strip) pays for neither.
+   */
+  async findActiveDayDates(
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<string[]> {
+    try {
+      const rows = await this.prisma.dailyScore.findMany({
+        where: {
+          userId,
+          date: { gte: startDate, lte: endDate },
+          OR: [{ isMinimumDay: true }, { coreScore: { not: null } }],
+        },
+        select: { date: true },
+        orderBy: { date: 'asc' },
+      });
+      return rows.map((r) => r.date);
+    } catch (error) {
+      this.handleError(error, 'findActiveDayDates');
+    }
+  }
+
+  /**
    * Count perfect days
    */
   async countPerfectDays(

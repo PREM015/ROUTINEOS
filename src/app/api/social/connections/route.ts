@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { SocialRepository } from '@/server/repositories/social.repository';
+import { socialService } from '@/server/services/social.service';
 
 /**
  * GET /api/social/connections
@@ -13,27 +13,29 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const repository = new SocialRepository();
-    const [mutual, suggestions] = await Promise.all([
-      repository.mutualConnections(session.user.id),
-      repository.suggestions(session.user.id),
-    ]);
+    const { mutual, suggestions } = await socialService.connections(session.user.id);
+
+    const data = {
+      mutual,
+      suggestions: suggestions.map((suggestion) => ({
+        id: suggestion.id,
+        name: suggestion.name,
+        displayName: suggestion.displayName,
+        avatarUrl: suggestion.avatarUrl,
+        bio: suggestion.bio,
+      })),
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        mutual,
-        suggestions: suggestions.map((suggestion) => ({
-          id: suggestion.id,
-          name: suggestion.name,
-          displayName: suggestion.displayName,
-          avatarUrl: suggestion.avatarUrl,
-          bio: suggestion.bio,
-        })),
-      },
+      data,
       meta: {
-        mutual: mutual.length,
-        suggestions: suggestions.length,
+        mutual: data.mutual.length,
+        // Counted from the response body, not from the pre-map list. The two
+        // were the same array here, but they stop being the same the moment
+        // anything is filtered — and the service does filter, to keep the viewer
+        // out of their own suggestions.
+        suggestions: data.suggestions.length,
       },
     });
   } catch (error) {

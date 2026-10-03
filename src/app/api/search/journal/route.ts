@@ -1,10 +1,18 @@
 import { auth } from '@/lib/auth';
-import { searchJournalEntries } from '@/lib/journal/search';
+import { AppError } from '@/lib/errors/app-error';
+import { journalService } from '@/server/services/journal.service';
+import { journalEntryQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/search/journal
- * Search the user's journal entries by content and return ranked matches
+ * Ranked search over the user's own journal entries.
+ *
+ * Distinct from `?search=` on `GET /api/journal`, which is a database filter
+ * (case-insensitive contains, ordered by date) and shares the list's paging.
+ * This endpoint ranks by match count with a title match weighted double, so it
+ * answers "which entry is about this" rather than "show me every entry
+ * mentioning this".
  */
 export async function GET(request: NextRequest) {
   try {
@@ -14,35 +22,44 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get('q') ?? '';
-    if (!q.trim()) {
+    const validated = journalEntryQuerySchema
+      .pick({ search: true, limit: true })
+      .safeParse({
+        search: searchParams.get('q') ?? undefined,
+        limit: searchParams.get('limit') ?? undefined,
+      });
+
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Invalid query parameter', details: { q } },
+        { error: 'Invalid query parameters', details: validated.error.flatten() },
         { status: 400 }
       );
     }
 
-    const limitParam = searchParams.get('limit');
-    const limit = limitParam ? Number(limitParam) : 20;
-    if (Number.isNaN(limit) || limit < 1 || limit > 100) {
-      return NextResponse.json(
-        { error: 'Invalid limit parameter' },
-        { status: 400 }
-      );
+    const term = validated.data.search ?? '';
+    if (term.trim().length === 0) {
+      return NextResponse.json({ error: 'A search term is required' }, { status: 400 });
     }
 
-    const results = await searchJournalEntries(session.user.id, q.trim(), limit);
+    const results = await journalService.search(
+      session.user.id,
+      term,
+      validated.data.limit ?? 20
+    );
 
     return NextResponse.json({
       success: true,
       data: results,
-      meta: { total: results.length, limit },
+      meta: { total: results.length, limit: validated.data.limit ?? 20 },
     });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json(
+        { error: error.message, details: error.details ?? undefined },
+        { status: error.statusCode }
+      );
+    }
     console.error('Error searching journal entries:', error);
-    return NextResponse.json(
-      { error: 'Failed to search journal entries' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to search journal entries' }, { status: 500 });
   }
 }

@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { FocusRepository } from '@/server/repositories/focus.repository';
+import { focusService } from '@/server/services/focus.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { updateFocusSessionSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -20,16 +21,14 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const repository = new FocusRepository();
-    const focusSession = await repository.findById(session.user.id, id);
-
-    if (!focusSession) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
+    const focusSession = await focusService.getSession(session.user.id, id);
 
     return NextResponse.json({ success: true, data: focusSession });
   } catch (error) {
     console.error('Error fetching focus session:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch focus session' },
       { status: 500 }
@@ -60,25 +59,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const repository = new FocusRepository();
-    const existing = await repository.findById(session.user.id, id);
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-
-    const focusSession = await repository.update(id, session.user.id, {
-      title: validated.data.title,
-      description: validated.data.description,
-      categoryId: validated.data.categoryId,
-      plannedDuration: validated.data.plannedDuration,
-      notes: validated.data.notes,
-    });
+    const focusSession = await focusService.updateSession(
+      session.user.id,
+      id,
+      validated.data
+    );
 
     return NextResponse.json({ success: true, data: focusSession });
   } catch (error) {
     console.error('Error updating focus session:', error);
 
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
@@ -103,19 +96,15 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const repository = new FocusRepository();
-    const existing = await repository.findById(session.user.id, id);
-
-    if (!existing) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-
-    const deleted = await repository.delete(session.user.id, id);
+    const deleted = await focusService.deleteSession(session.user.id, id);
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {
     console.error('Error deleting focus session:', error);
 
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

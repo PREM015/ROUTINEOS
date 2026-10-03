@@ -18,6 +18,11 @@ import type {
   AchievementDefinitionConfig,
 } from '@/lib/constants/achievements';
 import { allDefinitions } from './definitions';
+import {
+  countDatesWithinTimeframe,
+  isWindowedTimeframe,
+  type AchievementTimeframe,
+} from './timeframes';
 
 /**
  * Aggregated snapshot of a user's activity used to evaluate achievement
@@ -45,6 +50,17 @@ export interface AchievementWorldState {
     focusSessions?: number;
     /** Number of days scoring >= 95. */
     perfectDays?: number;
+    /**
+     * Longest run of consecutive perfect days, ever.
+     *
+     * Monotonic by construction, which is what makes it safe to unlock against:
+     * a trailing-window count ("7 perfect days in the last 7") evaporates the
+     * moment a day is missed, and an achievement that was one check away from
+     * firing would then never fire.
+     */
+    perfectDayStreak?: number;
+    /** Longest run of consecutive *weeks* that were perfect, ever. */
+    perfectWeekStreak?: number;
     /** Number of weeks with 7 consecutive perfect days. */
     perfectWeeks?: number;
     /** Total habit completions logged. */
@@ -56,7 +72,7 @@ export interface AchievementWorldState {
   };
   /** Per-habit streak lengths keyed by habit id. */
   streaks: Record<string, number>;
-  /** Date buckets keyed by semantic name (e.g. `activeDates`, `scoredDays`). */
+  /** Date buckets keyed by semantic name (e.g. `activeDates`, `scoredDays`, `perfectDays`). */
   dates: Record<string, readonly string[]>;
   /** Generic counters for fields not modelled above. */
   counts: Record<string, number>;
@@ -76,6 +92,8 @@ const TOTAL_FIELDS: readonly (keyof WorldStateTotals)[] = [
   'wellnessLogs',
   'focusSessions',
   'perfectDays',
+  'perfectDayStreak',
+  'perfectWeekStreak',
   'perfectWeeks',
   'totalHabitLogs',
   'daysActive',
@@ -85,14 +103,34 @@ const TOTAL_FIELDS: readonly (keyof WorldStateTotals)[] = [
 /**
  * Resolve the current numeric value for a criterion field.
  *
- * Resolution order: `totals` → `counts` → derived (`streak` computed from
- * streak values or the `activeDates` bucket). Returns `undefined` when no
- * value can be found, which the checker treats as "criterion not met".
+ * Resolution order:
+ *  1. a dated series in `state.dates` (counted inside the criterion's window),
+ *  2. `totals` → `counts` → derived `streak`.
+ *
+ * Returns `undefined` when no value can be found, which the checker treats as
+ * "criterion not met".
+ *
+ * A windowed criterion can only be measured from a dated series: a lifetime
+ * total says nothing about *when* the events happened, and substituting one for
+ * the other is exactly the bug that let "Perfect Week" unlock on seven scattered
+ * days. So when `timeframe` is a trailing window and the field has no dated
+ * series, this returns `undefined` — the achievement stays locked instead of
+ * unlocking on evidence that does not support it.
  */
 export function resolveCriterionValue(
   field: string,
-  state: AchievementWorldState
+  state: AchievementWorldState,
+  timeframe?: AchievementTimeframe,
+  today?: string
 ): number | undefined {
+  const series = state.dates[`${field}Dates`];
+  if (series) {
+    // Without a reference day a window cannot be placed, and a windowed
+    // criterion must not silently fall back to its all-time count.
+    if (isWindowedTimeframe(timeframe) && today === undefined) return undefined;
+    return countDatesWithinTimeframe(series, today, timeframe);
+  }
+
   const totalKey = field as keyof WorldStateTotals;
   if (TOTAL_FIELDS.includes(totalKey)) {
     const total = state.totals[totalKey];
@@ -151,15 +189,22 @@ function compareOperator(
 /**
  * Evaluate a list of criteria against a state snapshot. All criteria must be
  * satisfied and at least one criterion must exist.
+ *
+ * `today` is the user's current calendar day in their own timezone. It is only
+ * consulted for criteria whose field is a *dated* series in `state.dates` and
+ * whose `timeframe` is a trailing window; every other criterion resolves from
+ * the lifetime aggregates in `state.totals`. See `timeframes.ts` for why a
+ * run-shaped criterion is a lifetime total rather than a windowed count.
  */
 export function checkCriteria(
   criteria: readonly AchievementCriteria[],
-  state: AchievementWorldState
+  state: AchievementWorldState,
+  today?: string
 ): boolean {
   if (criteria.length === 0) return false;
 
   return criteria.every((criterion) => {
-    const current = resolveCriterionValue(criterion.field, state);
+    const current = resolveCriterionValue(criterion.field, state, criterion.timeframe, today);
     if (current === undefined) return false;
     return compareOperator(current, criterion.operator, criterion.value);
   });
@@ -170,9 +215,10 @@ export function checkCriteria(
  */
 export function checkDefinition(
   def: AchievementDefinitionConfig,
-  state: AchievementWorldState
+  state: AchievementWorldState,
+  today?: string
 ): boolean {
-  return checkCriteria(def.criteria, state);
+  return checkCriteria(def.criteria, state, today);
 }
 
 /**
@@ -201,10 +247,11 @@ export interface AchievementSnapshot {
 export function checkSnapshots(
   _userId: string,
   worldState: AchievementWorldState,
-  definitions: readonly AchievementDefinitionConfig[] = allDefinitions
+  definitions: readonly AchievementDefinitionConfig[] = allDefinitions,
+  today?: string
 ): AchievementSnapshot[] {
   return definitions.map((definition) => ({
     definition,
-    unlocked: checkDefinition(definition, worldState),
+    unlocked: checkDefinition(definition, worldState, today),
   }));
 }

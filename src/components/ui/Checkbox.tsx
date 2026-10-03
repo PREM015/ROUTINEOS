@@ -12,7 +12,8 @@ import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export interface CheckboxProps {
+export interface CheckboxProps
+  extends Omit<React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>, 'checked' | 'onCheckedChange'> {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   disabled?: boolean;
@@ -25,10 +26,11 @@ export interface CheckboxProps {
 export function Checkbox({
   checked,
   onCheckedChange,
-  disabled = false,
+  disabled,
   label,
   id,
   className,
+  ...rest
 }: CheckboxProps) {
   const generatedId = React.useId();
   const resolvedId = id ?? generatedId;
@@ -40,6 +42,18 @@ export function Checkbox({
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
         disabled={disabled}
+        /**
+         * `...rest` is spread onto the Radix root so callers can pass
+         * `aria-label` / `aria-describedby` / `data-*`.
+         *
+         * It was not spread before, so `TodayHabitChecklist` passing
+         * `aria-label={`Mark ${habit.name} done`}` had it silently dropped — the
+         * component destructured a fixed set of props and forwarded nothing.
+         * TypeScript did not catch it because hyphenated JSX attribute names are
+         * exempt from excess-property checking, so every habit checkbox on
+         * /today had **no accessible name** and `npm run type-check` stayed clean.
+         */
+        {...rest}
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-card transition-colors ease-out-expo hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 ring-offset-background data-[state=checked]:border-primary data-[state=checked]:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
       >
         <CheckboxPrimitive.Indicator className="flex items-center justify-center text-primary-foreground">

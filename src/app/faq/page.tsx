@@ -4,12 +4,14 @@ import { ArrowRight, ChevronDown, HelpCircle } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { faqJsonLd, jsonLdScript, pageMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'FAQ — RoutineOS',
+export const metadata: Metadata = pageMetadata({
+  title: 'FAQ',
   description:
     'Answers on accounts, pricing, daily scoring, streaks, rest days, routines, and privacy for RoutineOS.',
-};
+  path: '/faq',
+});
 
 interface FaqItem {
   question: string;
@@ -189,6 +191,28 @@ export default function FaqPage() {
       <Footer>
         <ThemeToggle />
       </Footer>
+
+      {/*
+        FAQPage structured data, generated from the same CATEGORIES array the
+        page renders, so the marked-up answers can never drift from the visible
+        ones. Search engines require the Q&A to also be present on the page,
+        which it is — the answers live in the <details> elements above.
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: jsonLdScript(
+            faqJsonLd(
+              CATEGORIES.flatMap((category) =>
+                category.items.map((item) => ({
+                  question: item.question,
+                  answer: item.answer,
+                }))
+              )
+            )
+          ),
+        }}
+      />
     </div>
   );
 }

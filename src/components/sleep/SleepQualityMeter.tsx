@@ -73,7 +73,7 @@ export function SleepQualityMeter({
 
       <div
         className={cn('relative w-full overflow-hidden rounded-full bg-muted', compact ? 'mt-1.5 h-1.5' : 'mt-2 h-2.5')}
-        role="meter"
+        role="progressbar"
         aria-valuenow={clamped}
         aria-valuemin={0}
         aria-valuemax={100}

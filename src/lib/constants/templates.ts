@@ -110,6 +110,27 @@ export type TemplateColor = (typeof TEMPLATE_COLORS)[number];
 // Default Templates
 // ============================================================================
 
+/**
+ * The 90-day discipline challenge lives in its own module so the corrections to
+ * the source brief stay readable next to the data they apply to. Imported here
+ * because `DEFAULT_TEMPLATES` embeds it.
+ */
+import {
+  CHALLENGE_DURATION_DAYS,
+  CHALLENGE_GOALS,
+  CHALLENGE_HABITS,
+  CHALLENGE_PARENT_GOAL,
+  CHALLENGE_TEMPLATE_ID,
+} from '@/lib/constants/90-day-discipline';
+
+export {
+  CHALLENGE_DURATION_DAYS,
+  CHALLENGE_GOALS,
+  CHALLENGE_HABITS,
+  CHALLENGE_PARENT_GOAL,
+  CHALLENGE_TEMPLATE_ID,
+} from '@/lib/constants/90-day-discipline';
+
 export interface DefaultTemplate {
   id: string;
   type: TemplateType;
@@ -122,6 +143,52 @@ export interface DefaultTemplate {
   isFeatured: boolean;
   estimatedDurationMinutes?: number;
   blocks?: ReadonlyArray<DefaultRoutineBlock>;
+  /**
+   * Goals and habits a `GOAL_SET` / `HABIT_SET` template materialises.
+   *
+   * Until this existed, `TemplateService.applyTemplate` created **nothing** for
+   * those two types — it returned a `createdStructures` array of freshly
+   * generated UUIDs with `status: 'PLACEHOLDER'`, which looks like success in
+   * the UI while writing no rows at all. The 90-day discipline challenge is the
+   * first template to need real creation.
+   */
+  goals?: ReadonlyArray<{
+    key: string;
+    title: string;
+    description: string;
+    type: string;
+    targetValue: number;
+    unit: string;
+    category: string;
+    icon: string;
+    drivenByHabitKeys: readonly string[];
+  }>;
+  habits?: ReadonlyArray<{
+    key: string;
+    name: string;
+    description: string;
+    category: string;
+    tier: string;
+    frequencyType: string;
+    frequencyValue: string | null;
+    targetCount: number | null;
+    color: string;
+    icon: string;
+    safetyNote?: string;
+  }>;
+  /** A parent goal the child goals roll up into, e.g. a challenge overall target. */
+  parentGoal?: {
+    key: string;
+    title: string;
+    description: string;
+    type: string;
+    targetValue: number;
+    unit: string;
+    category: string;
+    icon: string;
+  };
+  /** Length of a time-boxed challenge, used to set the goal start/end dates. */
+  durationDays?: number;
 }
 
 export const DEFAULT_TEMPLATES = [
@@ -357,6 +424,57 @@ export const DEFAULT_TEMPLATES = [
     icon: '🏆',
     tags: ['quarterly', 'planning'],
     isFeatured: false,
+  },
+
+  /**
+   * The 90-day discipline challenge.
+   *
+   * Carries real `goals` and `habits`, which makes it the first default template
+   * that `applyTemplate` can materialise rather than stub. The definitions live
+   * in `90-day-discipline.ts`, where each correction to the source brief is
+   * documented inline — the notable ones being that the water and protein
+   * figures are *personalised* rather than fixed, that "no sugar" means added
+   * sugars, that the three abstentions are modelled as abstentions, and that the
+   * two mindset principles are reflections rather than checkable habits.
+   */
+  {
+    id: CHALLENGE_TEMPLATE_ID,
+    type: 'GOAL_SET',
+    name: '90 Days of Discipline',
+    description:
+      'A 90-day challenge: fitness, hydration, sleep, nutrition, learning and ' +
+      'mental discipline — seven measurable goals fed by fifteen habits.',
+    category: 'Goal Set',
+    color: '#ef4444',
+    icon: '🔥',
+    tags: ['90-day', 'challenge', 'fitness', 'sleep', 'nutrition', 'discipline'],
+    isFeatured: true,
+    durationDays: CHALLENGE_DURATION_DAYS,
+    parentGoal: { ...CHALLENGE_PARENT_GOAL },
+    goals: CHALLENGE_GOALS.map((g) => ({
+      key: g.key,
+      title: g.title,
+      description: g.description,
+      type: g.type,
+      targetValue: g.targetValue,
+      unit: g.unit,
+      category: g.category,
+      icon: g.icon,
+      drivenByHabitKeys: g.drivenByHabitKeys,
+    })),
+    habits: CHALLENGE_HABITS.map((h) => ({
+      key: h.key,
+      name: h.name,
+      description:
+        h.safetyNote ? `${h.description}\n\nNote: ${h.safetyNote}` : h.description,
+      category: h.category,
+      tier: h.tier,
+      frequencyType: h.frequencyType,
+      frequencyValue: h.frequencyValue,
+      targetCount: h.targetCount,
+      color: h.color,
+      icon: h.icon,
+    })),
   },
 ] as const;
 

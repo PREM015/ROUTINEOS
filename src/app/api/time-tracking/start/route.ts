@@ -1,11 +1,14 @@
 import { auth } from '@/lib/auth';
-import { TimeEntryRepository } from '@/server/repositories/time-entry.repository';
+import { timeTrackingService } from '@/server/services/time-tracking.service';
+import { ConflictError } from '@/lib/errors/app-error';
 import { startTimeEntrySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * POST /api/time-tracking/start
- * Start the running timer. Conflicts with an already-running entry return 409.
+ * Start the running timer. Conflicts with an already-running entry return 409,
+ * and the response body is unchanged: the conflicting entry is still echoed back
+ * under `details.running`.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -24,34 +27,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repository = new TimeEntryRepository();
-    const running = await repository.findRunning(session.user.id);
-
-    if (running) {
-      return NextResponse.json(
-        {
-          error: 'A time entry is already running',
-          details: { running },
-        },
-        { status: 409 }
-      );
-    }
-
-    const entry = await repository.create(session.user.id, {
-      description: validated.data.description,
-      startTime: validated.data.startTime,
-      projectId: validated.data.projectId,
-      habitId: validated.data.habitId,
-      goalId: validated.data.goalId,
-      billable: validated.data.billable,
-      rate: validated.data.rate,
-      tags: validated.data.tags,
-    });
+    const entry = await timeTrackingService.start(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {
     console.error('Error starting time entry:', error);
 
+    if (error instanceof ConflictError) {
+      return NextResponse.json(
+        { error: error.message, details: error.details },
+        { status: 409 }
+      );
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

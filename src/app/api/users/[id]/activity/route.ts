@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { AuditRepository } from '@/server/repositories/audit.repository';
+import { auditService } from '@/server/services/audit.service';
+import { AuthorizationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -22,10 +23,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
     }
 
-    if (session.user.id !== id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const limit = Math.min(
       Math.max(Number(searchParams.get('limit')) || 20, 1),
@@ -33,8 +30,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
     const offset = Math.max(Number(searchParams.get('offset')) || 0, 0);
 
-    const auditRepository = new AuditRepository();
-    const events = await auditRepository.findByUserId(id, { limit, offset });
+    // `assertSelf` throws for a mismatched id; the 403 mapping moved to the
+    // catch below so the check has exactly one implementation.
+    const events = await auditService.activityFor(session.user.id, id, limit, offset);
 
     return NextResponse.json({
       success: true,
@@ -44,6 +42,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
   } catch (error) {
     console.error('Error fetching user activity:', error);
 
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

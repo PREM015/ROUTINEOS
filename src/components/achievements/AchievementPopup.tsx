@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PartyPopper, X } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
-import { ACHIEVEMENT_RARITIES, type AchievementRarity } from '@/lib/constants/achievements';
+import { ACHIEVEMENT_RARITIES, rarityChipStyle, rarityTint, type AchievementRarity } from '@/lib/constants/achievements';
 import { Badge } from '@/components/ui/Badge';
 
 export interface AchievementUnlockEvent {
@@ -183,34 +183,51 @@ export function AchievementPopup({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-            className="pointer-events-auto w-80 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+            // ERROR.md I3. This panel was hardcoded light: `bg-white`,
+            // `border-gray-200`, `text-gray-900`, `text-gray-500`, `bg-gray-100`
+            // track. None of those invert, so on a dark theme the achievement
+            // popup — the one moment the app deliberately interrupts the user —
+            // flashed a white card with near-black text and was the brightest
+            // object on screen. Tokens only, so it follows the theme.
+            className="pointer-events-auto w-80 overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-xl"
             role="status"
             aria-live="polite"
           >
             <div className="flex items-start gap-3 p-4">
               <div
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl"
-                style={{ backgroundColor: `${accentColor}1a` }}
+                style={{ backgroundColor: rarityTint(accentColor) }}
                 aria-hidden="true"
               >
                 {current.icon ?? '🎉'}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <PartyPopper className="h-3.5 w-3.5" style={{ color: accentColor }} />
-                  <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: accentColor }}>
+                  <PartyPopper
+                    className="h-3.5 w-3.5"
+                    style={{ color: `color-mix(in oklab, ${accentColor} 75%, var(--foreground))` }}
+                  />
+                  {/*
+                    The label is *text*, so it gets the mixed colour rather than
+                    the raw accent: `#f59e0b` on a light card is 2.2:1, while
+                    the mixed value darkens with the theme and stays legible.
+                  */}
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-wide"
+                    style={{ color: `color-mix(in oklab, ${accentColor} 72%, var(--foreground))` }}
+                  >
                     Achievement unlocked
                   </p>
                 </div>
-                <h3 className="mt-1 truncate text-sm font-bold text-gray-900" title={current.name}>
+                <h3 className="mt-1 truncate text-sm font-bold text-foreground" title={current.name}>
                   {current.name}
                 </h3>
                 {current.description && (
-                  <p className="mt-0.5 line-clamp-2 text-xs text-gray-500">{current.description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{current.description}</p>
                 )}
                 <div className="mt-2 flex items-center gap-1.5">
                   {tierConfig && (
-                    <Badge className="text-[10px]">
+                    <Badge className="text-[10px]" style={rarityChipStyle(tierConfig.color)}>
                       {tierConfig.icon} {tierConfig.label}
                     </Badge>
                   )}
@@ -223,12 +240,12 @@ export function AchievementPopup({
                 type="button"
                 onClick={dismiss}
                 aria-label="Dismiss"
-                className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="h-1 w-full bg-gray-100">
+            <div className="h-1 w-full bg-muted">
               <motion.div
                 className="h-full"
                 style={{ backgroundColor: accentColor }}

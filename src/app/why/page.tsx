@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { pageMetadata } from '@/lib/seo';
 import {
   ArrowRight,
   Award,
@@ -17,11 +18,12 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 
-export const metadata: Metadata = {
-  title: 'Why RoutineOS — Consistency beats intensity',
+export const metadata: Metadata = pageMetadata({
+  title: 'Why RoutineOS — consistency beats intensity',
   description:
     'The thinking behind RoutineOS: honest daily scoring, rest you can plan without guilt, and one calm workspace for your whole day.',
-};
+  path: '/why',
+});
 
 const PROBLEMS = [
   {

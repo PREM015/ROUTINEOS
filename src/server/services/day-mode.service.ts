@@ -4,6 +4,7 @@ import { ScoringService } from '@/server/services/scoring.service';
 import { UserService } from '@/server/services/user.service';
 import { resolveDayTypeForDate, resolveNaturalDayType } from '@/lib/scheduling/resolve-routine';
 import { DEFAULT_TZ } from '@/lib/dates';
+import { ValidationError } from '@/lib/errors/app-error';
 import type { DayType } from '@/generated/prisma';
 
 /**
@@ -149,7 +150,7 @@ export class DayModeService {
     // mode === 'DAY_TYPE': persist an exception so routine resolution for this
     // date changes to the selected day type.
     if (!dayType) {
-      throw new Error('dayType is required for DAY_TYPE mode');
+      throw new ValidationError('dayType is required for DAY_TYPE mode');
     }
 
     // A custom day type always stores `dayType: 'CUSTOM'` (the enum has no
@@ -160,7 +161,7 @@ export class DayModeService {
     if (resolvedDefinitionId) {
       const definitions = await this.routineService.listDayTypes(userId);
       if (!definitions.some((d) => d.id === resolvedDefinitionId)) {
-        throw new Error('Day type not found');
+        throw new ValidationError('Day type not found');
       }
     }
 

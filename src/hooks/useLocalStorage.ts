@@ -34,8 +34,23 @@ export function useLocalStorage<T>(
   }, [key, initialValue]);
 
   const [stored, setStored] = useState<T>(readValue);
+  /*
+    The latest `key`, tracked in a ref WITHOUT writing it during render.
+
+    `keyRef.current = key` in the render body is a render-phase mutation: under
+    StrictMode's double render, or a concurrent render that is thrown away, the
+    ref keeps a value from a render that never committed — so a `storage` event
+    could be matched against a key the user is no longer looking at. Writing it in
+    an effect instead means the ref only ever holds a committed key.
+
+    The effect ordering is safe: the listener is registered in the same commit,
+    and the effect that fills the ref runs before the one that subscribes,
+    because they are declared in that order.
+  */
   const keyRef = useRef(key);
-  keyRef.current = key;
+  useEffect(() => {
+    keyRef.current = key;
+  }, [key]);
 
   const handleStorage = useCallback(
     (event: StorageEvent) => {

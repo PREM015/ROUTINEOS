@@ -1,4 +1,4 @@
-import { UserRepository } from '@/server/repositories/user.repository';
+import { userService } from '@/server/services/user.service';
 import { auth } from '@/lib/auth';
 import { RateLimiter } from '@/lib/middleware/rate-limit';
 import { RateLimitError } from '@/lib/errors/app-error';
@@ -13,11 +13,10 @@ interface RouteContext {
  * other users' profiles. That makes this route an enumeration oracle unless it
  * is constrained, so it is rate-limited per client IP.
  *
- * Deliberately NOT exposed: `role` (privilege information), `timezone` and
- * `preferredLanguage` (locale / approximate-location signals),
- * `onboardingCompletedAt` (an account-age signal useful for fingerprinting) and
- * `email`. Aggregate stats are intentionally kept — the leaderboard renders
- * them — but they are coarse counts, not raw records.
+ * Which fields are exposed, and the `profilePublic` privacy switch, are now
+ * enforced in `UserService.getPublicProfile` rather than here. The rate limiter
+ * stays in the route: it is keyed on the request's client IP, which only exists
+ * at the HTTP boundary.
  */
 const publicProfileLimiter = new RateLimiter({
   max: 30,
@@ -38,36 +37,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
     }
 
-    const user = await new UserRepository().findById(id);
-    if (!user || user.isDeleted || !user.isActive) {
+    // Optional: a signed-in owner must still see their own profile even when
+    // they have set it private, so the viewer id is read but never required.
+    const viewerId = (await auth())?.user?.id;
+
+    const profile = await userService.getPublicProfile(id, viewerId);
+    if (!profile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Honour the user's own privacy choice. `profilePublic` used to be
-    // write-only: the Settings > Privacy switch saved it, but this route
-    // returned the profile to anyone who asked, which is exactly the audience
-    // the switch exists to exclude.
-    //
-    // The owner always sees their own profile so a signed-in user is never
-    // surprised by a 404 on their own record.
-    const settings = await new UserRepository().getSettings(id);
-    const isSelf =
-      (await auth())?.user?.id === id;
-    if (settings && settings.profilePublic === false && !isSelf) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: user.id,
-        name: user.name,
-        displayName: user.displayName,
-        bio: user.bio,
-        avatarUrl: user.avatarUrl,
-        createdAt: user.createdAt,
-      },
-    });
+    return NextResponse.json({ success: true, data: profile });
   } catch (error) {
     if (error instanceof RateLimitError) {
       return NextResponse.json({ error: error.message }, { status: 429 });

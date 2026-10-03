@@ -2,8 +2,8 @@
   "id": "/",
   "name": "RoutineOS",
   "short_name": "RoutineOS",
-  "description": "A personal productivity app for managing routines, habits, goals, tasks, and daily progress.",
-  "lang": "en-IN",
+  "description": "Habit tracking, time-blocked routines, goals, focus sessions and journalling in one workspace, with a single hexagon score for the whole day.",
+  "lang": "en",
   "dir": "ltr",
 
   "start_url": "/",
@@ -18,8 +18,8 @@
 
   "orientation": "any",
 
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "background_color": "#09090b",
+  "theme_color": "#10b981",
 
   "categories": [
     "productivity",
@@ -78,13 +78,13 @@
     },
 
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/maskable-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/maskable-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

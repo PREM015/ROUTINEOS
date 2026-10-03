@@ -7,7 +7,7 @@
  * have been removed — no theoretical types.
  */
 
-import type { GoalStatus, HabitStatus, HabitTier, ProjectStatus } from '@/generated/prisma';
+import type { HabitTier, ProjectStatus } from '@/generated/prisma';
 import type { Period } from '@/lib/period-range';
 
 // ============================================================================
@@ -85,6 +85,51 @@ export interface AnalyticsStreakSnapshot {
   daysToNextMilestone: number | null;
 }
 
+/** One habit's contribution to the selected period. */
+export interface AnalyticsHabitRow {
+  habitId: string;
+  name: string;
+  tier: HabitTier;
+  completed: number;
+  /** Days it was due in the period. `0` means it was not due at all. */
+  scheduled: number;
+  /** `completed / scheduled`, or `null` when nothing was due. */
+  rate: number | null;
+}
+
+/**
+ * The habit panel, on one definition for every period.
+ *
+ * `rate` is `completed / scheduled`, where `scheduled` comes from the eligibility
+ * rule - the same one the contribution heatmap uses. See
+ * `lib/analytics/period-habits`, which replaced four disagreeing denominators
+ * across the day / week / month / year tabs.
+ */
+export interface AnalyticsHabitPanel {
+  completed: number;
+  scheduled: number;
+  rate: number | null;
+  scheduledDays: number;
+  fullDays: number;
+  /** Days that were due and recorded nothing. Unknown, not failed. */
+  noRecordDays: number;
+  perHabit: AnalyticsHabitRow[];
+}
+
+/**
+ * The immediately preceding equivalent period, for the headline comparison.
+ *
+ * `null` for month and year: comparing a part-lived month against a whole one
+ * produces a flattering number, not a measurement.
+ */
+export interface AnalyticsComparison {
+  start: string;
+  end: string;
+  /** `null` when the earlier period has no scored day. */
+  average: number | null;
+  delta: number | null;
+}
+
 export interface AnalyticsTierMix {
   tier: HabitTier;
   count: number;
@@ -147,9 +192,17 @@ export interface AnalyticsInsight {
   wasHelpful: boolean | null;
 }
 
+/**
+ * One bar of a chart.
+ *
+ * `value` is `number | null`. `null` means "we have no measurement here" — a month
+ * with no scored day, or a habit that was never due in the window — and it must
+ * render as a gap. Coercing it to `0` is how a year the user had not reached yet
+ * came to look like a year of zero scores.
+ */
 export interface AnalyticsChartData {
   name: string;
-  value: number;
+  value: number | null;
 }
 
 export interface AnalyticsRoutineBlockBreakdown {
@@ -217,20 +270,32 @@ export interface AnalyticsAchievement {
 export interface AnalyticsDashboard {
   /** The period the dashboard is scoped to. */
   period: Period;
-  /** Anchor calendar day (YYYY-MM-DD) in the user's timezone. */
+  /** Requested anchor calendar day (YYYY-MM-DD) in the user's timezone. */
   date: string;
+  /**
+   * The user's actual today in their timezone.
+   *
+   * Separate from `date` because the two answer different questions: `date` is
+   * which period was asked for, this is how much of it has actually happened. The
+   * client needs it to label future days in the current week or month rather than
+   * scoring them as failures.
+   */
+  today: string;
   range: {
     start: string;
     end: string;
     label: string;
     isCurrent: boolean;
   };
+  /** `null` when no honest comparison exists for this period. */
+  comparison: AnalyticsComparison | null;
   hero: {
     total: number | null;
     grade: string | null;
     core: number | null;
     growth: number | null;
     bonus: number | null;
+    /** The one habit completion rate, identical in definition on every tab. */
     habitReliability: number | null;
   };
   tiles: {
@@ -240,9 +305,11 @@ export interface AnalyticsDashboard {
     mood: number | null;
     focusMinutes: number | null;
   };
+  habits: AnalyticsHabitPanel;
   chart1: AnalyticsChartData[];
   chart2: AnalyticsChartData[];
   routine: AnalyticsRoutineDetail;
+  /** All-time by nature — the page labels it as such rather than implying the period. */
   streaks: AnalyticsStreakSnapshot;
   tierMix: AnalyticsTierMix[];
   focus: AnalyticsFocusSummary;
@@ -257,8 +324,4 @@ export interface AnalyticsDashboard {
   journal: AnalyticsJournalEntry[];
   achievements: AnalyticsAchievement[];
   aiInsight: AnalyticsInsight | null;
-  counts: {
-    habits: Partial<Record<HabitStatus, number>>;
-    goals: Partial<Record<GoalStatus, number>>;
-  };
 }

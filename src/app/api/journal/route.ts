@@ -1,17 +1,21 @@
 import { auth } from '@/lib/auth';
-import {
-  createJournalEntry,
-  listJournalEntries,
-} from '@/lib/journal/crud';
+import { AppError } from '@/lib/errors/app-error';
+import { journalService } from '@/server/services/journal.service';
 import {
   createJournalEntrySchema,
   journalEntryQuerySchema,
+  MAX_JOURNAL_PAGE_SIZE,
 } from '@/schemas/journal.schema';
+import { ForeignTagError } from '@/server/repositories/journal.repository';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/journal
- * List journal entries with date/month/pagination/mood filters
+ * List journal entries, one server-paged slice at a time.
+ *
+ * Paging happens here rather than in the browser: the page used to fetch
+ * `limit=100` and slice those 100 client-side, so a journal with 240 entries
+ * could never show the 101st no matter how far the user scrolled.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -21,58 +25,27 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date');
-    const month = searchParams.get('month');
-    const tagId = searchParams.get('tagId');
-    const moodParam = searchParams.get('mood');
-    const limitParam = searchParams.get('limit');
-    const offsetParam = searchParams.get('offset');
-    const isFavoriteParam = searchParams.get('isFavorite');
-    const isArchivedParam = searchParams.get('isArchived');
 
-    let startDate = searchParams.get('startDate') ?? undefined;
-    let endDate = searchParams.get('endDate') ?? undefined;
-
-    // A concrete date narrows the range to a single day
-    if (date) {
-      startDate = date;
-      endDate = date;
-    }
-
-    // A month (YYYY-MM) expands to the whole month range
-    if (month) {
-      const [yearStr, monthStr] = month.split('-');
-      if (!yearStr || !monthStr) {
-        return NextResponse.json(
-          { error: 'Invalid month parameter', details: { month } },
-          { status: 400 }
-        );
-      }
-      const year = Number(yearStr);
-      const monthIndex = Number(monthStr);
-      if (Number.isNaN(year) || Number.isNaN(monthIndex) || monthIndex < 1 || monthIndex > 12) {
-        return NextResponse.json(
-          { error: 'Invalid month parameter', details: { month } },
-          { status: 400 }
-        );
-      }
-      const lastDay = new Date(year, monthIndex, 0).getDate();
-      startDate = `${yearStr}-${monthStr}-01`;
-      endDate = `${yearStr}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
-    }
+    // A concrete date narrows the range to a single day.
+    const date = searchParams.get('date') ?? undefined;
+    // A month (YYYY-MM) expands to the whole month; the service owns that
+    // expansion so the list, the count and the export narrow identically.
+    const month = searchParams.get('month') ?? undefined;
 
     const validated = journalEntryQuerySchema.safeParse({
       search: searchParams.get('search') ?? undefined,
-      mood: moodParam ? Number(moodParam) : undefined,
-      isFavorite: isFavoriteParam ? isFavoriteParam === 'true' : undefined,
-      isArchived: isArchivedParam ? isArchivedParam === 'true' : undefined,
-      startDate,
-      endDate,
+      mood: searchParams.get('mood') ?? undefined,
+      isFavorite: searchParams.get('isFavorite') ?? undefined,
+      isArchived: searchParams.get('isArchived') ?? undefined,
+      startDate: searchParams.get('startDate') ?? undefined,
+      endDate: searchParams.get('endDate') ?? undefined,
+      date,
+      month,
       sortBy: searchParams.get('sortBy') ?? undefined,
       sortOrder: searchParams.get('sortOrder') ?? undefined,
-      limit: limitParam ? Number(limitParam) : 20,
-      offset: offsetParam ? Number(offsetParam) : 0,
-      tagId: tagId ?? undefined,
+      limit: searchParams.get('limit') ?? undefined,
+      offset: searchParams.get('offset') ?? undefined,
+      tagId: searchParams.get('tagId') ?? undefined,
     });
 
     if (!validated.success) {
@@ -83,29 +56,35 @@ export async function GET(request: NextRequest) {
     }
 
     const query = validated.data;
-    const entries = await listJournalEntries(session.user.id, query);
+    const limit = query.limit ?? MAX_JOURNAL_PAGE_SIZE;
+
+    const result = await journalService.list(session.user.id, { ...query, limit });
 
     return NextResponse.json({
       success: true,
-      data: entries,
+      data: result.entries,
       meta: {
-        total: entries.length,
-        limit: query.limit ?? 20,
+        // The size of the whole matching set, which is what a paginator needs.
+        // It used to be `entries.length`, i.e. the size of this page.
+        total: result.total,
+        limit,
         offset: query.offset ?? 0,
+        hasMore: result.hasMore,
       },
     });
   } catch (error) {
     console.error('Error fetching journal entries:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch journal entries' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch journal entries' }, { status: 500 });
   }
 }
 
 /**
  * POST /api/journal
- * Create a new journal entry
+ * Create a journal entry for a specific date.
+ *
+ * `JournalEntry` is `@@unique([userId, date])`, so a second entry for a day the
+ * user already wrote is a 409 carrying the existing entry — the client opens
+ * that entry instead of creating a duplicate.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -123,22 +102,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await createJournalEntry(session.user.id, validated.data);
-
+    const entry = await journalService.create(session.user.id, validated.data);
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {
-    console.error('Error creating journal entry:', error);
-
-    if (error instanceof Error) {
+    if (error instanceof AppError) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
+        { error: error.message, details: error.details ?? undefined },
+        { status: error.statusCode }
       );
     }
+    if (error instanceof ForeignTagError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
 
-    return NextResponse.json(
-      { error: 'Failed to create journal entry' },
-      { status: 500 }
-    );
+    console.error('Error creating journal entry:', error);
+    return NextResponse.json({ error: 'Failed to create journal entry' }, { status: 500 });
   }
 }

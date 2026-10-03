@@ -30,6 +30,18 @@ export interface RoutineTemplateContent {
   icon?: string;
   estimatedDuration?: number;
   blocks?: RoutineTemplateBlockContent[];
+  /**
+   * `GOAL_SET` / `HABIT_SET` payload.
+   *
+   * These are validated by `TemplateService.parseSetDefinition`, not here: this
+   * validator only checks the keys it knows about and ignores the rest, so a
+   * `GOAL_SET` template carrying goals is neither rejected nor stripped. The
+   * definitions live in `src/lib/constants/90-day-discipline.ts`.
+   */
+  goals?: unknown[];
+  habits?: unknown[];
+  parentGoal?: unknown;
+  durationDays?: number;
 }
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;

@@ -1,11 +1,15 @@
 import { auth } from '@/lib/auth';
-import { listDeletedJournalEntries } from '@/lib/journal/crud';
+import { journalService } from '@/server/services/journal.service';
 import { deletedJournalQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/journal/deleted
  * List soft-deleted journal entries (the trash), newest deletion first.
+ *
+ * Only called once the trash panel is opened. It used to be fetched on every
+ * load of the journal page, including while the panel was collapsed — a request
+ * whose result was never shown.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -15,34 +19,27 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const limitParam = searchParams.get('limit');
-    const offsetParam = searchParams.get('offset');
-
     const validated = deletedJournalQuerySchema.safeParse({
-      limit: limitParam ? Number(limitParam) : 20,
-      offset: offsetParam ? Number(offsetParam) : 0,
+      limit: searchParams.get('limit') ?? undefined,
+      offset: searchParams.get('offset') ?? undefined,
     });
+
     if (!validated.success) {
       return NextResponse.json(
-        {
-          error: 'Invalid query parameters',
-          details: validated.error.flatten(),
-        },
+        { error: 'Invalid query parameters', details: validated.error.flatten() },
         { status: 400 }
       );
     }
 
-    const entries = await listDeletedJournalEntries(
-      session.user.id,
-      validated.data
-    );
+    const result = await journalService.listDeleted(session.user.id, validated.data);
 
     return NextResponse.json({
       success: true,
-      data: entries,
+      data: result.entries,
       meta: {
-        total: entries.length,
-        limit: validated.data.limit ?? 20,
+        // The full trash size, not the size of this page.
+        total: result.total,
+        limit: validated.data.limit ?? result.entries.length,
         offset: validated.data.offset ?? 0,
       },
     });

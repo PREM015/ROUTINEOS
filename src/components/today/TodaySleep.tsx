@@ -2,19 +2,22 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Moon, BedDouble, Clock3, Timer } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog';
 import { Mount } from '@/components/motion/Mount';
 import { showNotification } from '@/lib/pwa/notifications';
+import { notifyTodayDataChanged } from '@/lib/today-sync';
 import {
   useSleepSession,
   type SleepLogView,
   type SleepPromptView,
 } from '@/hooks/useSleepSession';
 import { SleepQualityMeter } from '@/components/sleep/SleepQualityMeter';
+import { GlassPanel } from '@/components/today/ui';
+import { createPortal } from 'react-dom';
 import {
   calculateSleepDuration,
   calculateSleepScore,
@@ -46,10 +49,14 @@ export function TodaySleep({ date }: TodaySleepProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const notifiedReminder = useRef<Set<string>>(new Set());
+  const notifiedPreWarning = useRef<Set<string>>(new Set());
   const [longRunningOpen, setLongRunningOpen] = useState(false);
+  const [wakeConfirmOpen, setWakeConfirmOpen] = useState(false);
 
   const active = state?.active ?? null;
   const prompt = state?.prompt ?? null;
+  const preWarning = state?.preWarning ?? null;
+  const wakePrompt = state?.wakePrompt ?? null;
   const todaySleepLog = state?.todaySleepLog ?? null;
   const hasLog = Boolean(todaySleepLog);
 
@@ -64,31 +71,65 @@ export function TodaySleep({ date }: TodaySleepProps) {
     }).catch(() => undefined);
   }, [prompt]);
 
+  // Surface pre-warning notification
+  useEffect(() => {
+    if (!preWarning) return;
+    if (notifiedPreWarning.current.has(preWarning.id)) return;
+    notifiedPreWarning.current.add(preWarning.id);
+    void showNotification('Sleep schedule approaching', {
+      body: `Your sleep schedule starts in 1 hour (at ${preWarning.targetBedtime}). Start winding down!`,
+      tag: `sleep-pre-warning-${preWarning.id}`,
+    }).catch(() => undefined);
+  }, [preWarning]);
+
+  // Wake prompt is handled via push notification actions, not shown as system notification here
+
+  /**
+   * "I woke up" must never end the session on its own.
+   *
+   * The click time is not a measurement. The button can be pressed hours after
+   * waking because the alarm was ignored, or not pressed at all. Ending the
+   * session here used to write the click timestamp straight into
+   * `actualWakeTime`, which then drove the duration and `DailyScore.sleepScore`.
+   *
+   * So the button now only opens {@link WakeConfirmDialog}, which asks whether
+   * the scheduled bedtime is right and then takes the real wake time.
+   */
   const handleStop = () => {
+    // A session over 16h gets one extra confirmation first â€” it is almost
+    // certainly a forgotten session rather than a night. The service now
+    // expires these on its own, but a live card should still say so plainly
+    // rather than inviting a 17-hour entry.
     if (longRunning) {
       setLongRunningOpen(true);
-    } else {
-      void stop();
+      return;
     }
+    setWakeConfirmOpen(true);
   };
 
   const confirmLongRunningStop = () => {
     setLongRunningOpen(false);
-    void stop();
+    setWakeConfirmOpen(true);
+  };
+
+  const submitWakeTimes = (actual: { bedtime: string; wakeTime: string }) => {
+    void stop(actual).then((ok) => {
+      if (ok) setWakeConfirmOpen(false);
+    });
   };
 
   if (loading) {
     return (
-      <Card className="p-6" aria-busy="true" aria-label="Loading sleep">
+      <GlassPanel accent="sleep" className="p-4 sm:p-5" aria-busy="true" aria-label="Loading sleep">
         <Skeleton shine className="mb-4 h-6 w-1/3" />
         <Skeleton className="h-20 w-full" />
-      </Card>
+      </GlassPanel>
     );
   }
 
   return (
     <Mount>
-      <Card className="p-6">
+      <GlassPanel accent="sleep" className="p-4 sm:p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">Sleep</h3>
         {!active && !prompt && (
@@ -125,7 +166,7 @@ export function TodaySleep({ date }: TodaySleepProps) {
                       // whose entire body was a comment. A 400 (the form sends
                       // `quality: NaN` for a blank field) or a 500 left the
                       // dialog open, the fields untouched, and no message at
-                      // all — the user just clicked Save again and again.
+                      // all â€” the user just clicked Save again and again.
                       if (!res.ok) {
                         const body = await res.json().catch(() => ({}));
                         throw new Error(
@@ -140,6 +181,7 @@ export function TodaySleep({ date }: TodaySleepProps) {
                       // shared state was never updated and a rejection escaped
                       // as an unhandled promise.
                       await refresh();
+                      notifyTodayDataChanged();
                     } catch (err) {
                       setSaveError(
                         err instanceof Error ? err.message : 'Could not save sleep log'
@@ -175,6 +217,31 @@ export function TodaySleep({ date }: TodaySleepProps) {
           onDismiss={() => void respond('NOT_YET')}
           busy={busy === 'respond'}
         />
+      ) : preWarning ? (
+        <PreWarningPanel
+          preWarning={preWarning}
+          onDismiss={() => {
+            // Dismiss pre-warning - just clear it from view
+            // The server will handle the dismissal
+          }}
+          busy={busy === 'respond'}
+        />
+      ) : wakePrompt ? (
+        <WakePromptPanel
+          wakePrompt={wakePrompt}
+          onWokeAtTarget={() => {
+            // This is handled via push notification actions
+            // The panel just shows the prompt is active
+          }}
+          onWokeLater={() => {
+            // Open wake time picker
+            setWakeConfirmOpen(true);
+          }}
+          onStillSleeping={() => {
+            // Dismiss wake prompt, keep session running
+          }}
+          busy={busy === 'respond'}
+        />
       ) : (
         <div>
           {hasLog ? (
@@ -195,32 +262,69 @@ export function TodaySleep({ date }: TodaySleepProps) {
         </div>
       )}
 
-      {longRunningOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="w-full max-w-sm rounded-xl bg-background p-6 shadow-lg">
-            <h2 className="text-base font-semibold text-foreground">
-              Still sleeping?
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              This session has been running for over 16 hours, which is longer
-              than a typical night. Did you forget to stop it?
-            </p>
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <Button variant="outline" onClick={() => setLongRunningOpen(false)}>
-                Keep tracking
-              </Button>
-              <Button onClick={confirmLongRunningStop} isLoading={busy === 'stop'}>
-                Yes, end it
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      </Card>
+      {/*
+        Portalled for a real reason, not for tidiness.
+
+        This used to be a hand-rolled `fixed inset-0` block rendered *inside* the
+        card. `GlassPanel` sets `backdrop-filter` via `.glass-panel`, and a
+        computed `backdrop-filter` other than `none` creates a **containing block
+        for `position: fixed` descendants** â€” so `inset-0` resolved against the
+        card instead of the viewport, and the card's `overflow-hidden` clipped it.
+        The dialog appeared as a small box inside the sleep card with its buttons
+        cut off. The old shared `Card` had no `backdrop-filter`, so this only
+        appeared after the glass-shell migration.
+
+        `createPortal(..., document.body)` escapes the containing block, and
+        reusing the Radix `Dialog` (already imported for the log form) also brings
+        a focus trap, Escape handling and focus restore, which the hand-rolled
+        version lacked.
+      */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <Dialog open={longRunningOpen} onOpenChange={setLongRunningOpen} size="sm">
+            <DialogContent>
+              <DialogTitle>Still sleeping?</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                This session has been running for over 16 hours, which is longer
+                than a typical night. Did you forget to stop it?
+              </p>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <Button variant="outline" onClick={() => setLongRunningOpen(false)}>
+                  Keep tracking
+                </Button>
+                <Button onClick={confirmLongRunningStop} isLoading={busy === 'stop'}>
+                  Yes, end it
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>,
+          document.body
+        )}
+      </GlassPanel>
+      {/*
+        The wake dialog is portalled for the same reason as the "still
+        sleeping?" dialog above â€” `GlassPanel` sets `backdrop-filter`, which
+        makes it a containing block for `position: fixed`, and its
+        `overflow-hidden` would clip an inline dialog to the card.
+      */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          wakeConfirmOpen ? (
+            <WakeConfirmDialog
+              onClose={() => setWakeConfirmOpen(false)}
+              onConfirm={submitWakeTimes}
+              busy={busy === 'stop'}
+              scheduledBedtime={
+                (todaySleepLog as SleepLogView | null)?.targetBedtime ?? null
+              }
+              targetWakeTime={
+                (todaySleepLog as SleepLogView | null)?.targetWakeTime ?? null
+              }
+              startedAt={active?.startedAt ?? ''}
+            />
+          ) : null,
+          document.body
+        )}
     </Mount>
   );
 }
@@ -276,6 +380,162 @@ function ActiveTimer({
   );
 }
 
+/**
+ * Confirms the two facts a sleep session cannot infer.
+ *
+ * The service is deliberately capable of proceeding without an answer (it falls
+ * back to the session clock), so the *only* thing standing between a 09:00 button
+ * press and a fabricated 09:00 wake time is this dialog being shown and
+ * answered. It is rendered conditionally by the parent so it mounts fresh with
+ * current defaults each time rather than keeping stale state.
+ *
+ * Both inputs accept any `HH:mm`, and both prefill with the *scheduled* value so
+ * the common case is one tap. Entering a real time is what makes the duration,
+ * the deficit and `DailyScore.sleepScore` meaningful.
+ */
+function WakeConfirmDialog({
+  onClose,
+  onConfirm,
+  busy,
+  scheduledBedtime,
+  startedAt,
+  targetWakeTime,
+}: {
+  onClose: () => void;
+  onConfirm: (actual: { bedtime: string; wakeTime: string }) => void;
+  busy: boolean;
+  /** Target bedtime from settings, when set. */
+  scheduledBedtime?: string | null;
+  /** Session start, used as the fallback bedtime label. */
+  startedAt: string;
+  /** Target wake time from settings, used as the wake prefill. */
+  targetWakeTime?: string | null;
+}) {
+  // The session's own start is the honest "when did tracking begin"; the
+  // scheduled bedtime is what the plan wanted. Offer the plan, fall back to
+  // what actually happened.
+  const sessionBedtime = (() => {
+    const ms = Date.parse(startedAt);
+    if (Number.isNaN(ms)) return '';
+    const d = new Date(ms);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  })();
+  const plannedBedtime = scheduledBedtime?.trim() || sessionBedtime || '';
+
+  const [bedtime, setBedtime] = useState(plannedBedtime);
+  /**
+   * Prefilled from the **target** wake time only — never from the current clock.
+   *
+   * This previously fell back to `nowHHmm()`, which reintroduced exactly the bug
+   * this dialog exists to prevent: a user who ignored the 05:00 alarm and opened
+   * the card at 17:23 could press Save without touching the field and silently
+   * record a 17h23m night. An empty field forces the actual time to be stated;
+   * where a target exists the common case is still one tap.
+   */
+  const [wakeTime, setWakeTime] = useState(targetWakeTime?.trim() ?? '');
+
+  const bedtimeValid = /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(bedtime);
+  const wakeValid = /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(wakeTime);
+  const canSubmit = bedtimeValid && wakeValid && !busy;
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirm your sleep</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 px-1">
+          <p className="text-sm text-muted-foreground">
+            Your target was{' '}
+            <span className="font-semibold text-foreground">
+              {plannedBedtime || 'not set'}
+            </span>
+            {targetWakeTime?.trim() ? (
+              <>
+                {' '}
+                â†’{' '}
+                <span className="font-semibold text-foreground">
+                  {targetWakeTime.trim()}
+                </span>
+              </>
+            ) : null}
+            . Only you know when you actually slept and woke â€” your answers are
+            what get recorded, not this button press.
+          </p>
+
+          <div>
+            <label
+              htmlFor="sleep-actual-bedtime"
+              className="mb-1.5 block text-sm font-medium text-foreground"
+            >
+              When did you go to sleep?
+            </label>
+            <Input
+              id="sleep-actual-bedtime"
+              type="time"
+              value={bedtime}
+              onChange={(e) => setBedtime(e.target.value)}
+              aria-describedby="sleep-bedtime-hint"
+            />
+            <p id="sleep-bedtime-hint" className="mt-1 text-xs text-muted-foreground">
+              Enter the real time â€” earlier or later than the target, including
+              after midnight.
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="sleep-actual-wake"
+              className="mb-1.5 block text-sm font-medium text-foreground"
+            >
+              When did you wake up?
+            </label>
+            <Input
+              id="sleep-actual-wake"
+              type="time"
+              value={wakeTime}
+              onChange={(e) => setWakeTime(e.target.value)}
+              aria-describedby="sleep-wake-hint"
+            />
+            <p id="sleep-wake-hint" className="mt-1 text-xs text-muted-foreground">
+              {targetWakeTime?.trim()
+                ? `Prefilled with your ${targetWakeTime.trim()} target. Change it if you woke earlier or later.`
+                : 'Required — enter the time you actually woke up.'}
+            </p>
+          </div>
+
+          {!bedtimeValid || !wakeValid ? (
+            <p role="alert" className="text-xs text-destructive">
+              {!wakeValid
+                ? 'Enter the time you actually woke up — it is not filled in for you, because the time you press this button is not when you woke.'
+                : 'Both times must be a valid time of day.'}
+            </p>
+          ) : null}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={onClose} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => onConfirm({ bedtime, wakeTime })}
+              isLoading={busy}
+              disabled={!canSubmit}
+            >
+              Save sleep
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function ReminderPanel({
   prompt,
   onStartNow,
@@ -309,7 +569,7 @@ function ReminderPanel({
             you say &ldquo;Not yet&rdquo;.
           </p>
         </div>
-        <Timer className="h-6 w-6 text-amber-500/70" />
+        <Timer className="h-6 w-6 text-amber-500/70" aria-hidden="true" />
       </div>
       {secondsLeft >= 0 && (
         <p className="mt-2 text-2xl font-bold text-foreground tabular-nums">{countdown}</p>
@@ -327,11 +587,85 @@ function ReminderPanel({
 }
 
 /**
+ * Pre-warning panel shown 1 hour before bedtime.
+ */
+function PreWarningPanel({
+  preWarning,
+  onDismiss,
+  busy,
+}: {
+  preWarning: { targetBedtime: string; preWarningTime: string };
+  onDismiss: () => void;
+  busy: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-blue-500/40 bg-blue-500/5 p-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Sleep schedule approaching</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your sleep schedule starts in 1 hour (at <span className="font-semibold text-foreground">{preWarning.targetBedtime}</span>). Start winding down!
+          </p>
+        </div>
+        <Clock3 className="h-6 w-6 text-blue-500/70" aria-hidden="true" />
+      </div>
+      <div className="mt-4 flex items-center gap-2">
+        <Button variant="outline" onClick={onDismiss} isLoading={busy} className="flex-1">
+          Dismiss
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Wake prompt panel shown at target wake time.
+ */
+function WakePromptPanel({
+  wakePrompt,
+  onWokeAtTarget,
+  onWokeLater,
+  onStillSleeping,
+  busy,
+}: {
+  wakePrompt: { targetWakeTime: string };
+  onWokeAtTarget: () => void;
+  onWokeLater: () => void;
+  onStillSleeping: () => void;
+  busy: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Good morning!</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your target wake time is <span className="font-semibold text-foreground">{wakePrompt.targetWakeTime}</span>. Did you wake up now?
+          </p>
+        </div>
+        <BedDouble className="h-6 w-6 text-emerald-500/70" aria-hidden="true" />
+      </div>
+      <div className="mt-4 flex flex-col sm:flex-row gap-2">
+        <Button onClick={onWokeAtTarget} isLoading={busy} className="flex-1">
+          Yes, at {wakePrompt.targetWakeTime}
+        </Button>
+        <Button variant="outline" onClick={onWokeLater} isLoading={busy} className="flex-1">
+          I woke up later
+        </Button>
+        <Button variant="outline" onClick={onStillSleeping} isLoading={busy} className="flex-1">
+          Still sleeping
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Today's sleep summary.
  *
  * ERROR.md A4 asked for a sleep quality meter on /today. This rendered the
  * self-rated quality as a bare `4/5` text cell, so there was no score, no band
- * and no visual weight. It now computes the same 0–100 score the dashboard uses
+ * and no visual weight. It now computes the same 0â€“100 score the dashboard uses
  * (duration vs target, adjusted by the self-rating and restedness) and renders
  * the shared `SleepQualityMeter`.
  */
@@ -416,7 +750,7 @@ function SleepForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1">Bedtime</label>
+        <label htmlFor="sleep-bedtime" className="mb-1 block text-sm font-medium text-foreground">Bedtime</label>
         <Input
           type="time"
           value={formData.actualBedtime}
@@ -425,7 +759,7 @@ function SleepForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1">Wake Time</label>
+        <label htmlFor="sleep-waketime" className="mb-1 block text-sm font-medium text-foreground">Wake Time</label>
         <Input
           type="time"
           value={formData.actualWakeTime}
@@ -434,7 +768,7 @@ function SleepForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-foreground mb-1">Quality (1-5)</label>
+        <label htmlFor="sleep-quality" className="mb-1 block text-sm font-medium text-foreground">Quality (1-5)</label>
         <Input
           type="number"
           min="1"

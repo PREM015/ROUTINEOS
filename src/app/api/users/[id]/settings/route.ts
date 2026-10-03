@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { UserRepository } from '@/server/repositories/user.repository';
+import { userService } from '@/server/services/user.service';
+import { AuthorizationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -27,13 +28,15 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const userRepository = new UserRepository();
-    const settings = await userRepository.getSettings(id);
+    const settings = await userService.getSettings(id);
 
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error fetching user settings:', error);
 
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

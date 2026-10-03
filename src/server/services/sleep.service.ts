@@ -43,6 +43,15 @@ export class SleepService {
    * Log (or update) a night of sleep for a user+date. Only the fields the
    * client actually sent are written, so updating a wake-time summary never
    * clobbers quality/notes/feltRested that were saved earlier the same day.
+   *
+   * The target window is the exception: it is snapshotted from
+   * `UserSettings` when the client did not send one. `/today`'s form sends only
+   * bedtime, wake time, quality and restedness, so without this the log's
+   * `targetBedtime`/`targetWakeTime` stayed null forever — which meant the
+   * "Target" cell rendered an em-dash and `SleepQualityMeter` was stuck on
+   * "not enough data yet" for every night logged from the page. Snapshotting
+   * on write is also the only way the plan a night was judged against survives
+   * a later change to the user's settings.
    */
   async logSleep(userId: string, input: LogSleepInput): Promise<SleepLog> {
     const settings = await this.userRepository.getSettings(userId);
@@ -51,14 +60,17 @@ export class SleepService {
     const wakeTime = normalizeTime(input.actualWakeTime);
     const durationMinutes = calculateSleepDuration(bedtime, wakeTime);
 
+    const targetBedtime = input.targetBedtime ?? settings?.targetBedtime?.trim() ?? null;
+    const targetWakeTime = input.targetWakeTime ?? settings?.targetWakeTime?.trim() ?? null;
+
     const data: Omit<Prisma.SleepLogCreateInput, 'userId' | 'date'> = {
       user: { connect: { id: userId } },
       actualBedtime: bedtime,
       actualWakeTime: wakeTime,
       actualDurationMinutes: durationMinutes,
       deficitMinutes: calculateSleepDeficit(durationMinutes, target),
-      ...(input.targetBedtime !== undefined && { targetBedtime: input.targetBedtime }),
-      ...(input.targetWakeTime !== undefined && { targetWakeTime: input.targetWakeTime }),
+      ...(targetBedtime !== null && { targetBedtime }),
+      ...(targetWakeTime !== null && { targetWakeTime }),
       ...(input.quality !== undefined && { quality: input.quality }),
       ...(input.wakeUpCount !== undefined && { wakeUpCount: input.wakeUpCount }),
       ...(input.feltRested !== undefined && { feltRested: input.feltRested }),
@@ -67,7 +79,12 @@ export class SleepService {
       ...(input.notes !== undefined && { notes: input.notes }),
     };
 
-    return this.sleepRepository.upsertLog(userId, input.date, data);
+    const log = await this.sleepRepository.upsertLog(userId, input.date, data);
+
+    const { ScoringService } = await import('./scoring.service');
+    await new ScoringService().calculateDailyScore(userId, input.date);
+
+    return log;
   }
 
   /**

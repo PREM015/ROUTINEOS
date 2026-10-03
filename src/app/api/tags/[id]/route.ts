@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { TagRepository } from '@/server/repositories/tag.repository';
+import { tagService } from '@/server/services/tag.service';
 import { updateTagSchema } from '@/schemas/tag.schema';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
@@ -27,8 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tagRepository = new TagRepository();
-    const tag = await tagRepository.findById(session.user.id, paramId);
+    const tag = await tagService.get(session.user.id, paramId);
 
     if (!tag) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
@@ -62,8 +61,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const tagRepository = new TagRepository();
-    const existing = await tagRepository.findById(session.user.id, paramId);
+    // The existence check and the empty-patch short-circuit both moved into the
+    // service, so they can no longer drift apart from the `GET`/`DELETE` copies
+    // of the same lookup.
+    const existing = await tagService.get(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
     }
@@ -72,7 +73,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ success: true, data: existing });
     }
 
-    const tag = await tagRepository.update(session.user.id, paramId, validated.data);
+    const tag = await tagService.update(session.user.id, paramId, validated.data);
     return NextResponse.json({ success: true, data: tag });
   } catch (error) {
     console.error('Error updating tag:', error);
@@ -104,13 +105,12 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tagRepository = new TagRepository();
-    const existing = await tagRepository.findById(session.user.id, paramId);
+    const existing = await tagService.get(session.user.id, paramId);
     if (!existing) {
       return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
     }
 
-    await tagRepository.delete(session.user.id, paramId);
+    await tagService.delete(session.user.id, paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting tag:', error);

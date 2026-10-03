@@ -6,6 +6,15 @@
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /*
+    Numerals get their own face per the design spec ("one display face for
+    numbers, tabular figures, slightly condensed"). System UI faces already carry
+    tabular figures; the condensed look comes from the tighter tracking applied
+    alongside `.font-display`, not from a second webfont — loading a second
+    family purely for a digit shape costs a network request and a FOUT for
+    something almost nobody notices.
+  */
+  --font-display: var(--font-geist-sans);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   /* Elevation scale — flat / raised / floating / modal. */
   --shadow-flat: 0 0 0 1px rgba(0, 0, 0, 0.02);
@@ -26,11 +35,248 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Domain accents, as Tailwind colours so `text-accent-score` etc. work. */
+  --color-accent-score: var(--accent-score);
+  --color-accent-habits: var(--accent-habits);
+  --color-accent-goals: var(--accent-goals);
+  --color-accent-sleep: var(--accent-sleep);
+  --color-accent-routine: var(--accent-routine);
+  --color-accent-focus: var(--accent-focus);
+  --color-accent-streak: var(--accent-streak);
+  --color-accent-insights: var(--accent-insights);
+  --color-accent-planning: var(--accent-planning);
+  --color-accent-gold: var(--accent-gold);
+
+  /*
+    Pace tokens, mapped as Tailwind colours so `/goals` can write
+    `text-pace-ahead` / `bg-pace-behind-wash` instead of an arbitrary
+    `-[var(--pace-ahead)]` at every call site. Mapping them here — rather than
+    hardcoding hex per element — is what keeps light and dark both correct with
+    no second `dark:` variant per element.
+  */
+  --color-pace-ahead: var(--pace-ahead);
+  --color-pace-ahead-wash: var(--pace-ahead-wash);
+  --color-pace-on: var(--pace-on);
+  --color-pace-on-wash: var(--pace-on-wash);
+  --color-pace-behind: var(--pace-behind);
+  --color-pace-behind-wash: var(--pace-behind-wash);
+  --color-pace-overdue: var(--pace-overdue);
+  --color-pace-overdue-wash: var(--pace-overdue-wash);
+  --color-pace-done: var(--pace-done);
+  --color-pace-done-wash: var(--pace-done-wash);
+  --color-pace-idle: var(--pace-idle);
+  --color-pace-idle-wash: var(--pace-idle-wash);
+  --color-pace-rail: var(--pace-rail);
+  --color-pace-rail-inset: var(--pace-rail-inset);
+
+  /*
+    State + block-identity tokens, mapped so `text-warning`, `bg-block-hue-3` and
+    friends resolve. Without these mappings Tailwind v4 generates no utility for
+    them at all — which is precisely how `text-warning` ended up used in nine
+    places and rendering in none.
+  */
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+
+  --color-block-hue-1: var(--block-hue-1);
+  --color-block-hue-2: var(--block-hue-2);
+  --color-block-hue-3: var(--block-hue-3);
+  --color-block-hue-4: var(--block-hue-4);
+  --color-block-hue-5: var(--block-hue-5);
+  --color-block-hue-6: var(--block-hue-6);
+  --color-block-hue-7: var(--block-hue-7);
+  --color-block-hue-8: var(--block-hue-8);
+
+  /*
+    `/goals` pace, expressed as a percentage string so the tint can be mixed
+    against `--card` in CSS and each theme gets the right result from one number.
+    See `tintFor` in `components/goals/GoalCard.tsx` for why `on_pace` carries the
+    *most* tint of any state.
+  */
+  --pace-card-tint: 6%;
+  --pace-card-tint-dark: 8%;
+}
+
+/*
+   A `/goals` card: the pace hue as surface, border and rim.
+
+   The tint is the whole point. `--pace-on` is a slate, and most goals are on
+   pace, so a card built on plain `--card` put a colour that existed but could
+   not be seen. Mixing the hue 6% into the surface names it without touching
+   text contrast at all — `--foreground` and `--muted-foreground` are unmoved by
+   a 6% background tint, so AA is unchanged and the hue is pure atmosphere.
+*/
+.goals-pace-card {
+  background: color-mix(
+    in oklab,
+    var(--pace-card-hue) var(--pace-card-tint),
+    var(--card)
+  );
+  /* A chromatic border rather than a neutral hairline. Two same-sized cards
+     beside each other are separable by edge alone, which is what lets a grid of
+     them be scanned for pace without reading a single number. */
+  border-color: color-mix(in oklab, var(--pace-card-hue) 26%, var(--border));
+}
+
+.dark .goals-pace-card {
+  background: color-mix(
+    in oklab,
+    var(--pace-card-hue) var(--pace-card-tint-dark),
+    var(--card)
+  );
+  border-color: color-mix(in oklab, var(--pace-card-hue) 22%, var(--border));
+  /* In dark mode a drop shadow barely reads, so elevation comes from the rim
+     and the tint instead. The tint goes *up*, not down: a wash that lightens
+     the card is what separates it from the near-black canvas. */
+  box-shadow: 0 8px 22px -14px color-mix(in oklab, var(--pace-card-hue) 45%, transparent);
+}
+
+/*
+   ── The horizon ─────────────────────────────────────────────────────────
+   The backdrop `/goals` cards sit against, and the reason glass is legitimate
+   on this page at all.
+
+   The design brief for this page was "a glass cockpit altitude display… like
+   looking at a flight path against open sky", and the first implementation put
+   a 4% wash across the top 64 pixels — which is not a horizon, it is a header
+   tint. Frosted glass over a flat background is the single most-cited way to
+   make a panel look like grey plastic, because there is nothing behind it to
+   refract. So there is now something behind it.
+
+   **Sky, then ground.** Two broad bands — a cool wash at the top falling to a
+   warm one at the bottom, meeting around 62% down the page. Cards near the top
+   read as sky, cards lower down read as terrain, and the transition is a
+   gradient rather than a line so nothing has an edge.
+
+   Entirely **static**. The motion brief for this page forbids drifting ambient
+   backgrounds, and for a good reason beyond taste: a full-viewport animated
+   gradient forces the compositor to repaint continuously behind a list the user
+   is trying to read. It would cost frames and buy nothing.
+
+   Opacities are 6% and 4%. This is atmosphere. If it is ever legible as a shape
+   rather than felt as depth, it is too strong.
+*/
+.goals-horizon {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(
+      120% 55% at 50% -10%,
+      color-mix(in oklab, var(--accent-sleep) 7%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      90% 45% at 15% 40%,
+      color-mix(in oklab, var(--accent-routine) 5%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--accent-sleep) 5%, transparent) 0%,
+      transparent 38%,
+      transparent 62%,
+      color-mix(in oklab, var(--accent-goals) 4%, transparent) 100%
+    );
+}
+
+.dark .goals-horizon {
+  background:
+    radial-gradient(
+      120% 55% at 50% -10%,
+      color-mix(in oklab, var(--accent-sleep) 13%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      90% 45% at 15% 40%,
+      color-mix(in oklab, var(--accent-routine) 9%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--accent-sleep) 9%, transparent) 0%,
+      transparent 38%,
+      transparent 62%,
+      color-mix(in oklab, var(--accent-goals) 7%, transparent) 100%
+    );
+}
+
+/*
+   ── Life Balance card surface ───────────────────────────────────────────
+   The frosted container the spec asks for: `blur(20px) saturate(180%)`, a 1px
+   translucent border, and the deep neutral surface from `--radar-surface`.
+
+   Applied to the `Panel` itself rather than wrapping it in another card. A card
+   inside a card inside a card is the single most reliable way to make a widget
+   look assembled rather than designed — the outer chrome would sit on top of the
+   inner one and the two borders would double up at every corner.
+*/
+.radar-surface {
+  position: relative;
+  background: var(--radar-surface);
+  background-image: linear-gradient(
+    color-mix(in oklab, var(--radar-hue) 7%, transparent),
+    transparent 60%
+  );
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid color-mix(in oklab, var(--radar-hue) 22%, rgb(255 255 255 / 0.1));
+  /* Two inner hairlines plus an outer shadow. The top one is the cheap trick
+     that stops a flat card reading as flat; it is what light does to a bevel. */
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.09),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.28),
+    0 10px 30px -14px rgb(0 0 0 / 0.55);
+}
+
+.dark .radar-surface {
+  background: color-mix(in oklab, var(--radar-hue) 6%, var(--radar-surface));
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.06),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.4),
+    0 12px 34px -16px rgb(0 0 0 / 0.7);
+}
+
+/*
+   The horizon continues past the viewport, so it has to be taller than the
+   content. `pointer-events: none` so it can never eat a click meant for a card,
+   and `z-index: -1` so it stays behind everything without any component needing
+   to know about it.
+*/
+.goals-horizon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* A faint dot grid, masked to fade out downward — a scale reference for the
+     "trajectory" reading, and the cheapest texture that survives both themes. */
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in oklab, var(--foreground) 9%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 55%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 55%);
+  opacity: 0.5;
 }
 
 :root {
   color-scheme: light;
-  --background: #ffffff;
+  /*
+    A2 — "Base canvas, never flat black or flat white."
+
+    `--canvas-light` is a near-white with a warm undertone rather than `#fff`, so
+    the aurora mesh has something to tint and every glass card in front of it
+    reads as floating in something alive instead of sitting on paper.
+  */
+  --canvas-light: #fafafa;
+  --background: var(--canvas-light);
   --foreground: #09090b;
   --card: #ffffff;
   --card-foreground: #09090b;
@@ -41,11 +287,191 @@
   --primary-foreground: #ffffff;
   --destructive: #b91c1c;
   --destructive-foreground: #ffffff;
+
+  /*
+    Domain accents — one hue per domain, used consistently everywhere.
+
+    Per the dashboard design spec: "Each domain gets one hue, used consistently
+    everywhere". Defining them as tokens rather than hardcoding hex at each call
+    site is what makes that enforceable — and it means dark mode is *not* an
+    inverted light mode, it gets its own saturation (see `.dark` below).
+
+    The eight above are *identity*. `--success` / `--warning` below are *state*,
+    and they are the reason this paragraph now needs the caveat it has.
+
+    `--warning` was written into nine call sites across `src/components/routine/`
+    — partial status, overlap warnings, medium-energy dots — and was **never
+    declared here**. Under Tailwind v4 `@theme`, an undeclared variable means
+    `text-warning` is never generated at all, so every one of those rendered with
+    no colour whatsoever: a "PARTIAL" block and an overlapping block looked
+    exactly like an ordinary one. The intent was recorded in nine places and
+    honoured in none, which is worse than not having tried.
+
+    So they are declared. The discipline the note asked for is kept by making
+    them genuinely scarce: they mean a *state transition* (something needs
+    attention), never identity. The eight domain accents stay the identity
+    scale, and nothing on a routine block is tinted from `--warning` as a
+    decoration — it appears only where a real conflict or a partial completion is
+    being reported.
+  */
+  --accent-score: #7c3aed;      /* violet   */
+  --accent-habits: #059669;     /* emerald  */
+  --accent-goals: #d97706;      /* amber    */
+  --accent-sleep: #4f46e5;      /* indigo   */
+  --accent-routine: #0284c7;    /* sky      */
+  --accent-focus: #e11d48;      /* rose     */
+  --accent-streak: #ea580c;     /* orange   */
+  --accent-insights: #0891b2;   /* cyan     */
+  --accent-planning: #6366f1;   /* indigo-500 */
+
+  /*
+    A2 — "Gold is reserved. It only appears at a genuine peak moment (100% day,
+    top streak tier, a new achievement). That scarcity is what makes it feel
+    earned rather than decorative."
+
+    So it is NOT in the eight-domain set above and is deliberately absent from
+    `DOMAIN_ACCENT`: nothing may reach for it as an ordinary identity hue. The
+    only sanctioned consumers are the streak tier resolver and the 100%-day
+    moment.
+  */
+  --accent-gold: #b45309;
+
+  /* State tokens. Scarce by design — see the note above the accent scale. */
+  --success: #047857;
+  --warning: #b45309;
+  --info: #0284c7;
+
+  /*
+    ── Routine block identity ────────────────────────────────────────────
+    The hue a routine block wears when the user has not chosen one.
+
+    Every block fell back to `--primary` when `block.color` was null, which is
+    the common case — so a whole day rendered as one shade of green and the
+    colour channel carried no information at all. These give blocks an identity.
+
+    Resolution order lives in `src/constants/routine.ts` and it is **semantic,
+    not decorative**: a block in a category wears that category's colour, so
+    every "Work" block in the day is recognisably the same blue wherever it
+    appears. Only an uncategorised block falls through to a stable hash of its
+    own id, so it keeps its colour across reorderings and reloads.
+
+    Eight hues, each >= 4.5:1 as text on `--card` in its own theme. They are
+    applied as a 6-14% tint plus a saturated hairline, never as a fill — a
+    saturated fill behind body text is the legibility problem this palette
+    exists to avoid.
+  */
+  --block-hue-1: #0284c7;  /* sky     */
+  --block-hue-2: #7c3aed;  /* violet  */
+  --block-hue-3: #be123c;  /* rose    */
+  --block-hue-4: #b45309;  /* amber   */
+  --block-hue-5: #047857;  /* emerald */
+  --block-hue-6: #a21caf;  /* fuchsia */
+  --block-hue-7: #0f766e;  /* teal    */
+  --block-hue-8: #4338ca;  /* indigo  */
+
+/*
+    ── `/goals` pace palette ────────────────────────────────────────────────
+    "Trajectory": Goals is the one page whose job is "are you on track to land
+    where you meant to", so it is coloured by **pace state** and nothing else.
+    Priority is a text label, not a colour — which also dissolves the CRITICAL/HIGH
+    collision the old badge map had, where two distinct priorities shared one hue.
+
+    Each state has a solid (the marker) and a wash (the gap wedge), because the
+    wedge is a large, low-attention area and a full-strength colour there would
+    out-shout the very marker it exists to explain.
+
+    ── `on_pace` is a colour, not a grey ──────────────────────────────────
+    This used to be a true slate, on the reasoning that "the nothing-to-report
+    state should look like nothing to report". The rule was defensible and the
+    result was not: `on_pace` is the **most common state** by a wide margin, so
+    most cards rendered as an undifferentiated near-white or near-black, and a
+    palette with six entries showed the user two of them on any ordinary day.
+
+    It is now indigo — visibly calm, visibly a colour. The restraint is kept in
+    *saturation and position* instead: indigo sits at the bottom of the ramp, it
+    is only ever a 6% surface wash plus a hairline, and the states that genuinely
+    need shouting (behind, overdue) are warmer and higher-chroma, so the
+    hierarchy survives.
+
+    `--pace-idle` is the one that stays genuinely muted, and that is correct:
+    `inactive`/`pending`/`not_applicable` all mean "no measurement to report",
+    which is exactly the nothing-to-report case the rule was written for.
+
+    Contrast: every `--pace-*` value clears 4.5:1 against `--card` in its own
+    theme. The `--pace-*-wash` values are decorative fills only and are never the
+    sole carrier of a state — each is always paired with `paceLabel()`, so colour
+    is never the only signal.
+  */
+  --pace-ahead:        #0e7490;  /* cyan-teal. Ahead is correct, not a party. */
+  --pace-ahead-wash:   #0e74901f;
+  --pace-on:           #4338ca;  /* indigo. Calm, but a colour. */
+  --pace-on-wash:      #4338ca1f;
+  --pace-behind:       #b45309;  /* amber, tapered by severity — never a flat alarm. */
+  --pace-behind-wash:  #b453091f;
+  --pace-overdue:      #be123c;  /* rose. Outline only — a fact, not a scream. */
+  --pace-overdue-wash: #be123c14;
+  --pace-done:         #a16207;  /* muted gold. Settled, never glowing. */
+  --pace-done-wash:    #a1620714;
+  /* Inert, and the only genuinely grey value left. */
+  --pace-idle:         #64748b;
+  --pace-idle-wash:    #64748b14;
+  /* The rail the markers ride on. Reads as a groove, not as data. */
+  --pace-rail:         #e2e8f0;
+  --pace-rail-inset:   #cbd5e1;
+
+  /* Consistency heat ramp. The one place a day the user actually worked is
+     allowed to glow, so these are tuned as a PAIR per theme rather than shared.
+
+     White and near-black do not want the same green. On `--card: #ffffff`
+     emerald-500 at 0.34 alpha averages out to a pale mint that reads as "barely
+     tinted" rather than "you showed up", so light mode takes the DARKER
+     emerald-600 at a higher floor. On `--card: #101014` the same value is
+     invisible, so dark mode takes the LIGHTER emerald-400 instead. Neither is
+     a copy of the other; both are picked against their own card colour.
+
+     Channels are space-separated so the ramps can do `rgb(var(--heat-green) / a)`. */
+  --heat-green:    5 150 105;   /* emerald-600 — survives a white card */
+  --heat-green-hi: 16 185 129;  /* emerald-500 — the top band only */
+  --heat-glow:      4 120 87;   /* emerald-700 — the halo on white */
+
+  /* Deep-horizon backdrop wash. Static and ≤4% — material, not an effect. */
+  --horizon-wash:      #0e74900a;
+  --horizon-edge:      #0e749014;
+
+  /*
+    ── Life Balance radar ─────────────────────────────────────────────────
+    `--radar-hue` is `#818cf8` (indigo-400), the accent the radar polygon is
+    specified to use, and `--radar-glow` is the same hue at 40% for the outline
+    drop-shadow.
+
+    Declared here rather than hardcoded on the component for one reason: the same
+    hex at `drop-shadow(0 0 10px …)` in light mode over a white card is almost
+    invisible, while the identical value over the near-black dark card is far too
+    hot. One token, two theme values, no `dark:` branch in the component.
+  */
+  --radar-hue:       #818cf8;
+  --radar-glow:      rgb(129 140 248 / 0.4);
+  --radar-ring:      rgb(255 255 255 / 0.08);
+  /*
+    Deep neutral for the card's own surface, `oklch(17% 0.015 265)` as specified.
+    `oklch` is deliberate and not incidental: a perceptual lightness of 17% with a
+    trace of blue is what keeps a near-black card from reading as flat `#000`,
+    which crushes the glass border into invisibility. Pure black is forbidden here
+    for exactly that reason.
+  */
+  --radar-surface:   oklch(17% 0.015 265);
 }
 
 .dark {
   color-scheme: dark;
-  --background: #09090b;
+  /*
+    A2 — `--canvas-dark` is a near-black *with a blue undertone*. The previous
+    `#09090b` is a neutral zinc-black, which made the aurora mesh read as grey
+    haze instead of colour. The blue cast is what lets violet and sky blooms
+    sit on the ground rather than fight it.
+  */
+  --canvas-dark: #0a0a0f;
+  --background: var(--canvas-dark);
   --foreground: #fafafa;
   --card: #101014;
   --card-foreground: #fafafa;
@@ -56,6 +482,85 @@
   --primary-foreground: #06281c;
   --destructive: #f87171;
   --destructive-foreground: #09090b;
+
+  /*
+    Same eight hues, nudged up in saturation and lightness so they stay legible
+    against a near-black ground. Dark mode is not an inverted light mode.
+  */
+  --accent-score: #a78bfa;
+  --accent-habits: #10b981;
+  --accent-goals: #f59e0b;
+  --accent-sleep: #818cf8;
+  --accent-routine: #38bdf8;
+  --accent-focus: #fb7185;
+  --accent-streak: #fb923c;
+  --accent-insights: #22d3ee;
+  --accent-planning: #818cf8;   /* indigo-400 */
+  --accent-gold: #fbbf24;
+
+  /*
+    Pace palette, dark. Not an inversion of the light values: against a near-black
+    ground the light theme's mid-tone solids lose their edge, so each hue moves
+    *lighter* and slightly desaturates its wash. The bands are identical in
+    meaning — a reader who learns "amber means behind" in one theme still knows it
+    in the other.
+  */
+  --pace-ahead:        #22d3ee;
+  --pace-ahead-wash:   #22d3ee1f;
+  --pace-on:           #818cf8;
+  --pace-on-wash:      #818cf81f;
+  --pace-behind:       #fbbf24;
+  --pace-behind-wash:  #fbbf241f;
+  --pace-overdue:      #fb7185;
+  --pace-overdue-wash: #fb718518;
+  --pace-done:         #fcd34d;
+  --pace-done-wash:    #fcd34d14;
+  /* Lighter than the light-mode value: #64748b sits at ~3.9:1 on `--card`
+     here, which is under AA for text. `#94a3b8` clears it comfortably. */
+  --pace-idle:         #94a3b8;
+  --pace-idle-wash:    #94a3b81a;
+  --pace-rail:         #1e293b;
+  --pace-rail-inset:   #334155;
+
+  /* Consistency heat ramp, dark. The same three roles as light mode, moved up
+     the ramp rather than the value: on `--card: #101014` the light-mode
+     emerald-600 reads as near-black, so the base climbs to emerald-400 and the
+     halo has to be the *brighter* green, because a dark glow on a dark card is
+     an absence rather than a light. */
+  --heat-green:    52 211 153;  /* emerald-400 */
+  --heat-green-hi: 110 231 183; /* emerald-300 */
+  --heat-glow:     16 185 129;
+
+  /* State, dark. Lighter than light mode: a mid-tone amber has no edge on a
+     near-black ground, and dark mode is not an inversion. */
+  --success: #34d399;
+  --warning: #fbbf24;
+  --info:    #38bdf8;
+
+  /*
+    Block identity, dark. Each hue moves *lighter* rather than lighter-and-paler,
+    because these sit behind text on `--card` (`#101014`) where a light-theme
+    mid-tone would fall under 4.5:1.
+  */
+  --block-hue-1: #38bdf8;  /* sky     */
+  --block-hue-2: #a78bfa;  /* violet  */
+  --block-hue-3: #fb7185;  /* rose    */
+  --block-hue-4: #fbbf24;  /* amber   */
+  --block-hue-5: #34d399;  /* emerald */
+  --block-hue-6: #e879f9;  /* fuchsia */
+  --block-hue-7: #2dd4bf;  /* teal    */
+  --block-hue-8: #818cf8;  /* indigo  */
+
+  /* Life Balance radar. The hue is unchanged from light mode — `#818cf8` is
+     already a light indigo and sits correctly on a near-black ground. Only the
+     glow comes down: a 40% glow that reads as a crisp edge on near-black reads
+     as haze on white. `--radar-ring` is the specified 8% white in both themes. */
+  --radar-glow:      rgb(129 140 248 / 0.32);
+  --radar-ring:      rgb(255 255 255 / 0.08);
+  --radar-surface:   oklch(22% 0.016 265);
+
+  --horizon-wash:      #22d3ee0a;
+  --horizon-edge:      #22d3ee1a;
 }
 
 body {
@@ -89,6 +594,50 @@ body {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+/*
+   The Achievements rail: a vertical scroller in a narrow dashboard column.
+
+   - A thin scrollbar, because the default track on a dark surface is wide
+     enough to eat a fifth of a 2-column rail.
+   - A bottom fade, so "there is more below" is visible without scrolling. The
+     mask is on the SCROLLER, never on the cards, so a card's entrance animation
+     is not clipped mid-flight.
+   - `scroll-behavior: smooth` is suppressed under `prefers-reduced-motion` -
+     reduced motion is about vestibular comfort, and a 12-card smooth scroll
+     between two positions is exactly the kind of large-area motion that setting
+     exists to suppress.
+*/
+.achievement-rail {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 30%, transparent) transparent;
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+}
+
+.achievement-rail::-webkit-scrollbar {
+  width: 6px;
+}
+
+.achievement-rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.achievement-rail::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .achievement-rail {
+    scroll-behavior: auto;
+    /* No fade either: a mask that implies more content is a motion cue, and the
+       reduced-motion contract is that these affordances become static. The
+       scrollbar itself still shows there is more. */
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }
 
 /* Radix portal entrances. Radix mounts content fresh on open, so a mount
@@ -245,9 +794,38 @@ body {
   }
 }
 
-.fade-rise-in {
-  animation: fade-rise 0.6s var(--ease-out-expo);
-}
+  .fade-rise-in {
+    animation: fade-rise 0.6s var(--ease-out-expo);
+  }
+
+  /*
+    Dashboard entrance (see `src/components/dashboard-ui/index.tsx`).
+
+    CSS rather than a framer-motion wrapper on purpose. `Mount` wraps its child
+    in a `div`, and those wrappers are what the dashboard's CSS grid lays out, so
+    hiding a widget leaves an empty cell rather than reflowing the grid. A
+    class-based animation needs no wrapper at all, which lets the widget itself
+    stay the grid item.
+
+    `animation-fill-mode: backwards` matters: it applies the `from` state during
+    the animation delay, so a panel with `animation-delay: 0.3s` starts hidden
+    instead of flashing at full opacity and then jumping.
+  */
+  @keyframes dash-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .dash-enter {
+    animation: dash-enter 0.45s var(--ease-out-expo) backwards;
+  }
+
 
 /* Shimmer sweep overlay for the `shine` Skeleton variant. */
 .animate-shimmer {
@@ -298,7 +876,19 @@ body {
   .menu-in,
   .popover-in,
   .tooltip-in,
-  .toast-progress {
+  .toast-progress,
+  /* Tailwind's `animate-pulse` was missing from every reduced-motion override in
+     this file, so a skeleton loaded forever for anyone whose OS asked for less
+     motion. The in-app `.reduce-motion` class did catch it (it sets
+     `animation-iteration-count: 1 !important` on `*`), which is why this only
+     surfaced for OS-level preferences and not for the settings toggle. It is a
+     *loading* affordance, so the honest reduced-motion behaviour is a static
+     placeholder rather than nothing at all. */
+  .animate-pulse {
+    animation: none;
+  }
+  /* The dashboard's staggered entrance. Same reasoning as `.animate-pulse`. */
+  .dash-enter {
     animation: none;
   }
 }
@@ -403,27 +993,313 @@ body {
    applied ONLY where the master plan names them.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* Frosted panel — translucent card over any background. */
+/*
+   Glassmorphism 2.0 (A3) — three stacked layers, not a flat background + border.
+
+     1. BLUR   backdrop-filter: blur(24px) saturate(140%)
+     2. TINT   the card's domain colour at 6-9%, as a 135deg diagonal gradient
+     3. EDGE   a 1px gradient border, bright at the top-left, transparent at the
+               bottom-right, so light appears to graze the top edge
+
+   `--glass-hue` is the per-card domain colour. It defaults to `var(--primary)`
+   so an unannotated card still looks intentional; a domain card sets it inline
+   (`style={{ '--glass-hue': hue }}`) and the whole material re-tints.
+
+   The two pseudo-elements are load-bearing, so their order matters:
+     `::before` is the TINT and paints BELOW the card's own children.
+     `::after`  is the EDGE and paints ABOVE them, but its interior is fully
+                transparent, so it never occludes content.
+
+   Previous values were blur(18px) saturate(150%) over a flat
+   `color-mix(card 58%)` fill with a single horizontal highlight line — no tint
+   layer and no edge gradient, so every glass surface on the page rendered at
+   the same value regardless of which domain it belonged to.
+*/
 .glass-panel {
+  --glass-hue: var(--primary);
+  --glass-tint: 7%;
+  --glass-blur: 24px;
   position: relative;
   background: color-mix(in srgb, var(--card) 58%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--foreground) 7%, transparent),
     0 8px 24px -12px rgb(0 0 0 / 0.16);
+  transition:
+    transform var(--motion-base, 300ms) var(--ease-out-expo),
+    backdrop-filter var(--motion-base, 300ms) var(--ease-out-expo),
+    -webkit-backdrop-filter var(--motion-base, 300ms) var(--ease-out-expo),
+    border-color var(--motion-base, 300ms) var(--ease-out-expo),
+    box-shadow var(--motion-base, 300ms) var(--ease-out-expo);
 }
 .glass-panel::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--foreground) 18%, transparent), transparent);
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--glass-hue) var(--glass-tint), transparent) 0%,
+    transparent 60%
+  );
   pointer-events: none;
+}
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--glass-hue) 40%, white 0%) 0%,
+    transparent 55%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/*
+   A3 hover: lift 3px, blur 24 -> 28px, and a soft directional glow that blooms
+   from whichever edge is nearest the cursor.
+
+   `--mx` / `--my` are written straight to CSS custom properties by the pointer
+   handler (the same trick `Panel` and `.spotlight-hover` already use) — going
+   through React state would re-render the whole card on every mouse move.
+
+   Deliberately a SEPARATE class rather than part of `.glass-panel`. Roughly 40
+   call sites across the app pair `.glass-panel` with their own
+   `hover:-translate-y-*` utility; both set `transform` at equal specificity, so
+   baking the lift into `.glass-panel` would silently override them depending on
+   stylesheet order. Opt-in is the only version of this that cannot break the
+   existing tree.
+*/
+.glass-panel-lift {
+  transform: translate3d(0, 0, 0);
+}
+.glass-panel-lift:hover {
+  --glass-blur: 28px;
+  transform: translate3d(0, -3px, 0);
+  border-color: color-mix(in srgb, var(--glass-hue) 34%, transparent);
+}
+.glass-panel-lift::before {
+  background:
+    radial-gradient(
+      260px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--glass-hue) 14%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--glass-hue) var(--glass-tint), transparent) 0%,
+      transparent 60%
+    );
+  opacity: 1;
+}
+
+/*
+   Glassmorphism 2.0 — the four-layer treatment for small schedule capsules.
+
+   `.glass-panel` is tuned for large panels: a heavy 24px blur and a long
+   transition. Applying that to a dozen block capsules on one screen means a
+   dozen live `backdrop-filter` surfaces, which is the single most expensive
+   thing you can put on a page — and it is also why the capsule needed its own
+   treatment rather than reusing the panel.
+
+   The four layers, in order:
+     1. translucent tinted background (not pure grey, so it takes the hue)
+     2. backdrop blur + saturate — 180% saturation is what stops frosted glass
+        reading as grey plastic, and it is not optional
+     3. a bright inset hairline along the TOP edge (light catching the bevel)
+        and a dark one along the BOTTOM (the shade), which is what makes a flat
+        rectangle look machined
+     4. a soft drop shadow so the capsule sits above the rail rather than on it
+
+   `--glass-hue` is set per-element to the owning day type or block colour, so
+   the tint is the user's own data rather than a generic brand wash.
+
+   The mix percentages below were 5% (light) and 7% (dark), which is why the
+   schedule looked grey and monochrome even though the material was capable of
+   carrying a full tint: at 5% against `--card` the hue shifts the surface by
+   roughly one and a half steps of the neutral ramp — below the threshold where
+   anyone can name the colour, let alone use it to tell two blocks apart. They
+   are now 13%/16%, which reads as a tinted card while leaving text on
+   `--foreground` comfortably above AA.
+
+   `saturate(180%)` in the `backdrop-filter` is doing the other half of the work:
+   without it, frosting desaturates whatever is behind the panel into grey
+   plastic. It is not optional.
+*/
+.glass-capsule {
+  --glass-hue: var(--primary);
+  /* How strongly the block's own colour tints the surface. Overridden per-card
+     when the block is running, so "now" is legible without a badge. */
+  --glass-tint: 13%;
+  position: relative;
+  background: color-mix(in oklab, var(--glass-hue) var(--glass-tint), color-mix(in srgb, var(--card) 84%, transparent));
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  /* The border is tinted too, not just the fill. A chromatic edge is what makes
+     two adjacent same-height blocks separable at a glance; a neutral hairline
+     makes them two grey rectangles. */
+  border: 1px solid color-mix(in srgb, var(--glass-hue) 30%, var(--border));
+  box-shadow:
+    /* Bright inner hairline along the top: light catching the bevel. This is the
+       single cheapest thing that stops a flat capsule reading as flat. */
+    inset 0 1px 0 0 color-mix(in srgb, var(--glass-hue) 34%, transparent),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.05),
+    0 6px 18px -10px color-mix(in srgb, var(--glass-hue) 40%, rgb(0 0 0 / 0.28));
+}
+
+/*
+   The running block gets more of its own colour, so "now" is answered by the
+   card's body and not only by a "Now" chip. `--glass-tint` exists for exactly
+   this: everything downstream reads it rather than re-deriving a percentage.
+*/
+.glass-capsule[data-running='true'] {
+  --glass-tint: 22%;
+}
+
+/*
+   Dark mode inverts the elevation cue: shadows barely read on a dark surface,
+   so a raised capsule becomes a slightly *lighter* one with a light top edge,
+   exactly as the colour system specifies. `color-scheme` also lets the browser
+   render native controls and scrollbars to match.
+*/
+.dark .glass-capsule {
+  --glass-hue: var(--primary);
+  --glass-tint: 16%;
+  background: color-mix(in oklab, var(--glass-hue) var(--glass-tint), color-mix(in srgb, var(--card) 76%, transparent));
+  /* Dark mode inverts the elevation cue: shadows barely read on a dark surface,
+     so a raised capsule becomes a slightly *lighter* one with a light top edge,
+     exactly as the colour system specifies. `color-scheme` also lets the browser
+     render native controls and scrollbars to match. */
+  border-color: color-mix(in srgb, var(--glass-hue) 26%, var(--border));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in srgb, var(--glass-hue) 30%, transparent),
+    inset 0 -1px 0 0 rgb(0 0 0 / 0.35),
+    0 8px 22px -12px color-mix(in srgb, var(--glass-hue) 34%, rgb(0 0 0 / 0.5));
+}
+
+.dark .glass-capsule[data-running='true'] {
+  --glass-tint: 26%;
+}
+
+/*
+   The 4% film grain. `feTurbulence` as an inline SVG data URI: no network
+   request, ~1KB, and `overlay` blending so it interacts with the palette rather
+   than greying it. Above ~6% it reads as a dirty screen.
+*/
+.grain-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+   A horizontally scrollable strip with no scrollbar track.
+
+   `scrollbar-width: thin` is Firefox-only, so the day-type and week strips were
+   rendering a full chrome scrollbar track straight through the header on every
+   other browser. `scrollbar-width: none` hides it in the standards-based
+   engines; the `::-webkit-scrollbar` rule covers WebKit and legacy Chromium,
+   which is where the visible track actually came from.
+
+   Scrollability is preserved - this is about the *track*, not the gesture. The
+   strips keep wheel, touch, keyboard and pointer dragging, and both are
+   reachable with arrow keys. Each is paired with `.scroll-fade-x` so there is a
+   visual cue that content continues past the edge, which is the affordance the
+   removed track was providing.
+*/
+/*
+   A slim, unobtrusive scrollbar for panes where the content is taller than the
+   box.
+
+   Deliberately *visible*, unlike `.scrollbar-none`. That utility is right for the
+   day-type and week strips, which are bounded, obviously scrollable, and sit
+   above a fade that says so. The schedule pane is neither: a day of blocks
+   simply looks like a complete list, so with no scrollbar the last card reads as
+   clipped by the panel edge rather than as "there is more below". The thumb is
+   the affordance, and hiding it is what made `Breakfast` look cut off.
+
+   `transparent` track so the glass behind it shows through, and a hover state so
+   the thumb is findable without being loud.
+*/
+.scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+}
+.scrollbar-slim::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--foreground) 18%, transparent);
+  border-radius: 9999px;
+  /* Inset so the thumb never touches the card's border and reads as a floating
+     control rather than as part of the frame. */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--foreground) 32%, transparent);
+}
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  width: 0;  height: 0;
+}
+
+/*
+   Edge fades for a horizontally scrolling strip.
+
+   A mask, so the faded region is genuinely clipped content rather than a
+   gradient painted over the middle of it.
+*/
+.scroll-fade-x {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 16px),
+    transparent 100%
+  );
+}
+
+/*
+   Respect the OS preference and the in-app `animationsEnabled` setting. Both
+   the lift and the blur change are decoration, so both are removed together —
+   a card that still moved while its blur snapped would read as a glitch.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .glass-panel-lift,
+  .glass-panel-lift:hover {
+    transform: none;
+    transition: none;
+  }
 }
 
 /* Gradient border via mask (white/10 → transparent) for dividers/avatars. */
@@ -453,34 +1329,59 @@ body {
     radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 14%, transparent) 0%, transparent 72%);
 }
 
-/* Animated variant — blobs drift on a slow loop (hero only). */
+/*
+   Aurora mesh (A2) — "a slow-drifting, multi-point gradient mesh behind the
+   whole app at low opacity (12-18%), built from 3-4 soft radial blooms in
+   domain colours that drift position over ~40-60 seconds. Imperceptibly slow:
+   felt, not watched."
+
+   The previous cycle was 26s, which is fast enough to read as a screensaver
+   rather than as a living surface. 48s sits inside the brief's band.
+
+   The blooms are domain colours, deliberately not arbitrary: emerald (Habits),
+   sky (Routine), violet (Score). `mesh-drift` only animates `background-position`,
+   so it never triggers layout or paint of the cards in front of it.
+*/
 .gradient-mesh-animated {
   background-image:
-    radial-gradient(38% 55% at 18% 12%, color-mix(in srgb, var(--primary) 22%, transparent) 0%, transparent 70%),
-    radial-gradient(42% 55% at 84% 16%, color-mix(in srgb, #0ea5e9 18%, transparent) 0%, transparent 70%),
-    radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 16%, transparent) 0%, transparent 72%);
-  background-size: 180% 180%, 160% 160%, 170% 170%;
-  background-position: 0% 0%, 100% 0%, 50% 100%;
-  animation: mesh-drift 26s ease-in-out infinite alternate;
+    radial-gradient(38% 55% at 18% 12%, color-mix(in srgb, #10b981 14%, transparent) 0%, transparent 70%),
+    radial-gradient(42% 55% at 84% 16%, color-mix(in srgb, #38bdf8 13%, transparent) 0%, transparent 70%),
+    radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 16%, transparent) 0%, transparent 72%),
+    radial-gradient(34% 46% at 34% 74%, color-mix(in srgb, #6366f1 10%, transparent) 0%, transparent 70%);
+  background-size: 180% 180%, 160% 160%, 170% 170%, 150% 150%;
+  background-position: 0% 0%, 100% 0%, 50% 100%, 20% 40%;
+  animation: mesh-drift 48s ease-in-out infinite alternate;
 }
 @keyframes mesh-drift {
   0% {
-    background-position: 0% 0%, 100% 0%, 50% 100%;
+    background-position: 0% 0%, 100% 0%, 50% 100%, 20% 40%;
   }
   50% {
-    background-position: 42% 60%, 58% 38%, 22% 18%;
+    background-position: 42% 60%, 58% 38%, 22% 18%, 72% 78%;
   }
   100% {
-    background-position: 100% 62%, 0% 100%, 82% 32%;
+    background-position: 100% 62%, 0% 100%, 82% 32%, 44% 8%;
   }
 }
 
-/* Film-grain overlay — sits on top, keeps gradients from banding. */
+/*
+   Film-grain overlay (A6) — "2-3% opacity, mix-blend-mode: overlay, fixed to the
+   viewport." Essentially invisible consciously, very noticeable if removed: it is
+   what separates a flat gradient from an expensive one.
+
+   Was 4.5%, which on a near-black canvas reads as visible video noise rather
+   than paper grain. 3% is the top of the brief's band.
+
+   `position: absolute` because the brief says fixed but every call site places
+   this inside a `relative` page wrapper (`<div className="noise-overlay absolute
+   inset-0" />`); making it `fixed` would detach it from those wrappers and let
+   it float over modals it was never layered into.
+*/
 .noise-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.045;
+  opacity: 0.03;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -580,12 +1481,274 @@ body {
   transition: opacity 0.3s ease;
 }
 
-/* Magnetic / tilt transforms are applied inline by their hooks; this only
-   smooths the spring-back so leaving an element eases, not snaps. */
+/*
+   Magnetic / tilt transforms are applied inline by their hooks; this only
+   smooths the spring-back so leaving an element eases, not snaps.
+*/
 .magnetic-hover,
 .tilt-3d {
   transition: transform 0.18s ease-out;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIGNATURE MOTION VOCABULARY (A5)
+
+   "Pick 2-3 per page, never all." The brief is explicit that the restraint in
+   which effects get used *where* is itself part of the premium feel, so each
+   primitive below is a separate opt-in class with a stated single consumer —
+   nothing here is inherited by a card that did not ask for it.
+
+   Every one of these is neutralised by the `.reduce-motion` /
+   `prefers-reduced-motion` block further down this file and by the in-app
+   `animationsEnabled` setting.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/*
+   SVG ring draw-on — "stroke-dashoffset animates from full to value over 900ms,
+   staggered 80ms per ring if multiple."
+
+   Sets `--ring-p` (0-100) on the element; the ring's own geometry reads it.
+   `--ring-delay` is what produces the per-ring stagger.
+*/
+@keyframes ring-draw {
+  from {
+    stroke-dashoffset: var(--ring-c, 999);
+  }
+  to {
+    stroke-dashoffset: var(--ring-offset, 0);
+  }
+}
+.ring-draw {
+  animation: ring-draw 900ms var(--ease-out-expo) both;
+  animation-delay: var(--ring-delay, 0ms);
+}
+
+/*
+   Line draw-on - the same 900ms idea for a stroked PATH rather than a ring.
+
+   The caller measures the real length with `getTotalLength()` and sets
+   `stroke-dasharray` / `stroke-dashoffset` to it inline; this only animates the
+   offset down to zero. The inline values are therefore the *resting* (fully
+   drawn) state and the animation is the transient, which is why cancelling it
+   under reduced motion leaves a correct chart rather than a blank one.
+*/
+@keyframes line-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.line-draw {
+  animation: line-draw 900ms var(--ease-out-expo) both;
+}
+
+/*
+   Glow pulse, ONE-SHOT — "a single 1.2s radial glow bloom and fade, never
+   loops." Reserved for a genuine peak moment.
+
+   `both` fill mode so the element returns exactly to its resting opacity
+   afterwards; without it the pulse would leave the element permanently
+   faded, which is the classic way a "celebration" quietly becomes a permanent
+   visual tax on the page.
+*/
+@keyframes glow-pulse-once {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+.glow-pulse-once {
+  animation: glow-pulse-once 1.2s var(--ease-out-expo) both;
+}
+
+/*
+   Holographic shimmer — the ONE piece of ongoing motion allowed beyond the
+   aurora mesh, and only on unlocked achievement medallions (B5).
+
+   A thin diagonal light sweep, ~8s per pass: rare enough to catch the eye
+   without becoming the thing you are looking at. `translateX` on a
+   `skewX(-20deg)` gradient, so it costs a composited transform only.
+*/
+@keyframes shimmer-holographic {
+  0%,
+  88% {
+    transform: translateX(-130%) skewX(-20deg);
+    opacity: 0;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(130%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+.shimmer-holographic::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, #ffffff 34%, transparent) 50%,
+    transparent 80%
+  );
+  animation: shimmer-holographic 8s var(--ease-out-expo) infinite;
+  pointer-events: none;
+}
+
+/*
+   Breathing ring — B7's "thin breathing ring (opacity 0.6 to 1, 3s cycle,
+   extremely subtle)" marking today in the 7-Day Mini Strip.
+
+   Opacity only. A scaling or glowing "now" marker on a row of 7px dots would be
+   shouting, which is precisely what the brief says this must not do.
+*/
+@keyframes breathe-ring {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.breathe-ring {
+  animation: breathe-ring 3s ease-in-out infinite;
+}
+
+/*
+   Magnetic micro-tilt — A5's "the one hero card per page, desktop only, max 4
+   degrees toward the cursor via perspective + rotateX/Y, heavily damped".
+
+   `--tilt-x` / `--tilt-y` are written to custom properties by the pointer
+   handler. Transform-only, so it stays on the compositor.
+*/
+.magnetic-tilt {
+  transform: perspective(1200px) rotateX(var(--tilt-y, 0deg)) rotateY(var(--tilt-x, 0deg));
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+@media (pointer: coarse) {
+  /* No cursor to tilt toward, and a phone should never pay for this. */
+  .magnetic-tilt {
+    transform: none;
+    transition: none;
+  }
+}
+
+/*
+   Depth level 2 (A7) — popovers, sheets and modals.
+
+   "Level 2 — popovers/sheets/modals (blur 32px, stronger shadow, scale-in from
+   0.96). Never a 4th level. Depth confusion is the fastest way to make a
+   'premium' UI feel cheap."
+
+   So an overlay is NOT the card material at a heavier blur: it gets a heavier
+   blur *and* a more opaque fill, because an overlay has to win against the page
+   behind it. A 58%-opaque card surface at 32px blur over an aurora mesh reads as
+   a slightly-fuzzy card rather than as a layer above the page.
+*/
+.glass-overlay {
+  position: relative;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  -webkit-backdrop-filter: blur(32px) saturate(150%);
+  backdrop-filter: blur(32px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  box-shadow:
+    0 24px 48px -12px rgb(0 0 0 / 0.28),
+    0 8px 24px -8px rgb(0 0 0 / 0.16);
+}
+
+/* The scrim behind it. */
+.overlay-scrim {
+  background: color-mix(in srgb, var(--background) 78%, transparent);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/*
+   Habit contribution cell rims.
+
+   Two orthogonal states need a rim, and a cell can only draw one box-shadow, so
+   precedence is declared here rather than recomputed at 365 call sites.
+
+   1. A logged miss gets an *inset* hairline, so it reads as a property of the
+      cell rather than as a ring floating around it.
+   2. Today gets an *outer* ring, because "which day am I looking at" is the more
+      useful orientation cue and it must win. Declared after, so it overrides.
+
+   This block is the ONLY home for these two values. They were once also exported
+   from `lib/habits/contribution-visual.ts`, and a colour living in two places is
+   a colour that will eventually disagree with itself.
+*/
+/*
+   The today ring and the logged-miss rim used to live here, as
+   `[data-today='true']` / `[data-miss='true']` box-shadow rules.
+
+   They were dead. Both consumers set an inline `style={{ boxShadow }}` for the
+   cell's structural hairline, and an inline style beats a stylesheet rule
+   outright — so the "today" ring never rendered and the miss rim never rendered,
+   despite the cells carrying the matching data attributes the whole time.
+
+   All four layers are now composed in `cellBoxShadow()`
+   (`lib/habits/contribution-visual.ts`): today ring, green halo, miss rim, then
+   the hairline last so it stays the bottom layer. One property, one function,
+   one precedence order — `data-today` / `data-miss` remain on the elements as
+   hooks and as the accessible labels' source, but they no longer own a style.
+*/
+
+/*
+   Metallic rim — B5's "small glass medallions with a metallic gradient border".
+
+   Deliberately NOT a domain tint. The domain-tinted edge on `.glass-panel` says
+   "this card belongs to Habits"; a metal rim says "this thing was forged", which
+   is the whole point of a badge. The gradient runs light-to-dark across the top
+   arc so the rim reads as a lit cylinder rather than as a flat outline, and it
+   desaturates toward neutral in light mode where a bright metal would vanish.
+*/
+.medallion-metal {
+  position: relative;
+  border: none;
+}
+.medallion-metal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #fbbf24 70%, white 30%) 0%,
+    color-mix(in srgb, #f59e0b 40%, transparent) 38%,
+    color-mix(in srgb, #a1a1aa 55%, transparent) 62%,
+    color-mix(in srgb, #fbbf24 45%, transparent) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/*
+   Staggered entrance — A5: "40-60ms stagger, 12px rise + opacity,
+   cubic-bezier(0.16, 1, 0.3, 1)". Reused from `.dash-enter`, which already
+   matches the curve; `dash-stagger` just makes the intent legible at call
+   sites where a delay is passed for entrance ordering rather than theming.
+*/
 
 /* One-shot shimmer reveal (badges, completions). Pair with .shimmer-active. */
 .shimmer {
@@ -765,7 +1928,11 @@ body {
   .tilt-3d,
   .spotlight-hover::before,
   .spotlight-hover::after,
-  .cursor-glow::before {
+  .cursor-glow::before,
+  .shimmer-holographic::after,
+  .breathe-ring,
+  .magnetic-tilt,
+  .glow-pulse-once {
     animation: none;
     transition: none;
   }
@@ -778,6 +1945,17 @@ body {
   .border-gradient-animated::before,
   .shimmer-active::after {
     animation: none !important;
+  }
+
+  /*
+    `ring-draw` is deliberately NOT in the list above. Its keyframes run from
+    "empty ring" to the element's own resting `stroke-dashoffset`, so cancelling
+    the animation leaves the ring drawn at its correct final value. Killing it
+    the way the others are killed would leave rings mid-draw or empty, which
+    reads as broken data rather than as reduced motion.
+  */
+  .magnetic-tilt {
+    transform: none;
   }
 }
 
@@ -813,6 +1991,42 @@ body {
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
+}
+
+/* ==========================================================================
+   Feature 2.12 — smooth light/dark theme transition.
+
+   Previously switching the theme swapped every colour in one frame, which on a
+   page with gradients, glass and rings reads as a hard flash. Only the
+   properties that actually change between themes are transitioned, and only on
+   elements that opt in, so nothing else gains a transition it never had.
+
+   Deliberately NOT transitioned: `background-image` (unpaintable to interpolate
+   cheaply), `color-scheme` (not animatable), or anything inside `.reduce-motion`
+   — a user who has turned animations off must not get a 300ms colour fade.
+
+   `color-scheme` is switched without animation, which is what makes native
+   scrollbars and form controls follow the theme.
+   ========================================================================== */
+
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition-property: background-color, border-color, color, fill, stroke,
+    box-shadow, opacity;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Applied for one tick by `useThemeTransition` so the class exists only while
+   the change is happening — a permanently present class would give every
+   element a transition and change how hover states feel. */
+.reduce-motion.theme-transition,
+.reduce-motion.theme-transition *,
+.reduce-motion.theme-transition *::before,
+.reduce-motion.theme-transition *::after {
+  transition: none !important;
 }
 
 /* "Compact mode": tighten vertical rhythm for list-dense screens. */

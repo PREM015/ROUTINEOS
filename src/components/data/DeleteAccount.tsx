@@ -38,7 +38,19 @@ export function DeleteAccount() {
         method: 'DELETE',
         body: { confirm: true, reason: reason.trim() || undefined },
       });
-      window.location.href = '/login';
+      /*
+        A full navigation, and deliberately so.
+
+        The account is gone, so the session cookie is dead and every cached
+        payload on the page is stale. `router.push` would try to render the SPA
+        with all of it still in memory.
+
+        `replace`, not `href`: `href` pushes a history entry, so the back button
+        would return the user to the settings page they just deleted their
+        account from — which then fails, confusingly, with no obvious cause.
+        `replace` leaves nothing to go back to.
+      */
+      window.location.replace('/login');
     } catch (err) {
       setError(
         err instanceof ApiError

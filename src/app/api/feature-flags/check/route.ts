@@ -1,8 +1,9 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { FeatureFlagRepository } from '@/server/repositories/feature-flag.repository';
-import { checkFlag } from '@/lib/feature-flags/checker';
+import { featureFlagService } from '@/server/services/feature-flag.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { featureFlagKeySchema } from '@/schemas/feature-flag.schema';
+import type { Role } from '@/generated/prisma';
 
 /**
  * GET /api/feature-flags/check?key=<flagKey>
@@ -26,26 +27,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const flag = await new FeatureFlagRepository().findByKey(validated.data);
-    if (!flag) {
-      return NextResponse.json({ error: 'Feature flag not found' }, { status: 404 });
-    }
+    const data = await featureFlagService.checkForUser(
+      validated.data,
+      session.user.id,
+      (session.user as { role?: string }).role as Role | undefined
+    );
 
-    const result = await checkFlag(flag.key, {
-      userId: session.user.id,
-      role: (session.user as { role?: string }).role as
-        | 'USER'
-        | 'ADMIN'
-        | 'MODERATOR'
-        | undefined,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: { key: flag.key, enabled: result.isEnabled, reason: result.reason },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error checking feature flag:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Feature flag not found' }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'Failed to check feature flag' },
       { status: 500 }

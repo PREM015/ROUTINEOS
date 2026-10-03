@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { HabitService } from '@/server/services/habit.service';
 import { updateHabitSchema } from '@/schemas/habit.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -19,8 +19,12 @@ export async function GET(
     }
 
     const { id } = await params;
-    const habitRepository = new HabitRepository();
-    const habit = await habitRepository.findWithRelations(id, session.user.id);
+    // The other two verbs in this file already went through `HabitService`; this
+    // read was the remaining direct repository call.
+    const habit = await new HabitService().getHabitWithRelations(
+      id,
+      session.user.id
+    );
 
     if (!habit) {
       return NextResponse.json({ error: 'Habit not found' }, { status: 404 });
@@ -72,18 +76,7 @@ export async function PUT(
     return NextResponse.json({ success: true, data: habit });
   } catch (error) {
     console.error('Error updating habit:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update habit' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -120,17 +113,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting habit:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to delete habit' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

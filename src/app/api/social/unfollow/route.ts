@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { SocialRepository } from '@/server/repositories/social.repository';
+import { socialService } from '@/server/services/social.service';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { followUserSchema } from '@/schemas/social.schema';
 
 /**
@@ -23,28 +24,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const targetId = validated.data.userId;
-    if (targetId === session.user.id) {
-      return NextResponse.json(
-        { error: 'You cannot unfollow yourself' },
-        { status: 400 }
-      );
-    }
+    await socialService.unfollow(session.user.id, validated.data.userId);
 
-    const repository = new SocialRepository();
-    const following = await repository.isFollowing(session.user.id, targetId);
-    if (!following) {
+    return NextResponse.json({ success: true, data: { following: false } });
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    if (error instanceof NotFoundError) {
       return NextResponse.json(
         { error: 'You are not following this user' },
         { status: 404 }
       );
     }
-
-    await repository.unfollow(session.user.id, targetId);
-
-    return NextResponse.json({ success: true, data: { following: false } });
-  } catch (error) {
-    console.error('Error unfollowing user:', error);
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Failed to unfollow user' },
       { status: 500 }

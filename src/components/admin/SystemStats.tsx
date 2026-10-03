@@ -25,7 +25,6 @@ export function SystemStats() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/immutability -- hoisted helper called on mount
     fetchStats();
   }, []);
 

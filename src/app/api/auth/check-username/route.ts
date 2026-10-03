@@ -1,6 +1,11 @@
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  AUTH_RATE_LIMITS,
+  checkAuthRateLimit,
+  rateLimited,
+} from '@/lib/security/auth-rate-limit';
 
 const checkUsernameSchema = z.object({
   username: z.string().min(2, 'Username must be at least 2 characters').max(50, 'Username must be 50 characters or less'),
@@ -10,8 +15,20 @@ const checkUsernameSchema = z.object({
  * POST /api/auth/check-username
  * Check whether a username is still free. Matches against the user's name
  * and display name (there is no separate username column).
+ *
+ * Username-enumeration oracle by design; rate limited for the same reason as
+ * `/api/auth/check-email`.
  */
 export async function POST(request: NextRequest) {
+  const limit = checkAuthRateLimit(
+    request,
+    'checkUsername',
+    AUTH_RATE_LIMITS.checkUsername
+  );
+  if (!limit.ok) {
+    return rateLimited(limit.retryAfterSeconds);
+  }
+
   try {
     const body = await request.json();
     const validated = checkUsernameSchema.safeParse(body);

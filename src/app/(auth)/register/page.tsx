@@ -1,112 +1,60 @@
-"use client";
-
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
-import { useState } from 'react';
 import { Logo } from '@/components/layout/Logo';
 import { AuthCard } from '@/components/auth/AuthCard';
-import { Button } from '@/components/ui/Button';
+import { RegisterForm } from './RegisterForm';
+import { privateMetadata } from '@/lib/seo';
+
+/**
+ * Registration page.
+ *
+ * Converted from `'use client'` to a server component for the same reason as
+ * the sign-in page: a client component cannot export `metadata`, so this had
+ * no title or description of its own.
+ */
+export const metadata: Metadata = privateMetadata(
+  'Create your account',
+  'Create a free RoutineOS account to track habits, build routines, set goals, and see one honest score for your whole day.'
+);
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Registration failed');
-      }
-
-      // Auto sign-in after successful registration
-      const result = await signIn('credentials', {
-        email: form.email,
-        password: form.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        // If auto sign-in has an issue, send them to login page
-        router.push('/login');
-        return;
-      }
-
-      router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  /**
+   * Mirrors the conditional provider registration in `lib/auth.ts`, so a
+   * social sign-up button is only rendered for a provider that is actually
+   * configured. Read server-side because these are unprefixed secrets; only
+   * the provider names reach the client.
+   */
+  const socialProviders = [
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [{ id: 'google', label: 'Google' } as const]
+      : []),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? [{ id: 'github', label: 'GitHub' } as const]
+      : []),
+  ];
 
   return (
     <AuthCard>
-      <div className="flex justify-center mb-6">
+      <div className="mb-6 flex justify-center">
         <Logo variant="icon" size="lg" />
       </div>
-      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Create Account</h1>
-      <p className="text-center text-muted-foreground mb-8">Join RoutineOS today</p>
+      <h1 className="mb-2 text-center text-2xl font-bold text-foreground">
+        Create your account
+      </h1>
+      <p className="mb-8 text-center text-muted-foreground">
+        Free to use. No card required.
+      </p>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-sm font-medium text-foreground/80 mb-1">Name</label>
-          <input
-            type="text"
-            required
-            value={form.name}
-            onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            placeholder="John Doe"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-foreground/80 mb-1">Email</label>
-          <input
-            type="email"
-            required
-            value={form.email}
-            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            placeholder="you@example.com"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-foreground/80 mb-1">Password</label>
-          <input
-            type="password"
-            required
-            value={form.password}
-            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-            placeholder="••••••••"
-          />
-        </div>
-
-        {error ? (
-          <p className="text-sm text-destructive">{error}</p>
-        ) : null}
-
-        <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
-          Create Account
-        </Button>
-      </form>
+      <RegisterForm socialProviders={socialProviders} />
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account? <Link href="/login" className="text-primary hover:underline">Sign In</Link>
+        Already have an account?{' '}
+        <Link
+          href="/login"
+          className="font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+        >
+          Sign in
+        </Link>
       </p>
     </AuthCard>
   );

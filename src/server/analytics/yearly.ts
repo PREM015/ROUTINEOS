@@ -1,12 +1,14 @@
 import type { HabitTier, SleepLog } from '@/generated/prisma';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
+import { loadPeriodHabits } from '@/server/analytics/period-habits';
+import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
 import {
   analyzeSleep,
   type SleepLogLike,
@@ -18,7 +20,6 @@ import type { DateRange } from '@/types/analytics';
  * Year-level aggregates with a monthly score trend and habit/sleep/goal summary.
  */
 
-const habitRepository = new HabitRepository();
 const scoreRepository = new ScoreRepository();
 const sleepRepository = new SleepRepository();
 const focusRepository = new FocusRepository();
@@ -26,18 +27,34 @@ const journalRepository = new JournalRepository();
 const goalRepository = new GoalRepository();
 const streakRepository = new StreakRepository();
 
+export interface YearMonthScore {
+  month: string;
+  /** Scored days in the month. `0` means the month has no history yet. */
+  days: number;
+  /**
+   * `null` when the month has no scored days.
+   *
+   * This used to be `0`, which drew a zero-height bar for every month the user had
+   * not reached yet and made a half-finished year look like a year of zeroes. A
+   * gap is the honest rendering of "we have no number for this month".
+   */
+  averageScore: number | null;
+}
+
 export interface YearlySummary {
   period: DateRange;
   totalDaysScored: number;
-  averageScore: number;
+  /** `null` when nothing was scored in the year at all. */
+  averageScore: number | null;
   bestMonth: { month: string; averageScore: number } | null;
   worstMonth: { month: string; averageScore: number } | null;
-  monthlyScoreTrend: Array<{ month: string; days: number; averageScore: number }>;
+  monthlyScoreTrend: YearMonthScore[];
   habits: {
-    averageCompletionRate: number;
+    /** `null` when nothing was due all year. */
+    averageCompletionRate: number | null;
     bestHabit: { habitId: string; habitName: string; tier: HabitTier; completionRate: number } | null;
     mostMissedHabit: { habitId: string; habitName: string; tier: HabitTier; missedDays: number } | null;
-    perHabit: Array<{ habitId: string; habitName: string; tier: HabitTier; completed: number; missed: number; completionRate: number }>;
+    perHabit: Array<{ habitId: string; habitName: string; tier: HabitTier; completed: number; missed: number; completionRate: number | null }>;
     totalCompleted: number;
     totalMissed: number;
   };
@@ -92,23 +109,46 @@ function monthKey(year: number, month: number): string {
 
 /**
  * Yearly summary for a given year.
+ *
+ * `timezone` matters twice here: the focus window used to be a UTC boundary
+ * (`...T00:00:00.000Z`), which clipped the first local hours of 1 January for
+ * everyone east of UTC, and goal `completedAt` was bucketed with
+ * `.toISOString()`, which did the same thing in the other direction.
  */
-export async function yearlySummary(userId: string, year: number): Promise<YearlySummary> {
+export async function yearlySummary(
+  userId: string,
+  year: number,
+  timezone: string,
+  today?: string,
+  preloadedHabits?: PeriodHabitModel
+): Promise<YearlySummary> {
   const startDate = `${year}-01-01`;
   const endDate = `${year}-12-31`;
   const period: DateRange = { startDate, endDate };
+  const dayToday = today ?? endDate;
 
-  const [scores, habits, sleepLogs, streak] = await Promise.all([
-    scoreRepository.findByRange(userId, startDate, endDate),
-    habitRepository.findAll(userId, { status: 'ACTIVE' }),
-    sleepRepository.findByRange(userId, startDate, endDate),
-    streakRepository.findByUserId(userId),
-  ]);
+  const rangeStart = fromZonedTime(`${startDate}T00:00:00`, timezone);
+  const rangeEnd = fromZonedTime(`${endDate}T23:59:59.999`, timezone);
+
+  const [scores, habitModel, sleepLogs, streak, focusStats, journalCount, goals] =
+    await Promise.all([
+      scoreRepository.findByRange(userId, startDate, endDate),
+      preloadedHabits ?? loadPeriodHabits(userId, startDate, endDate, dayToday),
+      sleepRepository.findByRange(userId, startDate, endDate),
+      streakRepository.findByUserId(userId),
+      focusRepository.getStats(userId, rangeStart, rangeEnd),
+      /*
+        One range count, not twelve `countByMonth` calls in a sequential loop.
+        The loop was the single largest contributor to the year tab's latency:
+        twelve dependent round trips where one predicate expresses the same thing.
+      */
+      journalRepository.countByRange(userId, startDate, endDate),
+      goalRepository.findAll(userId, {}),
+    ]);
 
   const scoredDays = scores.filter(score => score.totalScore !== null);
-  const averageScore = scoredDays.length > 0
-    ? mean(scoredDays.map(score => score.totalScore ?? 0))
-    : 0;
+  const averageScore =
+    scoredDays.length > 0 ? mean(scoredDays.map(score => score.totalScore ?? 0)) : null;
 
   const monthlyGroups = new Map<string, number[]>();
   for (const score of scoredDays) {
@@ -118,17 +158,19 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
     monthlyGroups.set(month, bucket);
   }
 
-  const monthlyScoreTrend = Array.from({ length: 12 }, (_, index) => {
+  const monthlyScoreTrend: YearMonthScore[] = Array.from({ length: 12 }, (_, index) => {
     const month = monthKey(year, index + 1);
     const values = monthlyGroups.get(month) ?? [];
     return {
       month,
       days: values.length,
-      averageScore: values.length > 0 ? round(mean(values)) : 0,
+      averageScore: values.length > 0 ? round(mean(values)) : null,
     };
   });
 
-  const withData = monthlyScoreTrend.filter(entry => entry.days > 0);
+  const withData = monthlyScoreTrend.filter(
+    (entry): entry is YearMonthScore & { averageScore: number } => entry.averageScore !== null
+  );
   const bestMonth = withData.length > 0
     ? withData.reduce((best, current) => (current.averageScore > best.averageScore ? current : best))
     : null;
@@ -136,34 +178,30 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
     ? withData.reduce((worst, current) => (current.averageScore < worst.averageScore ? current : worst))
     : null;
 
-  const perHabit = await Promise.all(
-    habits.map(async habit => {
-      const logs = await habitRepository.findLogsByRange(habit.id, userId, startDate, endDate);
-      const completed = logs.filter(log => log.status === 'COMPLETED').length;
-      const missed = logs.filter(log => log.status === 'MISSED').length;
-      return {
-        habitId: habit.id,
-        habitName: habit.name,
-        tier: habit.tier,
-        completed,
-        missed,
-        completionRate: logs.length > 0 ? (completed / logs.length) * 100 : 0,
-      };
-    })
-  );
+const perHabit = habitModel.perHabit.map((habit) => ({
+    habitId: habit.habitId,
+    habitName: habit.habitName,
+    tier: habit.tier,
+    completed: habit.completed,
+    missed: habit.missed,
+    completionRate: habit.rate,
+  }));
 
-  const withActivity = perHabit.filter(habit => habit.completed > 0 || habit.missed > 0);
+  // A habit that was never due has no rate, so it cannot be anyone's star habit.
+  const withActivity = perHabit.filter(
+    (habit) => habit.completionRate !== null && (habit.completed > 0 || habit.missed > 0)
+  );
   const bestHabit = withActivity.length > 0
-    ? withActivity.reduce((best, current) => (current.completionRate > best.completionRate ? current : best))
+    ? withActivity.reduce((best, current) =>
+        (current.completionRate ?? -1) > (best.completionRate ?? -1) ? current : best
+      )
     : null;
   const mostMissedHabit = perHabit.filter(habit => habit.missed > 0)
     .sort((a, b) => b.missed - a.missed)[0] ?? null;
 
   const totalCompleted = perHabit.reduce((sum, habit) => sum + habit.completed, 0);
   const totalMissed = perHabit.reduce((sum, habit) => sum + habit.missed, 0);
-  const averageCompletionRate = perHabit.length > 0
-    ? round(mean(perHabit.map(habit => habit.completionRate)))
-    : 0;
+  const averageCompletionRate = habitModel.totals.rate;
 
   const sleepAnalysis = analyzeSleep(
     sleepLogs.map(toSleepLogLike),
@@ -171,33 +209,21 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
   );
   const daysFeltRested = await sleepRepository.countRestedDays(userId, startDate, endDate);
 
-  const goals = await goalRepository.findAll(userId, {});
   const goalsCompleted = goals.filter(goal =>
     goal.status === 'COMPLETED' &&
     goal.completedAt !== null &&
-    goal.completedAt.toISOString().slice(0, 10) >= startDate &&
-    goal.completedAt.toISOString().slice(0, 10) <= endDate
+    formatInTimeZone(goal.completedAt, timezone, 'yyyy-MM-dd') >= startDate &&
+    formatInTimeZone(goal.completedAt, timezone, 'yyyy-MM-dd') <= endDate
   ).length;
   const goalsWithTarget = goals.filter(goal => goal.targetValue > 0);
   const averageProgress = goalsWithTarget.length > 0
     ? round(mean(goalsWithTarget.map(goal => (goal.currentValue / goal.targetValue) * 100)))
     : 0;
 
-  const focusStats = await focusRepository.getStats(
-    userId,
-    new Date(`${startDate}T00:00:00.000Z`),
-    new Date(`${endDate}T23:59:59.999Z`)
-  );
-
-  let journalEntryCount = 0;
-  for (let month = 1; month <= 12; month++) {
-    journalEntryCount += await journalRepository.countByMonth(userId, year, month);
-  }
-
   return {
     period,
     totalDaysScored: scoredDays.length,
-    averageScore: round(averageScore),
+    averageScore: averageScore !== null ? round(averageScore) : null,
     bestMonth: bestMonth
       ? { month: bestMonth.month, averageScore: bestMonth.averageScore }
       : null,
@@ -212,7 +238,7 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
             habitId: bestHabit.habitId,
             habitName: bestHabit.habitName,
             tier: bestHabit.tier,
-            completionRate: round(bestHabit.completionRate),
+completionRate: bestHabit.completionRate ?? 0,
           }
         : null,
       mostMissedHabit: mostMissedHabit
@@ -223,10 +249,7 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
             missedDays: mostMissedHabit.missed,
           }
         : null,
-      perHabit: perHabit.map(habit => ({
-        ...habit,
-        completionRate: round(habit.completionRate),
-      })),
+      perHabit,
       totalCompleted,
       totalMissed,
     },
@@ -247,8 +270,8 @@ export async function yearlySummary(userId: string, year: number): Promise<Yearl
       totalSessions: focusStats.totalSessions,
       totalFocusMinutes: focusStats.totalFocusMinutes,
     },
-    journal: {
-      entryCount: journalEntryCount,
+journal: {
+      entryCount: journalCount,
     },
   };
 }

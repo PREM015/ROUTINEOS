@@ -1,6 +1,16 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { Reveal } from '@/components/motion/Reveal';
 import { Logo } from '@/components/layout/Logo';
+import { privateMetadata } from '@/lib/seo';
+
+/**
+ * A 404 page is never useful in a search index: the URL does not exist, so
+ * there is nothing to rank, and indexing it wastes crawl budget and dilutes
+ * the pages that do exist. It was inheriting the root layout's
+ * `index, follow` with no override.
+ */
+export const metadata: Metadata = privateMetadata('Page not found');
 
 export default function NotFound() {
   return (

@@ -30,6 +30,20 @@ export type {
 export interface RoutineTemplateWithBlocks extends RoutineTemplate {
   blocks: RoutineBlockWithCategory[];
   exceptions: RoutineException[];
+  /**
+   * The day-type preset this template is linked to, when it has one.
+   *
+   * Optional because not every load path selects it: `findAllTemplates` does, but
+   * the service also reads templates through paths that do not. Callers must treat
+   * its absence as "this template has no linked preset" rather than assume it is
+   * loaded — a name read off it has to have a fallback.
+   */
+  dayTypeDef?: {
+    id: string;
+    name: string;
+    slug: string;
+    color: string | null;
+  } | null;
   _count?: {
     blocks: number;
     exceptions: number;
@@ -58,24 +72,40 @@ export interface RoutineFilterOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
+/**
+ * A routine block's writable fields.
+ *
+ * `type` and `isFlex` used to be declared here and were **required** by
+ * `RoutineBlockCreateInput`, but neither is a column on `RoutineBlock`. That
+ * mismatch propagated: `POST /api/routine/[id]/blocks` demanded a `type` of
+ * `WORK | REST | LEARNING | EXERCISE | ROUTINE | FLEX`, then destructured it out
+ * of the parsed body and threw it away before the insert. A caller was told its
+ * request was validated while the field was silently discarded.
+ *
+ * They are gone rather than made optional, because an optional field the server
+ * ignores is still a lie in the schema.
+ */
 export interface RoutineBlockCreateInput {
   title: string;
-  description?: string;
+  description?: string | null;
   startTime: string;
   endTime: string;
-  type: string;
-  isFlex?: boolean;
-  categoryId?: string;
+  categoryId?: string | null;
+  color?: string | null;
+  icon?: string | null;
+  notes?: string | null;
+  energyLevel?: string | null;
+  trackCompletion?: boolean;
+  isRecurring?: boolean;
+  sortOrder?: number;
 }
 
 export interface RoutineBlockUpdateInput {
   title?: string;
-  description?: string;
+  description?: string | null;
   startTime?: string;
   endTime?: string;
-  type?: string;
-  isFlex?: boolean;
-  categoryId?: string;
+  categoryId?: string | null;
 }
 
 export interface RoutineTemplateCreateInput {
@@ -113,7 +143,40 @@ export interface ResolvedBlockLog {
   durationMinutes: number | null;
   focusRating: number | null;
   productivityRating: number | null;
+  energyLevel: number | null;
   note: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/**
+ * How this block has been going lately, aggregated from the ratings already in
+ * `RoutineLog`.
+ *
+ * Read-side only. `CompletionSheet` has written these three columns since it
+ * shipped and nothing read them back, so this turns data the user was already
+ * giving us into something they can see.
+ *
+ * ## Nulls mean "not measured", not zero
+ *
+ * Every field is nullable and a block with no rated logs has no insight at all
+ * (`insight === null` on the block) rather than an insight full of zeros. A
+ * user who has never rated focus has not scored zero focus, and rendering "avg
+ * focus 0.0/5" would be the single most damaging thing this card could say.
+ *
+ * `samples` is how many log rows contributed, so the average can be presented
+ * honestly: an average of one is not a trend, and the UI says so.
+ */
+export interface BlockInsight {
+  /** Rated log rows behind these averages, most recent first. */
+  samples: number;
+  /** 1–5, one decimal, or null when no row rated it. */
+  averageFocus: number | null;
+  averageProductivity: number | null;
+  /** 1–5, from `RoutineLog.energyLevel` — not `RoutineBlock.energyLevel`. */
+  averageEnergy: number | null;
+  /** The most recent rated log's date, `YYYY-MM-DD`. */
+  lastRatedDate: string | null;
 }
 
 export interface ResolvedRoutineBlock {
@@ -125,21 +188,73 @@ export interface ResolvedRoutineBlock {
   notes: string | null;
   color: string | null;
   icon: string | null;
-  /** Projected category — the resolver flattens the relation to three fields. */
+  /** Projected category — the resolver flattens the relation. */
   category: {
     id: string;
     name: string;
     color: string | null;
+    icon?: string | null;
   } | null;
+  /** Raw FK, so an editor can send a `null` to clear the category. */
+  categoryId: string | null;
   /** `HIGH` / `MEDIUM` / `LOW`, free-text in the schema so nullable string. */
   energyLevel: string | null;
   trackCompletion: boolean;
+  isRecurring?: boolean;
+  /** Tiebreak only. The timeline orders by `startTime`, not by this. */
+  sortOrder?: number;
   /** Derived from `startTime`/`endTime`; handles blocks crossing midnight. */
   durationMinutes: number;
-  /** True when the block's end time is before its start time. */
+  /** True when the block's end time is at or before its start time. */
   isOvernight: boolean;
   /** The user's log for this block on the resolved date, if any. */
   log: ResolvedBlockLog | null;
+  /**
+   * Rating history for this block across recent dates, or `null` when the user
+   * has never rated it. Read-side aggregation over `RoutineLog`; see
+   * {@link BlockInsight}.
+   */
+  insight?: BlockInsight | null;
+}
+
+/**
+ * The day's stored score, as far as a schedule cares.
+ *
+ * Included in `ResolvedDailyRoutine` so the routine page needs one request
+ * rather than two: `isRestDay` is a real state of the day (the blocks still
+ * render, the page reframes them) and it lives on `DailyScore`, not on the
+ * routine models at all.
+ */
+export interface ResolvedDayScore {
+  /**
+   * `DailyScore.routineCompletionRate`.
+   *
+   * **Not** the same number as `ResolvedDailyRoutine.completionRate`, and never
+   * will be: this divides completed by the number of log *rows* that exist,
+   * which excludes every block nobody has touched. See the note on
+   * `completionRate` below.
+   */
+  routineCompletionRate: number;
+  habitCompletionRate: number | null;
+  totalScore: number | null;
+  /**
+   * The sleep component of the day's score, or `null` when no sleep was logged.
+   *
+   * Distinct from `totalScore: null`, which means no score row exists at all.
+   */
+  sleepScore?: number | null;
+  /**
+   * The raw `DailyScore.calculationData` payload, when one was stored.
+   *
+   * `null` rather than `{}` when absent: an empty object would read as "computed
+   * and found nothing", which is a different claim from "never computed".
+   */
+  calculationData: unknown | null;
+  overallGrade: string | null;
+  isRestDay?: boolean;
+  restDayReason?: string | null;
+  isMinimumDay?: boolean;
+  minimumDayReason?: string | null;
 }
 
 export interface ResolvedDailyRoutine {
@@ -148,9 +263,53 @@ export interface ResolvedDailyRoutine {
   template: RoutineTemplate | null;
   exception: RoutineException | null;
   blocks: ResolvedRoutineBlock[];
+  /**
+   * completed / every block, day-type filtered.
+   *
+   * Deliberately **not** restricted to `trackCompletion` blocks, because
+   * `/today` renders this and changing the denominator would silently move its
+   * headline number. The routine page computes its own tracked-only rate from
+   * `blocks[].trackCompletion` for exactly that reason.
+   */
   totalBlocks: number;
   completedBlocks: number;
   completionRate: number;
+  /**
+   * Completed blocks that belong to a schedule this date no longer resolves to.
+   *
+   * A `RoutineLog` records only its `routineBlockId`, so changing the date's day
+   * type afterwards orphans the work: the day resolves a different template's
+   * blocks and the completion disappears from every count. These are returned
+   * rather than dropped so the UI can say *"completed under College Day, which is
+   * no longer this date's schedule"* instead of the user believing their work was
+   * deleted.
+   *
+   * Empty on an ordinary day. When non-empty, `totalBlocks` and `completionRate`
+   * are measured against the off-schedule template rather than the resolved one.
+   */
+  offScheduleLogs?: Array<{
+    blockId: string;
+    title: string;
+    templateId: string;
+    templateName: string | null;
+    completed: number;
+  }>;
+  /** The `DayTypeDefinition` this date resolves to, when there is one. */
+  dayTypeId: string | null;
+  /** Display name for `dayTypeId`, falling back to the template's name. */
+  dayTypeName: string | null;
+  /** Whether the day type came from an override or from the weekday rule. */
+  dayTypeSource: 'NATURAL' | 'EXCEPTION';
+  /**
+   * `null` when there is no template at all.
+   *
+   * `false` means a template exists but is inactive, which is a different
+   * state from "no template" — `/today` resolves through
+   * `findTemplateByDayTypeId`, which filters `isActive: true`, so an inactive
+   * template's blocks exist and are simply never shown there.
+   */
+  templateIsActive: boolean | null;
+  score: ResolvedDayScore;
 }
 
 /**
@@ -191,12 +350,6 @@ export interface RoutineConflict {
   endTime?: string;
 }
 
-export interface RoutineValidationResult {
-  isValid: boolean;
-  conflicts: RoutineConflict[];
-  warnings: string[];
-}
-
 // ============================================================================
 // Routine Log & Tracking Types
 // ============================================================================
@@ -207,27 +360,6 @@ export interface RoutineLogInput {
   date: string;
   status: RoutineLogStatus;
   notes?: string;
-}
-
-export interface RoutineLogSummary {
-  date: string;
-  totalBlocks: number;
-  completedBlocks: number;
-  skippedBlocks: number;
-  missedBlocks: number;
-  completionRate: number;
-  logs: RoutineLog[];
-}
-
-export interface RoutineStats {
-  period: 'week' | 'month' | 'year';
-  totalScheduled: number;
-  totalCompleted: number;
-  totalSkipped: number;
-  totalMissed: number;
-  averageCompletionRate: number;
-  mostConsistentDayType: DayType | null;
-  completionByDayType: Record<DayType, number>;
 }
 
 // ============================================================================
@@ -242,15 +374,59 @@ export interface RoutineProgressBlock {
   startTime: string;
   endTime: string;
   status: RoutineLogStatus | null;
+  /**
+   * Whether the user asked to have this block tracked.
+   *
+   * Present so the consumer can distinguish "not done" from "not something you
+   * were tracking", which is the same distinction the habit heatmap draws as
+   * `NO_RECORD` rather than as a zero.
+   */
+  trackCompletion: boolean;
 }
 
 export interface RoutineProgressDay {
   date: string;
   dayType: DayType;
+  /**
+   * The resolved day type's own name.
+   *
+   * `dayType` is the six-value enum, which collapses every user-defined preset
+   * to `CUSTOM` (see `day-type-identity.ts`). A week strip or a per-preset
+   * comparison that rendered the enum would show several identical "Custom"
+   * rows, so the definition's real name travels alongside it and this is a
+   * display label only — never a join key.
+   */
+  dayTypeName: string;
+  /** The day type's colour, or `null` when it has none. */
+  dayTypeColor: string | null;
+  /** A template with at least one block resolved for this date. */
   scheduled: boolean;
+  /**
+   * Tracked blocks — the denominator the `/routine` day view uses.
+   *
+   * **These are tracked-only, not every block.** The service used to divide by
+   * `template.blocks.length`, which silently produced a *third* completion
+   * definition alongside the day view's tracked rate and the score's log-row
+   * rate. It now filters on `trackCompletion` so a number shown here and a
+   * number shown on the day view for the same date are the same measurement.
+   */
   total: number;
+  /** Tracked blocks with a `COMPLETED` log. */
   completed: number;
+  /** `round(completed / total * 100)`, or 0 when nothing is tracked. */
   completionRate: number;
+  /**
+   * `total` and `completed` are measured against a **different template** than the
+   * one this date currently resolves to.
+   *
+   * This happens when the day's logs name a schedule other than the resolved one —
+   * typically because the day type was changed after the work was logged. Before
+   * this flag existed the service silently reported `0` completed for such a day,
+   * which is how four real completions rendered as 0%. The rate is not wrong here;
+   * it is measured against the template the user was actually following, and this
+   * flag is what lets the UI say so rather than quietly disagree with the day view.
+   */
+  scheduleSwitched?: boolean;
   blocks: RoutineProgressBlock[];
 }
 
@@ -271,60 +447,39 @@ export interface RoutineProgressResponse {
 }
 
 // ============================================================================
-// Component Props Types
+// Day overrides
 // ============================================================================
 
-export interface RoutineListProps {
-  date?: string;
-  editable?: boolean;
-  onBlockComplete?: (blockId: string) => void;
-}
-
-export interface RoutineBlockProps {
-  block: ResolvedRoutineBlock;
-  editable?: boolean;
-  onComplete?: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
-}
-
-export interface RoutineTimelineProps {
-  routine: ResolvedDailyRoutine;
-  currentTime?: string;
-  onBlockClick?: (block: ResolvedRoutineBlock) => void;
-}
-
-export interface RoutineEditorProps {
-  template?: RoutineTemplateWithBlocks;
-  onSave: (data: RoutineTemplateCreateInput | RoutineTemplateUpdateInput) => Promise<void>;
-  onCancel: () => void;
+/**
+ * One date where the routine was deliberately set to something other than the
+ * natural weekday rule.
+ *
+ * Narrowed at the route from the `RoutineException` row on purpose. The raw
+ * payload carries a whole `RoutineTemplate` and a whole `DayTypeDefinition` per
+ * row, neither of which the list renders, and both of which would grow if a
+ * template ever gained relations. `dayTypeName` / `dayTypeColor` are resolved
+ * here so the client never has to join against a definition list it may not
+ * have loaded.
+ *
+ * **This is day-type overrides only.** `DayModeService` writes a
+ * `RoutineException` for `DAY_TYPE` mode alone; `REST` and `MINIMUM` set
+ * `isRestDay` / `isMinimumDay` on the `DailyScore` row and leave no exception
+ * behind, and `CLEAR` deletes it. A rest day is therefore correctly absent from
+ * this list — it has a home on the day view (`RestDayBanner`), not here.
+ */
+export interface DayOverride {
+  date: string;
+  dayTypeName: string;
+  dayTypeColor: string | null;
+  note: string | null;
 }
 
 // ============================================================================
 // Helper Functions / Guards
 // ============================================================================
 
-export function isRoutineTemplateWithBlocks(
-  template: unknown
-): template is RoutineTemplateWithBlocks {
-  return (
-    typeof template === 'object' &&
-    template !== null &&
-    'blocks' in template &&
-    Array.isArray((template as RoutineTemplateWithBlocks).blocks)
-  );
-}
-
 export function isValidTimeFormat(time: string): boolean {
   return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
-}
-
-export function isOvernightBlock(startTime: string, endTime: string): boolean {
-  const [startHour = 0, startMin = 0] = startTime.split(':').map(Number);
-  const [endHour = 0, endMin = 0] = endTime.split(':').map(Number);
-  const startMinutes = startHour * 60 + startMin;
-  const endMinutes = endHour * 60 + endMin;
-  return endMinutes <= startMinutes;
 }
 
 // ============================================================================

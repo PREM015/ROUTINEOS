@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { sleepService } from '@/server/services/sleep.service';
 import { logSleepSchema } from '@/schemas/sleep.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -97,9 +98,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: sleepLog });
   } catch (error) {
     console.error('Error saving sleep log:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to save sleep log' }, { status: 500 });
+    return handleError(error);
   }
 }

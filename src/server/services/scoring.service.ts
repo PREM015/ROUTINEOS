@@ -3,6 +3,7 @@ import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { automationService } from '@/server/services/automation.service';
 import { computeDayScore } from '@/server/domain/scoring/score-calculator';
 import {
@@ -13,6 +14,7 @@ import {
 import type { TierWeights } from '@/server/domain/scoring/tier-weights';
 import { CALCULATION_RULES } from '@/config/scoring';
 import { calculateScoreSchema, scoreQuerySchema } from '@/lib/validation/score.schema';
+import { isHabitScheduledForDate } from '@/lib/habits/scheduling';
 import type {
   CalculateDailyScoreInput,
   DailyScoreWithContext,
@@ -22,6 +24,12 @@ import type {
   ScoreHistoryRange,
 } from '@/types/score';
 import { getGradeFromPercentage, isValidScoreGrade } from '@/types/score';
+import { resolveDayTypeForDate } from '@/lib/scheduling/resolve-routine';
+import { habitAppliesToDayType } from '@/lib/habits/eligibility';
+import {
+  calculateSleepDuration,
+  calculateSleepScore,
+} from '@/lib/sleep/calculate-duration';
 
 /**
  * Score Service
@@ -66,12 +74,14 @@ export class ScoringService {
   private scoreRepository: ScoreRepository;
   private userRepository: UserRepository;
   private routineRepository: RoutineRepository;
+  private sleepRepository: SleepRepository;
 
   constructor() {
     this.habitRepository = new HabitRepository();
     this.scoreRepository = new ScoreRepository();
     this.userRepository = new UserRepository();
     this.routineRepository = new RoutineRepository();
+    this.sleepRepository = new SleepRepository();
   }
 
   /**
@@ -100,13 +110,90 @@ export class ScoringService {
       weightBonus: settings?.weightBonus ?? DEFAULT_TIER_WEIGHTS.weightBonus,
     };
 
-    const habits = await this.habitRepository.findAll(userId, {
+    const allHabits = await this.habitRepository.findAll(userId, {
       status: 'ACTIVE',
       includeArchived: false,
     });
     const logs = await this.habitRepository.findLogsByDate(userId, parsed.date);
     const logMap = new Map(logs.map((log) => [log.habitId, log]));
     const routineLogs = await this.routineRepository.findLogsByDate(userId, parsed.date);
+    const sleepLog = await this.sleepRepository.findByDate(userId, parsed.date);
+
+    /**
+     * `DailyScore.sleepScore` was read by `/today`, `/dashboard` and
+     * `analytics/daily` but written by nobody, so the field was permanently
+     * `null` (or a stale orphan value) while every consumer rendered a
+     * "Sleep" figure or a "not enough data" message.
+     *
+     * The formula is deliberately the SAME one the sleep card shows
+     * (`calculateSleepScore`: duration vs target = 50, self-rated quality =
+     * 30, felt rested = 20), so the score card's mini-stat and
+     * `SleepQualityMeter` can no longer disagree about the same night.
+     *
+     * The target prefers the window snapshotted on the log itself — that is
+     * the plan the night was actually judged against — and falls back to
+     * `UserSettings.minSleepDuration`, which is what `SleepService.logSleep`
+     * uses for `deficitMinutes`. With neither there is nothing to measure
+     * against, so the field stays `null` rather than reporting a fabricated 0.
+     */
+    const snapshottedTarget =
+      sleepLog?.targetBedtime && sleepLog?.targetWakeTime
+        ? calculateSleepDuration(sleepLog.targetBedtime, sleepLog.targetWakeTime)
+        : null;
+    const sleepTargetMinutes = snapshottedTarget || settings?.minSleepDuration || null;
+    const sleepScore =
+      sleepLog?.actualDurationMinutes != null && sleepTargetMinutes && sleepTargetMinutes > 0
+        ? calculateSleepScore(
+            sleepLog.actualDurationMinutes,
+            sleepTargetMinutes,
+            sleepLog.quality,
+            sleepLog.feltRested
+          )
+        : null;
+
+    /**
+     * A habit restricted to specific Routine Day Types must not be scored on
+     * days it does not apply.
+     *
+     * This was missing entirely: `habits` was every ACTIVE habit, so a habit
+     * assigned to "Weekend" contributed its full `points × weight` to
+     * `maxScore` on a Monday, and scoring 0 of 1 on a day the user was never
+     * meant to do it. That is invisible in the total (a bucket is a ratio) but
+     * it is *not* invisible in `habitCompletionRate`, whose denominator counts
+     * ACTIVE habits — so a weekend-only habit silently suppressed the rate on
+     * every weekday.
+     *
+     * `resolveDayTypeForDate` is called once here rather than per habit, and the
+     * decision is delegated to the same pure helper the eligibility check uses,
+     * so the two surfaces cannot drift apart.
+     */
+    const resolvedDayType = await resolveDayTypeForDate(userId, parsed.date);
+    /*
+     * Eligibility, then day type, then tier.
+     *
+     * `SCORED_TIERS` is a SCORING POLICY and is correct on its own — an OPTIONAL
+     * habit should not be able to drag a day's score down, and that was a
+     * deliberate decision.
+     *
+     * Frequency is not a policy, it is a FACT. A "Tuesdays only" habit is not due
+     * on a Monday, and this filter used to omit that check entirely: `habits` was
+     * day-type filtered only, so `scoredHabits.length` counted habits that were
+     * never scheduled that day. The rate was therefore diluted by habits the user
+     * was never asked to do — and, on a Monday, a weekly habit silently counted
+     * as incomplete.
+     *
+     * The consequence the user could see: `/today` showed two numbers labelled
+     * "Habits" — this score, and the checklist's — that could not be reconciled,
+     * because the checklist did apply eligibility.
+     *
+     * Order matters and is deliberate: eligibility first (was it due at all?),
+     * then day type, then tier (does it count toward the score?). Three separate
+     * questions, and each answers only its own.
+     */
+    const dueToday = allHabits.filter((habit) =>
+      isHabitScheduledForDate(habit, parsed.date, 'UTC')
+    );
+    const habits = dueToday.filter((habit) => habitAppliesToDayType(habit, resolvedDayType));
 
     const core = this.buildBucket(CORE_TIERS, habits, logMap, weights);
     const growth = this.buildBucket(GROWTH_TIERS, habits, logMap, weights);
@@ -127,7 +214,14 @@ export class ScoringService {
     );
 
     const scoredHabits = habits.filter((h) => SCORED_TIERS.includes(h.tier));
-    const completedCount = logs.filter((l) => l.status === 'COMPLETED').length;
+    // Restricted to the habits that actually apply today. A COMPLETED log can
+    // only exist for an applicable habit (the log endpoint enforces
+    // eligibility), but the denominator and numerator have to be scoped the
+    // same way or the two drift apart and the rate can exceed 100.
+    const applicableIds = new Set(habits.map((h) => h.id));
+    const completedCount = logs.filter(
+      (l) => l.status === 'COMPLETED' && applicableIds.has(l.habitId)
+    ).length;
     const routineCompletedCount = routineLogs.filter((l) => l.status === 'COMPLETED').length;
 
     const breakdown: ScoreBreakdown = {
@@ -173,12 +267,14 @@ export class ScoringService {
         scoredHabits.length > 0 ? Math.round((completedCount / scoredHabits.length) * 100) : 0,
       routineCompletionRate:
         routineLogs.length > 0 ? Math.round((routineCompletedCount / routineLogs.length) * 100) : 0,
+      sleepScore,
       calculationData: JSON.stringify({
         timestamp: new Date().toISOString(),
         breakdown,
         habitCount: scoredHabits.length,
         completedCount,
         weights,
+        sleepTargetMinutes,
       }),
     });
 

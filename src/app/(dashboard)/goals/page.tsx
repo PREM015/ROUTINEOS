@@ -1,250 +1,427 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Target, Plus, Pencil, Trash2, CheckCircle2, Circle } from 'lucide-react';
-import AddGoalModal from '@/components/goals/AddGoalModal';
-import EditGoalModal from '@/components/goals/EditGoalModal';
-import { useApp, type Goal } from '@/context/AppContext';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Plus, Target, TriangleAlert, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { Toaster } from 'sonner';
+import { useApp } from '@/context/AppContext';
 import { runAchievementCheck } from '@/store/achievement.store';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
-import { Button, Badge, EmptyState } from '@/components/ui';
+import { useGoalsViewData } from '@/hooks/useGoalsViewData';
+import { apiRequest } from '@/lib/api-client';
+import { Button, EmptyState } from '@/components/ui';
+import { GoalCard, type GoalCardView } from '@/components/goals/GoalCard';
+import { GoalDrawer } from '@/components/goals/GoalDrawer';
+import { GoalFormModal } from '@/components/goals/GoalFormModal';
+import { DeleteGoalDialog } from '@/components/goals/DeleteGoalDialog';
+import { GoalCardSkeleton } from '@/components/goals/GoalCardSkeleton';
+import type { Goal } from '@/context/AppContext';
 
-type TabType = 'DAILY' | 'LONG_TERM' | 'COMPLETED';
+/**
+ * ## `/goals` — "Trajectory"
+ *
+ * Dashboard glances. Habits tends. Routine clocks. Goals **projects forward**:
+ * every number this page's backend now computes is about where you are headed,
+ * not only where you are. The identity is a flight path, not a progress bar.
+ *
+ * ### What changed from the previous page
+ *
+ * The old page read `goals` from `AppContext` and rendered a 3-column card grid
+ * with a private inline `GoalCard`, a range slider, and no notion of pace. It
+ * also ignored `dataLoaded` and `dataError`, so a failed load rendered "No daily
+ * goals" — identical to an empty account.
+ *
+ * This one:
+ *
+ * - leads with **pace state**, not a bare percentage (see `PaceTrack`);
+ * - partitions Daily / Long-term / Completed, and promotes **behind-pace** goals
+ *   into their own rail instead of hiding the fact in a number;
+ * - has **honest states**: loading, error, empty and no-results are four
+ *   different screens, not one;
+ * - opens a **drawer** for detail, which is also the destination for the
+ *   `/goals?goal=<id>` deep link that two systems used to point at a 404.
+ */
 
-const PRIORITY_COLORS: Record<Goal['priority'], 'success' | 'warning' | 'default' | 'primary'> = {
-  CRITICAL: 'success',
-  HIGH: 'success',
-  MEDIUM: 'warning',
-  LOW: 'default',
-  PERSONAL: 'primary',
-  ACADEMIC: 'primary',
-  PROFESSIONAL: 'primary',
-  NON_PROFIT: 'default',
-};
+type Tab = 'DAILY' | 'LONG_TERM' | 'COMPLETED';
 
-function GoalCard({
-  goal,
-  onEdit,
-  onDelete,
-  checkinState,
-  onCheckin,
-  busy,
-}: {
-  goal: Goal;
-  onEdit: () => void;
-  onDelete: () => void;
-  checkinState: Record<string, boolean>;
-  onCheckin: (goal: Goal, completed: boolean) => void;
-  busy: boolean;
-}) {
-  const { updateGoalProgress } = useApp();
-  const [sliderValue, setSliderValue] = useState(goal.currentValue);
-  const [sliderError, setSliderError] = useState<string | null>(null);
-
-  const pct = goal.targetValue > 0 ? Math.min(100, (goal.currentValue / goal.targetValue) * 100) : 0;
-  const isDaily = goal.type === 'DAILY';
-  const checkedToday = isDaily && (checkinState[goal.id] ?? goal.currentValue >= 1);
-
-  const commitSlider = async (value: number) => {
-    setSliderError(null);
-    try {
-      await updateGoalProgress(goal.id, value);
-    } catch (err) {
-      setSliderValue(goal.currentValue);
-      setSliderError(err instanceof Error ? err.message : 'Failed to update progress');
-    }
-  };
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, height: 0 }}
-      className="glass-panel rounded-xl p-4 space-y-3 transition-all duration-300 ease-out-expo hover:-translate-y-0.5"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          {isDaily && (
-            <button
-              onClick={() => onCheckin(goal, !checkedToday)}
-              disabled={busy}
-              aria-label={checkedToday ? `Uncheck ${goal.title} for today` : `Check off ${goal.title} for today`}
-              className={`mt-0.5 shrink-0 transition disabled:opacity-50 ${checkedToday ? 'text-emerald-400' : 'text-muted-foreground hover:text-emerald-400'}`}
-            >
-              {checkedToday ? <CheckCircle2 size={20} /> : <Circle size={20} />}
-            </button>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-sm font-semibold truncate ${checkedToday ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                {goal.title}
-              </span>
-              <Badge variant={PRIORITY_COLORS[goal.priority]}>{goal.priority}</Badge>
-              {isDaily && <Badge variant="primary">Daily</Badge>}
-            </div>
-            {goal.description && (
-              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>
-            )}
-            <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-              {goal.startDate} → {goal.endDate}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition"
-            title="Edit goal"
-            aria-label={`Edit ${goal.title}`}
-          >
-            <Pencil size={14} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
-            title="Delete goal"
-            aria-label={`Delete ${goal.title}`}
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-
-      {!isDaily && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={0}
-              max={goal.targetValue}
-              step={goal.targetValue > 20 ? 1 : 0.5}
-              value={sliderValue}
-              onChange={(e) => setSliderValue(Number(e.target.value))}
-              onMouseUp={() => commitSlider(sliderValue)}
-              onTouchEnd={() => commitSlider(sliderValue)}
-              onKeyUp={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') commitSlider(sliderValue); }}
-              aria-label={`${goal.title} progress`}
-              className="flex-1 accent-emerald-500"
-            />
-            <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-              {goal.currentValue}/{goal.targetValue} {goal.unit || ''}
-            </span>
-          </div>
-          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 0.5 }}
-              className={`h-full rounded-full ${pct >= 100 ? 'bg-emerald-400' : 'bg-gradient-to-r from-emerald-600 to-emerald-400'}`}
-            />
-          </div>
-          <div className="flex justify-between text-[10px] text-muted-foreground/60">
-            <span>{Math.round(pct)}% complete</span>
-            {pct >= 100 && <span className="text-emerald-500 font-bold">✓ Done!</span>}
-          </div>
-          {sliderError && <p role="alert" className="text-xs text-destructive">{sliderError}</p>}
-        </div>
-      )}
-    </motion.div>
-  );
-}
+const TABS: Array<{ value: Tab; label: string }> = [
+  { value: 'DAILY', label: 'Daily' },
+  { value: 'LONG_TERM', label: 'Long-term' },
+  { value: 'COMPLETED', label: 'Completed' },
+];
 
 export default function GoalsPage() {
-  const { goals, deleteGoal, updateGoal } = useApp();
-  const { today: userToday } = useUserTimezone();
-  const [tab, setTab] = useState<TabType>('DAILY');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Goal | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<Goal | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [checkins, setCheckins] = useState<Record<string, boolean>>({});
-  const today = userToday;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const reduced = useReducedMotion();
+  const {
+    goals,
+    dataLoaded,
+    dataError,
+    reloadData,
+    addGoal,
+    updateGoal,
+    updateGoalProgress,
+  } = useApp();
+  const { today } = useUserTimezone();
 
-  const { dailyGoals, longTermGoals, completedGoals } = useMemo(() => {
-    const done = (g: Goal) => g.status === 'COMPLETED' || g.status === 'CANCELLED';
+  const view = useGoalsViewData(goals);
+
+  const [tab, setTab] = useState<Tab>('DAILY');
+  const [query, setQuery] = useState('');
+  const [behindOnly, setBehindOnly] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Goal | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Goal | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  /**
+   * The deep link. `/goals?goal=<id>` is what the notification and email
+   * services now build — both used to emit `/goals/<id>`, and there is no
+   * `/goals/[id]` route, so every goal-deadline notification 404'd.
+   *
+   * The param is removed once applied so closing the drawer leaves a clean URL
+   * and the Back button does not reopen a goal the user just dismissed.
+   */
+  const deepLinkId = searchParams.get('goal');
+  const [closedDrawerId, setClosedDrawerId] = useState<string | null>(null);
+
+  /*
+    The drawer id is DERIVED, not synced.
+
+    This was `useEffect(() => setDrawerId(deepLinkId))` — prop-shaped state copied
+    into state, which renders twice on every deep link and, worse, could never
+    represent "the URL asks for goal X but the user dismissed it". Tracking the
+    dismissed id instead gives that state room to exist, so the derived value is
+    honest:
+
+      - no `?goal=`          → no drawer
+      - `?goal=X`, not closed → drawer on X
+      - `?goal=X`, closed     → no drawer, and closing is sticky across a
+                               re-render while the URL is still being cleaned up
+
+    `deepLinkId` wins over `closedDrawerId` when they disagree about a *different*
+    goal, which is the case a notification link actually produces.
+  */
+  const drawerId = deepLinkId && deepLinkId !== closedDrawerId ? deepLinkId : null;
+
+  /*
+    Landing on the tab that actually contains the goal.
+
+    A targeted disable, and the rule is a heuristic that does not fit this case:
+    it fires once per deep-link NAVIGATION, not once per render, because
+    `deepLinkId` only changes when the user follows a deadline link. That is a
+    route change driving the UI — an effect's actual job.
+
+    The alternative, React's "adjust state when a prop changes" render-time
+    pattern, would run before the goal list has loaded, so the tab could not be
+    computed at all on a cold deep link: the effect is what makes it correct when
+    `goals` arrives a tick later.
+  */
+  useEffect(() => {
+    if (!deepLinkId) return;
+    const target = goals.find((g) => g.id === deepLinkId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- route change drives the tab
+    if (target) setTab(tabFor(target));
+  }, [deepLinkId, goals]);
+
+  const clearDeepLink = useCallback(() => {
+    setClosedDrawerId(deepLinkId);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('goal');
+    const next = params.toString();
+    router.replace(next ? `/goals?${next}` : '/goals', { scroll: false });
+  }, [router, searchParams, deepLinkId]);
+
+  /* ── Partitioning ────────────────────────────────────────────────────── */
+
+  const partitioned = useMemo(() => {
+    const finished = (g: Goal) =>
+      g.status === 'COMPLETED' || g.status === 'CANCELLED' || g.status === 'CARRIED_OVER';
+
     return {
-      dailyGoals: goals.filter((g) => g.type === 'DAILY' && !done(g)),
-      longTermGoals: goals.filter((g) => g.type !== 'DAILY' && !done(g)),
-      completedGoals: goals.filter(done),
-    };
+      DAILY: goals.filter((g) => g.type === 'DAILY' && !finished(g)),
+      LONG_TERM: goals.filter((g) => g.type !== 'DAILY' && !finished(g)),
+      COMPLETED: goals.filter(finished),
+    } satisfies Record<Tab, Goal[]>;
   }, [goals]);
 
-  const visible = tab === 'DAILY' ? dailyGoals : tab === 'LONG_TERM' ? longTermGoals : completedGoals;
+  const matchesQuery = useCallback(
+    (goal: Goal) => {
+      const q = query.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        goal.title.toLowerCase().includes(q) ||
+        (goal.description ?? '').toLowerCase().includes(q) ||
+        (goal.project?.name ?? '').toLowerCase().includes(q)
+      );
+    },
+    [query]
+  );
 
-  const handleCheckin = async (goal: Goal, completed: boolean) => {
-    setBusyId(goal.id);
-    setError(null);
-    setCheckins((prev) => ({ ...prev, [goal.id]: completed }));
-    try {
-      const res = await fetch(`/api/goals/${goal.id}/checkin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: today, completed }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error || 'Failed to save check-in');
-      // Sync context state so widgets agree.
-      await updateGoal(goal.id, {
-        currentValue: completed ? 1 : 0,
-        status: completed ? 'COMPLETED' : 'ACTIVE',
-      });
-      if (completed) void runAchievementCheck();
-    } catch (err) {
-      setCheckins((prev) => ({ ...prev, [goal.id]: !completed }));
-      setError(err instanceof Error ? err.message : 'Failed to save check-in');
-    } finally {
-      setBusyId(null);
-    }
+  const listFor = useCallback(
+    (which: Tab) => partitioned[which].filter(matchesQuery),
+    [partitioned, matchesQuery]
+  );
+
+  /**
+   * The "needs attention" rail.
+   *
+* Behind-pace goals are **promoted**, not separated: they are the same cards in
+ * the same material, drawn from the same list, just first. The previous page
+ * made the user eyeball percentages against dates to notice the same fact —
+ * which is the one computation this page exists to perform for them.
+ *
+ * The card no longer needs a `promoted` flag: a behind goal already renders
+ * amber, because the whole card is tinted by pace. The rail only reorders.
+   *
+   * Daily goals are excluded. A daily goal's pace is measured against its whole
+   * window, and "1 of 1 today" is a question the consistency strip answers, not
+   * the rail.
+   */
+  const behind = useMemo(
+    () =>
+      listFor('LONG_TERM')
+        .map((goal) => ({ goal, pace: view.paceFor(goal.id) }))
+        .filter(
+          (entry): entry is { goal: Goal; pace: NonNullable<ReturnType<typeof view.paceFor>> } =>
+            entry.pace !== null && (entry.pace.state === 'behind' || entry.pace.state === 'overdue')
+        ),
+    [listFor, view]
+  );
+
+  const behindIds = useMemo(() => new Set(behind.map((b) => b.goal.id)), [behind]);
+
+  const visible = useMemo(() => {
+    const base = listFor(tab);
+    if (!behindOnly) return base;
+    return base.filter((goal) => behindIds.has(goal.id));
+  }, [listFor, tab, behindOnly, behindIds]);
+
+  const isFiltering = query.trim().length > 0 || behindOnly;
+
+  /* ── Summary line ────────────────────────────────────────────────────── */
+
+  const summary = useMemo(() => {
+    const daily = partitioned.DAILY;
+    const doneToday = daily.filter((g) => view.doneToday(g.id)).length;
+    const longTerm = partitioned.LONG_TERM;
+    const states = longTerm
+      .map((g) => view.paceFor(g.id)?.state)
+      .filter((s): s is NonNullable<typeof s> => Boolean(s));
+    return {
+      doneToday,
+      dailyTotal: daily.length,
+      behind: states.filter((s) => s === 'behind' || s === 'overdue').length,
+      ahead: states.filter((s) => s === 'ahead').length,
+      inFlight: longTerm.length,
+    };
+  }, [partitioned, view]);
+
+  /* ── Writes ──────────────────────────────────────────────────────────── */
+
+  const goalTitle = useCallback(
+    (id: string) => goals.find((g) => g.id === id)?.title ?? 'Goal',
+    [goals]
+  );
+
+  /**
+   * Daily check-in.
+   *
+   * There is no second `PATCH` after this any more. The old handler issued one to
+   * re-send `currentValue` and `status`, because `checkInDaily` used to write a
+   * `COMPLETED` status the page then had to reconcile — two writes and two full
+   * relation reads per click, to undo damage the server was doing. The server no
+   * longer does that, so the second write is gone.
+   */
+  const toggleCheckIn = useCallback(
+    async (goalId: string, next: boolean) => {
+      setBusyId(goalId);
+      setActionError(null);
+      try {
+        await apiRequest(`/api/goals/${goalId}/checkin`, {
+          method: 'POST',
+          body: { date: today, completed: next },
+        });
+        view.refreshLog();
+        if (next) void runAchievementCheck();
+        toast.success(next ? 'Checked in' : 'Check-in undone', {
+          description: goalTitle(goalId),
+          action: {
+            label: 'Undo',
+            onClick: () => {
+              void apiRequest(`/api/goals/${goalId}/checkin`, {
+                method: 'POST',
+                body: { date: today, completed: !next },
+              })
+                .then(() => {
+                  view.refreshLog();
+                  toast('Reverted');
+                })
+                .catch(() => toast.error('Could not undo that'));
+            },
+          },
+        });
+      } catch (error) {
+        setActionError(
+          error instanceof Error ? error.message : 'Could not save that check-in'
+        );
+        toast.error('Could not save that check-in');
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [today, view, goalTitle]
+  );
+
+  const logProgress = useCallback(
+    async (goal: Goal, value: number, note: string | null) => {
+      // Routed through context, not a bare fetch, so the optimistic write and the
+      // server's reconciled row land in the one place every other goal widget
+      // reads. A direct `apiRequest` here would update the card and leave the
+      // dashboard stale until the next full reload.
+      await updateGoalProgress(goal.id, value, note ?? undefined);
+      view.refreshLog();
+      if (value >= goal.targetValue) void runAchievementCheck();
+    },
+    [updateGoalProgress, view]
+  );
+
+  /* ── Render ──────────────────────────────────────────────────────────── */
+
+  const openDrawer = (id: string) => {
+    // Clear any previous dismissal, then drive the drawer from the URL. The param
+    // IS the source of truth now, so this is just "forget the closed one".
+    setClosedDrawerId(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('goal', id);
+    router.replace(`/goals?${params.toString()}`, { scroll: false });
   };
 
-  const handleDelete = async () => {
-    if (!confirmDelete) return;
-    const id = confirmDelete.id;
-    setConfirmDelete(null);
-    setError(null);
-    try {
-      await deleteGoal(id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete goal');
-    }
-  };
+  const showLoading = !dataLoaded;
+  const showError = Boolean(dataError) && goals.length === 0;
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Goals</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {dailyGoals.length} daily · {longTermGoals.length} long-term · {completedGoals.length} completed
-          </p>
-        </div>
-        <Button onClick={() => setModalOpen(true)} variant="primary">
-          <Plus size={16} /> Add goal
-        </Button>
-      </div>
+    <div className="container relative mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      {/*
+        The horizon.
 
-      {error && (
-        <p role="alert" className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
-          {error}
+        Previously a 4% wash across the top 64px, which was not a backdrop so
+        much as a header tint — and it left the pace-tinted cards below it
+        floating on nothing, which is the condition under which frosted and
+        tinted surfaces always read as grey plastic.
+
+        `.goals-horizon` is static by design. An animated full-viewport gradient
+        behind a list the user is trying to read forces a continuous repaint of
+        the whole page for no informational gain, and the motion brief for this
+        page forbids ambient drift anyway.
+      */}
+      <div aria-hidden="true" className="goals-horizon" />
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <header className="mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Goals
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">{fleetSummary(summary)}</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search goals"
+              aria-label="Search goals by title, description or project"
+              className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:w-56"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => setBehindOnly((v) => !v)}
+            aria-pressed={behindOnly}
+            className={behindOnly ? 'border-pace-behind text-pace-behind' : ''}
+          >
+            <TriangleAlert className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Behind</span>
+            {summary.behind > 0 && (
+              <span className="font-display tabular-nums">{summary.behind}</span>
+            )}
+          </Button>
+
+          <Button variant="primary" onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Add goal</span>
+          </Button>
+        </div>
+      </header>
+
+      {actionError && (
+        <p
+          role="alert"
+          className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {actionError}
         </p>
       )}
 
-      <div className="flex flex-wrap gap-1 mb-6 bg-card border border-border rounded-xl p-1" role="tablist" aria-label="Goal filter">
-        {([
-          { value: 'DAILY', label: 'Daily' },
-          { value: 'LONG_TERM', label: 'Long-term' },
-          { value: 'COMPLETED', label: 'Completed' },
-        ] as Array<{ value: TabType; label: string }>).map((t) => (
+      {/* ── Tabs ────────────────────────────────────────────────────────── */}
+      <div
+        role="tablist"
+        aria-label="Goal views"
+        className="mb-6 flex w-fit gap-1 rounded-xl border border-border bg-card p-1"
+      >
+        {TABS.map((t) => (
           <button
             key={t.value}
             role="tab"
+            id={`tab-${t.value}`}
             aria-selected={tab === t.value}
+            aria-controls={`panel-${t.value}`}
+            tabIndex={tab === t.value ? 0 : -1}
             onClick={() => setTab(t.value)}
-            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all ${
-              tab === t.value ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+            onKeyDown={(event) => {
+              // Roving tabindex: the arrow keys move between tabs, which is the
+              // ARIA tabs pattern. The old strip had `role="tablist"` and
+              // `role="tab"` with no `tabpanel`, no `aria-controls` and no key
+              // handling — so screen readers were told about tabs controlling
+              // nothing, and a keyboard user could not switch views at all.
+              const index = TABS.findIndex((x) => x.value === tab);
+              if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                event.preventDefault();
+                const delta = event.key === 'ArrowRight' ? 1 : -1;
+                const nextIndex = (index + delta + TABS.length) % TABS.length;
+                const next = TABS[nextIndex];
+                if (next) {
+                  setTab(next.value);
+                  document.getElementById(`tab-${next.value}`)?.focus();
+                }
+              }
+            }}
+            className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+              tab === t.value
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t.label}
@@ -252,77 +429,381 @@ export default function GoalsPage() {
         ))}
       </div>
 
-      {visible.length === 0 ? (
-        <EmptyState
-          icon={<Target size={28} />}
-          title={tab === 'DAILY' ? 'No daily goals' : tab === 'LONG_TERM' ? 'No long-term goals' : 'Nothing completed yet'}
-          description={
-            tab === 'DAILY'
-              ? 'Daily goals repeat every day with a simple check-off.'
-              : tab === 'LONG_TERM'
-                ? 'Create a goal with a target and deadline.'
-                : 'Completed goals will appear here.'
-          }
-          action={
-            tab !== 'COMPLETED' ? (
-              <Button onClick={() => setModalOpen(true)} variant="primary" size="sm">
-                <Plus size={14} /> Add Goal
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <AnimatePresence>
-            {visible.map((goal) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                onEdit={() => setEditing(goal)}
-                onDelete={() => setConfirmDelete(goal)}
-                checkinState={checkins}
-                onCheckin={handleCheckin}
-                busy={busyId === goal.id}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-
-      <AddGoalModal open={modalOpen} onClose={() => setModalOpen(false)} defaultType={tab === 'DAILY' ? 'DAILY' : 'WEEKLY'} />
-      <EditGoalModal goal={editing} onClose={() => setEditing(null)} />
-
-      <AnimatePresence>
-        {confirmDelete && (
+      {/* ── Panel ───────────────────────────────────────────────────────── */}
+      <div
+        role="tabpanel"
+        id={`panel-${tab}`}
+        aria-labelledby={`tab-${tab}`}
+        tabIndex={-1}
+      >
+        {/*
+          Cross-fade only. No layout animation on a tab switch: the panel swaps
+          its children and the browser does the rest, which is both faster and
+          calmer than animating fifteen cards in and out on every click.
+        */}
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            initial={{ opacity: 0 }}
+            key={tab}
+            initial={reduced ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-            onClick={() => setConfirmDelete(null)}
+            exit={reduced ? undefined : { opacity: 0 }}
+            transition={{ duration: reduced ? 0 : 0.15 }}
           >
-            <motion.div
-              initial={{ scale: 0.95, y: 8 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 8 }}
-              className="w-full max-w-sm bg-card border border-border rounded-2xl p-6"
-              onClick={(e) => e.stopPropagation()}
-              role="alertdialog"
-              aria-modal="true"
-              aria-label="Delete goal"
-            >
-              <h2 className="text-lg font-bold text-foreground">Delete goal?</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                &ldquo;{confirmDelete.title}&rdquo; and its progress history will be permanently removed.
-              </p>
-              <div className="flex justify-end gap-3 mt-6">
-                <Button variant="ghost" onClick={() => setConfirmDelete(null)}>Cancel</Button>
-                <Button variant="primary" onClick={handleDelete}>Delete</Button>
-              </div>
-            </motion.div>
+            {showLoading ? (
+              <SkeletonGrid />
+            ) : showError ? (
+              <ErrorPanel message={dataError ?? 'Something went wrong'} onRetry={reloadData} />
+            ) : visible.length === 0 ? (
+              <EmptyPanel
+                tab={tab}
+                isFiltering={isFiltering}
+                onClearFilters={() => {
+                  setQuery('');
+                  setBehindOnly(false);
+                }}
+                onAdd={() => setFormOpen(true)}
+              />
+            ) : (
+              <>
+                {/* The needs-attention rail, long-term view only. */}
+                {tab === 'LONG_TERM' && behind.length > 0 && !behindOnly && (
+                  <section aria-labelledby="rail-behind" className="mb-6">
+                    <h2
+                      id="rail-behind"
+                      className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-[0.08em] text-pace-behind"
+                    >
+                      <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />
+                      Needs attention · {behind.length}
+                    </h2>
+                    <motion.div layout={!reduced} className="grid gap-3 sm:grid-cols-2">
+                      {behind.map(({ goal, pace }) => (
+                        <GoalCard
+                          key={goal.id}
+                          goal={toCardView(goal)}
+                          pace={pace}
+                          consistency={view.consistencyFor(goal.id)!}
+                          goalShape={view.shapeFor(goal.id)}
+                          today={today}
+                          isDaily={false}
+                          onOpen={openDrawer}
+                        />
+                      ))}
+                    </motion.div>
+                  </section>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <AnimatePresence mode="popLayout">
+                    {visible
+                      .filter((goal) => !behindIds.has(goal.id) || tab !== 'LONG_TERM' || behindOnly)
+                      .map((goal) => (
+                        <GoalCardViewRenderer
+                          key={goal.id}
+                          goal={goal}
+                          today={today}
+                          loadingLog={view.loadingLog}
+                          doneToday={view.doneToday(goal.id)}
+                          busy={busyId === goal.id}
+                          onToggleCheckIn={toggleCheckIn}
+                          onOpen={openDrawer}
+                          paceFor={view.paceFor}
+                          consistencyFor={view.consistencyFor}
+                          shapeFor={view.shapeFor}
+                        />
+                      ))}
+                  </AnimatePresence>
+                </div>
+              </>
+            )}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
+
+      {/* ── Overlays ────────────────────────────────────────────────────── */}
+      <GoalFormModal
+        open={formOpen || editing !== null}
+        goal={editing}
+        defaultType={tab === 'DAILY' ? 'DAILY' : 'WEEKLY'}
+        today={today}
+        onClose={() => {
+          setFormOpen(false);
+          setEditing(null);
+        }}
+        onSubmit={async (values) => {
+          if (editing) {
+            await updateGoal(editing.id, values);
+            toast.success('Goal updated');
+            return;
+          }
+          await addGoal({
+            title: values.title,
+            description: values.description,
+            type: values.type,
+            priority: values.priority,
+            targetValue: values.targetValue,
+            currentValue: values.currentValue,
+            unit: values.unit,
+            startDate: values.startDate,
+            endDate: values.endDate,
+          });
+          toast.success('Goal created');
+        }}
+      />
+
+      <GoalDrawer
+        open={drawerId !== null}
+        goal={goals.find((g) => g.id === drawerId) ?? null}
+        pace={drawerId ? view.paceFor(drawerId) : null}
+        consistency={drawerId ? view.consistencyFor(drawerId) : null}
+        points={drawerId ? view.pointsFor(drawerId) : []}
+        today={today}
+        onClose={clearDeepLink}
+        onEdit={(goal) => {
+          setEditing(goal);
+          clearDeepLink();
+        }}
+        onArchive={async (goal) => {
+          await apiRequest(`/api/goals/${goal.id}`, {
+            method: 'PUT',
+            body: { status: 'CANCELLED' },
+          });
+          await reloadData();
+          toast.success('Goal archived', {
+            description: 'Its progress history is kept.',
+          });
+          clearDeepLink();
+        }}
+        onDelete={(goal) => {
+          clearDeepLink();
+          setDeleteTarget(goal);
+        }}
+        onLogProgress={logProgress}
+        // Milestone ticks change `milestoneDoneCount`, which the list carries and
+        // the drawer heading shows. `MilestonesPanel` already updated its own
+        // rows optimistically; this refetches so the cards behind the drawer
+        // agree with it once the drawer closes.
+        onChanged={reloadData}
+        onCarryOver={async (newGoalId) => {
+          // Navigate to the new goal rather than closing. The user just said
+          // "yes, give me another period" - landing on the goal that now exists
+          // is the confirmation, and it opens on its own milestones so the copied
+          // plan is visible rather than merely claimed.
+          await reloadData();
+          clearDeepLink();
+          toast.success('Carried over', {
+            description: 'The old goal is archived. Milestones reopened on the new one.',
+          });
+          router.push(`/goals?goal=${newGoalId}`);
+        }}
+      />
+
+      <DeleteGoalDialog
+        open={deleteTarget !== null}
+        goalId={deleteTarget?.id ?? null}
+        goalTitle={deleteTarget?.title ?? ''}
+        onClose={() => setDeleteTarget(null)}
+        onArchived={async () => {
+          await reloadData();
+          toast.success('Goal archived');
+        }}
+        onDeleted={async () => {
+          await reloadData();
+          toast.success('Goal deleted');
+        }}
+      />
+
+      <Toaster position="bottom-right" richColors closeButton />
     </div>
+  );
+}
+
+/* ── Card wrapper: resolves the nullable pace/consistency from the hook ────── */
+
+function GoalCardViewRenderer({
+  goal,
+  today,
+  loadingLog,
+  doneToday,
+  busy,
+  onToggleCheckIn,
+  onOpen,
+  paceFor,
+  consistencyFor,
+  shapeFor,
+}: {
+  goal: Goal;
+  today: string;
+  loadingLog: boolean;
+  doneToday: boolean;
+  busy: boolean;
+  onToggleCheckIn: (id: string, next: boolean) => void;
+  onOpen: (id: string) => void;
+  paceFor: (id: string) => ReturnType<ReturnType<typeof useGoalsViewData>['paceFor']>;
+  consistencyFor: (id: string) => ReturnType<ReturnType<typeof useGoalsViewData>['consistencyFor']>;
+  shapeFor: (id: string) => ReturnType<ReturnType<typeof useGoalsViewData>['shapeFor']>;
+}) {
+  const pace = paceFor(goal.id);
+  const consistency = consistencyFor(goal.id);
+
+  // While the log window is in flight there is genuinely no pace, and rendering a
+  // placeholder "on pace" would be a fact the page invented. A skeleton says so.
+  if (loadingLog || !pace || !consistency) {
+    return <GoalCardSkeleton key={goal.id} />;
+  }
+
+  return (
+    <GoalCard
+      goal={toCardView(goal)}
+      pace={pace}
+      consistency={consistency}
+      goalShape={shapeFor(goal.id)}
+      today={today}
+      isDaily={goal.type === 'DAILY'}
+      doneToday={doneToday}
+      busy={busy}
+      onToggleCheckIn={onToggleCheckIn}
+      onOpen={onOpen}
+    />
+  );
+}
+
+/* ── Helpers ──────────────────────────────────────────────────────────────── */
+
+function toCardView(goal: Goal): GoalCardView {
+  return {
+    id: goal.id,
+    title: goal.title,
+    description: goal.description,
+    type: goal.type,
+    priority: goal.priority,
+    unit: goal.unit,
+    currentValue: goal.currentValue,
+    targetValue: goal.targetValue,
+    startDate: goal.startDate,
+    endDate: goal.endDate,
+    project: goal.project,
+    appliesEveryDay: goal.appliesEveryDay,
+    dayTypeNames: goal.dayTypeNames,
+  };
+}
+
+function tabFor(goal: Goal): Tab {
+  if (goal.status === 'COMPLETED' || goal.status === 'CANCELLED' || goal.status === 'CARRIED_OVER') {
+    return 'COMPLETED';
+  }
+  return goal.type === 'DAILY' ? 'DAILY' : 'LONG_TERM';
+}
+
+function fleetSummary(summary: {
+  doneToday: number;
+  dailyTotal: number;
+  behind: number;
+  ahead: number;
+  inFlight: number;
+}): string {
+  if (summary.dailyTotal === 0 && summary.inFlight === 0) return 'Nothing set yet.';
+
+  const parts: string[] = [];
+  if (summary.dailyTotal > 0) {
+    parts.push(
+      `${summary.doneToday} of ${summary.dailyTotal} done today`
+    );
+  }
+  if (summary.inFlight > 0) {
+    parts.push(`${summary.inFlight} in flight`);
+  }
+  if (summary.behind > 0) parts.push(`${summary.behind} behind pace`);
+  if (summary.ahead > 0) parts.push(`${summary.ahead} ahead`);
+
+  return `${parts.join(' · ')}.`;
+}
+
+/* ── States ───────────────────────────────────────────────────────────────── */
+
+function SkeletonGrid() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2" aria-busy="true" aria-label="Loading goals">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <GoalCardSkeleton key={i} />
+      ))}
+    </div>
+  );
+}
+
+function ErrorPanel({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center"
+    >
+      <h2 className="text-sm font-medium text-foreground">Could not load your goals</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+      <Button variant="outline" onClick={onRetry} className="mt-4">
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function EmptyPanel({
+  tab,
+  isFiltering,
+  onClearFilters,
+  onAdd,
+}: {
+  tab: Tab;
+  isFiltering: boolean;
+  onClearFilters: () => void;
+  onAdd: () => void;
+}) {
+  // "No results" and "nothing here" are different states and must not share a
+  // panel. Conflating them is how a failed filter looks like an empty account.
+  if (isFiltering) {
+    return (
+      <EmptyState
+        icon={<Search size={24} aria-hidden="true" />}
+        title="No goals match"
+        description="Nothing here fits the current search and filters."
+        action={
+          <Button variant="outline" size="sm" onClick={onClearFilters}>
+            Clear filters
+          </Button>
+        }
+      />
+    );
+  }
+
+  const copy = {
+    DAILY: {
+      title: 'No daily goals',
+      description:
+        'Daily goals are a per-day tick. They stay on this list for their whole window, so ticking one never removes it.',
+    },
+    LONG_TERM: {
+      title: 'Nothing in flight',
+      description:
+        'Set a target and a deadline. The pace track then tells you every day whether you are ahead of where the calendar says you should be.',
+    },
+    COMPLETED: {
+      title: 'Nothing finished yet',
+      description:
+        'Completed, archived and carried-over goals collect here with their full history.',
+    },
+  }[tab];
+
+  return (
+    <EmptyState
+      icon={<Target size={24} aria-hidden="true" />}
+      title={copy.title}
+      description={copy.description}
+      action={
+        tab === 'COMPLETED' ? undefined : (
+          <Button variant="primary" size="sm" onClick={onAdd}>
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+            Add goal
+          </Button>
+        )
+      }
+    />
   );
 }

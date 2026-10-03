@@ -40,6 +40,14 @@ export interface BarChartProps {
   showGrid?: boolean;
   barSize?: number;
   ariaLabel?: string;
+  /**
+   * `id` of the element holding the long description.
+   *
+   * `aria-label` alone gives the chart a *name* but not its contents, so the trend
+   * is unreachable without sight. Pointing at the visible figure table turns the
+   * disclosure into a real text alternative rather than a "chart with a label".
+   */
+  ariaDescribedBy?: string;
   /** When set, bars render with a vertical gradient fill instead of solid colors. */
   gradient?: { id: string; from: string; to: string };
 }
@@ -81,6 +89,7 @@ export function BarChart({
   showGrid = false,
   barSize,
   ariaLabel = 'Bar chart',
+  ariaDescribedBy,
   gradient,
 }: BarChartProps) {
   if (data.length === 0) {
@@ -89,6 +98,7 @@ export function BarChart({
         className="flex h-40 items-center justify-center text-sm text-gray-500"
         role="img"
         aria-label={`${ariaLabel} — no data`}
+        aria-describedby={ariaDescribedBy}
       >
         No data to display
       </div>
@@ -104,6 +114,7 @@ export function BarChart({
       style={{ height }}
       role="img"
       aria-label={ariaLabel}
+      aria-describedby={ariaDescribedBy}
     >
       <ResponsiveContainer width="100%" height="100%">
         <RechartsBarChart data={data} barSize={barSize} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>

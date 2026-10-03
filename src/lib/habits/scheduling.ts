@@ -14,6 +14,22 @@ import { Habit } from '@/types/habit';
 import { parseFrequencyConfig } from './frequency';
 
 /**
+ * The only three fields this module reads.
+ *
+ * Declared structurally rather than taking the full `Habit` so the same function
+ * can be called from a `'use client'` component holding the reduced `Habit` in
+ * `AppContext` (which models `frequencyValue` as `string | null | undefined`
+ * against Prisma's required `string`) and from the server holding a full
+ * `HabitWithRelations`. Those two types are not assignable to each other, so a
+ * full `Habit` parameter forced a cast at the client call site.
+ */
+export type SchedulableHabit = {
+  status: Habit['status'];
+  frequencyType: Habit['frequencyType'];
+  frequencyValue?: string | null;
+};
+
+/**
  * Weekday (0 = Sunday … 6 = Saturday) of a `YYYY-MM-DD` calendar date.
  *
  * A calendar date carries no timezone: '2026-09-28' is Monday, full stop. The
@@ -41,7 +57,7 @@ function weekdayOfCalendarDate(date: string): number {
  *   date belonging to the user, so its weekday is already fixed.
  */
 export function isHabitScheduledForDate(
-  habit: Habit,
+  habit: SchedulableHabit,
   date: string,
   timezone: string = 'UTC'
 ): boolean {
@@ -78,6 +94,6 @@ export function isHabitScheduledForDate(
   }
 }
 
-export function isHabitScheduled(habit: Habit, date: string, timezone: string = 'UTC'): boolean {
+export function isHabitScheduled(habit: SchedulableHabit, date: string, timezone: string = 'UTC'): boolean {
   return isHabitScheduledForDate(habit, date, timezone);
 }

@@ -6,6 +6,7 @@ import { apiRequest } from '@/lib/api-client';
 import type { WeeklySummary } from '@/server/analytics/weekly';
 import type { MonthlySummary } from '@/server/analytics/monthly';
 import { Button, Card, Input, Spinner } from '@/components/ui';
+import { percentText } from '@/lib/analytics/format';
 import { BarChart } from '@/components/charts/BarChart';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -74,6 +75,9 @@ export default function ReportsPage() {
   }, [load, type, date]);
 
   const chartData = useMemo(() => {
+    // `null` is carried through rather than coerced to 0: Recharts draws no bar
+    // for a null value, which is the correct rendering of "this habit was never
+    // due in the period". A 0 would draw a "you did nothing" bar.
     if (type === 'weekly' && weekly) {
       return weekly.habits.perHabit.map((habit) => ({
         name: habit.habitName,
@@ -153,7 +157,7 @@ export default function ReportsPage() {
             <Row label="Average score" value={weekly.scores.average} />
             <Row label="Excellent days" value={weekly.scores.excellentDays} />
             <Row label="Perfect days" value={weekly.scores.perfectDays} />
-            <Row label="Habit completion" value={`${weekly.habits.averageCompletionRate}%`} />
+            <Row label="Habit completion" value={percentText(weekly.habits.averageCompletionRate)} />
             <Row label="Active habits" value={weekly.habits.activeCount} />
             <Row label="Goals completed" value={weekly.goals.completed} />
             <Row label="Current streak" value={weekly.streaks.current} />
@@ -170,7 +174,7 @@ export default function ReportsPage() {
             <Row label="Average score" value={monthly.scores.average} />
             <Row label="Excellent days" value={monthly.scores.excellentDays} />
             <Row label="Perfect days" value={monthly.scores.perfectDays} />
-            <Row label="Habit completion" value={`${monthly.habits.averageCompletionRate}%`} />
+            <Row label="Habit completion" value={percentText(monthly.habits.averageCompletionRate)} />
             <Row label="Completed" value={monthly.habits.totalCompleted} />
             <Row label="Missed" value={monthly.habits.totalMissed} />
             <Row label="Goals completed" value={monthly.goals.completed} />

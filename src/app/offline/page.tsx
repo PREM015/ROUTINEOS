@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { CloudOff } from 'lucide-react';
+import type { Metadata } from 'next';
+import { privateMetadata } from '@/lib/seo';
 
 /**
  * Offline fallback.
@@ -15,11 +17,15 @@ import { CloudOff } from 'lucide-react';
  * Because it is precached, this page must render without a network request and
  * must not depend on anything that fetches. It is a server component with no
  * data access and no client hooks.
+ *
+ * It is also a page with no unique content, so it must never be indexed. The
+ * original `metadata` here hardcoded `'Offline · RoutineOS'`, which the root
+ * title template would have doubled into `'Offline · RoutineOS | RoutineOS'`.
  */
-export const metadata = {
-  title: 'Offline · RoutineOS',
-  description: 'You are offline. Cached pages are still available.',
-};
+export const metadata: Metadata = privateMetadata(
+  'You are offline',
+  'You are offline. Cached pages are still available.'
+);
 
 export default function OfflinePage() {
   return (

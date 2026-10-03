@@ -2,6 +2,7 @@
 
 import { Flame, Moon, Star, TrendingUp } from 'lucide-react';
 import type { RecapReport } from '@/types/recap';
+import { percentText } from '@/lib/analytics/format';
 import StatTile from './stat-tile';
 
 interface WeeklyRecapProps {
@@ -53,7 +54,7 @@ export default function WeeklyRecap({ week }: WeeklyRecapProps) {
         <StatTile
           icon={<TrendingUp className="h-5 w-5" />}
           label="Habit completion"
-          value={`${Math.round(habits.averageCompletionRate)}%`}
+          value={percentText(habits.averageCompletionRate)}
           detail={
             habits.mostCompleted
               ? `${habits.mostCompleted.habitName} most consistent`

@@ -9,6 +9,7 @@ import {
   Star,
 } from 'lucide-react';
 import type { RecapReport } from '@/types/recap';
+import { percentText } from '@/lib/analytics/format';
 import StatTile from './stat-tile';
 
 interface MonthlyRecapProps {
@@ -75,7 +76,7 @@ export default function MonthlyRecap({ month }: MonthlyRecapProps) {
         <StatTile
           icon={<BadgeCheck className="h-5 w-5" />}
           label="Habit completion"
-          value={`${Math.round(habits.averageCompletionRate)}%`}
+          value={percentText(habits.averageCompletionRate)}
           detail={
             habits.perHabit.length > 0
               ? `${habits.perHabit.length} habits tracked`

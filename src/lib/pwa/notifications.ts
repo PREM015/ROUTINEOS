@@ -14,6 +14,30 @@ export interface PushHeaders {
 }
 
 /**
+ * Options accepted by `showNotification`.
+ *
+ * TypeScript's DOM lib exposes exactly one `NotificationOptions`, the **window
+ * constructor's** version, which omits the service-worker-only fields. The
+ * service-worker form (`ServiceWorkerRegistration.showNotification`, which is
+ * the path actually taken whenever a worker is registered) additionally
+ * supports `vibrate`, `data`, `actions`, `image` and friends.
+ *
+ * Declaring the superset here means callers can pass the richer options without
+ * a cast, and the window fallback silently drops the fields it does not know
+ * about — which is exactly what the browser does.
+ */
+export type ShowNotificationOptions = NotificationOptions & {
+  /** Service-worker-only. Ignored by the `new Notification()` fallback. */
+  vibrate?: number | number[];
+  /** Service-worker-only payload available to the notification's event handler. */
+  data?: unknown;
+  /** Service-worker-only action buttons. */
+  actions?: Array<{ action: string; title: string; icon?: string }>;
+  /** Service-worker-only image. */
+  image?: string;
+};
+
+/**
  * Whether the Notifications API and service workers are available.
  */
 export function isNotificationsSupported(): boolean {
@@ -62,7 +86,7 @@ async function getRegistration(): Promise<ServiceWorkerRegistration | null> {
  */
 export async function showNotification(
   title: string,
-  options: NotificationOptions = {}
+  options: ShowNotificationOptions = {}
 ): Promise<boolean> {
   if (!isNotificationsSupported()) return false;
   if (Notification.permission === 'denied') return false;
@@ -72,9 +96,12 @@ export async function showNotification(
 
   const registration = await getRegistration();
   if (registration?.showNotification) {
+    // Preferred path: the service worker understands the extra fields, and the
+    // notification survives the tab being closed.
     await registration.showNotification(title, options);
   } else {
-     
+    // Fallback. The window constructor reads only the fields it knows about and
+    // ignores the rest, so the two paths stay interchangeable.
     new Notification(title, options);
   }
   return true;

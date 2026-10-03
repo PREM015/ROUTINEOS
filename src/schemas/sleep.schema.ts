@@ -8,7 +8,17 @@ import { z } from 'zod';
  */
 
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
-const timeSchema = z.string().regex(/^\d{2}:\d{2}$/, 'Time must be in HH:mm format');
+/**
+ * Hours 00–23, minutes 00–59.
+ *
+ * `^\d{2}:\d{2}$` also accepted `99:99`, which then flowed into
+ * `calculateSleepDuration` and silently produced a nonsensical duration and
+ * sleep score rather than a rejected write. `<input type="time">` can only emit
+ * valid values, so this tightens the API boundary without changing any form.
+ */
+const timeSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must be a valid HH:mm between 00:00 and 23:59');
 const ratingSchema = z.number().int().min(1, 'Value must be between 1 and 5').max(5, 'Value must be between 1 and 5');
 
 export const LogSleepSchema = z.object({

@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { NutritionRepository } from '@/server/repositories/nutrition.repository';
+import { nutritionService } from '@/server/services/nutrition.service';
 import { createNutritionSchema, nutritionQuerySchema } from '@/schemas/nutrition.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
  * Nutrition Route
  * GET  /api/nutrition – list nutrition entries for the authenticated user
  * POST /api/nutrition – create one or more nutrition entries for a meal
+ *
+ * The macro rollup in `meta.totals` now lives in `NutritionService.listForUser`.
  */
 
 /**
@@ -37,25 +39,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const nutritionRepository = new NutritionRepository();
-    const entries = await nutritionRepository.findAll(session.user.id, {
+    const { entries, totals } = await nutritionService.listForUser(session.user.id, {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       mealType: validated.data.mealType,
       limit: validated.data.limit,
       offset: validated.data.offset,
     });
-
-    const totals = entries.reduce(
-      (acc, entry) => {
-        acc.calories += entry.calories ?? 0;
-        acc.protein += entry.protein ?? 0;
-        acc.carbs += entry.carbs ?? 0;
-        acc.fat += entry.fat ?? 0;
-        return acc;
-      },
-      { calories: 0, protein: 0, carbs: 0, fat: 0 }
-    );
 
     return NextResponse.json({
       success: true,
@@ -93,9 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { date, mealType, items } = validated.data;
-    const nutritionRepository = new NutritionRepository();
-    const entries = await nutritionRepository.createMany(session.user.id, date, mealType, items);
+    const entries = await nutritionService.createMany(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: entries }, { status: 201 });
   } catch (error) {

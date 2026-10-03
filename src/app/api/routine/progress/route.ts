@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { calendarDateSchema } from '@/lib/validation/routine.schema';
 import { z } from 'zod';
 
 /**
@@ -9,9 +10,10 @@ import { z } from 'zod';
  * Real data only: templates, exceptions, and logs of the authenticated user.
  */
 
+// F8: the shared date schema. This is the last inline copy in the routine tree.
 const progressQuerySchema = z.object({
   period: z.enum(['day', 'week', 'month', 'year']),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  date: calendarDateSchema.optional(),
 });
 
 export async function GET(request: NextRequest) {

@@ -92,6 +92,44 @@ export async function getFeatureFlag(key: string): Promise<FeatureFlag | null> {
 }
 
 /**
+ * Evaluate an already-fetched flag row.
+ *
+ * Split out of `checkFlag` so the decision logic has exactly one definition and
+ * a caller that already has the rows does not have to re-query them per key.
+ */
+export function evaluateFlag(row: FeatureFlag, context: FlagContext = {}): FlagResult {
+  if (!row.isEnabled) return { key: row.key, isEnabled: false, reason: 'flag-disabled' };
+
+  if (isRoleListed(row, context.role)) {
+    return { key: row.key, isEnabled: true, reason: 'role' };
+  }
+  if (isUserListed(row, context.userId)) {
+    return { key: row.key, isEnabled: true, reason: 'allowlist' };
+  }
+
+  const percent = Number(row.rolloutPercent ?? 0);
+  if (percent > 0 && flagRolloutBucket(row.key) < Math.min(100, percent)) {
+    return { key: row.key, isEnabled: true, reason: 'rollout' };
+  }
+  return { key: row.key, isEnabled: false, reason: 'rollout' };
+}
+
+/**
+ * Evaluate a context against many already-fetched rows.
+ *
+ * `checkFlag` is one `findUnique` per call, so a caller holding the full list
+ * and looping was issuing N+1 queries to re-read rows it already had — which is
+ * exactly what `GET /api/feature-flags` did. This shares `evaluateFlag`, so the
+ * decision is identical; only the query count differs.
+ */
+export function evaluateFlags(
+  rows: FeatureFlag[],
+  context: FlagContext = {}
+): FlagResult[] {
+  return rows.map((row) => evaluateFlag(row, context));
+}
+
+/**
  * Evaluate a flag for a context, returning the full decision record.
  */
 export async function checkFlag(
@@ -100,20 +138,7 @@ export async function checkFlag(
 ): Promise<FlagResult> {
   const row = await getFeatureFlag(key);
   if (!row) return { key, isEnabled: false, reason: 'missing' };
-  if (!row.isEnabled) return { key, isEnabled: false, reason: 'flag-disabled' };
-
-  if (isRoleListed(row, context.role)) {
-    return { key, isEnabled: true, reason: 'role' };
-  }
-  if (isUserListed(row, context.userId)) {
-    return { key, isEnabled: true, reason: 'allowlist' };
-  }
-
-  const percent = Number(row.rolloutPercent ?? 0);
-  if (percent > 0 && flagRolloutBucket(key) < Math.min(100, percent)) {
-    return { key, isEnabled: true, reason: 'rollout' };
-  }
-  return { key, isEnabled: false, reason: 'rollout' };
+  return evaluateFlag(row, context);
 }
 
 /**

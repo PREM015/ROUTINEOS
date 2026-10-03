@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
-import { GoalRepository } from '@/server/repositories/goal.repository';
+import { GoalService } from '@/server/services/goal.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { milestoneSchema } from '@/schemas/project.schema';
-import type { Prisma } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -24,13 +24,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid goal id' }, { status: 400 });
     }
 
-    const goalRepository = new GoalRepository();
-    const goal = await goalRepository.findById(id, session.user.id);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-
-    const milestones = await goalRepository.getMilestones(id);
+    const milestones = await new GoalService().getMilestones(session.user.id, id);
 
     return NextResponse.json({
       success: true,
@@ -39,6 +33,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     console.error('Error fetching goal milestones:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to fetch goal milestones' }, { status: 500 });
   }
 }
@@ -68,28 +65,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const goalRepository = new GoalRepository();
-    const userId = session.user.id;
-
-    const goal = await goalRepository.findById(id, userId);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-
-    const existing = await goalRepository.getMilestones(id);
-    const milestone = await goalRepository.createMilestone({
-      goal: { connect: { id } },
-      title: validated.data.title,
-      description: validated.data.description,
-      targetValue: validated.data.targetValue,
-      dueDate: validated.data.dueDate,
-      sortOrder: existing.length,
-    } as Prisma.MilestoneCreateInput);
+    const milestone = await new GoalService().addMilestone(
+      session.user.id,
+      id,
+      validated.data
+    );
 
     return NextResponse.json({ success: true, data: milestone }, { status: 201 });
   } catch (error) {
     console.error('Error creating goal milestone:', error);
 
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

@@ -2,40 +2,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { z } from 'zod';
+import { energyLevelSchema, timeSchema } from '@/lib/validation/routine.schema';
+import { NotFoundError } from '@/lib/errors/app-error';
 
 const routineService = new RoutineService();
 
 /**
- * `sortOrder` was missing from this schema, and `z.object` strips unknown keys.
- * `RoutineList.moveBlock` sent `{ sortOrder }` to reorder a block, so the value
- * was silently discarded, the PUT returned 200 with an unchanged block, and the
- * arrows appeared to do nothing.
+ * Block fields writable through the template-scoped path.
  *
- * `type`/`isFlex` were also accepted here but have no column on `RoutineBlock`,
- * so they were no-ops. Dropped: a field the API silently ignores is worse than
- * a 400.
+ * `sortOrder` was missing from this schema once, and `z.object` strips unknown
+ * keys: the reorder request sent `{ sortOrder }`, the value was silently
+ * discarded, the PUT returned 200 with an unchanged block, and the arrows
+ * appeared to do nothing.
+ *
+ * `type` / `isFlex` used to be accepted here but have no column on
+ * `RoutineBlock`, so they were no-ops. Dropped: a field the API silently ignores
+ * is worse than a 400.
+ *
+ * `energyLevel` is nullable so the level can be *cleared*, not only set — see
+ * `energyLevelSchema`.
  */
 const updateBlockSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(5000).optional().nullable(),
-  startTime: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'startTime must be HH:mm')
-    .optional(),
-  endTime: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'endTime must be HH:mm')
-    .optional(),
+  notes: z.string().max(10000).optional().nullable(),
+  startTime: timeSchema.optional(),
+  endTime: timeSchema.optional(),
   color: z.string().max(20).optional().nullable(),
   icon: z.string().max(40).optional().nullable(),
-  energyLevel: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional().nullable(),
+  energyLevel: energyLevelSchema,
   trackCompletion: z.boolean().optional(),
+  categoryId: z.string().min(1).nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
 });
 
 /**
  * PUT /api/routine/[id]/blocks/[blockId]
  * Update a block, or reorder it against `peerId` via `?peerId=`.
+ *
+ * A time clash comes back as `warnings` beside a 200. This path used to throw
+ * `Time conflicts with "X"` and refuse the write, while its sibling
+ * `updateBlockForUser` did not check at all — the same action rejected on one
+ * route and silently accepted on the other.
  */
 export async function PUT(
   req: NextRequest,
@@ -66,20 +74,23 @@ export async function PUT(
       return NextResponse.json({ success: true, data: blocks });
     }
 
-    const updated = await routineService.updateBlock(
+    const { block, warnings } = await routineService.updateBlock(
       session.user.id,
       id,
       blockId,
       data
     );
 
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({ success: true, data: block, warnings });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid data', details: error.flatten() },
         { status: 400 }
       );
+    }
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
     }
     if (error instanceof Error) {
       const status =
@@ -110,6 +121,9 @@ export async function DELETE(
     await routineService.deleteBlock(session.user.id, id, blockId);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     if (error instanceof Error) {
       const status =
         error.message === 'Block not found'

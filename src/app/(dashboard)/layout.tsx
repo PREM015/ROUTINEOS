@@ -1,5 +1,6 @@
 import { SkipLink } from '@/components/ui/SkipLink';
 import { OfflineBanner } from '@/components/offline/OfflineBanner';
+import { OfflineSync } from '@/components/offline/OfflineSync';
 import { DataErrorBanner } from '@/components/layout/DataErrorBanner';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
@@ -8,6 +9,29 @@ import { MobileNav } from '@/components/layout/MobileNav';
 import { SleepPromptHost } from '@/components/shared/SleepPromptHost';
 import { FloatingFocusBar } from '@/components/focus/FloatingFocusBar';
 import { CelebrationHost } from '@/components/achievements/CelebrationHost';
+import type { Metadata } from 'next';
+import { privateMetadata } from '@/lib/seo';
+
+/**
+ * The entire authenticated application — 68 routes, every one of them behind a
+ * session.
+ *
+ * These pages were `index, follow` with no robots directive anywhere in the
+ * repo. Because `src/proxy.ts` redirects unauthenticated requests to `/login`,
+ * a crawler discovered all 68 URLs and every one resolved to the same sign-in
+ * form. That is the classic duplicate-content pattern: it diluted the pages
+ * that *should* rank, and it put internal navigation such as `/settings/api-keys`
+ * or `/admin/users` into a public index.
+ *
+ * Declaring `noindex` here rather than in 68 individual pages means the
+ * directive applies to every current and future route in the group, and cannot
+ * be forgotten when someone adds a page.
+ *
+ * `robots.ts` deliberately does *not* disallow these paths. A URL that is
+ * blocked from crawling cannot be confirmed as `noindex`, so blocking and
+ * `noindex` conflict; the metadata is the layer that actually works.
+ */
+export const metadata: Metadata = privateMetadata('RoutineOS');
 
 export default function DashboardLayout({
   children,
@@ -17,6 +41,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen flex bg-background text-foreground">
       <SkipLink />
+      <OfflineSync />
       <OfflineBanner />
       {/* Surfaces AppContext.dataError, which was previously set but never read
           anywhere — a failed shared fetch looked like an empty dataset. */}

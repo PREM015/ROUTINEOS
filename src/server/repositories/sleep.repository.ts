@@ -165,6 +165,36 @@ export class SleepRepository extends BaseRepository {
   /**
    * Get latest sleep log
    */
+  /**
+   * Count days the user woke up before a given local `HH:mm`.
+   *
+   * Added for F1. `buildWorldState` was loading every `SleepLog` across the
+   * 730-day history window solely to filter them and take the length. This is the
+   * same predicate as a `count()`, so the rows never need to leave the database.
+   *
+   * `actualWakeTime` is a `HH:mm` string, so a lexicographic `<` is a correct
+   * time comparison for zero-padded 24-hour values — the same basis the
+   * caller's previous in-memory filter used.
+   */
+  async countEarlyWakeups(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    before: string
+  ): Promise<number> {
+    try {
+      return await this.prisma.sleepLog.count({
+        where: {
+          userId,
+          date: { gte: startDate, lte: endDate },
+          actualWakeTime: { not: null, lt: before },
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'countEarlyWakeups');
+    }
+  }
+
   async getLatest(userId: string): Promise<SleepLog | null> {
     try {
       return await this.prisma.sleepLog.findFirst({

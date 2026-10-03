@@ -50,6 +50,19 @@ function loadFlags(
 const EMPTY_STATE: FeatureFlagState = { flags: {}, loading: true };
 
 /**
+ * The default flag set.
+ *
+ * Module scope for a reason, and it is not tidiness. `options.fallback ?? {}`
+ * allocated a NEW object on every render for any caller that did not pass one,
+ * and that object is an effect dependency below — so the effect re-ran, called
+ * `setState` with a fresh result, re-rendered, allocated another `{}`, and
+ * repeated. A caller omitting `fallback` got an unbounded fetch loop.
+ *
+ * A shared frozen constant makes the dependency stable, so the effect fires once.
+ */
+const DEFAULT_FALLBACK: Record<string, boolean> = {};
+
+/**
  * Load feature flags once (and share the result across hook instances).
  */
 export function useFeatureFlags(options: {
@@ -58,7 +71,7 @@ export function useFeatureFlags(options: {
   onError?: (error: unknown) => void;
 } = {}): FeatureFlagState {
   const endpoint = options.endpoint ?? '/api/feature-flags';
-  const fallback = options.fallback ?? {};
+  const fallback = options.fallback ?? DEFAULT_FALLBACK;
   const onError = options.onError;
 
   const [state, setState] = useState<FeatureFlagState>(EMPTY_STATE);

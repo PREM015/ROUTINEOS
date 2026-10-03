@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { AutomationRepository } from '@/server/repositories/automation.repository';
+import { automationService } from '@/server/services/automation.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -23,16 +24,17 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const automationRepository = new AutomationRepository();
-    const existing = await automationRepository.findById(session.user.id, paramId);
-    if (!existing) {
-      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
-    }
-
-    const rule = await automationRepository.setActive(session.user.id, paramId, false);
+    const rule = await automationService.setActive(
+      session.user.id,
+      paramId,
+      false
+    );
     return NextResponse.json({ success: true, data: rule });
   } catch (error) {
     console.error('Error disabling automation:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

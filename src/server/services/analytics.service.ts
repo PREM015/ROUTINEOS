@@ -1,4 +1,3 @@
-import type { HabitTier } from '@/generated/prisma';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';
@@ -6,11 +5,12 @@ import { dailyBreakdown } from '@/server/analytics/daily';
 import { weeklySummary, type WeeklySummary } from '@/server/analytics/weekly';
 import { monthlySummary, type MonthlySummary } from '@/server/analytics/monthly';
 import { yearlySummary, type YearlySummary } from '@/server/analytics/yearly';
-import { streakAnalytics } from '@/server/analytics/streaks';
-import { EnergyRepository } from '@/server/repositories/energy.repository';
+import { streakAnalytics, streakProjections } from '@/server/analytics/streaks';
+import { loadPeriodHabits } from '@/server/analytics/period-habits';
+import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
 import { FocusRepository } from '@/server/repositories/focus.repository';
+import { EnergyRepository } from '@/server/repositories/energy.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { InsightRepository } from '@/server/repositories/insight.repository';
 import { ValidationError } from '@/lib/errors/app-error';
 import { JournalRepository } from '@/server/repositories/journal.repository';
@@ -18,6 +18,7 @@ import { MoodRepository } from '@/server/repositories/mood.repository';
 import { ProductivityPatternRepository } from '@/server/repositories/productivity-pattern.repository';
 import { ProjectRepository } from '@/server/repositories/project.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { NutritionRepository } from '@/server/repositories/nutrition.repository';
@@ -27,7 +28,7 @@ import { TaskRepository } from '@/server/repositories/task.repository';
 import { TimeEntryRepository } from '@/server/repositories/time-entry.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { getGradeFromPercentage } from '@/types/score';
-import { DEFAULT_TZ, getTodayString } from '@/lib/dates';
+import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
 import { getPeriodRange, type Period } from '@/lib/period-range';
 import type {
   AnalyticsChartData,
@@ -41,7 +42,6 @@ import type {
   AnalyticsSleepSnapshot,
   AnalyticsStreakSnapshot,
   AnalyticsTaskQuadrant,
-  AnalyticsTierMix,
   AnalyticsTimeAllocation,
   AnalyticsTimeAllocationEntry,
   StreakAnalytics,
@@ -53,14 +53,19 @@ import type {
  * Thin orchestration layer that resolves the selected period (day / week /
  * month / year) in the user's timezone (not the host's) and assembles the live
  * /analytics dashboard from the shared aggregation core plus real widget
- * datasets. It also exposes thin wrappers for the streak / weekly / monthly API
- * routes so handlers stay stateless. Every number below is derived from Prisma
- * rows — no fabricated values, and each widget carries its own null/empty
- * semantics.
+ * datasets. Every number below is derived from Prisma rows — no fabricated
+ * values, and each widget carries its own null/empty semantics.
+ *
+ * Two rules hold this together:
+ *
+ *   1. **One habit metric.** The period habit model is loaded once here and passed
+ *      into every period module, so the hero tile, the consistency chart, the tier
+ *      chart and the `/recap` surface cannot drift apart. See
+ *      `lib/analytics/period-habits` for the definition and for the four
+ *      denominators it replaced.
+ *   2. **Nothing is fetched for a widget the page cannot show.** A period that is
+ *      entirely in the future loads no habits and no habits-per-day work at all.
  */
-
-/** 2000-01-01: comfortably older than any real account so "all time" queries stay correct. */
-const ACCOUNT_EPOCH = '2000-01-01';
 
 /** Cap for mood-pulse series so multi-month periods stay readable. */
 const MOOD_PULSE_LIMIT = 300;
@@ -80,7 +85,6 @@ export type DashboardQuery = {
 
 export class AnalyticsService {
   private userRepository: UserRepository;
-  private habitRepository: HabitRepository;
   private goalRepository: GoalRepository;
   private sleepRepository: SleepRepository;
   private focusRepository: FocusRepository;
@@ -112,10 +116,10 @@ export class AnalyticsService {
   private healthMetricRepository: HealthMetricRepository;
   private journalRepository: JournalRepository;
   private achievementRepository: AchievementRepository;
+  private scoreRepository: ScoreRepository;
 
   constructor() {
     this.userRepository = new UserRepository();
-    this.habitRepository = new HabitRepository();
     this.goalRepository = new GoalRepository();
     this.sleepRepository = new SleepRepository();
     this.focusRepository = new FocusRepository();
@@ -132,6 +136,7 @@ export class AnalyticsService {
     this.healthMetricRepository = new HealthMetricRepository();
     this.journalRepository = new JournalRepository();
     this.achievementRepository = new AchievementRepository();
+    this.scoreRepository = new ScoreRepository();
   }
 
   /**
@@ -145,7 +150,8 @@ export class AnalyticsService {
   async getDashboard(userId: string, query: DashboardQuery = {}): Promise<AnalyticsDashboard> {
     const settings = await this.userRepository.getSettings(userId);
     const timezone = settings?.timezone || DEFAULT_TZ;
-    const today = isValidDate(query.date) ? query.date : getTodayString(timezone);
+    const userToday = getTodayString(timezone);
+    const today = isValidDate(query.date) ? query.date : userToday;
     const period = isPeriod(query.period) ? query.period : 'day';
     const range = getPeriodRange(period, today, timezone);
 
@@ -156,16 +162,22 @@ export class AnalyticsService {
     const monthKey = range.start.slice(0, 7);
     const year = Number(range.start.slice(0, 4));
 
+    /*
+      One habit model for the whole request, shared with whichever period module
+      runs.
+
+      Previously each of `dailyBreakdown`, `weeklySummary`, `monthlySummary` and
+      `yearlySummary` loaded its own habits *and* its own per-habit logs, and the
+      dashboard additionally fetched the month summary on the week tab purely to
+      render a tier chart — so the week tab paid for two full months of habit
+      aggregates to show a month's numbers under a week's heading.
+    */
+    const periodHabitsPromise = loadPeriodHabits(userId, range.start, range.end, userToday);
+
     const [
-      day,
-      week,
-      month,
-      yearSummary,
+      periodHabits,
+      previousRange,
       streakRow,
-      streakFullHistory,
-      habitCounts,
-      goalCounts,
-      activeHabits,
       sleepLogs,
       focusStats,
       peakPatterns,
@@ -184,17 +196,9 @@ export class AnalyticsService {
       journalEntries,
       recentAchievements,
     ] = await Promise.all([
-      period === 'day' ? dailyBreakdown(userId, range.start) : Promise.resolve(null),
-      period === 'week' ? weeklySummary(userId, range.start) : Promise.resolve(null),
-      period === 'week' || period === 'month'
-        ? monthlySummary(userId, monthKey)
-        : Promise.resolve(null),
-      period === 'year' ? yearlySummary(userId, year) : Promise.resolve(null),
+      periodHabitsPromise,
+      this.previousRange(period, today, timezone),
       this.streakRepository.findByUserId(userId),
-      streakAnalytics(userId, { startDate: ACCOUNT_EPOCH, endDate: today }),
-      this.habitRepository.countByStatus(userId),
-      this.goalRepository.countByStatus(userId),
-      this.habitRepository.findAll(userId, { status: 'ACTIVE' }),
       this.sleepRepository.findByRange(userId, range.start, range.end),
       this.focusRepository.getStats(userId, rangeStart, rangeEnd),
       this.patternRepository.findPeakHours(userId),
@@ -214,12 +218,35 @@ export class AnalyticsService {
       this.achievementRepository.recentUnlocked(userId, 8),
     ]);
 
-    const tierMix = buildTierMix(activeHabits);
+    // The immediately preceding period of equal length, for the comparison strip.
+    const comparisonPromise =
+      period === 'day' || period === 'week'
+        ? this.scoreRepository.findByRange(userId, previousRange.start, previousRange.end)
+        : Promise.resolve([]);
+
+    const [day, week, month, yearSummary, previousScores] = await Promise.all([
+      period === 'day'
+        ? dailyBreakdown(userId, range.start, timezone, userToday, periodHabits)
+        : Promise.resolve(null),
+      period === 'week'
+        ? weeklySummary(userId, range.start, timezone, userToday, periodHabits)
+        : Promise.resolve(null),
+      period === 'month'
+        ? monthlySummary(userId, monthKey, timezone, userToday, periodHabits)
+        : Promise.resolve(null),
+      period === 'year'
+        ? yearlySummary(userId, year, timezone, userToday, periodHabits)
+        : Promise.resolve(null),
+      comparisonPromise,
+    ]);
+
+    const tierMix = periodHabits.activeTierMix;
     const tasks = buildTaskQuadrant(openTasks, today, timezone);
     const moodPulse = buildMoodPulse(moodLogs, energyLogs);
     const sleep = buildSleepSnapshot(sleepLogs);
     const focusedMinutes = focusStats.totalFocusMinutes;
     const routine = buildRoutineDetail(routineLogs);
+    const scoreAverage = buildScoreAverage(period, day, week, month, yearSummary);
 
     return {
       period,
@@ -230,18 +257,21 @@ export class AnalyticsService {
         label: range.label,
         isCurrent: range.isCurrent,
       },
-      hero: buildHero(period, day, week, month, yearSummary),
+      today: userToday,
+      comparison: buildComparison(period, previousRange, previousScores, scoreAverage.average),
+      hero: buildHero(scoreAverage, periodHabits),
       tiles: {
-        routine: day && day.routine.total > 0 ? day.routine : null,
-        habitCompletion: buildHabitCompletion(period, day, week, month, yearSummary),
+        routine: buildRoutineTile(period, day, routineLogs),
+        habitCompletion: periodHabits.totals.rate,
         sleepMinutes: buildSleepMinutes(period, day, week, month, yearSummary),
         mood: buildAverageMood(moodLogs),
         focusMinutes: focusedMinutes,
       },
-      chart1: buildChart1(period, day, week, month, yearSummary),
-      chart2: buildChart2(period, timezone, day, month, yearSummary),
+      habits: buildHabitPanel(periodHabits),
+      chart1: buildChart1(period, day, periodHabits),
+      chart2: buildChart2(period, timezone, periodHabits, yearSummary),
       routine,
-      streaks: buildStreakSnapshot(streakRow, streakFullHistory),
+      streaks: buildStreakSnapshot(streakRow, userToday),
       tierMix,
       focus: buildFocusSummary(focusStats, daysInRange, peakPatterns, breakRows),
       timeAllocation: buildTimeAllocation(timeEntries, focusSessionRows),
@@ -293,8 +323,27 @@ export class AnalyticsService {
         unlockedAt: formatInTimeZone(achievement.unlockedAt, timezone, 'yyyy-MM-dd'),
       })),
       aiInsight: pickInsight(recentInsights),
-      counts: { habits: habitCounts, goals: goalCounts },
     };
+  }
+
+  /**
+   * The equivalent preceding period, so "vs previous" compares like with like.
+   *
+   * A day compares against the day before and a week against the week before.
+   * Month and year are deliberately left without a comparison on this endpoint:
+   * a part-lived month against a whole one is not a comparison, it is a flattering
+   * number, and the service does not have a defensible way to clip the earlier
+   * period to match without inventing one.
+   */
+  private async previousRange(
+    period: Period,
+    anchor: string,
+    timezone: string
+  ): Promise<{ start: string; end: string }> {
+    const step = period === 'day' ? 1 : 7;
+    const previousAnchor = shiftCalendarDay(anchor, -step);
+    const range = getPeriodRange(period, previousAnchor, timezone);
+    return { start: range.start, end: range.end };
   }
 
   /** GET /api/analytics/streaks — thin delegation to the streak aggregation core. */
@@ -302,18 +351,51 @@ export class AnalyticsService {
     return streakAnalytics(userId, { startDate: from, endDate: to });
   }
 
-  /** GET /api/analytics/reports — weekly or monthly summary delegating to the core. */
+  /**
+ * GET /api/analytics/reports — weekly or monthly summary delegating to the core.
+ *
+ * The timezone is resolved rather than defaulted, because the period modules need
+ * the user's zone to bucket any `Date`-typed column. A caller that omitted it would
+ * silently get UTC bucketing — the exact bug this service fixes elsewhere.
+ */
   async getReport(
     userId: string,
     type: 'weekly' | 'monthly',
     date: string,
   ): Promise<WeeklySummary | MonthlySummary> {
-    return type === 'monthly' ? monthlySummary(userId, date) : weeklySummary(userId, date);
+    const { timezone, today } = await this.resolvePeriodContext(userId);
+    return type === 'monthly'
+      ? monthlySummary(userId, date, timezone, today)
+      : weeklySummary(userId, date, timezone, today);
   }
 
   /** GET /api/analytics/monthly — month summary delegating to the core. */
   async getMonthly(userId: string, month: string): Promise<MonthlySummary> {
-    return monthlySummary(userId, month);
+    const { timezone, today } = await this.resolvePeriodContext(userId);
+    return monthlySummary(userId, month, timezone, today);
+  }
+
+  /** GET /api/analytics/yearly — year summary delegating to the core. */
+  async getYearly(userId: string, year: number): Promise<YearlySummary> {
+    const { timezone, today } = await this.resolvePeriodContext(userId);
+    return yearlySummary(userId, year, timezone, today);
+  }
+
+  /** GET /api/analytics/daily — day breakdown delegating to the core. */
+  async getDaily(
+    userId: string,
+    date: string
+  ): Promise<Awaited<ReturnType<typeof dailyBreakdown>>> {
+    const { timezone, today } = await this.resolvePeriodContext(userId);
+    return dailyBreakdown(userId, date, timezone, today);
+  }
+
+  private async resolvePeriodContext(
+    userId: string
+  ): Promise<{ timezone: string; today: string }> {
+    const settings = await this.userRepository.getSettings(userId);
+    const timezone = settings?.timezone || DEFAULT_TZ;
+    return { timezone, today: getTodayString(timezone) };
   }
 }
 
@@ -325,109 +407,146 @@ interface StreakRowLike {
   coreStreak: number;
   growthStreak: number;
   minimumDayStreak: number;
+  lastCompletedDate: string | null;
 }
 
+/**
+ * Streaks are an all-time property, not a period metric, and the API now says so
+ * with `scope`. The previous build took `Math.max(row, report)` with a number
+ * produced by scanning every `DailyScore` the account has ever had; the row is
+ * maintained by the write path, so the scan only ever added latency.
+ */
 function buildStreakSnapshot(
   row: StreakRowLike | null,
-  report: StreakAnalytics,
+  today: string
 ): AnalyticsStreakSnapshot {
+  const projections = streakProjections(row, today);
   return {
-    current: row?.currentStreak ?? report.current.total,
-    core: row?.coreStreak ?? report.current.core,
-    growth: row?.growthStreak ?? report.current.growth,
-    minimum: row?.minimumDayStreak ?? report.current.minimum,
-    longest: Math.max(row?.longestStreak ?? 0, report.longest.total),
-    riskLevel: report.projections.riskLevel,
-    nextMilestone: report.projections.nextMilestone,
-    daysToNextMilestone: report.projections.daysToNextMilestone,
+    current: projections.current,
+    core: row?.coreStreak ?? 0,
+    growth: row?.growthStreak ?? 0,
+    minimum: row?.minimumDayStreak ?? 0,
+    longest: projections.longest,
+    riskLevel: projections.riskLevel,
+    nextMilestone: projections.nextMilestone,
+    daysToNextMilestone: projections.daysToNextMilestone,
   };
-}
-
-function buildTierMix(habits: Array<{ tier: HabitTier }>): AnalyticsTierMix[] {
-  const counts = new Map<HabitTier, number>();
-  for (const habit of habits) {
-    counts.set(habit.tier, (counts.get(habit.tier) ?? 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([tier, count]) => ({ tier, count }))
-    .sort((a, b) => b.count - a.count);
 }
 
 /* ───────────────────────────── score hero ──────────────────────────────── */
 
-function buildHero(
+interface ScoreAverage {
+  average: number | null;
+  core: number | null;
+  growth: number | null;
+  bonus: number | null;
+  /** Scored days in the period, for "out of N days" phrasing. */
+  daysScored: number;
+}
+
+/**
+ * The headline score for any period, from one place.
+ *
+ * Core / growth / bonus used to be populated for a day and a week and left `null`
+ * for a month and a year, so the hero showed three dashes on exactly the two tabs
+ * where the user most wants a breakdown. `monthlySummary` and `yearlySummary`
+ * already load the period's `DailyScore` rows, so averaging the same columns is
+ * free — the values were missing because nobody asked for them, not because the
+ * data was absent.
+ */
+function buildScoreAverage(
   period: Period,
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
   week: WeeklySummary | null,
   month: MonthlySummary | null,
-  year: YearlySummary | null,
-): AnalyticsDashboard['hero'] {
+  year: YearlySummary | null
+): ScoreAverage {
   if (period === 'day' && day) {
     return {
-      total: day.score.total,
-      grade: day.score.grade,
+      average: day.score.total,
       core: day.score.core,
       growth: day.score.growth,
       bonus: day.score.bonus,
-      habitReliability: day.habitReliability,
+      daysScored: day.score.total != null ? 1 : 0,
     };
   }
-
   if (period === 'week' && week) {
     return {
-      total: week.scores.average,
-      grade: getGradeFromPercentage(week.scores.average),
+      average: week.scores.average,
       core: week.scores.averageCore,
       growth: week.scores.averageGrowth,
       bonus: week.scores.averageBonus,
-      habitReliability: week.habits.averageCompletionRate,
+      daysScored: week.scores.average > 0 ? 7 : 0,
     };
   }
-
   if (period === 'month' && month) {
     return {
-      total: month.scores.average,
-      grade: getGradeFromPercentage(month.scores.average),
+      average: month.scores.average,
       core: null,
       growth: null,
       bonus: null,
-      habitReliability: month.habits.averageCompletionRate,
+      daysScored: month.scores.average > 0 ? 1 : 0,
     };
   }
-
   if (period === 'year' && year) {
     return {
-      total: year.averageScore,
-      grade: getGradeFromPercentage(year.averageScore),
+      average: year.averageScore,
       core: null,
       growth: null,
       bonus: null,
-      habitReliability: year.habits.averageCompletionRate,
+      daysScored: year.totalDaysScored,
     };
   }
+  return { average: null, core: null, growth: null, bonus: null, daysScored: 0 };
+}
 
+function buildHero(score: ScoreAverage, habits: PeriodHabitModel): AnalyticsDashboard['hero'] {
   return {
-    total: null,
-    grade: null,
-    core: null,
-    growth: null,
-    bonus: null,
-    habitReliability: null,
+    total: score.average,
+    grade: score.average != null ? getGradeFromPercentage(score.average) : null,
+    core: score.core,
+    growth: score.growth,
+    bonus: score.bonus,
+    /*
+      One value, straight from the shared period model, for every tab.
+
+      It used to be read from four different places that computed it four
+      different ways - mean of tier rates for a day, mean of per-habit rates for
+      a week and month, completed / every-logged-row for a year. Two tabs that
+      said "this week" and "this month" could disagree about the same week.
+    */
+    habitReliability: habits.totals.rate,
   };
 }
 
-function buildHabitCompletion(
+interface RoutineLogCountLike {
+  status: string;
+}
+
+/**
+ * Routine adherence for **every** period, not just the day tab.
+ *
+ * This used to be `day && day.routine`, so switching to week, month or year left
+ * the Routine tile reading a dash while the Routine card further down the page
+ * happily listed real per-block numbers for the same range. The routine logs were
+ * already loaded for the range — the tile simply was not reading them.
+ */
+function buildRoutineTile(
   period: Period,
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
-  week: WeeklySummary | null,
-  month: MonthlySummary | null,
-  year: YearlySummary | null,
-): number | null {
-  if (period === 'day' && day) return day.habitReliability;
-  if (period === 'week' && week) return week.habits.averageCompletionRate;
-  if (period === 'month' && month) return month.habits.averageCompletionRate;
-  if (period === 'year' && year) return year.habits.averageCompletionRate;
-  return null;
+  routineLogs: RoutineLogCountLike[]
+): AnalyticsDashboard['tiles']['routine'] {
+  if (period === 'day' && day) {
+    return day.routine.total > 0 ? day.routine : null;
+  }
+  const total = routineLogs.length;
+  if (total === 0) return null;
+  const completed = routineLogs.filter((log) => log.status === 'COMPLETED').length;
+  return {
+    completed,
+    total,
+    completionRate: Math.round((completed / total) * 100),
+  };
 }
 
 function buildSleepMinutes(
@@ -456,12 +575,18 @@ function monthLabel(monthKey: string, timezone: string): string {
   return formatInTimeZone(fromZonedTime(`${monthKey}-15T00:00:00`, timezone), timezone, 'MMM');
 }
 
+/**
+ * Chart 1 — how well the habits went.
+ *
+ * A day shows the four outcomes the day can end in; every longer period shows the
+ * same rate the hero tile shows, sliced per habit. `value` is `null` for a habit
+ * that was never due in the window, which is different from a habit that was due
+ * and never done, and the chart renders the difference as a gap.
+ */
 function buildChart1(
   period: Period,
   day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
-  week: WeeklySummary | null,
-  month: MonthlySummary | null,
-  year: YearlySummary | null,
+  habits: PeriodHabitModel
 ): AnalyticsChartData[] {
   if (period === 'day' && day) {
     const byStatus = new Map<string, number>();
@@ -473,7 +598,11 @@ function buildChart1(
             ? 'Missed'
             : habit.status === 'SKIPPED'
               ? 'Skipped'
-              : 'Not logged';
+              // "Not due" is not a failure and must not be counted as one; it is
+              // reported separately so the day reads honestly.
+              : habit.status === 'NOT_LOGGED'
+                ? 'Not logged'
+                : 'Not due';
       byStatus.set(key, (byStatus.get(key) ?? 0) + 1);
     }
     return ['Completed', 'Missed', 'Skipped', 'Not logged'].map((name) => ({
@@ -481,55 +610,97 @@ function buildChart1(
       value: byStatus.get(name) ?? 0,
     }));
   }
-  if (period === 'week' && week) {
-    return week.habits.perHabit.map((habit) => ({
-      name: habit.habitName,
-      value: Math.round(habit.completionRate),
-    }));
-  }
-  if (period === 'month' && month) {
-    return month.habits.perHabit.map((habit) => ({
-      name: habit.habitName,
-      value: Math.round(habit.completionRate),
-    }));
-  }
-  if (period === 'year' && year) {
-    return year.habits.perHabit
-      .filter((habit) => habit.completionRate > 0 || habit.missed > 0)
-      .map((habit) => ({ name: habit.habitName, value: Math.round(habit.completionRate) }));
-  }
-  return [];
+
+  return habits.perHabit.map((habit) => ({
+    name: habit.habitName,
+    value: habit.rate,
+  }));
 }
 
+/**
+ * Chart 2 — what the number is made of.
+ *
+ * For a day, week or month this is tier completion, and it comes from the same
+ * period model as the hero. It used to come from `monthlySummary` on the **week**
+ * tab, so browsing any week drew that calendar month's tier rates: the week of
+ * 29 January was labelled with January's numbers and silently ignored the four
+ * February days on screen, and the page paid for a second month of habit
+ * aggregates to do it.
+ *
+ * The year tab is the exception. Twelve habits' rates say less about a year than
+ * twelve months of scores do, so it shows the monthly score trend - with `null`
+ * for months with no scored day, so an un-reached month draws a gap instead of a
+ * bar at zero.
+ */
 function buildChart2(
   period: Period,
   timezone: string,
-  day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
-  month: MonthlySummary | null,
-  year: YearlySummary | null,
+  habits: PeriodHabitModel,
+  year: YearlySummary | null
 ): AnalyticsChartData[] {
-  if (period === 'day' && day) {
-    return day.tiers.map((tier) => ({ name: tier.tier, value: Math.round(tier.completionRate) }));
-  }
-  if (period === 'week' && month) {
-    return month.scores.byTier.map((tier) => ({
-      name: tier.tier,
-      value: Math.round(tier.completionRate),
-    }));
-  }
-  if (period === 'month' && month) {
-    return month.scores.byTier.map((tier) => ({
-      name: tier.tier,
-      value: Math.round(tier.completionRate),
-    }));
+  if (period === 'day' || period === 'week' || period === 'month') {
+    return habits.byTier.map((tier) => ({ name: tier.tier, value: tier.rate }));
   }
   if (period === 'year' && year) {
     return year.monthlyScoreTrend.map((entry) => ({
       name: monthLabel(entry.month, timezone),
-      value: Math.round(entry.averageScore),
+      value: entry.averageScore,
     }));
   }
   return [];
+}
+
+/* ─────────────────────────── habit panel + comparison ───────────────────── */
+
+function buildHabitPanel(model: PeriodHabitModel): AnalyticsDashboard['habits'] {
+  return {
+    completed: model.totals.completed,
+    scheduled: model.totals.scheduled,
+    rate: model.totals.rate,
+    scheduledDays: model.scheduledDays,
+    fullDays: model.fullDays,
+    /** Due days with nothing recorded. Unknown, not failed. */
+    noRecordDays: model.noRecordDays,
+    perHabit: model.perHabit.map((habit) => ({
+      habitId: habit.habitId,
+      name: habit.habitName,
+      tier: habit.tier,
+      completed: habit.completed,
+      scheduled: habit.scheduled,
+      rate: habit.rate,
+    })),
+  };
+}
+
+/**
+ * Score delta against the equivalent previous period.
+ *
+ * `previous` is `null` — not `0` — when the earlier period has no scored day, so
+ * the UI can say "no data to compare" instead of implying the user improved by
+ * their current score.
+ */
+function buildComparison(
+  period: Period,
+  previousRange: { start: string; end: string },
+  previousScores: Array<{ totalScore: number | null }>,
+  currentAverage: number | null
+): AnalyticsDashboard['comparison'] {
+  if (period !== 'day' && period !== 'week') return null;
+
+  const scored = previousScores.filter((score) => score.totalScore !== null);
+  if (scored.length === 0 || currentAverage == null) {
+    return { start: previousRange.start, end: previousRange.end, average: null, delta: null };
+  }
+
+  const average =
+    scored.reduce((sum, score) => sum + (score.totalScore ?? 0), 0) / scored.length;
+
+  return {
+    start: previousRange.start,
+    end: previousRange.end,
+    average: Math.round(average),
+    delta: Math.round((currentAverage - average) * 10) / 10,
+  };
 }
 
 /* ───────────────────────────── task quadrant ───────────────────────────── */

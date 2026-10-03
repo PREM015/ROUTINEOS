@@ -1,12 +1,15 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { UserRepository } from '@/server/repositories/user.repository';
-import { FeatureFlagRepository } from '@/server/repositories/feature-flag.repository';
+import { featureFlagService } from '@/server/services/feature-flag.service';
+import { AuthorizationError, ConflictError } from '@/lib/errors/app-error';
 import { createFeatureFlagSchema } from '@/schemas/feature-flag.schema';
 
 /**
  * GET /api/admin/feature-flags
  * List all feature flags (admin only).
+ *
+ * The `role !== 'ADMIN'` check was duplicated in both handlers; it is now
+ * `FeatureFlagService.assertAdmin`, so the two cannot drift.
  */
 export async function GET(_request: NextRequest) {
   try {
@@ -15,12 +18,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await new UserRepository().findById(session.user.id);
-    if (user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const flags = await new FeatureFlagRepository().findAll();
+    const flags = await featureFlagService.listAllForAdmin(session.user.id);
 
     return NextResponse.json({
       success: true,
@@ -29,6 +27,9 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error listing feature flags:', error);
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     return NextResponse.json(
       { error: 'Failed to list feature flags' },
       { status: 500 }
@@ -47,11 +48,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await new UserRepository().findById(session.user.id);
-    if (user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const body = await request.json();
     const validated = createFeatureFlagSchema.safeParse(body);
     if (!validated.success) {
@@ -61,16 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repository = new FeatureFlagRepository();
-    const existing = await repository.findByKey(validated.data.key);
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Feature flag with this key already exists' },
-        { status: 409 }
-      );
-    }
-
-    const flag = await repository.create(validated.data);
+    const flag = await featureFlagService.createStrict(session.user.id, validated.data);
 
     return NextResponse.json(
       { success: true, data: flag },
@@ -78,6 +65,12 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error creating feature flag:', error);
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (error instanceof ConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     return NextResponse.json(
       { error: 'Failed to create feature flag' },
       { status: 500 }

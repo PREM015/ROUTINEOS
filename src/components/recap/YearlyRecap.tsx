@@ -9,6 +9,7 @@ import {
   Target,
 } from 'lucide-react';
 import type { RecapReport } from '@/types/recap';
+import { orNull, percentText } from '@/lib/analytics/format';
 import StatTile from './stat-tile';
 
 interface YearlyRecapProps {
@@ -27,7 +28,7 @@ export default function YearlyRecap({ year }: YearlyRecapProps) {
             <h2 className="text-sm text-muted-foreground">Year average score</h2>
             <div className="mt-1 flex items-end gap-2">
               <span className="text-6xl font-black tabular-nums leading-none text-foreground">
-                {Math.round(averageScore)}
+                {orNull(averageScore) !== null ? Math.round(averageScore ?? 0) : '—'}
               </span>
               <span className="pb-1 text-sm text-muted-foreground">/ 100</span>
             </div>
@@ -82,7 +83,7 @@ export default function YearlyRecap({ year }: YearlyRecapProps) {
           value={String(habits.totalCompleted)}
           detail={
             habits.bestHabit
-              ? `${habits.bestHabit.habitName} was your star (${Math.round(habits.bestHabit.completionRate)}%)`
+              ? `${habits.bestHabit.habitName} was your star (${percentText(habits.bestHabit.completionRate)})`
               : 'No habits logged'
           }
           accent="emerald"
@@ -112,7 +113,11 @@ export default function YearlyRecap({ year }: YearlyRecapProps) {
           icon={<CalendarDays className="h-5 w-5" />}
           label="Missed habits"
           value={String(habits.totalMissed)}
-          detail={`Completion rate ${Math.round(habits.averageCompletionRate)}%`}
+          detail={
+            orNull(habits.averageCompletionRate) !== null
+              ? `Completion rate ${percentText(habits.averageCompletionRate)}`
+              : 'Nothing was due this year'
+          }
         />
       </div>
     </div>

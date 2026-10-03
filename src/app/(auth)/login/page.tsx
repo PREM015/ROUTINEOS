@@ -1,122 +1,88 @@
-"use client";
-
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
-import { Suspense, useState } from 'react';
+import type { Metadata } from 'next';
 import { Logo } from '@/components/layout/Logo';
 import { AuthCard } from '@/components/auth/AuthCard';
-import { Button } from '@/components/ui/Button';
+import { LoginForm } from './LoginForm';
+import { privateMetadata } from '@/lib/seo';
 
-function LoginForm() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ email: '', password: '' });
-
-  const getErrorMessage = (err: string | undefined, code: string | undefined): string => {
-    switch (code ?? err) {
-      case 'InvalidCredentials':
-      case 'CredentialsSignin':
-        return 'Invalid email or password.';
-      case 'EmailNotVerified':
-        return 'Please verify your email address before signing in.';
-      case 'AccountLocked':
-        return 'This account is temporarily locked. Try again later.';
-      case 'AccountDeleted':
-        return 'This account has been deleted.';
-      case 'Configuration':
-        return 'We couldn\u2019t sign you in right now. Please try again.';
-      default:
-        return err || 'Unable to sign in. Please try again.';
-    }
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (loading) return;
-    setLoading(true);
-    setError('');
-
-    try {
-      const result = await signIn('credentials', {
-        email: form.email,
-        password: form.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError(getErrorMessage(result.error, result.code));
-        return;
-      }
-
-      // Single client navigation; proxy.ts already guards protected routes.
-      router.replace(callbackUrl);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to sign in. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="login-email" className="block text-sm font-medium text-foreground/80 mb-1">Email</label>
-        <input
-          id="login-email"
-          type="email"
-          required
-          autoComplete="email"
-          value={form.email}
-          onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
-          className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-          placeholder="you@example.com"
-        />
-      </div>
-      <div>
-        <label htmlFor="login-password" className="block text-sm font-medium text-foreground/80 mb-1">Password</label>
-        <input
-          id="login-password"
-          type="password"
-          required
-          autoComplete="current-password"
-          value={form.password}
-          onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
-          className="w-full p-3 rounded-lg bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-          placeholder="••••••••"
-        />
-      </div>
-
-      {error ? (
-        <p role="alert" className="text-sm text-destructive">{error}</p>
-      ) : null}
-
-      <Button type="submit" size="lg" isLoading={loading} className="w-full mt-4">
-        Sign In
-      </Button>
-    </form>
-  );
-}
+/**
+ * Sign-in page.
+ *
+ * Converted from a `'use client'` file to a server component. The reason is not
+ * cosmetic: a client component cannot export `metadata`, so this page — the
+ * single highest-traffic page in the product — was inheriting the bare
+ * `(auth)` group title and had no description of its own.
+ */
+export const metadata: Metadata = privateMetadata(
+  'Sign in',
+  'Sign in to RoutineOS to pick up your habits, routines, goals, and daily score where you left off.'
+);
 
 export default function LoginPage() {
+  /**
+   * Social sign-in is only offered when the provider is actually configured.
+   * `lib/auth.ts` registers Google/GitHub conditionally on these exact env
+   * vars, so mirroring that check here is what keeps a sign-in button from
+   * appearing for a provider that would fail with a configuration error.
+   *
+   * These are read server-side on purpose: they are unprefixed secrets and must
+   * never reach the client bundle. Only the provider *names* are passed down.
+   */
+  const socialProviders = [
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [{ id: 'google', label: 'Google' } as const]
+      : []),
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? [{ id: 'github', label: 'GitHub' } as const]
+      : []),
+  ];
+
   return (
     <AuthCard>
-      <div className="flex justify-center mb-6">
+      <div className="mb-6 flex justify-center">
         <Logo variant="icon" size="lg" />
       </div>
-      <h1 className="text-2xl font-bold text-center text-foreground mb-2">Welcome Back</h1>
-      <p className="text-center text-muted-foreground mb-8">Sign in to continue to RoutineOS</p>
+      <h1 className="mb-2 text-center text-2xl font-bold text-foreground">
+        Welcome back
+      </h1>
+      <p className="mb-8 text-center text-muted-foreground">
+        Sign in to continue to RoutineOS
+      </p>
 
-      <Suspense fallback={<p className="text-sm text-muted-foreground text-center">Loading...</p>}>
-        <LoginForm />
+      {/*
+        `LoginForm` reads `callbackUrl` via `useSearchParams`, which requires a
+        Suspense boundary during static rendering. The fallback is a skeleton
+        rather than text so the card does not visibly reflow when it resolves.
+      */}
+      <Suspense fallback={<FormSkeleton />}>
+        <LoginForm socialProviders={socialProviders} />
       </Suspense>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account? <Link href="/register" className="text-primary hover:underline">Register</Link>
+        Don&apos;t have an account?{' '}
+        <Link
+          href="/register"
+          className="font-medium text-primary transition-colors hover:text-primary/80 hover:underline"
+        >
+          Create one
+        </Link>
       </p>
     </AuthCard>
+  );
+}
+
+/** Placeholder with the same geometry as the real form, to avoid layout shift. */
+function FormSkeleton() {
+  return (
+    <div aria-hidden="true" className="space-y-4">
+      {[0, 1].map((i) => (
+        <div key={i} className="space-y-1.5">
+          <div className="h-4 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-[42px] animate-pulse rounded-lg bg-muted/60" />
+        </div>
+      ))}
+      <div className="h-11 w-full animate-pulse rounded-lg bg-muted" />
+    </div>
   );
 }

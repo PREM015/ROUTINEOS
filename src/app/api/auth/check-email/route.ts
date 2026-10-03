@@ -1,6 +1,11 @@
-import { UserRepository } from '@/server/repositories/user.repository';
+import { userService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import {
+  AUTH_RATE_LIMITS,
+  checkAuthRateLimit,
+  rateLimited,
+} from '@/lib/security/auth-rate-limit';
 
 const checkEmailSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Invalid email address'),
@@ -10,8 +15,17 @@ const checkEmailSchema = z.object({
  * POST /api/auth/check-email
  * Check whether an email address is already registered. Returns a boolean
  * availability flag for signup forms.
+ *
+ * This is a deliberate product feature (the signup form needs it) and it is
+ * also an email-enumeration oracle, which is why it is rate limited: without
+ * a bound, an attacker can sweep an address list at full speed.
  */
 export async function POST(request: NextRequest) {
+  const limit = checkAuthRateLimit(request, 'checkEmail', AUTH_RATE_LIMITS.checkEmail);
+  if (!limit.ok) {
+    return rateLimited(limit.retryAfterSeconds);
+  }
+
   try {
     const body = await request.json();
     const validated = checkEmailSchema.safeParse(body);
@@ -22,8 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userRepository = new UserRepository();
-    const exists = await userRepository.emailExists(validated.data.email);
+    const exists = await userService.emailExists(validated.data.email);
 
     return NextResponse.json({ success: true, data: { available: !exists } });
   } catch (error) {

@@ -1,23 +1,16 @@
 import { auth } from '@/lib/auth';
-import { PushSubscriptionRepository } from '@/server/repositories/push-subscription.repository';
-import { z } from 'zod';
+import { pushSubscriptionService } from '@/server/services/push-subscription.service';
+import { createSubscriptionSchema } from '@/schemas/push-subscription.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Push Subscription Route
  * GET  /api/push-subscriptions – list the user's push subscriptions
  * POST /api/push-subscriptions – register a web push subscription
+ *
+ * The Zod schema now lives in `src/schemas/push-subscription.schema.ts` so the
+ * service validates the same shape the route does.
  */
-
-const deviceTypeSchema = z.enum(['WEB', 'MOBILE_IOS', 'MOBILE_ANDROID', 'TABLET', 'DESKTOP']);
-
-const createSubscriptionSchema = z.object({
-  endpoint: z.string().url('endpoint must be a valid URL'),
-  p256dh: z.string().min(1, 'p256dh is required'),
-  auth: z.string().min(1, 'auth is required'),
-  deviceName: z.string().max(200, 'deviceName must be 200 characters or less').optional(),
-  deviceType: deviceTypeSchema.optional(),
-});
 
 /**
  * GET /api/push-subscriptions
@@ -30,8 +23,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const pushSubscriptionRepository = new PushSubscriptionRepository();
-    const subscriptions = await pushSubscriptionRepository.findAll(session.user.id);
+    const subscriptions = await pushSubscriptionService.listForUser(session.user.id);
 
     return NextResponse.json({ success: true, data: subscriptions });
   } catch (error) {
@@ -60,14 +52,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pushSubscriptionRepository = new PushSubscriptionRepository();
-    const subscription = await pushSubscriptionRepository.create(session.user.id, {
-      endpoint: validated.data.endpoint,
-      p256dh: validated.data.p256dh,
-      auth: validated.data.auth,
-      deviceName: validated.data.deviceName,
-      deviceType: validated.data.deviceType,
-    });
+    const subscription = await pushSubscriptionService.register(
+      session.user.id,
+      validated.data
+    );
 
     return NextResponse.json({ success: true, data: subscription }, { status: 201 });
   } catch (error) {

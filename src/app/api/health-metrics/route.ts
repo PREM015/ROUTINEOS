@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { HealthMetricRepository } from '@/server/repositories/health-metric.repository';
+import { healthMetricService } from '@/server/services/health-metric.service';
 import { healthMetricSchema, healthMetricQuerySchema } from '@/schemas/health-metric.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const healthMetricRepository = new HealthMetricRepository();
-    const metrics = await healthMetricRepository.findAll(session.user.id, {
+    const metrics = await healthMetricService.listForUser(session.user.id, {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       metricType: validated.data.metricType,
@@ -86,8 +85,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const healthMetricRepository = new HealthMetricRepository();
-    const metric = await healthMetricRepository.create(session.user.id, validated.data);
+    const metric = await healthMetricService.create(session.user.id, validated.data);
 
     return NextResponse.json({ success: true, data: metric }, { status: 201 });
   } catch (error) {

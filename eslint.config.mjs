@@ -1,5 +1,28 @@
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
+import reactHooks from 'eslint-plugin-react-hooks';
+
+/**
+ * `eslint-plugin-react-hooks` is declared here rather than relied on transitively
+ * through `eslint-config-next`.
+ *
+ * `nextVitals` does register the plugin, but in a *different* config object.
+ * ESLint 9.39 tightened flat-config validation so a `files`-scoped object must
+ * be self-contained, and without this declaration `npx eslint scripts` aborts
+ * before reading a single file with "could not find plugin react-hooks". Since
+ * `npm run lint` runs `eslint .`, one unresolvable scoped block takes down the
+ * entire repository's lint run, `src` included.
+ *
+ * The key must be exactly `react-hooks`, matching how the rules are referenced
+ * (`react-hooks/set-state-in-effect`). Registering it as `reactHooks` loads the
+ * same plugin object but leaves every `react-hooks/*` rule unresolvable, which
+ * produces the identical error and is genuinely confusing to debug.
+ *
+ * Declaring it explicitly is also just correct: this config opts into React
+ * Compiler rules that `nextVitals` does not set, so depending on Next's
+ * transitive registration for them was relying on an implementation detail.
+ */
+const reactHooksPlugin = { 'react-hooks': reactHooks };
 
 const eslintConfig = [
   {
@@ -23,6 +46,7 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTs,
   {
+    plugins: reactHooksPlugin,
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -76,7 +100,15 @@ const eslintConfig = [
   {
     // Scripts are CLI tools: logging to stdout is their job, and an unused
     // catch binding is normal at the top level of a script.
+    //
+    // The plugin is re-declared because a `files`-scoped object must be
+    // self-contained under ESLint 9.39's flat-config validation. Without it,
+    // `npx eslint scripts` aborts before reading a single file with "could not
+    // find plugin react-hooks" — and because `npm run lint` runs `eslint .`, one
+    // unresolvable scoped block takes down the whole repository's lint run,
+    // including `src`.
     files: ['scripts/**/*.ts'],
+    plugins: reactHooksPlugin,
     rules: {
       'no-console': 'off',
       '@typescript-eslint/no-explicit-any': 'off',

@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { TimeEntryRepository } from '@/server/repositories/time-entry.repository';
+import { timeTrackingService } from '@/server/services/time-tracking.service';
 import { createTimeEntrySchema, timeTrackingQuerySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -37,9 +37,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const repository = new TimeEntryRepository();
-    const entries = await repository.list(session.user.id, validated.data);
-    const total = await repository.count(session.user.id, validated.data);
+    // `entries` + `total` are fetched together in the service, so the row count
+    // and the page can never come from two different queries that disagree.
+    const { entries, total } = await timeTrackingService.listForUser(
+      session.user.id,
+      validated.data
+    );
 
     return NextResponse.json({
       success: true,
@@ -80,8 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const repository = new TimeEntryRepository();
-    const entry = await repository.create(session.user.id, {
+    const entry = await timeTrackingService.create(session.user.id, {
       description: validated.data.description,
       startTime: validated.data.startTime,
       endTime: validated.data.endTime ?? undefined,

@@ -14,7 +14,9 @@ const routineRepository = new RoutineRepository();
  * Queue and schedule notifications
  */
 
-/** How long the "Snooze" notification button postpones a reminder. */
+/**
+ * How long the "Snooze" notification button postpones a reminder.
+ */
 const SNOOZE_MINUTES = 10;
 
 export async function scheduleNotification(
@@ -292,6 +294,52 @@ function weekdayOfLocalDate(localDate: string): number {
 }
 
 /**
+ * Calculate the end occurrence for a routine block based on its start occurrence.
+ * Handles overnight blocks correctly (where end time is on the next day).
+ */
+export function getEndOccurrence(
+  startTime: string,
+  endTime: string,
+  isOvernight: boolean,
+  startOccurrence: Date,
+  timezone: string
+): Date | null {
+  const startMatch = /^(\d{2}):(\d{2})$/.exec(startTime.trim());
+  const endMatch = /^(\d{2}):(\d{2})$/.exec(endTime.trim());
+  if (!startMatch || !endMatch) return null;
+
+  const startHours = Number(startMatch[1]);
+  const startMinutes = Number(startMatch[2]);
+  const endHours = Number(endMatch[1]);
+  const endMinutes = Number(endMatch[2]);
+
+  if (startHours > 23 || startMinutes > 59 || endHours > 23 || endMinutes > 59) return null;
+
+  // Get the local date of the start occurrence
+  const localDate = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(startOccurrence);
+
+  let endLocalDate = localDate;
+  // If overnight, the end time is on the next day
+  if (isOvernight) {
+    const parts = localDate.split('-').map(Number) as [number, number, number];
+    const [year, month, day] = parts;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCDate(date.getUTCDate() + 1);
+    endLocalDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  }
+
+  return fromZonedTime(
+    `${endLocalDate}T${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}:00.000`,
+    timezone
+  );
+}
+
+/**
  * Schedule routine block start notifications
  * For each active recurring routine block, calculate the next occurrence
  * and create a pending notification if within the notification window.
@@ -451,27 +499,73 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
 
       if (!nextOccurrence) continue;
 
+      // Calculate end time for this occurrence
+      const endOccurrence = getEndOccurrence(block.startTime, block.endTime, block.isOvernight, nextOccurrence, timezone);
+      if (!endOccurrence) continue;
+
       // Only schedule if within the next 24 hours
       const diffMinutes = differenceInMinutes(nextOccurrence, now);
       if (diffMinutes < 0 || diffMinutes > 24 * 60) continue;
 
-      // Check for duplicate notifications
-      const duplicate = await existsPendingNotification(
+      // Check for duplicate notifications (for start)
+      const duplicateStart = await existsPendingNotification(
         userId,
         block.id,
         'ROUTINE_START' as NotificationType
       );
-      if (duplicate) continue;
+      if (duplicateStart) continue;
 
-      // Deliver `advanceNotificationMinutes` before the block starts. The
-      // notification still fires at the start time if the advanced time has
-      // already passed, so turning the advance up never skips a reminder.
-      let scheduledTime = new Date(nextOccurrence.getTime() - advanceMinutes * 60 * 1000);
+      // Check for duplicate pre-start
+      const duplicatePreStart = await existsPendingNotification(
+        userId,
+        block.id,
+        'ROUTINE_PRE_START' as NotificationType
+      );
+      if (duplicatePreStart) continue;
 
-      // Make sure we don't schedule in the past
-      if (scheduledTime <= now) {
-        // Schedule at the start time instead
-        scheduledTime = new Date(nextOccurrence.getTime());
+      // Check for duplicate completion
+      const duplicateCompletion = await existsPendingNotification(
+        userId,
+        block.id,
+        'ROUTINE_COMPLETION' as NotificationType
+      );
+      if (duplicateCompletion) continue;
+
+      // ================================================================
+      // 1. PRE-START NOTIFICATION (advanceMinutes before block starts)
+      // ================================================================
+      const preStartTime = new Date(nextOccurrence.getTime() - advanceMinutes * 60 * 1000);
+      if (preStartTime > now) {
+        notifications.push({
+          userId,
+          type: 'ROUTINE_PRE_START' as NotificationType,
+          title: `${block.title} starting soon`,
+          body: `Your ${block.title} session starts in ${advanceMinutes} minutes. Get ready!`,
+          actionUrl: `/today?block=${block.id}`,
+          relatedEntityId: block.id,
+          scheduledFor: preStartTime,
+          actions: [
+            { action: 'STARTED', title: 'Started' },
+            { action: 'SNOOZE', title: `Snooze ${SNOOZE_MINUTES}m` },
+          ],
+          data: {
+            blockId: block.id,
+            routineTitle: block.title,
+            startTime: block.startTime,
+            endTime: block.endTime,
+            dayType: block.template?.name ?? null,
+            category: block.category ?? null,
+            notificationPhase: 'pre-start',
+          },
+        });
+      }
+
+      // ================================================================
+      // 2. START NOTIFICATION (at block start time)
+      // ================================================================
+      let scheduledStartTime = new Date(nextOccurrence.getTime() - advanceMinutes * 60 * 1000);
+      if (scheduledStartTime <= now) {
+        scheduledStartTime = new Date(nextOccurrence.getTime());
       }
 
       notifications.push({
@@ -481,48 +575,53 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
         body: `Your ${block.title} session starts now.`,
         actionUrl: `/today?block=${block.id}`,
         relatedEntityId: block.id,
-        scheduledFor: scheduledTime,
-        /**
-         * Action buttons rendered on the push itself.
-         *
-         * Chrome shows at most two, so this is deliberately two and not three.
-         * `DONE` and `SNOOZE` are the two that actually change state; a third
-         * "open" button would be rendered greyed and useless, and the body of
-         * the notification is already clickable to open the app.
-         *
-         * They are wired to `/api/notifications/action` by the service worker's
-         * `notificationclick` handler, so acknowledging a reminder does not
-         * require opening the app.
-         */
+        scheduledFor: scheduledStartTime,
         actions: [
-          { action: 'DONE', title: '✓ Done' },
-          { action: 'SNOOZE', title: `Snooze ${SNOOZE_MINUTES}m` },
+          { action: 'STARTED', title: 'Started' },
+          { action: 'NOT_YET', title: 'Not yet' },
+          { action: 'SKIP', title: 'Skip' },
         ],
-        // Include block info in data for reference
         data: {
           blockId: block.id,
           routineTitle: block.title,
           startTime: block.startTime,
           endTime: block.endTime,
-          /**
-           * The day type this block belongs to, taken from the template it lives
-           * in. Rendered as a tag on the notification so "College /" and a
-           * placement block are distinguishable at a glance instead of both
-           * reading as a generic "Routine".
-           */
           dayType: block.template?.name ?? null,
-          /**
-           * The user's own label for this block (DSA, Personal, GATE, College,
-           * Health, ...), stored on `RoutineBlock.categoryId`.
-           *
-           * The user asked for these to appear as tags on the notification and
-           * to be filterable, so the name is captured at schedule time. Reading
-           * it per notification at display time would mean a join on every row of
-           * the history list.
-           */
           category: block.category ?? null,
+          notificationPhase: 'start',
         },
       });
+
+      // ================================================================
+      // 3. COMPLETION NOTIFICATION (at block end time)
+      // ================================================================
+      // Only schedule if end time is in the future
+      if (endOccurrence > now) {
+        notifications.push({
+          userId,
+          type: 'ROUTINE_COMPLETION' as NotificationType,
+          title: `${block.title} session ended`,
+          body: `Your scheduled ${block.title} session has ended. Did you complete it?`,
+          actionUrl: `/today?block=${block.id}`,
+          relatedEntityId: block.id,
+          scheduledFor: new Date(endOccurrence.getTime()),
+          actions: [
+            { action: 'COMPLETED', title: 'Completed' },
+            { action: 'PARTIAL', title: 'Partially done' },
+            { action: 'NOT_DONE', title: 'Not done' },
+            { action: 'EXTEND', title: 'Extend session' },
+          ],
+          data: {
+            blockId: block.id,
+            routineTitle: block.title,
+            startTime: block.startTime,
+            endTime: block.endTime,
+            dayType: block.template?.name ?? null,
+            category: block.category ?? null,
+            notificationPhase: 'completion',
+          },
+        });
+      }
     }
 
     // Bulk create notifications
@@ -589,7 +688,17 @@ export async function scheduleDailyReminder(userId: string): Promise<number> {
   const [hours, minutes] = time.split(':').map(Number);
   if (hours === undefined || minutes === undefined) return 0;
 
-  const timezone = preferences.timezone ?? 'Asia/Kolkata';
+  /*
+    `DEFAULT_TZ`, not `'Asia/Kolkata'`.
+
+    This was the only `Asia/Kolkata` fallback in server code, and it contradicted
+    this same file's own `getUserTimezone` a few hundred lines up, which uses
+    `DEFAULT_TZ`. Two fallbacks in one file means whichever path a user hit
+    decided their reminder day, and every other service in the app resolves the
+    zone the other way. Currently unreachable (`UserSettings.timezone` is
+    non-nullable) — which is exactly why it would have survived to production.
+  */
+  const timezone = preferences.timezone ?? DEFAULT_TZ;
   const now = toZonedTime(new Date(), timezone);
   const localDate = getTodayString(timezone);
 

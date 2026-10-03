@@ -7,11 +7,8 @@
  * DB access and no side effects; callers pass the plain API rows.
  */
 
-import {
-  ACHIEVEMENT_RARITIES,
-  type AchievementRarity,
-} from '@/lib/constants/achievements';
-import { getAchievementById } from './definitions';
+import { type AchievementRarity } from '@/lib/constants/achievements';
+import { getAchievementById, getAchievementByName } from './definitions';
 
 /** XP awarded per rarity tier. */
 export const ACHIEVEMENT_XP: Readonly<Record<AchievementRarity, number>> = {
@@ -24,6 +21,13 @@ export const ACHIEVEMENT_XP: Readonly<Record<AchievementRarity, number>> = {
 
 /** Default when a row's rarity cannot be resolved (treated as Common). */
 export const UNKNOWN_ACHIEVEMENT_XP = ACHIEVEMENT_XP.COMMON;
+
+/**
+ * Rarity credited to a row that is not in the catalogue at all (a custom or
+ * user-created achievement). Stated rather than derived, so the grid, the
+ * history and the showcase cannot disagree about an unrecognised row.
+ */
+export const UNKNOWN_ACHIEVEMENT_RARITY: AchievementRarity = 'COMMON';
 
 /** Minimum XP required to go from `level` to `level + 1`. */
 export function xpNeededForLevel(level: number): number {
@@ -94,36 +98,60 @@ export function computeTrophyLevel(xp: number): TrophyLevelInfo {
 }
 
 /**
- * Resolve the rarity of an unlocked achievement row.
+ * Resolve the rarity of a catalogue achievement by its stable definition id.
  *
- * Unlocked rows store the definition's title; when the title matches the
- * catalog the rarity config is returned, otherwise `undefined` (callers fall
- * back to a flat tier). Mirrors how the achievements page matches rows.
+ * @example
+ * rarityOfDefinitionId('habit-streak-7') // => 'UNCOMMON'
+ * rarityOfDefinitionId('One Week Strong') // => undefined (a title is not an id)
  */
-export function rarityOfTitle(title: string): AchievementRarity | undefined {
-  return getAchievementById(title)?.rarity;
+export function rarityOfDefinitionId(
+  definitionId: string
+): AchievementRarity | undefined {
+  return getAchievementById(definitionId)?.rarity;
+}
+
+/**
+ * Resolve the rarity of an unlocked `Achievement` row.
+ *
+ * `definitionId` (the canonical join key, stored on the row and mirrored in
+ * `metadata`) is authoritative. Rows written before the column existed carry only
+ * a `metadata.definitionId`, and truly custom rows carry neither, so the title
+ * is a *last* resort for matching a legacy row back to the catalogue.
+ *
+ * `undefined` means "not in the catalogue" — the caller decides the fallback, and
+ * it must be an explicit constant rather than a guess. In particular the
+ * numeric `level` column is the definition's *threshold* (7 for a 7-day streak),
+ * not a rarity index, so it can never stand in for one.
+ */
+export function rarityOfRow(row: {
+  definitionId?: string | null;
+  title: string;
+}): AchievementRarity | undefined {
+  if (row.definitionId) {
+    const byId = rarityOfDefinitionId(row.definitionId);
+    if (byId) return byId;
+  }
+  return getAchievementByName(row.title)?.rarity;
 }
 
 /**
  * XP earned by an unlocked achievement row.
  *
- * Rarity comes from the matching catalog definition; unknown titles are
- * credited at the flat Common rate so no real unlock scores zero XP.
+ * Rarity comes from the matching catalogue definition; unknown rows are credited
+ * at the flat Common rate so no real unlock scores zero XP.
  */
 export function xpOfTitle(title: string): number {
-  const rarity = rarityOfTitle(title);
-  return rarity === undefined ? UNKNOWN_ACHIEVEMENT_XP : ACHIEVEMENT_XP[rarity];
+  return xpForRow({ title }).xp;
 }
-
-/** Flat rarity tier used as a fallback when title matching fails. */
-const TIER_ORDER = Object.keys(ACHIEVEMENT_RARITIES) as AchievementRarity[];
 
 /**
  * Sum XP + resolved rarity for a raw achievement API row.
  *
- * `rarity` resolves by definition title; the numeric `level` column stores the
- * definition's threshold (not a tier index), so it is only used as a last
- * resort — clamped into the rarity ladder for planner-style displays.
+ * A row that cannot be matched to the catalogue is credited the explicit
+ * `UNKNOWN_ACHIEVEMENT_RARITY`, which is a stated default rather than a derived
+ * one: every other consumer of the grid, the history and the showcase resolves
+ * rarity the same way, so a legacy row cannot be `COMMON` in the summary and
+ * `EPIC` in the history.
  */
 export interface AchievementXpRow {
   xp: number;
@@ -131,13 +159,9 @@ export interface AchievementXpRow {
 }
 
 export function xpForRow(
-  row: { title: string; level: number },
+  row: { definitionId?: string | null; title: string },
   rarityOverride?: AchievementRarity
 ): AchievementXpRow {
-  const rarity = rarityOverride ?? rarityOfTitle(row.title);
-  if (rarity !== undefined) {
-    return { xp: ACHIEVEMENT_XP[rarity], rarity };
-  }
-  const clamped = TIER_ORDER[Math.max(0, Math.min(TIER_ORDER.length - 1, row.level - 1))] ?? 'COMMON';
-  return { xp: ACHIEVEMENT_XP[clamped], rarity: clamped };
+  const rarity = rarityOverride ?? rarityOfRow(row) ?? UNKNOWN_ACHIEVEMENT_RARITY;
+  return { xp: ACHIEVEMENT_XP[rarity], rarity };
 }

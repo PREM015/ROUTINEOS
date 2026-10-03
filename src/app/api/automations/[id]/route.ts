@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { AutomationRepository } from '@/server/repositories/automation.repository';
+import { automationService } from '@/server/services/automation.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { updateAutomationSchema } from '@/schemas/automation.schema';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -26,8 +27,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const automationRepository = new AutomationRepository();
-    const rule = await automationRepository.findById(session.user.id, paramId);
+    const rule = await automationService.get(session.user.id, paramId);
 
     if (!rule) {
       return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
@@ -42,7 +42,14 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
 /**
  * PATCH /api/automations/[id]
- * Update an automation rule. Config objects are re-serialized when provided.
+ * Update an automation rule.
+ *
+ * The route used to re-implement the field-by-field mapping *and* the
+ * object→JSON serialisation for `triggerConfig` / `actionConfig`, while
+ * `AutomationService.update` did the identical work. Two copies of the same
+ * mapping meant the repository's JSON columns were written two different ways;
+ * the service's is the one that has to win, because the repository takes strings
+ * and the service owns that translation (ERROR.md §1, recipe step 3).
  */
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id: paramId } = await params;
@@ -61,32 +68,18 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const automationRepository = new AutomationRepository();
-    const existing = await automationRepository.findById(session.user.id, paramId);
-    if (!existing) {
-      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
-    }
-
-    if (Object.keys(validated.data).length === 0) {
-      return NextResponse.json({ success: true, data: existing });
-    }
-
-    const rule = await automationRepository.update(session.user.id, paramId, {
-      ...(validated.data.name !== undefined && { name: validated.data.name }),
-      ...(validated.data.isActive !== undefined && { isActive: validated.data.isActive }),
-      ...(validated.data.triggerType !== undefined && { triggerType: validated.data.triggerType }),
-      ...(validated.data.triggerConfig !== undefined && {
-        triggerConfig: JSON.stringify(validated.data.triggerConfig),
-      }),
-      ...(validated.data.actionType !== undefined && { actionType: validated.data.actionType }),
-      ...(validated.data.actionConfig !== undefined && {
-        actionConfig: JSON.stringify(validated.data.actionConfig),
-      }),
-    });
+    const rule = await automationService.update(
+      session.user.id,
+      paramId,
+      validated.data
+    );
 
     return NextResponse.json({ success: true, data: rule });
   } catch (error) {
     console.error('Error updating automation:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
@@ -106,16 +99,13 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const automationRepository = new AutomationRepository();
-    const existing = await automationRepository.findById(session.user.id, paramId);
-    if (!existing) {
-      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
-    }
-
-    await automationRepository.delete(session.user.id, paramId);
+    await automationService.delete(session.user.id, paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting automation:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Failed to delete automation' }, { status: 500 });
   }
 }

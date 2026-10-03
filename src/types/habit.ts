@@ -235,6 +235,16 @@ export enum HabitEligibilityReason {
   SKIPPED = 'SKIPPED',
   NOT_APPLICABLE = 'NOT_APPLICABLE',
   ARCHIVED = 'ARCHIVED',
+  /**
+   * The habit is restricted to specific Routine Day Types and today's day type is
+   * not one of them.
+   *
+   * Previously this case reused `NOT_SCHEDULED`, which is a different concept
+   * (the frequency schedule says the habit is not due today) and gave the user
+   * no way to tell "you picked the wrong days for this habit" from "this habit
+   * isn't due today".
+   */
+  DAY_TYPE_MISMATCH = 'DAY_TYPE_MISMATCH',
 }
 
 // ============================================================================

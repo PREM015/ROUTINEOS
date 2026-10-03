@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { dayTypeSchema } from '@/lib/validation/routine.schema';
@@ -7,13 +7,36 @@ import { z } from 'zod';
 const routineService = new RoutineService();
 
 /**
- * GET /api/routine/templates
+ * GET /api/routine/templates?dayTypeId=<id>
  * List the user's routine templates.
+ *
+ * `dayTypeId` narrows to the one template linked to that `DayTypeDefinition`.
+ *
+ * It exists because `/routine` loads exactly ONE day type's blocks for speed
+ * (the resolved one), which left every other tab on the day-type strip
+ * permanently empty — clicking "College" showed "no blocks" even when College
+ * had a full template, because nothing had been fetched for it. This lets the
+ * page fetch the tab the user actually clicked and nothing more, which is the
+ * difference between one extra request on a deliberate switch and the
+ * all-templates request the page deliberately stopped making.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const requested = request.nextUrl.searchParams.get('dayTypeId');
+
+  if (requested !== null) {
+    if (!z.string().min(1).safeParse(requested).success) {
+      return NextResponse.json({ error: 'Invalid dayTypeId' }, { status: 400 });
+    }
+    const template = await routineService.getTemplateForDayTypeId(
+      session.user.id,
+      requested
+    );
+    return NextResponse.json({ success: true, data: template ? [template] : [] });
+  }
 
   const templates = await routineService.listTemplates(session.user.id);
 

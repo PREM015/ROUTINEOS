@@ -80,15 +80,69 @@ export const DEFAULT_DAY_TYPES: readonly DefaultDayType[] = [
   },
 ] as const;
 
-/** `DayType` enum value → the slug the seeded `DayTypeDefinition` uses. */
-export const ENUM_VALUE_TO_DAY_TYPE_SLUG: Record<DayType, string> =
-  DEFAULT_DAY_TYPES.reduce(
+/**
+ * `DayType` enum value → its presentation, for callers that have no
+ * `DayTypeDefinition` row to read from.
+ *
+ * ## Why this is derived rather than a second hand-written table
+ *
+ * This used to be a literal `DAY_TYPE_CONFIG` in `constants/routine.ts`, and
+ * `DEFAULT_DAY_TYPES` below is the same information again. When the day-type
+ * work consolidated onto `DEFAULT_DAY_TYPES`, the literal was deleted and four
+ * call sites were left importing a name that no longer existed — which `tsc
+ * --noEmit` does not catch, because the four import it as a *value* from a
+ * client-component path, and only Turbopack resolves that chain. The build
+ * failed at `TodayDayType.tsx:13`.
+ *
+ * So it is built from `DEFAULT_DAY_TYPES` instead of restated. Two tables of the
+ * same six day types cannot disagree, and the next label or colour change lands
+ * in one place.
+ *
+ * `CUSTOM` has no built-in entry: it is the absence of a specific kind of day, so
+ * it is deliberately absent here and the callers' `?? fallback` handles it. That
+ * is why the type is `Partial`.
+ */
+interface DayTypePresentation {
+  type: DayType;
+  label: string;
+  description: string;
+  color: string;
+  icon: string;
+}
+
+export const DAY_TYPE_CONFIG: Partial<Record<DayType, DayTypePresentation>> =
+  DEFAULT_DAY_TYPES.reduce<Partial<Record<DayType, DayTypePresentation>>>(
     (acc, dt) => {
-      acc[dt.enumValue] = dt.slug;
+      acc[dt.enumValue] = {
+        type: dt.enumValue,
+        label: dt.name,
+        description: dt.description,
+        color: dt.color,
+        icon: dt.icon,
+      };
       return acc;
     },
-    { CUSTOM: 'custom' } as Record<DayType, string>
+    {}
   );
+
+/**
+ * `DayType` enum value → the slug the seeded `DayTypeDefinition` uses.
+ *
+ * `CUSTOM` is seeded explicitly rather than left out: it is in the `DayType` enum
+ * but has no `DEFAULT_DAY_TYPES` entry, and a missing key here would be a
+ * `Record<DayType, string>` that lied at exactly one value.
+ */
+export const ENUM_VALUE_TO_DAY_TYPE_SLUG = DEFAULT_DAY_TYPES.reduce<
+  Partial<Record<DayType, string>>
+>(
+  (acc, dt) => {
+    acc[dt.enumValue] = dt.slug;
+    return acc;
+  },
+  // `CUSTOM` is in the enum but has no DEFAULT_DAY_TYPES entry. Seeded explicitly
+  // so the value is total rather than `string | undefined` at exactly one key.
+  { CUSTOM: 'custom' }
+) as Record<DayType, string>;
 
 /**
  * The inverse: a `DayTypeDefinition.slug` → its `DayType` enum value.
@@ -111,6 +165,45 @@ export const SLUG_TO_ENUM_VALUE: Record<string, DayType> = Object.entries(
   {} as Record<string, DayType>
 );
 
+/**
+ * Canonical slug → `DayType`, normalising the separators first.
+ *
+ * Seeded slugs are hyphenated (`work-day`) but a slug arriving from a URL, a
+ * user's template, or an older row can be `work_day` or `Work Day`. Normalising
+ * both sides is what makes the lookup total instead of matching only the exact
+ * seeded spelling.
+ */
+const SLUG_TO_ENUM_NORMALISED: Record<string, DayType> = Object.entries(
+  ENUM_VALUE_TO_DAY_TYPE_SLUG
+).reduce<Record<string, DayType>>(
+  (acc, [enumValue, slug]) => {
+    acc[normaliseDayTypeSlug(slug)] = enumValue as DayType;
+    return acc;
+  },
+  {}
+);
+
+function normaliseDayTypeSlug(slug: string): string {
+  return slug.trim().toLowerCase().replace(/[\s_-]+/g, '-');
+}
+
 export function enumValueForSlug(slug: string): DayType {
-  return SLUG_TO_ENUM_VALUE[slug] ?? 'CUSTOM';
+  if (typeof slug !== 'string' || slug.trim() === '') return 'CUSTOM';
+  return SLUG_TO_ENUM_NORMALISED[normaliseDayTypeSlug(slug)] ?? 'CUSTOM';
+}
+
+/**
+ * The canonical `DayType` list, in display order.
+ *
+ * `CUSTOM` is last on purpose: it is the absence of a specific kind of day, so
+ * it is the least informative value and belongs at the end of any list.
+ */
+export const DAY_TYPES_ORDERED: readonly DayType[] = [
+  ...DEFAULT_DAY_TYPES.map((dt) => dt.enumValue),
+  'CUSTOM',
+];
+
+/** Narrow an untrusted value, e.g. out of parsed JSON, to a `DayType`. */
+export function isDayType(value: unknown): value is DayType {
+  return typeof value === 'string' && (DAY_TYPES_ORDERED as readonly string[]).includes(value);
 }

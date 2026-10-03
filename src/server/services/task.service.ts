@@ -1,5 +1,5 @@
 import type { Task } from '@/generated/prisma';
-import { TaskPriority } from '@/generated/prisma';
+import { TaskPriority, TaskStatus } from '@/generated/prisma';
 import { TaskRepository } from '@/server/repositories/task.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { GoalService } from '@/server/services/goal.service';
@@ -91,7 +91,7 @@ export class TaskService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_CREATED',
+      action: 'TASK_CREATED',
       entityType: 'TASK',
       entityId: task.id,
       metadata: { title: task.title },
@@ -182,7 +182,7 @@ export class TaskService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_UPDATED',
+      action: 'TASK_UPDATED',
       entityType: 'TASK',
       entityId: taskId,
     });
@@ -236,6 +236,21 @@ export class TaskService {
   }
 
   /**
+   * Restore an archived task, resetting its status to TODO.
+   *
+   * A named operation rather than `updateTask({ status })` because the original
+   * status is not remembered on archive. It also carries the ownership check:
+   * the archive endpoint's `?restore=true` branch reached straight into
+   * `TaskRepository.updateStatus`, skipping every check `getTask` performs — that
+   * branch would have reset a task belonging to someone else.
+   */
+  async restoreTask(userId: string, taskId: string) {
+    await this.getTask(userId, taskId);
+
+    return this.taskRepository.updateStatus(userId, taskId, TaskStatus.TODO);
+  }
+
+  /**
    * Delete a task (permanently removes it)
    */
   async deleteTask(userId: string, taskId: string): Promise<void> {
@@ -245,7 +260,7 @@ export class TaskService {
 
     await this.auditRepository.create({
       userId,
-      action: 'GOAL_DELETED',
+      action: 'TASK_DELETED',
       entityType: 'TASK',
       entityId: taskId,
     });

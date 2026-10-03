@@ -197,9 +197,13 @@ exports.Prisma.UserSettingsScalarFieldEnum = {
   minSleepDuration: 'minSleepDuration',
   sleepReminder: 'sleepReminder',
   sleepReminderTime: 'sleepReminderTime',
+  sleepPreWarningEnabled: 'sleepPreWarningEnabled',
+  sleepPreWarningTime: 'sleepPreWarningTime',
   autoStartSleepAfterMinutes: 'autoStartSleepAfterMinutes',
   sleepAutoStartEnabled: 'sleepAutoStartEnabled',
   sleepAutoStartAfterMinutes: 'sleepAutoStartAfterMinutes',
+  wakeConfirmationEnabled: 'wakeConfirmationEnabled',
+  wakeConfirmationTime: 'wakeConfirmationTime',
   weightNonNeg: 'weightNonNeg',
   weightGrowth: 'weightGrowth',
   weightBonus: 'weightBonus',
@@ -212,6 +216,8 @@ exports.Prisma.UserSettingsScalarFieldEnum = {
   routineStartNotifications: 'routineStartNotifications',
   upcomingRoutineNotifications: 'upcomingRoutineNotifications',
   sleepReminderNotifications: 'sleepReminderNotifications',
+  sleepPreWarningNotifications: 'sleepPreWarningNotifications',
+  wakeConfirmationNotifications: 'wakeConfirmationNotifications',
   habitReminderNotifications: 'habitReminderNotifications',
   goalReminderNotifications: 'goalReminderNotifications',
   advanceNotificationMinutes: 'advanceNotificationMinutes',
@@ -716,6 +722,7 @@ exports.Prisma.FocusSessionScalarFieldEnum = {
   userId: 'userId',
   title: 'title',
   description: 'description',
+  type: 'type',
   categoryId: 'categoryId',
   plannedDuration: 'plannedDuration',
   actualDuration: 'actualDuration',
@@ -723,6 +730,22 @@ exports.Prisma.FocusSessionScalarFieldEnum = {
   completedAt: 'completedAt',
   abortedAt: 'abortedAt',
   pausedAt: 'pausedAt',
+  pausedTotalSeconds: 'pausedTotalSeconds',
+  endReason: 'endReason',
+  source: 'source',
+  pauseCount: 'pauseCount',
+  extendedSeconds: 'extendedSeconds',
+  distractionCount: 'distractionCount',
+  lastHeartbeatAt: 'lastHeartbeatAt',
+  timezone: 'timezone',
+  localDate: 'localDate',
+  runId: 'runId',
+  cycleIndex: 'cycleIndex',
+  clientId: 'clientId',
+  taskId: 'taskId',
+  goalId: 'goalId',
+  habitId: 'habitId',
+  routineBlockId: 'routineBlockId',
   focusRating: 'focusRating',
   productivityRating: 'productivityRating',
   difficultyRating: 'difficultyRating',
@@ -731,6 +754,70 @@ exports.Prisma.FocusSessionScalarFieldEnum = {
   distractions: 'distractions',
   techniques: 'techniques',
   notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FocusSessionEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  focusSessionId: 'focusSessionId',
+  type: 'type',
+  occurredAt: 'occurredAt',
+  label: 'label',
+  note: 'note',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.FocusSettingsScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  focusMinutes: 'focusMinutes',
+  shortBreakMinutes: 'shortBreakMinutes',
+  longBreakMinutes: 'longBreakMinutes',
+  cyclesBeforeLongBreak: 'cyclesBeforeLongBreak',
+  autoStartBreak: 'autoStartBreak',
+  autoStartFocus: 'autoStartFocus',
+  keepScreenAwake: 'keepScreenAwake',
+  reflectionMode: 'reflectionMode',
+  reflectionMinimumMinutes: 'reflectionMinimumMinutes',
+  dailyTargetMinutes: 'dailyTargetMinutes',
+  streakDayMinutes: 'streakDayMinutes',
+  weeklyTargetMinutes: 'weeklyTargetMinutes',
+  soundEnabled: 'soundEnabled',
+  soundVolume: 'soundVolume',
+  ambientSound: 'ambientSound',
+  showWallClock: 'showWallClock',
+  breakSuggestions: 'breakSuggestions',
+  adaptiveSuggestions: 'adaptiveSuggestions',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FocusPresetScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  focusMinutes: 'focusMinutes',
+  shortBreakMinutes: 'shortBreakMinutes',
+  longBreakMinutes: 'longBreakMinutes',
+  cyclesBeforeLongBreak: 'cyclesBeforeLongBreak',
+  categoryId: 'categoryId',
+  color: 'color',
+  icon: 'icon',
+  sortOrder: 'sortOrder',
+  isArchived: 'isArchived',
+  isDefault: 'isDefault',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.FocusDayTypeTargetScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  dayTypeId: 'dayTypeId',
+  targetMinutes: 'targetMinutes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -888,6 +975,7 @@ exports.Prisma.AchievementScalarFieldEnum = {
   celebrated: 'celebrated',
   isPublic: 'isPublic',
   metadata: 'metadata',
+  definitionId: 'definitionId',
   createdAt: 'createdAt'
 };
 
@@ -1144,6 +1232,26 @@ exports.Prisma.GoalDayTypeScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.TomorrowDayTypePlanScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  dayTypeId: 'dayTypeId',
+  dayType: 'dayType',
+  status: 'status',
+  isManual: 'isManual',
+  selectedAt: 'selectedAt',
+  confirmedAt: 'confirmedAt',
+  changedAt: 'changedAt',
+  previousDayTypeId: 'previousDayTypeId',
+  routineVersion: 'routineVersion',
+  notificationsScheduled: 'notificationsScheduled',
+  localSynced: 'localSynced',
+  serverSynced: 'serverSynced',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.FeatureFlagScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -1360,6 +1468,56 @@ exports.WeatherCondition = exports.$Enums.WeatherCondition = {
   WINDY: 'WINDY'
 };
 
+exports.FocusSessionType = exports.$Enums.FocusSessionType = {
+  FOCUS: 'FOCUS',
+  SHORT_BREAK: 'SHORT_BREAK',
+  LONG_BREAK: 'LONG_BREAK',
+  STOPWATCH: 'STOPWATCH'
+};
+
+exports.FocusSessionEndReason = exports.$Enums.FocusSessionEndReason = {
+  COMPLETED: 'COMPLETED',
+  STOPPED: 'STOPPED',
+  SKIPPED: 'SKIPPED',
+  MODE_SWITCHED: 'MODE_SWITCHED',
+  AUTO_STALE: 'AUTO_STALE',
+  MANUAL: 'MANUAL'
+};
+
+exports.FocusSessionSource = exports.$Enums.FocusSessionSource = {
+  TIMER: 'TIMER',
+  MANUAL: 'MANUAL',
+  RECOVERED: 'RECOVERED'
+};
+
+exports.FocusEventType = exports.$Enums.FocusEventType = {
+  START: 'START',
+  PAUSE: 'PAUSE',
+  RESUME: 'RESUME',
+  EXTEND: 'EXTEND',
+  DISTRACTION: 'DISTRACTION',
+  NOTE: 'NOTE',
+  END: 'END',
+  PAUSE_REASON: 'PAUSE_REASON'
+};
+
+exports.FocusReflectionMode = exports.$Enums.FocusReflectionMode = {
+  ALWAYS: 'ALWAYS',
+  FOCUS_ONLY: 'FOCUS_ONLY',
+  MIN_LENGTH: 'MIN_LENGTH',
+  NEVER: 'NEVER'
+};
+
+exports.BreakType = exports.$Enums.BreakType = {
+  SHORT: 'SHORT',
+  LONG: 'LONG',
+  MEAL: 'MEAL',
+  WALK: 'WALK',
+  STRETCH: 'STRETCH',
+  REST: 'REST',
+  CUSTOM: 'CUSTOM'
+};
+
 exports.AchievementType = exports.$Enums.AchievementType = {
   HABIT_STREAK: 'HABIT_STREAK',
   GOAL_COMPLETED: 'GOAL_COMPLETED',
@@ -1434,6 +1592,11 @@ exports.NotificationType = exports.$Enums.NotificationType = {
   SLEEP_ENDED: 'SLEEP_ENDED',
   SLEEP_PROMPT: 'SLEEP_PROMPT',
   SLEEP_TRACKING_STARTED: 'SLEEP_TRACKING_STARTED',
+  SLEEP_PRE_WARNING: 'SLEEP_PRE_WARNING',
+  SLEEP_WAKE_CONFIRMATION: 'SLEEP_WAKE_CONFIRMATION',
+  ROUTINE_PRE_START: 'ROUTINE_PRE_START',
+  ROUTINE_COMPLETION: 'ROUTINE_COMPLETION',
+  ROUTINE_END_REMINDER: 'ROUTINE_END_REMINDER',
   MOTIVATIONAL: 'MOTIVATIONAL',
   PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
   SYSTEM_UPDATE: 'SYSTEM_UPDATE'
@@ -1494,6 +1657,14 @@ exports.AuditAction = exports.$Enums.AuditAction = {
   GOAL_UPDATED: 'GOAL_UPDATED',
   GOAL_DELETED: 'GOAL_DELETED',
   GOAL_COMPLETED: 'GOAL_COMPLETED',
+  PROJECT_CREATED: 'PROJECT_CREATED',
+  PROJECT_UPDATED: 'PROJECT_UPDATED',
+  PROJECT_DELETED: 'PROJECT_DELETED',
+  PROJECT_ARCHIVED: 'PROJECT_ARCHIVED',
+  TASK_CREATED: 'TASK_CREATED',
+  TASK_UPDATED: 'TASK_UPDATED',
+  TASK_DELETED: 'TASK_DELETED',
+  TASK_ARCHIVED: 'TASK_ARCHIVED',
   ROUTINE_CREATED: 'ROUTINE_CREATED',
   ROUTINE_CHANGED: 'ROUTINE_CHANGED',
   ROUTINE_DELETED: 'ROUTINE_DELETED',
@@ -1537,6 +1708,14 @@ exports.FeedbackStatus = exports.$Enums.FeedbackStatus = {
   WONT_FIX: 'WONT_FIX'
 };
 
+exports.PlanStatus = exports.$Enums.PlanStatus = {
+  PENDING: 'PENDING',
+  SELECTED: 'SELECTED',
+  CONFIRMED: 'CONFIRMED',
+  SYNCED: 'SYNCED',
+  FALLBACK_APPLIED: 'FALLBACK_APPLIED'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   UserSubscription: 'UserSubscription',
@@ -1577,6 +1756,10 @@ exports.Prisma.ModelName = {
   DailyReflection: 'DailyReflection',
   JournalEntry: 'JournalEntry',
   FocusSession: 'FocusSession',
+  FocusSessionEvent: 'FocusSessionEvent',
+  FocusSettings: 'FocusSettings',
+  FocusPreset: 'FocusPreset',
+  FocusDayTypeTarget: 'FocusDayTypeTarget',
   Break: 'Break',
   TimeEntry: 'TimeEntry',
   ProductivityPattern: 'ProductivityPattern',
@@ -1605,6 +1788,7 @@ exports.Prisma.ModelName = {
   DayTypeDefinition: 'DayTypeDefinition',
   HabitDayType: 'HabitDayType',
   GoalDayType: 'GoalDayType',
+  TomorrowDayTypePlan: 'TomorrowDayTypePlan',
   FeatureFlag: 'FeatureFlag',
   APIKey: 'APIKey'
 };

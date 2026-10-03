@@ -181,18 +181,18 @@ export class RecapService {
     const extras = await this.buildExtras(userId, period, range, timezone);
 
     if (period === 'day') {
-      const result = await this.buildDay(userId, range);
+      const result = await this.buildDay(userId, range, timezone);
       return { ...base, extras, ...result };
     }
     if (period === 'week') {
-      const result = await this.buildWeek(userId, range);
+      const result = await this.buildWeek(userId, range, timezone);
       return { ...base, extras, ...result };
     }
     if (period === 'month') {
-      const result = await this.buildMonth(userId, range);
+      const result = await this.buildMonth(userId, range, timezone);
       return { ...base, extras, ...result };
     }
-    const result = await this.buildYear(userId, range);
+    const result = await this.buildYear(userId, range, timezone);
     return { ...base, extras, ...result };
   }
 
@@ -514,9 +514,9 @@ export class RecapService {
     return null;
   }
 
-  private async buildDay(userId: string, range: PeriodRange) {
+private async buildDay(userId: string, range: PeriodRange, timezone: string) {
     const anchor = range.anchorDate;
-    const breakdown = await dailyBreakdown(userId, anchor);
+    const breakdown = await dailyBreakdown(userId, anchor, timezone);
     const score = await this.scoreRepository.findByDate(userId, anchor);
 
     const points = score && score.totalScore !== null
@@ -539,8 +539,8 @@ export class RecapService {
     return { hasData, points, day: breakdown };
   }
 
-  private async buildWeek(userId: string, range: PeriodRange) {
-    const summary = await weeklySummary(userId, range.start);
+private async buildWeek(userId: string, range: PeriodRange, timezone: string) {
+    const summary = await weeklySummary(userId, range.start, timezone);
     const scores = await this.scoreRepository.findByRange(userId, range.start, range.end);
     const points = toPoints(scores);
 
@@ -555,9 +555,9 @@ export class RecapService {
     return { hasData, points, week: summary };
   }
 
-  private async buildMonth(userId: string, range: PeriodRange) {
+private async buildMonth(userId: string, range: PeriodRange, timezone: string) {
     const month = range.anchorDate.slice(0, 7);
-    const summary = await monthlySummary(userId, month);
+    const summary = await monthlySummary(userId, month, timezone);
     const scores = await this.scoreRepository.findByRange(userId, range.start, range.end);
     const points = toPoints(scores);
 
@@ -572,17 +572,22 @@ export class RecapService {
     return { hasData, points, month: summary };
   }
 
-  private async buildYear(userId: string, range: PeriodRange) {
+private async buildYear(userId: string, range: PeriodRange, timezone: string) {
     const year = Number(range.anchorDate.slice(0, 4));
-    const summary = await yearlySummary(userId, year);
+    const summary = await yearlySummary(userId, year, timezone);
 
-    const points = summary.monthlyScoreTrend.map((entry) => ({
-      date: entry.month,
-      totalScore: entry.averageScore,
-      core: 0,
-      growth: 0,
-      bonus: 0,
-    }));
+    // A month with no scored day is not a zero. Keeping the gap means the recap's
+    // trend line breaks rather than diving to the floor for months the user had
+    // not reached.
+    const points = summary.monthlyScoreTrend
+      .filter((entry) => entry.averageScore !== null)
+      .map((entry) => ({
+        date: entry.month,
+        totalScore: entry.averageScore as number,
+        core: 0,
+        growth: 0,
+        bonus: 0,
+      }));
 
     const hasData =
       summary.totalDaysScored > 0 ||

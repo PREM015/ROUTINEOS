@@ -380,7 +380,7 @@ export class EmailService {
       : '';
     const body = [
       `<p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">Your goal <strong>${escapeHtml(goal.title)}</strong> is due ${escapeHtml(dueDate)}.</p>`,
-      renderButton(`${APP_URL}/goals/${goal.id}`, 'View goal'),
+      renderButton(`${APP_URL}/goals?goal=${encodeURIComponent(goal.id)}`, 'View goal'),
     ].join('');
     return this.sendEmail(to, `Goal due: ${goal.title}`, body);
   }

@@ -6,12 +6,21 @@
 /**
  * Structured detail attached to an error. Must survive `JSON.stringify` to be
  * sent to a client, so `unknown` and non-serialisable values are not allowed.
+ *
+ * `Date` is included because it *does* survive `JSON.stringify` (as an ISO
+ * string) and because it is unavoidable here: several services attach the
+ * conflicting row to a `ConflictError` so the client can show what is already in
+ * the way — e.g. `POST /api/time-tracking/start` returns the already-running
+ * entry on its 409. Without `Date` in this union the only options were to
+ * stringify by hand at each call site or to drop a field the API has always
+ * returned.
  */
 export type ErrorDetails =
   | string
   | number
   | boolean
   | null
+  | Date
   | ErrorDetails[]
   | { [key: string]: ErrorDetails };
 

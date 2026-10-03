@@ -1,10 +1,14 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { SocialRepository } from '@/server/repositories/social.repository';
+import { socialService } from '@/server/services/social.service';
 
 /**
  * GET /api/social/followers
  * List the authenticated user's followers with mutual-follow status.
+ *
+ * The per-row `isFollowing` call this used to make (one query per follower) is
+ * now a set intersection against the caller's own following list — two queries
+ * total instead of N+1.
  */
 export async function GET(_request: NextRequest) {
   try {
@@ -13,15 +17,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const repository = new SocialRepository();
-    const followers = await repository.followers(session.user.id);
-
-    const enriched = await Promise.all(
-      followers.map(async (follower) => ({
-        ...follower,
-        isMutual: await repository.isFollowing(session.user.id, follower.id),
-      }))
-    );
+    const enriched = await socialService.followers(session.user.id);
 
     return NextResponse.json({
       success: true,

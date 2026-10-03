@@ -1,12 +1,15 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { SocialRepository } from '@/server/repositories/social.repository';
-import { UserRepository } from '@/server/repositories/user.repository';
+import { socialService } from '@/server/services/social.service';
+import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { followUserSchema } from '@/schemas/social.schema';
 
 /**
  * POST /api/social/follow
  * Follow another user.
+ *
+ * Self-follow 400, missing user 404, already following 409 — all decided in
+ * `SocialService.follow` now.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -24,27 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const targetId = validated.data.userId;
-    if (targetId === session.user.id) {
-      return NextResponse.json(
-        { error: 'You cannot follow yourself' },
-        { status: 400 }
-      );
-    }
-
-    const target = await new UserRepository().findById(targetId);
-    if (!target) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const repository = new SocialRepository();
-    const result = await repository.follow(session.user.id, targetId);
-    if (!result.created) {
-      return NextResponse.json(
-        { error: 'You are already following this user' },
-        { status: 409 }
-      );
-    }
+    const result = await socialService.follow(session.user.id, validated.data.userId);
 
     return NextResponse.json(
       { success: true, data: { following: true, connection: result.connection } },
@@ -52,6 +35,15 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error following user:', error);
+    if (error instanceof ConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { error: 'Failed to follow user' },
       { status: 500 }

@@ -42,6 +42,16 @@ export function defaultTemplateToContent(
     icon: template.icon,
     estimatedDuration: template.estimatedDurationMinutes,
     blocks: blocks.length > 0 ? blocks : undefined,
+    /**
+     * `GOAL_SET` / `HABIT_SET` definitions, carried through so
+     * `TemplateService.materialiseSet` has something real to create. Omitted
+     * entirely for routine templates so their stored content is byte-identical
+     * to what it was before this field existed.
+     */
+    ...(template.goals ? { goals: template.goals as unknown[] } : {}),
+    ...(template.habits ? { habits: template.habits as unknown[] } : {}),
+    ...(template.parentGoal ? { parentGoal: template.parentGoal } : {}),
+    ...(template.durationDays ? { durationDays: template.durationDays } : {}),
   };
 
   return JSON.stringify(content);

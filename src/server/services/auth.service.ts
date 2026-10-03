@@ -1,13 +1,16 @@
 import bcrypt from 'bcryptjs';
-import {
-  createHmac,
-  randomBytes,
-  timingSafeEqual,
-} from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import type { Role, User } from '@/generated/prisma';
 import type { Session } from 'next-auth';
 import { auth } from '@/lib/auth';
+import {
+  buildOtpauthUrl,
+  generateTwoFactorSecret,
+  readTwoFactorState as readTwoFactorStateFromPreferences,
+  verifyTotpCode,
+  writeTwoFactorState as writeTwoFactorStateToPreferences,
+} from '@/lib/security/totp';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { AuthTokenRepository } from '@/server/repositories/auth-token.repository';
 import { AuditRepository } from '@/server/repositories/audit.repository';
@@ -57,7 +60,6 @@ interface TwoFactorState {
 
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
 /**
  * Extract first zod issue message, if any
@@ -67,40 +69,10 @@ function firstZodIssue(error: z.ZodError): string {
 }
 
 /**
- * Parse the preferences JSON without throwing
- */
-function parsePreferences(raw: string | null): Record<string, unknown> {
-  if (!raw) return {};
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return {};
-  } catch {
-    return {};
-  }
-}
-
-/**
  * Read stored 2FA state for a user (persisted in preferences JSON)
  */
 function readTwoFactorState(user: User): TwoFactorState {
-  const prefs = parsePreferences(user.preferences);
-  const authPrefs =
-    typeof prefs.auth === 'object' && prefs.auth !== null
-      ? (prefs.auth as Record<string, unknown>)
-      : {};
-  const twoFactor =
-    typeof authPrefs.twoFactor === 'object' && authPrefs.twoFactor !== null
-      ? (authPrefs.twoFactor as Record<string, unknown>)
-      : {};
-  return {
-    enabled: twoFactor.enabled === true,
-    secret: typeof twoFactor.secret === 'string' ? twoFactor.secret : null,
-    verifiedAt:
-      typeof twoFactor.verifiedAt === 'string' ? twoFactor.verifiedAt : null,
-  };
+  return readTwoFactorStateFromPreferences(user.preferences);
 }
 
 /**
@@ -110,18 +82,7 @@ function writeTwoFactorState(
   user: User,
   state: TwoFactorState
 ): string {
-  const prefs = parsePreferences(user.preferences);
-  const authPrefs =
-    typeof prefs.auth === 'object' && prefs.auth !== null
-      ? (prefs.auth as Record<string, unknown>)
-      : {};
-  return JSON.stringify({
-    ...prefs,
-    auth: {
-      ...authPrefs,
-      twoFactor: state,
-    },
-  });
+  return writeTwoFactorStateToPreferences(user.preferences, state);
 }
 
 /**
@@ -141,98 +102,6 @@ function toSafeUser(user: User): SafeUser {
   };
 }
 
-function encodeBase32(input: Uint8Array): string {
-  let bits = 0;
-  let value = 0;
-  let output = '';
-  for (const byte of Buffer.from(input)) {
-    value = ((value << 8) | byte) & 0xffffffff;
-    bits += 8;
-    while (bits >= 5) {
-      output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
-      bits -= 5;
-    }
-  }
-  if (bits > 0) {
-    output += BASE32_ALPHABET[(value << (5 - bits)) & 31];
-  }
-  return output;
-}
-
-function decodeBase32(input: string): Buffer {
-  const clean = input.replace(/=+$/, '').toUpperCase();
-  const bytes: number[] = [];
-  let bits = 0;
-  let value = 0;
-  for (const char of clean) {
-    const index = BASE32_ALPHABET.indexOf(char);
-    if (index === -1) throw new Error('Invalid base32 secret');
-    value = ((value << 5) | index) & 0xffffffff;
-    bits += 5;
-    if (bits >= 8) {
-      bytes.push((value >>> (bits - 8)) & 0xff);
-      bits -= 8;
-    }
-  }
-  return Buffer.from(bytes);
-}
-
-/**
- * Generate a 6-digit TOTP code for a secret at a time window
- */
-function generateTotpCode(
-  secret: string,
-  timestamp: number = Date.now(),
-  windowDrift: number = 0
-): string {
-  const key = decodeBase32(secret);
-  const counter = Math.floor(timestamp / 30000) + windowDrift;
-  const counterBuffer = Buffer.alloc(8);
-  counterBuffer.writeBigUInt64BE(BigInt(counter));
-  const digest = createHmac('sha1', key).update(counterBuffer).digest();
-  const offset = (digest[digest.length - 1] ?? 0) & 0x0f;
-  const binary =
-    ((digest[offset] ?? 0) & 0x7f) * 0x01000000 +
-    ((digest[offset + 1] ?? 0) & 0xff) * 0x010000 +
-    ((digest[offset + 2] ?? 0) & 0xff) * 0x0100 +
-    ((digest[offset + 3] ?? 0) & 0xff);
-  return String(binary % 1000000).padStart(6, '0');
-}
-
-/**
- * Verify a TOTP code against the current and adjacent time windows
- */
-function verifyTotpCode(secret: string, code: string): boolean {
-  if (!/^\d{6}$/.test(code)) return false;
-  const now = Date.now();
-  const expected = Buffer.from(code, 'utf8');
-  for (const drift of [-1, 0, 1]) {
-    const candidate = Buffer.from(generateTotpCode(secret, now, drift), 'utf8');
-    if (
-      candidate.length === expected.length &&
-      timingSafeEqual(candidate, expected)
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Build the otpauth:// provisioning URI for authenticator apps
- */
-function buildOtpauthUrl(secret: string, email: string): string {
-  const issuer = 'RoutineOS';
-  const account = encodeURIComponent(`${issuer}:${email}`);
-  const params = new URLSearchParams({
-    secret,
-    issuer,
-    algorithm: 'SHA1',
-    digits: '6',
-    period: '30',
-  });
-  return `otpauth://totp/${account}?${params.toString()}`;
-}
 
 export class AuthService {
   private userRepository: UserRepository;
@@ -479,6 +348,15 @@ export class AuthService {
     await this.userRepository.updatePassword(tokenRow.userId, passwordHash);
     await this.authTokenRepository.markResetTokenUsed(tokenRow.id);
 
+    // A password reset is the standard response to "my account was
+    // compromised". If it left existing sessions alive, the stolen JWT would
+    // keep working until its 6-hour absolute expiry and the reset would buy
+    // nothing. NextAuth uses the `jwt` strategy, so deleting DeviceSession rows
+    // is not enough on its own — `sessionVersion` is what actually invalidates
+    // already-issued tokens (see the check in `lib/auth.ts`).
+    await this.userRepository.deleteAllDeviceSessions(tokenRow.userId);
+    await this.userRepository.bumpSessionVersion(tokenRow.userId);
+
     await this.auditRepository.create({
       userId: tokenRow.userId,
       action: 'PASSWORD_RESET_COMPLETED',
@@ -599,11 +477,11 @@ export class AuthService {
 
   /**
    * Generate a fresh verification token and issue a TOTP provisioning URI
+   *
+   * The secret is always generated server-side. It used to be accepted as a
+   * caller-supplied argument, which let the client decide the shared secret.
    */
-  async setupTwoFactor(
-    userId: string,
-    secret?: string
-  ): Promise<{ otpauthUrl: string; secret: string }> {
+  async setupTwoFactor(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -617,8 +495,7 @@ export class AuthService {
       };
     }
 
-    const twoFactorSecret =
-      secret && secret.length > 0 ? secret : encodeBase32(randomBytes(20));
+    const twoFactorSecret = generateTwoFactorSecret();
     const otpauthUrl = buildOtpauthUrl(twoFactorSecret, user.email);
 
     await this.userRepository.update(userId, {

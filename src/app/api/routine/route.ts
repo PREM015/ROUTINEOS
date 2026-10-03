@@ -1,62 +1,41 @@
-import { auth } from '@/lib/auth';
+﻿import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
-import { RoutineRepository } from '@/server/repositories/routine.repository';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-import { timeToMinutes } from '@/lib/dates';
-import { dayTypeSchema } from '@/lib/validation/routine.schema';
 import { slugToDayType } from '@/constants/routine';
+import {
+  createRoutineBlockSchema,
+  updateRoutineBlockSchema,
+  deleteRoutineSchema,
+  createRoutineTemplateRequestSchema,
+  updateRoutineTemplateRequestSchema,
+  applyTemplateToRangeSchema,
+} from '@/lib/validation/routine.schema';
+import { EditWindowError } from '@/lib/routine/edit-window';
 import type { DayType } from '@/generated/prisma';
 
-const createTemplateSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().optional(),
-  dayType: dayTypeSchema,
-  isDefault: z.boolean().optional(),
-  color: z.string().optional(),
-  icon: z.string().optional(),
-});
-
-const HH_MM = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-// Standalone routine block shape (used by AppContext / Today / Routine pages).
-// A block is stored under a per-dayType template that is auto-provisioned.
-// `dayTypeId` is a DayTypeDefinition primary key, which Prisma generates as a
-// cuid — validating it as a uuid rejected every real id with "Invalid uuid".
-const dayTypeIdSchema = z.string().cuid().optional();
-
-const createBlockSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100),
-  startTime: z.string().regex(HH_MM, 'Start time must be HH:mm'),
-  endTime: z.string().regex(HH_MM, 'End time must be HH:mm'),
-  dayTypeId: dayTypeIdSchema,
-  dayType: dayTypeSchema.optional(),
-  category: z.string().optional(),
-  color: z.string().optional(),
-  icon: z.string().optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  trackCompletion: z.boolean().optional(),
-  description: z.string().optional(),
-  energyLevel: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
-});
-
-const updateBlockSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1).max(100).optional(),
-  startTime: z.string().regex(HH_MM, 'Start time must be HH:mm').optional(),
-  endTime: z.string().regex(HH_MM, 'End time must be HH:mm').optional(),
-  dayTypeId: dayTypeIdSchema,
-  dayType: dayTypeSchema.optional(),
-  category: z.string().optional(),
-  color: z.string().optional(),
-  icon: z.string().optional(),
-  sortOrder: z.number().int().min(0).optional(),
-  trackCompletion: z.boolean().optional(),
-  description: z.string().optional(),
-  energyLevel: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
-});
-
-const deleteBlockSchema = z.object({ id: z.string().min(1) });
+/**
+ * The body fields that mean "this is a block update, not a template update".
+ *
+ * `categoryId` and `clearCategory` are in this list because clearing a category
+ * is a block-level edit; without them `PUT {id, clearCategory: true}` fell
+ * through to the template-update path and failed with "Routine template not
+ * found".
+ */
+const BLOCK_UPDATE_FIELDS = [
+  'title',
+  'startTime',
+  'endTime',
+  'sortOrder',
+  'trackCompletion',
+  'energyLevel',
+  'description',
+  'notes',
+  'color',
+  'icon',
+  'categoryId',
+  'clearCategory',
+] as const;
 
 /**
  * Classify a template's day type.
@@ -82,10 +61,17 @@ function toBlockDto(block: {
   sortOrder: number;
   trackCompletion: boolean;
   description?: string | null;
+  notes?: string | null;
   energyLevel?: string | null;
-  category?: { name?: string } | null;
+  categoryId?: string | null;
+  category?: { id?: string; name?: string; color?: string | null; icon?: string | null } | null;
   templateId?: string;
-  template?: { id?: string; dayType?: string; dayTypeId?: string | null } | null;
+  template?: {
+    id?: string;
+    dayType?: string;
+    dayTypeId?: string | null;
+    isActive?: boolean;
+  } | null;
   /** Resolved classification/identity, when the caller already derived them. */
   dayType?: DayType;
   dayTypeId?: string | null;
@@ -98,14 +84,53 @@ function toBlockDto(block: {
     templateId: block.templateId ?? block.template?.id,
     dayType: block.dayType ?? block.template?.dayType ?? 'CUSTOM',
     dayTypeId: block.dayTypeId ?? block.template?.dayTypeId,
-    category: block.category?.name,
-    color: block.color ?? undefined,
-    icon: block.icon ?? undefined,
+    /**
+     * Both the raw FK and the projected row.
+     *
+     * The name alone is what let F5 hide: the create path accepted a category,
+     * answered 201, and stored nothing, because the service read a field named
+     * `category` while the client sent `categoryId`. Returning the id means an
+     * editor can send the stored value back unchanged, and `null` to clear it.
+     */
+    categoryId: block.categoryId ?? block.category?.id ?? null,
+    category: block.category
+      ? {
+          id: block.category.id,
+          name: block.category.name ?? '',
+          color: block.category.color ?? null,
+          icon: block.category.icon ?? null,
+        }
+      : null,
+    color: block.color ?? null,
+    icon: block.icon ?? null,
     sortOrder: block.sortOrder,
     trackCompletion: block.trackCompletion,
-    description: block.description ?? undefined,
-    energyLevel: block.energyLevel ?? undefined,
+    description: block.description ?? null,
+    notes: block.notes ?? null,
+    energyLevel: block.energyLevel ?? null,
   };
+}
+
+/**
+ * Map a thrown error onto the right status.
+ *
+ * `EditWindowError` is a 403 rather than a 400 on purpose: the client's payload
+ * is fine, the *window* has closed, and retrying with different data cannot
+ * reopen it. Reporting 400 would invite the client to "fix" a payload that was
+ * never wrong.
+ */
+function toErrorResponse(error: unknown, fallback: string) {
+  console.error(error);
+  if (error instanceof EditWindowError) {
+    return NextResponse.json({ error: error.message }, { status: 403 });
+  }
+  if (error instanceof NotFoundError) {
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+  if (error instanceof Error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  return NextResponse.json({ error: fallback }, { status: 500 });
 }
 
 /**
@@ -120,9 +145,9 @@ export async function GET(_request: NextRequest) {
     }
 
     const routineService = new RoutineService();
-    const templates = await routineService['routineRepository'].findAllTemplates(
-      session.user.id
-    );
+    // Was `routineService['routineRepository'].findAllTemplates(...)` - a route
+    // reaching through a private field to get at the repository it already owns.
+    const templates = await routineService.listTemplates(session.user.id);
 
     // Derive each template's classification from its day-type definition so the
     // list agrees with the single-block create response; otherwise a block added
@@ -158,6 +183,10 @@ export async function GET(_request: NextRequest) {
  * Create a routine template ({ name, dayType, ... }) OR a standalone
  * routine block ({ title, startTime, endTime, ... }). Block creation
  * auto-provisions a template for the given dayType or dayTypeId.
+ *
+ * An overlap with an existing block is reported as `warnings` alongside a 201.
+ * It is never a rejection: stacking activities is a legitimate thing to want,
+ * and a hard rejection made the page unusable for anyone who does it.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -169,9 +198,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const userId = session.user.id;
 
-    // Block shape takes precedence when `title` is present.
-    if (body && typeof body.title === 'string') {
-      const validated = createBlockSchema.safeParse(body);
+    /*
+     * Range application, checked before the block/template discrimination below
+     * because it is the one action that is not a block write at all.
+     *
+     * Dispatched on the presence of `startDate` rather than on a new URL, so the
+     * client's four routine writes stay four calls against one resource. The
+     * discriminator is a field only this payload can have.
+     */
+    if (body && typeof body.startDate === 'string') {
+      const validated = applyTemplateToRangeSchema.safeParse(body);
       if (!validated.success) {
         return NextResponse.json(
           { error: 'Invalid input', details: validated.error.flatten() },
@@ -179,102 +215,89 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const start = timeToMinutes(validated.data.startTime);
-      const end = timeToMinutes(validated.data.endTime);
-      const isOvernight = end <= start;
+      const result = await new RoutineService().applyTemplateToRange(userId, validated.data);
 
-      const routineRepository = new RoutineRepository();
+      /*
+       * 207 rather than 200 when part of the range was refused. A partial write
+       * is not a success, and answering 200 here is how the UI would end up
+       * claiming "done" over five dates out of seven. The body carries exactly
+       * which dates were skipped and why.
+       */
+      const partial = result.skipped.length > 0 && result.applied.length > 0;
+      const none = result.applied.length === 0;
 
-      // Determine template: prefer dayTypeId (DayTypeDefinition), fall back to dayType enum
-      let template;
-      if (validated.data.dayTypeId) {
-        template = await routineRepository.findTemplateByDayTypeId(userId, validated.data.dayTypeId);
-      } else {
-        const dayType = validated.data.dayType ?? 'CUSTOM';
-        template = await routineRepository.findTemplateByDayType(userId, dayType);
+      return NextResponse.json(
+        {
+          success: !none,
+          data: result,
+          ...(result.skipped.length > 0 && {
+            error: `${result.skipped.length} of ${result.applied.length + result.skipped.length} dates were skipped`,
+          }),
+        },
+        { status: none ? 409 : partial ? 207 : 200 }
+      );
+    }
+
+    // Block shape takes precedence when `title` is present.
+    if (body && typeof body.title === 'string') {
+      const validated = createRoutineBlockSchema.safeParse(body);
+      if (!validated.success) {
+        return NextResponse.json(
+          { error: 'Invalid input', details: validated.error.flatten() },
+          { status: 400 }
+        );
       }
 
-      if (!template) {
-        // Auto-provision template
-        if (validated.data.dayTypeId) {
-          // Verify dayTypeDefinition exists and belongs to user
-          const dayTypeDefById = await routineRepository['prisma'].dayTypeDefinition.findFirst({
-            where: { id: validated.data.dayTypeId, userId },
-          });
-          if (!dayTypeDefById) {
-            return NextResponse.json({ error: 'Day type not found' }, { status: 404 });
-          }
-          template = await routineRepository.createTemplate({
-            user: { connect: { id: userId } },
-            name: dayTypeDefById.name,
-            dayType: 'CUSTOM',
-            dayTypeDef: { connect: { id: validated.data.dayTypeId } },
-            isDefault: false,
-            isActive: true,
-          });
-        } else {
-          const dayType = validated.data.dayType ?? 'CUSTOM';
-          template = await routineRepository.createTemplate({
-            user: { connect: { id: userId } },
-            name: `${dayType.charAt(0)}${dayType.slice(1).toLowerCase()} routine`,
-            dayType,
-            isDefault: true,
-            isActive: true,
-          });
-        }
-      }
-
-      const existing = await routineRepository['prisma'].routineBlock.findMany({
-        where: { templateId: template.id },
-        select: { startTime: true, endTime: true },
-      });
-      const overlaps = existing.some((b) => {
-        const s = timeToMinutes(b.startTime);
-        const e = timeToMinutes(b.endTime);
-        if (isOvernight || e <= s) return false;
-        return start < e && s < end;
-      });
-
-      const siblingCount = await routineRepository['prisma'].routineBlock.count({
-        where: { templateId: template.id },
-      });
-
-      const block = await routineRepository.createBlock({
-        user: { connect: { id: userId } },
-        template: { connect: { id: template.id } },
-        title: validated.data.title,
-        description: validated.data.description,
-        startTime: validated.data.startTime,
-        endTime: validated.data.endTime,
-        isOvernight,
-        color: validated.data.color,
-        icon: validated.data.icon,
-        sortOrder: validated.data.sortOrder ?? siblingCount,
-        trackCompletion: validated.data.trackCompletion ?? true,
-        energyLevel: validated.data.energyLevel,
-      });
+      // Template resolution, auto-provisioning, overlap detection, the
+      // `categoryId` ownership check and the per-template `sortOrder` all live
+      // in `RoutineService.createBlockForDayType`.
+      //
+      // This used to run here, including three raw Prisma queries issued through
+      // `routineRepository['prisma']` - a route handler reaching past the
+      // repository layer to talk to the client directly, which is the failure
+      // mode ERROR.md section 1 exists to close.
+      const routineService = new RoutineService();
+      const { data } = validated;
+      const { block, template, warnings } =
+        await routineService.createBlockForDayType(userId, {
+          title: data.title,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          dayTypeId: data.dayTypeId ?? undefined,
+          dayType: data.dayType ?? undefined,
+          categoryId: data.categoryId ?? undefined,
+          description: data.description ?? undefined,
+          notes: data.notes ?? undefined,
+          color: data.color ?? undefined,
+          icon: data.icon ?? undefined,
+          sortOrder: data.sortOrder,
+          trackCompletion: data.trackCompletion,
+          energyLevel: data.energyLevel ?? undefined,
+          // F6: the retroactive-edit-window context. `null` becomes `undefined`
+          // so "no date in play" stays absent rather than becoming a string.
+          date: data.date ?? undefined,
+        });
 
       // Get the dayType for the response - prefer dayTypeDef's slug or template's dayType
-      let responseDayType: DayType = template.dayType;
-      if (template.dayTypeId) {
-        const dayTypeDef = await routineRepository['prisma'].dayTypeDefinition.findUnique({
-          where: { id: template.dayTypeId },
-        });
-        if (dayTypeDef) {
-          responseDayType = slugToDayType(dayTypeDef.slug);
-        }
-      }
+      const responseDayType = await routineService.resolveBlockDayType(template);
 
       return NextResponse.json(
         {
           success: true,
-          data: { ...toBlockDto({ ...block, dayType: responseDayType, dayTypeId: template.dayTypeId } as never), ...(overlaps ? { overlapWarning: true } : {}) },
+          data: {
+            ...toBlockDto({
+              ...block,
+              dayType: responseDayType,
+              dayTypeId: template.dayTypeId,
+            } as never),
+            warnings,
+          },
         },
         { status: 201 }
       );
     }
 
-    const validated = createTemplateSchema.safeParse(body);
+    const validated = createRoutineTemplateRequestSchema.safeParse(body);
 
     if (!validated.success) {
       return NextResponse.json(
@@ -294,16 +317,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating routine template:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to create routine template' },
-      { status: 500 }
-    );
+    return toErrorResponse(error, 'Failed to create routine template');
   }
 }
 
@@ -311,6 +325,10 @@ export async function POST(request: NextRequest) {
  * PUT /api/routine
  * Update a routine block by { id, ...fields } (block ids take precedence),
  * falling back to template update ({ id, name, ... }).
+ *
+ * A time clash comes back as `warnings` beside a 200, exactly as on create.
+ * This path previously performed no overlap check at all, so a resize could
+ * silently create a timetable the server would then refuse to render.
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -321,63 +339,62 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const userId = session.user.id;
-    const routineRepository = new RoutineRepository();
+    const routineService = new RoutineService();
 
-    // Route to block-update when the body contains an id AND any block-level field.
-    // Previously only `title` was checked, which caused sortOrder-only updates
-    // (e.g. drag-to-reorder) to fall through to the template-update path and
-    // fail with "Routine template not found".
-    const BLOCK_FIELDS = ['title', 'startTime', 'endTime', 'sortOrder', 'trackCompletion', 'energyLevel', 'description', 'color', 'icon'] as const;
-    const isBlockUpdate = body && typeof body.id === 'string' &&
-      BLOCK_FIELDS.some(f => f in body);
+    // Route to block-update when the body contains an id AND any block-level
+    // field. Previously only `title` was checked, which caused sortOrder-only
+    // updates (a nudge) to fall through to the template-update path and fail
+    // with "Routine template not found".
+    const isBlockUpdate =
+      body && typeof body.id === 'string' && BLOCK_UPDATE_FIELDS.some((field) => field in body);
 
     if (isBlockUpdate) {
-      const validated = updateBlockSchema.safeParse(body);
+      const validated = updateRoutineBlockSchema.safeParse(body);
       if (!validated.success) {
         return NextResponse.json(
           { error: 'Invalid input', details: validated.error.flatten() },
           { status: 400 }
         );
       }
-      const { id, dayType: _dayType, category: _category, ...fields } = validated.data;
 
-      if (fields.startTime && fields.endTime) {
-        const start = timeToMinutes(fields.startTime);
-        const end = timeToMinutes(fields.endTime);
-        (fields as Record<string, unknown>).isOvernight = end <= start;
-      }
+      // `dayType` / `dayTypeId` are accepted on the wire for the client's
+      // convenience but are *not* writable here: moving a block between day
+      // types is a template-level operation, and silently honouring them would
+      // leave the block in a template the caller did not name.
+      //
+      // `date` stays in `fields` on purpose (F6). It is not a `RoutineBlock`
+      // column; `updateBlockForUser` destructures it out, asserts the
+      // retroactive edit window against it, and never forwards it to the
+      // repository. Destructuring it here and passing it back would be the same
+      // code with more steps.
+      const {
+        id,
+        dayType: _dayType,
+        dayTypeId: _dayTypeId,
+        clearCategory,
+        ...fields
+      } = validated.data;
 
-      const existing = await routineRepository['prisma'].routineBlock.findFirst({
-        where: { id, userId },
-        include: { template: { include: { dayTypeDef: true } } },
+      const existing = await routineService.updateBlockForUser(userId, id, {
+        ...fields,
+        ...(clearCategory !== undefined && { clearCategory }),
       });
-      if (!existing) {
-        return NextResponse.json({ error: 'Routine block not found' }, { status: 404 });
-      }
-      const updated = await routineRepository['prisma'].routineBlock.update({
-        where: { id },
-        data: fields as never,
-      });
+
       return NextResponse.json({
         success: true,
-        data: toBlockDto({
-          ...updated,
-          dayType: templateDayType(existing.template),
-          dayTypeId: existing.template.dayTypeId,
-        } as never),
+        data: {
+          ...toBlockDto({
+            ...existing.block,
+            dayType: templateDayType(existing.template),
+            dayTypeId: existing.template.dayTypeId,
+          } as never),
+          warnings: existing.warnings,
+        },
       });
     }
 
     // Template update fallback.
-    const templateSchema = z.object({
-      id: z.string().min(1),
-      name: z.string().min(1).max(100).optional(),
-      description: z.string().optional(),
-      color: z.string().optional(),
-      icon: z.string().optional(),
-      isDefault: z.boolean().optional(),
-    });
-    const validated = templateSchema.safeParse(body);
+    const validated = updateRoutineTemplateRequestSchema.safeParse(body);
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validated.error.flatten() },
@@ -385,29 +402,19 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { id, ...fields } = validated.data;
-    const owned = await routineRepository['prisma'].routineTemplate.findFirst({
-      where: { id, userId },
-    });
-    if (!owned) {
-      return NextResponse.json({ error: 'Routine template not found' }, { status: 404 });
-    }
-    const updated = await routineRepository['prisma'].routineTemplate.update({
-      where: { id },
-      data: fields,
-    });
+    const updated = await routineService.updateTemplateForUser(userId, id, fields);
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error('Error updating routine:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update routine' }, { status: 500 });
+    return toErrorResponse(error, 'Failed to update routine');
   }
 }
 
 /**
  * DELETE /api/routine
  * Delete a routine block ({ id }) or template by id.
+ *
+ * Deleting the last block of a template leaves the template in place. See
+ * `RoutineService.deleteById` for why the block is resolved first.
  */
 export async function DELETE(request: NextRequest) {
   try {
@@ -417,7 +424,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const validated = deleteBlockSchema.safeParse(body);
+    const validated = deleteRoutineSchema.safeParse(body);
     if (!validated.success) {
       return NextResponse.json(
         { error: 'Invalid input', details: validated.error.flatten() },
@@ -426,33 +433,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     const userId = session.user.id;
-    const routineRepository = new RoutineRepository();
-
-    const block = await routineRepository['prisma'].routineBlock.findFirst({
-      where: { id: validated.data.id, userId },
-    });
-    if (block) {
-      await routineRepository['prisma'].routineBlock.delete({
-        where: { id: validated.data.id },
-      });
-      return NextResponse.json({ success: true });
-    }
-
-    const template = await routineRepository['prisma'].routineTemplate.findFirst({
-      where: { id: validated.data.id, userId },
-    });
-    if (!template) {
-      return NextResponse.json({ error: 'Routine not found' }, { status: 404 });
-    }
-    await routineRepository['prisma'].routineTemplate.delete({
-      where: { id: validated.data.id },
-    });
-    return NextResponse.json({ success: true });
+    // The same id shape is accepted for a block or a template; the service
+    // resolves which one it is. Both lookups used to be raw
+    // `routineRepository['prisma']` queries issued from this handler.
+    const deleted = await new RoutineService().deleteById(
+      userId,
+      validated.data.id,
+      validated.data.date
+    );
+    return NextResponse.json({ success: true, data: { deleted } });
   } catch (error) {
-    console.error('Error deleting routine:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to delete routine' }, { status: 500 });
+    return toErrorResponse(error, 'Failed to delete routine');
   }
 }

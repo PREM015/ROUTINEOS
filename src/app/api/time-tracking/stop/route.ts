@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { TimeEntryRepository } from '@/server/repositories/time-entry.repository';
+import { timeTrackingService } from '@/server/services/time-tracking.service';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { NextResponse } from 'next/server';
 
 /**
@@ -13,17 +14,15 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const repository = new TimeEntryRepository();
-    const entry = await repository.stopRunning(session.user.id);
-
-    if (!entry) {
-      return NextResponse.json({ error: 'No running time entry' }, { status: 404 });
-    }
+    const entry = await timeTrackingService.stopRunning(session.user.id);
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
     console.error('Error stopping time entry:', error);
 
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'No running time entry' }, { status: 404 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

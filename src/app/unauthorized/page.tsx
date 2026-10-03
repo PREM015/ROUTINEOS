@@ -1,4 +1,9 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { privateMetadata } from '@/lib/seo';
+
+/** A 403 for a signed-in user who lacks a role. Never indexable. */
+export const metadata: Metadata = privateMetadata('Access denied');
 
 export default function Unauthorized() {
   return (

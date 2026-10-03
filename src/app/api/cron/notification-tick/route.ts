@@ -4,6 +4,8 @@ import { scheduleAllReminders } from '@/server/notifications/schedule-all';
 import { taskReminderService } from '@/server/notifications/task-reminder';
 import { notificationService } from '@/server/services/notification.service';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
+import { dayTypePlanningService } from '@/server/services/day-type-planning.service';
+import { UserRepository } from '@/server/repositories/user.repository';
 
 /**
  * GET /api/cron/notification-tick
@@ -79,6 +81,26 @@ export async function GET(request: NextRequest) {
     stages.dispatched = await notificationService.dispatchDueNotifications();
   } catch (error) {
     errors.push(`dispatch: ${message(error)}`);
+  }
+
+  // 4. Apply fallback DayType for tomorrow if needed (runs at midnight).
+  // This ensures all users have tomorrow's routine ready even if they didn't select.
+  try {
+    const userRepo = new UserRepository();
+    const activeUsers = await userRepo.findActiveUserIds();
+    let fallbacksApplied = 0;
+    
+    for (const userId of activeUsers) {
+      try {
+        const result = await dayTypePlanningService.applyFallbackIfNeeded(userId);
+        if (result) fallbacksApplied++;
+      } catch (err) {
+        errors.push(`fallback for user ${userId}: ${message(err)}`);
+      }
+    }
+    stages.fallbacksApplied = fallbacksApplied;
+  } catch (error) {
+    errors.push(`fallback: ${message(error)}`);
   }
 
   return NextResponse.json({

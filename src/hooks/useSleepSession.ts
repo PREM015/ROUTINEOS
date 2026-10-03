@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { notifyTodayDataChanged } from '@/lib/today-sync';
 
 /**
  * useSleepSession
@@ -54,10 +55,25 @@ export interface SleepPromptView {
   secondsUntilAutoStart: number;
 }
 
+export interface SleepPreWarningView {
+  id: string;
+  targetBedtime: string;
+  preWarningTime: string;
+  scheduledFor: string;
+}
+
+export interface SleepWakePromptView {
+  id: string;
+  targetWakeTime: string;
+  scheduledFor: string;
+}
+
 export interface SleepStateView {
   timezone: string;
   active: ActiveSessionView | null;
   prompt: SleepPromptView | null;
+  preWarning: SleepPreWarningView | null;
+  wakePrompt: SleepWakePromptView | null;
   todaySleepLog: SleepLogView | null;
 }
 
@@ -193,10 +209,21 @@ function stopPolling(): void {
  * Runs a sleep-session mutation and re-syncs state afterwards.
  * A resolved prompt is a successful no-op, not an error.
  */
+/**
+ * Bodies this hook can post.
+ *
+ * `respond` carries the prompt answer; `stop` carries the times the **user
+ * reported**. Neither is inferred from the request time — see
+ * `SleepSessionService.stopSleep`.
+ */
+type SleepSessionBody =
+  | { promptId: string; answer: 'YES' | 'NOT_YET' }
+  | { bedtime?: string; wakeTime?: string };
+
 async function run(
   action: SleepSessionAction,
   path: string,
-  body?: { promptId: string; answer: 'YES' | 'NOT_YET' }
+  body?: SleepSessionBody
 ): Promise<boolean> {
   emit({ busy: action, error: null });
   try {
@@ -223,6 +250,12 @@ async function run(
       });
     }
     await refresh();
+    if (ok) {
+      // Ending a session writes the night's `SleepLog`, which feeds
+      // `DailyScore.sleepScore`. No listener exists outside `/today`, so this is
+      // a no-op on `/focus` and in `SleepPromptHost`.
+      notifyTodayDataChanged();
+    }
     return Boolean(ok);
   } catch {
     emit({ error: 'Network error. Please try again.' });
@@ -242,8 +275,18 @@ export function useSleepSession() {
     getServerSnapshot
   );
 
+  /*
+    The latest snapshot state, in a ref never written during render.
+
+    The previous `stateRef.current = snapshot.state` mutated a ref in the render
+    body. Under a discarded concurrent render that leaves the ref holding state
+    from a render that never committed, and the poll interval reads it — so it
+    could act on a session the user had already ended.
+  */
   const stateRef = useRef<SleepStateView | null>(snapshot.state);
-  stateRef.current = snapshot.state;
+  useEffect(() => {
+    stateRef.current = snapshot.state;
+  }, [snapshot.state]);
 
   useEffect(() => {
     refCount += 1;
@@ -255,7 +298,20 @@ export function useSleepSession() {
   }, []);
 
   const start = useCallback(() => run('start', '/api/sleep/session/start'), []);
-  const stop = useCallback(() => run('stop', '/api/sleep/session/stop'), []);
+
+  /**
+   * End the session.
+   *
+   * `actual` is the times the user reported, not the moment they clicked. Called
+   * with no argument it still works — the service falls back to the session
+   * clock — but `TodaySleep` is expected to ask first so a forgotten 05:00 alarm
+   * does not silently become the wake time.
+   */
+  const stop = useCallback(
+    (actual?: { bedtime?: string; wakeTime?: string }) =>
+      run('stop', '/api/sleep/session/stop', actual),
+    []
+  );
 
   /**
    * Answer a pending prompt. No-ops unless a prompt is still pending in the
@@ -271,11 +327,37 @@ export function useSleepSession() {
     });
   }, []);
 
-  const activeAt = snapshot.state?.active?.startedAt
+  /*
+    "Has this run long enough to warrant the mid-night prompt?"
+
+    `Date.now()` in the render body is an impure read: two renders of the same
+    state can disagree, which is what makes this value un-snapshot-able and is the
+    reason the linter flags it. It also never updated on its own — a session
+    crossing the threshold while the tab sat idle kept rendering `false` until
+    something else happened to re-render.
+
+    A one-second tick gives it both: the value recomputes on a schedule, and the
+    clock is read in an effect rather than during render. The timer is cheap and
+    only exists while there is a session with a start time.
+  */
+  const startedAtMs = snapshot.state?.active?.startedAt
     ? Date.parse(snapshot.state.active.startedAt)
     : null;
+
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (startedAtMs === null) return;
+    /*
+      Seed on the interval, not synchronously. Calling `setNowMs(Date.now())` in
+      the effect body is a cascading render for a value that is one tick away
+      anyway, so the first tick carries it.
+    */
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [startedAtMs]);
+
   const longRunning =
-    activeAt !== null && Date.now() - activeAt > LONG_SESSION_MS;
+    startedAtMs !== null && nowMs !== null && nowMs - startedAtMs > LONG_SESSION_MS;
 
   return {
     state: snapshot.state,

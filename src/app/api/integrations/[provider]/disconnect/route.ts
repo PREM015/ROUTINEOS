@@ -1,8 +1,7 @@
 import { auth } from '@/lib/auth';
-import type { IntegrationProvider } from '@/generated/prisma';
-import { IntegrationRepository } from '@/server/repositories/integration.repository';
-import { INTEGRATIONS } from '@/lib/constants/integrations';
 import { NextRequest, NextResponse } from 'next/server';
+import { integrationService } from '@/server/services/integration.service';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 
 /**
  * Integration Disconnect Route
@@ -11,12 +10,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
-}
-
-function providerFromSlug(slug: string): IntegrationProvider | null {
-  const normalized = slug.toLowerCase();
-  const keys = Object.keys(INTEGRATIONS) as IntegrationProvider[];
-  return keys.find(provider => provider.toLowerCase().replace(/_/g, '-') === normalized) ?? null;
 }
 
 /**
@@ -31,26 +24,21 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const provider = providerFromSlug(paramProvider);
-    if (!provider) {
-      return NextResponse.json({ error: 'Unknown integration provider' }, { status: 400 });
-    }
-
-    const integrationRepository = new IntegrationRepository();
-    const integration = await integrationRepository.findByProvider(session.user.id, provider);
-
-    if (!integration) {
-      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
-    }
-
-    await integrationRepository.disconnect(session.user.id, integration.id);
+    const provider = integrationService.providerFromSlug(paramProvider);
+    const result = await integrationService.disconnect(session.user.id, provider);
 
     return NextResponse.json({
       success: true,
-      data: { provider, isActive: false, message: 'Integration disconnected' },
+      data: { ...result, message: 'Integration disconnected' },
     });
   } catch (error) {
     console.error('Error disconnecting integration:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
+    }
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

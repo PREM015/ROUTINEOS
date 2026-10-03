@@ -1,6 +1,7 @@
 import type { HabitLogStatus, HabitTier } from '@/generated/prisma';
 import { APP_CONFIG } from '@/config/app';
-import { HabitRepository } from '@/server/repositories/habit.repository';
+import { loadPeriodHabits } from '@/server/analytics/period-habits';
+import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
@@ -11,7 +12,6 @@ import { SleepRepository } from '@/server/repositories/sleep.repository';
  * Per-day breakdown of score, habit tiers, routine, sleep, and reflection.
  */
 
-const habitRepository = new HabitRepository();
 const scoreRepository = new ScoreRepository();
 const routineRepository = new RoutineRepository();
 const sleepRepository = new SleepRepository();
@@ -19,18 +19,20 @@ const reflectionRepository = new ReflectionRepository();
 
 export interface DailyTierBreakdown {
   tier: HabitTier;
+  /** Habits in this tier that were due on the date. */
   total: number;
   completed: number;
   missed: number;
   skipped: number;
-  completionRate: number;
+  /** `null` when nothing in the tier was due. */
+  completionRate: number | null;
 }
 
 export interface DailyHabitStatus {
   habitId: string;
   habitName: string;
   tier: HabitTier;
-  status: HabitLogStatus | 'NOT_LOGGED';
+  status: HabitLogStatus | 'NOT_LOGGED' | 'NOT_DUE';
   streakCount: number;
 }
 
@@ -69,7 +71,8 @@ export interface DailyBreakdown {
   score: DailyScoreBreakdown;
   tiers: DailyTierBreakdown[];
   habits: DailyHabitStatus[];
-  habitReliability: number;
+  /** `null` when nothing was due today, so "no habits due" is not 0%. */
+  habitReliability: number | null;
   routine: {
     completed: number;
     total: number;
@@ -81,97 +84,62 @@ export interface DailyBreakdown {
   bottomMoments: string[];
 }
 
-function mean(values: number[]): number {
-  return values.length > 0
-    ? values.reduce((sum, value) => sum + value, 0) / values.length
-    : 0;
-}
-
 function round(value: number, decimals = 2): number {
   const factor = Math.pow(10, decimals);
   return Math.round(value * factor) / factor;
 }
 
 /**
- * Per-tier habit completion counts for a single day.
- */
-function buildTierBreakdowns(
-  activeHabits: Array<{ id: string; tier: HabitTier }>,
-  statusByHabit: Map<string, HabitLogStatus | undefined>
-): DailyTierBreakdown[] {
-  const byTier = new Map<HabitTier, DailyTierBreakdown>();
-
-  for (const habit of activeHabits) {
-    const bucket = byTier.get(habit.tier) ?? {
-      tier: habit.tier,
-      total: 0,
-      completed: 0,
-      missed: 0,
-      skipped: 0,
-      completionRate: 0,
-    };
-    bucket.total++;
-    const status = statusByHabit.get(habit.id);
-    if (status === 'COMPLETED') bucket.completed++;
-    if (status === 'MISSED') bucket.missed++;
-    if (status === 'SKIPPED') bucket.skipped++;
-    byTier.set(habit.tier, bucket);
-  }
-
-  for (const bucket of byTier.values()) {
-    bucket.completionRate = bucket.total > 0
-      ? round((bucket.completed / bucket.total) * 100)
-      : 0;
-  }
-
-  return Array.from(byTier.values());
-}
-
-/**
  * Daily breakdown of score, per-tier completion, habits, routine, sleep,
  * and reflection highlights for a single date.
+ *
+ * `timezone` and `today` exist for one reason: the habit numbers come from the
+ * shared period model, which scores against the eligibility rule rather than
+ * "every ACTIVE habit". A habit that is not scheduled for today is reported as
+ * `NOT_DUE` and is left out of every tier total, where the previous version
+ * counted it as a habit the user failed.
  */
-export async function dailyBreakdown(userId: string, date: string): Promise<DailyBreakdown> {
-  const [score, habits, routineLogs, sleepLog, reflection] = await Promise.all([
+export async function dailyBreakdown(
+  userId: string,
+  date: string,
+  timezone: string,
+  today?: string,
+  preloadedHabits?: PeriodHabitModel
+): Promise<DailyBreakdown> {
+  const [score, habitModel, routineLogs, sleepLog, reflection] = await Promise.all([
     scoreRepository.findByDate(userId, date),
-    habitRepository.findAll(userId, { status: 'ACTIVE' }),
+    preloadedHabits ?? loadPeriodHabits(userId, date, date, today ?? date),
     routineRepository.findLogsByDate(userId, date),
     sleepRepository.findByDate(userId, date),
     reflectionRepository.findByDate(userId, date),
   ]);
+  void timezone;
 
-  const statusByHabitId = new Map<string, HabitLogStatus>();
-  const logsForDate = await habitRepository.findLogsByDate(userId, date);
-  for (const log of logsForDate) {
-    statusByHabitId.set(log.habitId, log.status);
-  }
+  const tiers: DailyTierBreakdown[] = habitModel.byTier.map((tier) => ({
+    tier: tier.tier,
+    total: tier.scheduled,
+    completed: tier.completed,
+    missed: tier.missed,
+    skipped: tier.skipped,
+    completionRate: tier.rate,
+  }));
 
-  const loggedStatuses = new Map<string, HabitLogStatus | undefined>();
-  for (const habit of habits) {
-    loggedStatuses.set(habit.id, statusByHabitId.get(habit.id));
-  }
-
-  const tiers = buildTierBreakdowns(
-    habits.map(habit => ({ id: habit.id, tier: habit.tier })),
-    loggedStatuses
-  );
-
-  const habitStatuses: DailyHabitStatus[] = habits.map(habit => ({
-    habitId: habit.id,
-    habitName: habit.name,
+  const habitStatuses: DailyHabitStatus[] = habitModel.perHabit.map((habit) => ({
+    habitId: habit.habitId,
+    habitName: habit.habitName,
     tier: habit.tier,
-    status: statusByHabitId.get(habit.id) ?? 'NOT_LOGGED',
+    status: statusOn(habit.habitId, habitModel, date),
     streakCount: habit.streakCount,
   }));
 
   const completedHabitNames = habitStatuses
-    .filter(habit => habit.status === 'COMPLETED')
-    .map(habit => habit.habitName);
+    .filter((habit) => habit.status === 'COMPLETED')
+    .map((habit) => habit.habitName);
   const missedHabitNames = habitStatuses
-    .filter(habit => habit.status === 'MISSED')
-    .map(habit => habit.habitName);
+    .filter((habit) => habit.status === 'MISSED')
+    .map((habit) => habit.habitName);
 
-  const routineCompleted = routineLogs.filter(log => log.status === 'COMPLETED').length;
+  const routineCompleted = routineLogs.filter((log) => log.status === 'COMPLETED').length;
   const routineTotal = routineLogs.length;
 
   const targetSleepMinutes = APP_CONFIG.defaults.sleep.targetDuration;
@@ -200,7 +168,7 @@ export async function dailyBreakdown(userId: string, date: string): Promise<Dail
     },
     tiers,
     habits: habitStatuses,
-    habitReliability: round(mean(tiers.map(tier => tier.completionRate))),
+    habitReliability: habitModel.totals.rate,
     routine: {
       completed: routineCompleted,
       total: routineTotal,
@@ -224,4 +192,20 @@ export async function dailyBreakdown(userId: string, date: string): Promise<Dail
     topMoments,
     bottomMoments,
   };
+}
+
+/**
+ * The log status of one habit on one date, or `NOT_DUE` when the eligibility
+ * rule says it was not scheduled.
+ */
+function statusOn(
+  habitId: string,
+  model: PeriodHabitModel,
+  date: string
+): HabitLogStatus | 'NOT_LOGGED' | 'NOT_DUE' {
+  const day = model.days.find((entry) => entry.date === date);
+  if (!day || !day.scheduledHabitIds.includes(habitId)) return 'NOT_DUE';
+  // The model stores the raw enum from the log row; `HabitLogStatus` is that same
+  // union widened to a string, so the cast is the same information twice.
+  return (model.logStatuses.get(`${habitId}|${date}`) as HabitLogStatus | undefined) ?? 'NOT_LOGGED';
 }

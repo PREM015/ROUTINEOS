@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { FeedbackRepository } from '@/server/repositories/feedback.repository';
+import { feedbackService } from '@/server/services/feedback.service';
 import { createFeedbackSchema, feedbackQuerySchema } from '@/schemas/feedback.schema';
 
 /**
@@ -28,17 +28,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const repository = new FeedbackRepository();
-    const query = {
+    const { items, total } = await feedbackService.listOwn(session.user.id, {
       type: validated.data.type,
       status: validated.data.status,
       limit: validated.data.limit,
       offset: validated.data.offset,
-    };
-    const [items, total] = await Promise.all([
-      repository.findByUserId(session.user.id, query),
-      repository.countByUserId(session.user.id, query),
-    ]);
+    });
 
     return NextResponse.json({
       success: true,
@@ -78,10 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const feedback = await new FeedbackRepository().createFeedback(
-      session.user.id,
-      validated.data
-    );
+    const feedback = await feedbackService.create(session.user.id, validated.data);
 
     return NextResponse.json(
       { success: true, data: feedback },

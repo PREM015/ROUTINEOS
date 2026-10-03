@@ -90,7 +90,15 @@ export default function SessionsSettingsPage() {
     void load();
   }, [load]);
 
-  const revoke = async (sessionId: string) => {
+  /*
+    Stable identity, so the column memo below can depend on it honestly.
+
+    It was a plain `async` function, which is a NEW closure on every render — and
+    the column `useMemo` closes over it. Listing it as a dependency without
+    stabilising it would have made that memo re-run on every render, which is the
+    exact cost the memo exists to avoid.
+  */
+  const revoke = useCallback(async (sessionId: string) => {
     setRevokingId(sessionId);
     setNotice(null);
     setError(null);
@@ -106,7 +114,7 @@ export default function SessionsSettingsPage() {
     } finally {
       setRevokingId(null);
     }
-  };
+  }, [load]);
 
   const signOutEverywhere = async () => {
     setSigningOutAll(true);
@@ -178,7 +186,16 @@ export default function SessionsSettingsPage() {
         ),
       },
     ],
-    [revokingId]
+    /*
+      `revoke` is a dependency, and omitting it was a real bug.
+
+      The column factory closes over `revoke`, but only `revokingId` was listed, so
+      the memo held the FIRST `revoke` — the one captured before `load` and
+      `sessions` existed. Revoking a second session used the first session's
+      closure, which then refetched from stale state, and `revokingId` could
+      clear against the wrong row.
+    */
+    [revokingId, revoke]
   );
 
   if (authLoading) {

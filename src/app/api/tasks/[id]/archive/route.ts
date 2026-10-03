@@ -1,7 +1,5 @@
 import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
-import { TaskRepository } from '@/server/repositories/task.repository';
-import { TaskStatus } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteContext {
@@ -28,15 +26,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const restore = searchParams.get('restore') === 'true';
 
     const userId = session.user.id;
-
-    if (restore) {
-      const taskRepository = new TaskRepository();
-      const task = await taskRepository.updateStatus(userId, id, TaskStatus.TODO);
-      return NextResponse.json({ success: true, data: task });
-    }
-
     const taskService = new TaskService();
-    const task = await taskService.archiveTask(userId, id);
+
+    // The restore branch used to call `TaskRepository.updateStatus` directly,
+    // skipping the ownership check — so a caller who knew another user's task id
+    // could reset its status through this endpoint.
+    const task = restore
+      ? await taskService.restoreTask(userId, id)
+      : await taskService.archiveTask(userId, id);
 
     return NextResponse.json({ success: true, data: task });
   } catch (error) {

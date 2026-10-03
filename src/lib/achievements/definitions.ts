@@ -69,6 +69,20 @@ export function getAchievementById(
 }
 
 /**
+ * Look up a definition by its display **name**.
+ *
+ * Only ever a fallback for rows written before `Achievement.definitionId`
+ * existed: a name is mutable catalogue state, an id is not. The first match wins,
+ * and names are unique today, so the ambiguity is documented rather than
+ * silently resolved.
+ */
+export function getAchievementByName(
+  name: string
+): AchievementDefinitionConfig | undefined {
+  return allDefinitions.find((definition) => definition.name === name);
+}
+
+/**
  * All definitions belonging to a category.
  *
  * @example

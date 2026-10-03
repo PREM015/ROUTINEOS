@@ -1,16 +1,9 @@
 import { auth } from '@/lib/auth';
-import { IntegrationRepository } from '@/server/repositories/integration.repository';
-import { connectIntegrationSchema } from '@/schemas/integration.schema';
-import { getIntegrationConfig, INTEGRATIONS } from '@/lib/constants/integrations';
-import {
-  exchangeCode,
-  getCallbackUrl,
-  normalizeConnection,
-  buildAuthUrl,
-  IntegrationError,
-} from '@/lib/integrations/manager';
 import { NextRequest, NextResponse } from 'next/server';
-import type { IntegrationProvider } from '@/generated/prisma';
+import { integrationService } from '@/server/services/integration.service';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { connectIntegrationSchema } from '@/schemas/integration.schema';
+import { IntegrationError } from '@/lib/integrations/manager';
 
 /**
  * Integrations Route
@@ -29,13 +22,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const integrationRepository = new IntegrationRepository();
-    const integrations = await integrationRepository.findAll(session.user.id);
-
-    const data = integrations.map(integration => ({
-      ...normalizeConnection(integration),
-      providerName: getIntegrationConfig(integration.provider).name,
-    }));
+    const data = await integrationService.listForUser(session.user.id);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -66,75 +53,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { provider, code, redirectUri, accessToken, refreshToken, expiresAt } = validated.data;
+    const data = await integrationService.connect(session.user.id, validated.data);
 
-    const config = INTEGRATIONS[provider];
-    if (!config || !config.enabled) {
-      return NextResponse.json(
-        { error: `${provider} is not an enabled integration` },
-        { status: 400 }
-      );
-    }
-
-    const integrationRepository = new IntegrationRepository();
-
-    let tokenResult:
-      | { accessToken: string; refreshToken?: string; expiresAt?: Date }
-      | undefined;
-
-    if (code) {
-      try {
-        const exchanged = await exchangeCode(provider, {
-          code,
-          redirectUri: redirectUri ?? getCallbackUrl(provider),
-        });
-        tokenResult = {
-          accessToken: exchanged.accessToken,
-          refreshToken: exchanged.refreshToken ?? undefined,
-          expiresAt: exchanged.expiresAt ?? undefined,
-        };
-      } catch (error) {
-        if (error instanceof IntegrationError) {
-          return NextResponse.json({ error: error.message }, { status: 400 });
-        }
-        return NextResponse.json({ error: 'Failed to exchange authorization code' }, { status: 400 });
-      }
-    } else if (accessToken) {
-      tokenResult = { accessToken, refreshToken, expiresAt };
-    }
-
-    if (!tokenResult) {
-      if (config.authType === 'oauth') {
-        const redirect = redirectUri ?? getCallbackUrl(provider);
-        const authorizationUrl = buildAuthUrl(provider, redirect);
-        return NextResponse.json({
-          success: true,
-          data: { requiresRedirect: true, authorizationUrl },
-        });
-      }
-      return NextResponse.json(
-        { error: 'accessToken is required to connect this provider' },
-        { status: 400 }
-      );
-    }
-
-    const integration = await integrationRepository.connect(
-      session.user.id,
-      provider as IntegrationProvider,
-      {
-        accessToken: tokenResult.accessToken,
-        refreshToken: tokenResult.refreshToken,
-        expiresAt: tokenResult.expiresAt,
-      }
-    );
-
-    return NextResponse.json(
-      { success: true, data: normalizeConnection(integration) },
-      { status: 201 }
-    );
+    // A provider with no credentials returns an authorization URL rather than a
+    // stored connection, so this is a 200 and not a 201.
+    const created = !('requiresRedirect' in data);
+    return NextResponse.json({ success: true, data }, { status: created ? 201 : 200 });
   } catch (error) {
     console.error('Error connecting integration:', error);
     if (error instanceof IntegrationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     if (error instanceof Error) {

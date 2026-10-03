@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { UserRepository } from '@/server/repositories/user.repository';
-import { FeedbackRepository } from '@/server/repositories/feedback.repository';
+import { feedbackService } from '@/server/services/feedback.service';
+import { AuthorizationError, NotFoundError } from '@/lib/errors/app-error';
 import {
   feedbackQuerySchema,
   updateFeedbackStatusSchema,
@@ -18,11 +18,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await new UserRepository().findById(session.user.id);
-    if (user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const validated = feedbackQuerySchema.safeParse({
       type: searchParams.get('type') || undefined,
@@ -37,17 +32,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const repository = new FeedbackRepository();
-    const query = {
+    const { items, total } = await feedbackService.listAllForAdmin(session.user.id, {
       type: validated.data.type,
       status: validated.data.status,
       limit: validated.data.limit,
       offset: validated.data.offset,
-    };
-    const [items, total] = await Promise.all([
-      repository.findAllPaginated(query),
-      repository.count(query),
-    ]);
+    });
 
     return NextResponse.json({
       success: true,
@@ -60,6 +50,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error listing feedback:', error);
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     return NextResponse.json(
       { error: 'Failed to list feedback' },
       { status: 500 }
@@ -78,11 +71,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await new UserRepository().findById(session.user.id);
-    if (user?.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const body = await request.json();
     const validated = updateFeedbackStatusSchema.safeParse(body);
     if (!validated.success) {
@@ -92,13 +80,8 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const repository = new FeedbackRepository();
-    const existing = await repository.findById(validated.data.id);
-    if (!existing) {
-      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
-    }
-
-    const feedback = await repository.updateStatus(
+    const feedback = await feedbackService.updateStatus(
+      session.user.id,
       validated.data.id,
       validated.data.status
     );
@@ -106,6 +89,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, data: feedback });
   } catch (error) {
     console.error('Error updating feedback status:', error);
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'Failed to update feedback status' },
       { status: 500 }

@@ -288,7 +288,15 @@ export interface CalendarConflict {
 // Locations
 // ============================================================================
 
-export interface LocationWithRelations extends Location {}
+/**
+ * A `Location` with its relations attached.
+ *
+ * An alias rather than an `interface … extends Location {}`: the empty interface
+ * was structurally identical to `Location`, so it added a second name for the
+ * same shape with no extra constraint, and readers had to check whether
+ * something was missing.
+ */
+export type LocationWithRelations = Location;
 
 export interface CreateLocationInput {
   name: string;

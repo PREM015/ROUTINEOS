@@ -99,14 +99,15 @@ export interface RecapReport {
       isMinimumDay: boolean;
       isRestDay: boolean;
     };
-    habitReliability: number;
+    /** `null` when no habit was due that day. */
+    habitReliability: number | null;
     routine: { completed: number; total: number; completionRate: number };
     sleep: {
       logged: boolean;
       durationMinutes: number | null;
       metTarget: boolean | null;
     };
-    tiers: Array<{ tier: string; total: number; completed: number; completionRate: number }>;
+    tiers: Array<{ tier: string; total: number; completed: number; completionRate: number | null }>;
     topMoments: string[];
     bottomMoments: string[];
   };
@@ -119,8 +120,9 @@ export interface RecapReport {
       worstDay: { date: string; score: number } | null;
     };
     habits: {
-      averageCompletionRate: number;
-      mostCompleted: { habitName: string; completionRate: number } | null;
+      /** `null` when nothing was due all week. */
+      averageCompletionRate: number | null;
+      mostCompleted: { habitName: string; completionRate: number | null } | null;
     };
     sleep: { averageDuration: number; loggedDays: number };
     trend: { previousAverage: number; delta: number };
@@ -133,13 +135,14 @@ export interface RecapReport {
       excellentDays: number;
       bestDay: { date: string; score: number } | null;
       worstDay: { date: string; score: number } | null;
-      byTier: Array<{ tier: string; count: number; completionRate: number }>;
+      byTier: Array<{ tier: string; count: number; completionRate: number | null }>;
     };
-    habits: {
-      averageCompletionRate: number;
+habits: {
+      /** `null` when nothing was due all month. */
+      averageCompletionRate: number | null;
       totalCompleted: number;
       totalMissed: number;
-      perHabit: Array<{ habitName: string; completionRate: number; weeklyRates: Array<number | null> }>;
+      perHabit: Array<{ habitName: string; completionRate: number | null; weeklyRates: Array<number | null> }>;
     };
     focus: { totalSessions: number; totalFocusMinutes: number };
     journal: { entryCount: number };
@@ -147,13 +150,16 @@ export interface RecapReport {
     sleep: { averageDuration: number; nightsMeetingTarget: number };
   };
   year?: {
-    totalDaysScored: number;
-    averageScore: number;
+totalDaysScored: number;
+    /** `null` when nothing at all was scored in the year. */
+    averageScore: number | null;
     bestMonth: { month: string; averageScore: number } | null;
     worstMonth: { month: string; averageScore: number } | null;
-    monthlyScoreTrend: Array<{ month: string; days: number; averageScore: number }>;
+    /** `averageScore` is `null` for a month with no scored day. */
+    monthlyScoreTrend: Array<{ month: string; days: number; averageScore: number | null }>;
     habits: {
-      averageCompletionRate: number;
+      /** `null` when nothing was due all year. */
+      averageCompletionRate: number | null;
       totalCompleted: number;
       totalMissed: number;
       bestHabit: { habitName: string; completionRate: number } | null;

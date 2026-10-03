@@ -9,6 +9,8 @@ import GitHub from 'next-auth/providers/github';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { loginSchema } from '@/schemas/auth.schema';
+import { checkAuthRateLimit } from '@/lib/security/auth-rate-limit';
+import { readTwoFactorState, verifyTotpCode } from '@/lib/security/totp';
 
 /**
  * Throwing Auth.js `CredentialsSignin` (instead of a plain `Error`) is what
@@ -33,13 +35,27 @@ class AccountDeletedError extends CredentialsSignin {
 }
 
 /**
+ * The password was correct but the account has TOTP enabled and no (or an
+ * invalid) code was supplied. The login form reacts to this code by revealing
+ * a code field and resubmitting email + password + code.
+ */
+class TwoFactorRequiredError extends CredentialsSignin {
+  code = 'TwoFactorRequired';
+}
+
+/** Consecutive failures before the account is temporarily locked. */
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
+/** Lock length. Short enough that a real user recovers on their own. */
+const ACCOUNT_LOCK_MS = 15 * 60_000;
+
+/**
  * Authentication Configuration
  * NextAuth setup with custom credentials provider
  */
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma),
-  
+
   providers: [
     // Credentials Provider for email/password
     Credentials({
@@ -48,15 +64,33 @@ export const authOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        totpCode: { label: 'Two-factor code', type: 'text' },
       },
-      async authorize(credentials) {
-        // Validate input
+      async authorize(credentials, request) {
+        // Throttle by client IP before doing any work. bcrypt is deliberately
+        // expensive, which makes it a poor rate limiter: it is slow for the
+        // legitimate user too, and it does nothing to stop a patient attacker.
+        // Auth.js hands `authorize` a standard `Request` here, not a
+        // `NextRequest`; `checkAuthRateLimit` only needs the headers.
+        const limit = checkAuthRateLimit(request, 'login', {
+          max: 10,
+          windowMs: 5 * 60_000,
+        });
+        if (!limit.ok) {
+          throw new InvalidCredentialsError();
+        }
+
+        // Validate input. `totpCode` is optional so that a first attempt
+        // without a code still passes schema validation; the 2FA check below
+        // decides whether it was required.
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) {
           throw new InvalidCredentialsError();
         }
 
         const { email, password } = parsed.data;
+        const totpCode =
+          typeof credentials?.totpCode === 'string' ? credentials.totpCode.trim() : '';
 
         // Find user
         const user = await prisma.user.findUnique({
@@ -80,11 +114,19 @@ export const authOptions = {
         // Verify password
         const passwordMatch = await bcrypt.compare(password, user.passwordHash || '');
         if (!passwordMatch) {
-          // Increment failed login attempts
+          // Count the failure and lock the account once the threshold is
+          // crossed. `lockedUntil` was previously incremented-adjacent data
+          // that nothing ever set, so `failedLoginAttempts` grew forever and
+          // the lockout control did not exist.
+          const failedAttempts = (user.failedLoginAttempts ?? 0) + 1;
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              failedLoginAttempts: { increment: 1 },
+              failedLoginAttempts: failedAttempts,
+              lockedUntil:
+                failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
+                  ? new Date(Date.now() + ACCOUNT_LOCK_MS)
+                  : user.lockedUntil,
             },
           });
 
@@ -94,6 +136,22 @@ export const authOptions = {
         // Check if email is verified
         if (!user.emailVerified) {
           throw new EmailNotVerifiedError();
+        }
+
+        // ── Two-factor enforcement ───────────────────────────────────────────
+        // This used to be missing entirely. `setupTwoFactor`/`verifyTwoFactor`
+        // wrote an `enabled` flag that only ever got read by the code that set
+        // it, so a user who turned 2FA on was shown a green confirmation and
+        // then logged in with nothing but their password. The state lives in
+        // the `preferences` JSON column, which is why nothing here found it.
+        const twoFactor = readTwoFactorState(user.preferences);
+        if (twoFactor.enabled && twoFactor.secret) {
+          if (!totpCode) {
+            throw new TwoFactorRequiredError();
+          }
+          if (!verifyTotpCode(twoFactor.secret, totpCode)) {
+            throw new TwoFactorRequiredError();
+          }
         }
 
         // Reset failed login attempts

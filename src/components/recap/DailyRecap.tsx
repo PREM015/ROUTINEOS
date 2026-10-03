@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Moon, Sparkles, Target, TrendingUp } from 'lucide-react';
 import type { RecapReport } from '@/types/recap';
+import { percentText } from '@/lib/analytics/format';
 
 interface DailyRecapProps {
   day: NonNullable<RecapReport['day']>;
@@ -87,15 +88,26 @@ export default function DailyRecap({ day }: DailyRecapProps) {
                     {tier.completed}/{tier.total}
                   </span>
                 </div>
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-2 rounded-full bg-primary transition-all"
-                    style={{ width: `${tier.completionRate}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-xs tabular-nums text-muted-foreground">
-                  {Math.round(tier.completionRate)}% done
-                </p>
+                {/*
+                  `null` means nothing in this tier was due today. An empty track is
+                  the right rendering; a 0%-wide bar with "0% done" underneath
+                  claims the user failed a tier that was not on the list.
+                */}
+                {tier.completionRate !== null ? (
+                  <>
+                    <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full bg-primary transition-all"
+                        style={{ width: `${Math.min(Math.max(tier.completionRate, 0), 100)}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+                      {percentText(tier.completionRate)} done
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">Nothing due in this tier</p>
+                )}
               </div>
             ))}
           </div>
@@ -106,7 +118,7 @@ export default function DailyRecap({ day }: DailyRecapProps) {
         <Tile
           icon={<TrendingUp size={18} />}
           label="Habit reliability"
-          value={`${Math.round(day.habitReliability)}%`}
+          value={percentText(day.habitReliability)}
           detail={`${day.routine.total} routine blocks, ${day.routine.completed} completed`}
         />
         <Tile

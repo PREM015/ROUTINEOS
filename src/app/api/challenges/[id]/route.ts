@@ -1,11 +1,23 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { ChallengeRepository } from '@/server/repositories/challenge.repository';
+import { challengeService } from '@/server/services/challenge.service';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { updateChallengeProgressSchema } from '@/schemas/challenge.schema';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
+
+/**
+ * Challenge by ID Route
+ * GET    /api/challenges/[id] – fetch a single challenge
+ * PATCH  /api/challenges/[id] – update the caller's progress
+ * DELETE /api/challenges/[id] – delete, creator only
+ *
+ * The existence / membership / creator checks moved into `ChallengeService`; the
+ * `catch` blocks below only translate its typed errors back into the status codes
+ * this API has always returned, so the response shape is unchanged.
+ */
 
 /**
  * GET /api/challenges/[id]
@@ -23,27 +35,18 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid challenge id' }, { status: 400 });
     }
 
-    const repository = new ChallengeRepository();
-    const challenge = await repository.getById(id);
-    if (!challenge) {
-      return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
-    }
+    const data = await challengeService.getForUser(id, session.user.id);
 
-    const isMember = await repository.isMember(id, session.user.id);
-    if (!challenge.isPublic && !isMember) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...challenge,
-        isJoined: isMember,
-        isCreator: challenge.creatorId === session.user.id,
-      },
-    });
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching challenge:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    // A private challenge the caller has not joined.
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch challenge' },
       { status: 500 }
@@ -76,28 +79,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const repository = new ChallengeRepository();
-    const challenge = await repository.getById(id);
-    if (!challenge) {
-      return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
-    }
-
-    const isMember = await repository.isMember(id, session.user.id);
-    if (!isMember) {
-      return NextResponse.json(
-        { error: 'Join the challenge to update progress' },
-        { status: 403 }
-      );
-    }
-
-    const result = await repository.setProgress(id, session.user.id, validated.data.progress);
-    if (!result) {
-      return NextResponse.json({ error: 'Challenge participant not found' }, { status: 404 });
-    }
+    const result = await challengeService.setProgress(
+      id,
+      session.user.id,
+      validated.data
+    );
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error updating challenge progress:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    // "Join the challenge to update progress" — 403, not 400.
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     return NextResponse.json(
       { error: 'Failed to update challenge progress' },
       { status: 500 }
@@ -121,27 +118,18 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid challenge id' }, { status: 400 });
     }
 
-    const repository = new ChallengeRepository();
-    const challenge = await repository.getById(id);
-    if (!challenge) {
-      return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
-    }
-
-    if (challenge.creatorId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Only the challenge creator can delete it' },
-        { status: 403 }
-      );
-    }
-
-    const deleted = await repository.delete(id, session.user.id);
-    if (!deleted) {
-      return NextResponse.json({ error: 'Challenge not found' }, { status: 404 });
-    }
+    await challengeService.delete(id, session.user.id);
 
     return NextResponse.json({ success: true, data: { deleted: true } });
   } catch (error) {
     console.error('Error deleting challenge:', error);
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    // "Only the challenge creator can delete it" — 403.
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
     return NextResponse.json(
       { error: 'Failed to delete challenge' },
       { status: 500 }

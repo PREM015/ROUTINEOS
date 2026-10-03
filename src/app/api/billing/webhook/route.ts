@@ -1,42 +1,8 @@
-import {
-  subscriptionRepository,
-  type UpsertSubscriptionData,
-} from '@/server/repositories/subscription.repository';
-import type { SubscriptionPlan, SubscriptionStatus } from '@/generated/prisma';
+import { billingService, type StripeSubscriptionPayload } from '@/server/services/billing.service';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { verifyStripeSignature } from '@/lib/billing/verify-webhook-signature';
 import { NextRequest, NextResponse } from 'next/server';
 import type Stripe from 'stripe';
-
-const SUBSCRIPTION_STATUS_MAP: Record<string, SubscriptionStatus> = {
-  active: 'ACTIVE',
-  past_due: 'PAST_DUE',
-  canceled: 'CANCELLED',
-  unpaid: 'UNPAID',
-};
-
-const SUBSCRIPTION_PLAN_MAP: Record<string, SubscriptionPlan> = {
-  free: 'FREE',
-  pro: 'PRO',
-  premium: 'PREMIUM',
-  enterprise: 'ENTERPRISE',
-};
-
-interface StripeSubscriptionObject {
-  id?: string;
-  customer?: string;
-  status?: string;
-  current_period_start?: number;
-  current_period_end?: number;
-  cancel_at_period_end?: boolean;
-  metadata?: { userId?: string };
-  items?: {
-    data?: Array<{
-      price?: { metadata?: { plan?: string } };
-    }>;
-  };
-}
-
-const MONTH_SECONDS = 30 * 24 * 60 * 60;
 
 /**
  * POST /api/billing/webhook
@@ -48,6 +14,10 @@ const MONTH_SECONDS = 30 * 24 * 60 * 60;
  * caller could forge a payload and grant themselves an arbitrary plan, so
  * verification fails closed — a payload that is not verified is never parsed
  * and never reaches the database.
+ *
+ * Once verified, the payload handling is domain logic and lives in
+ * `BillingService.applySubscriptionEvent` — in particular the owner resolution,
+ * which decides whose plan row gets written.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -81,9 +51,9 @@ export async function POST(request: NextRequest) {
     }
 
     const event: Stripe.Event = verification.event;
-    const object = event.data?.object as unknown as
-      | StripeSubscriptionObject
-      | undefined;
+  const object = event.data?.object as unknown as
+    | StripeSubscriptionPayload
+    | undefined;
 
     if (!object || typeof object !== 'object') {
       return NextResponse.json(
@@ -93,55 +63,36 @@ export async function POST(request: NextRequest) {
     }
 
     const stripeSubscriptionId = object.id;
-    const status = object.status
-      ? SUBSCRIPTION_STATUS_MAP[object.status]
-      : undefined;
-    if (!stripeSubscriptionId || !status) {
+    if (!stripeSubscriptionId) {
       return NextResponse.json(
         { error: 'Unsupported subscription data' },
         { status: 400 }
       );
     }
 
-    const planName = object.items?.data?.[0]?.price?.metadata?.plan ?? 'pro';
-    const plan = SUBSCRIPTION_PLAN_MAP[planName] ?? 'PRO';
-
-    const startSec =
-      object.current_period_start ?? Math.floor(Date.now() / 1000);
-    const endSec = object.current_period_end ?? startSec + MONTH_SECONDS;
-
-    const data: UpsertSubscriptionData = {
-      plan,
-      status,
-      currentPeriodStart: new Date(startSec * 1000),
-      currentPeriodEnd: new Date(endSec * 1000),
-      cancelAtPeriodEnd: object.cancel_at_period_end ?? false,
-      stripeCustomerId: object.customer ?? null,
+    // Owner resolution, status/plan mapping and the upsert are all in the
+    // service. The owner lookup is the part that must not be duplicated: the
+    // upsert is keyed on the user, so a wrong resolution overwrites a different
+    // account's plan.
+    await billingService.applySubscriptionEvent(
       stripeSubscriptionId,
-    };
+      object as StripeSubscriptionPayload
+    );
 
-    // Resolve the owning user: prefer the metadata userId carried on the
-    // Stripe object, then fall back to an existing subscription row.
-    let targetUserId = object.metadata?.userId ?? null;
-    if (!targetUserId) {
-      const existing =
-        await subscriptionRepository.findByStripeSubscriptionId(
-          stripeSubscriptionId
-        );
-      targetUserId = existing?.userId ?? null;
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error('Error processing billing webhook:', error);
+
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: 'Unsupported subscription data' }, { status: 400 });
     }
-    if (!targetUserId) {
+    if (error instanceof NotFoundError) {
+      // Retrying will not help: nothing identifies who this subscription belongs to.
       return NextResponse.json(
         { error: 'Unable to resolve user for subscription' },
         { status: 400 }
       );
     }
-
-    await subscriptionRepository.upsertByUserId(targetUserId, data);
-
-    return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error('Error processing billing webhook:', error);
     return NextResponse.json(
       { error: 'Webhook processing failed' },
       { status: 500 }

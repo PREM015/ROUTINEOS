@@ -1,12 +1,8 @@
 import { auth } from '@/lib/auth';
-import { GoalRepository } from '@/server/repositories/goal.repository';
+import { GoalService } from '@/server/services/goal.service';
+import { handleError } from '@/lib/errors/error-handler';
+import { goalCheckinSchema } from '@/schemas/goal.schema';
 import { NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
-
-const checkinSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
-  completed: z.boolean(),
-});
 
 /**
  * POST /api/goals/[id]/checkin
@@ -25,7 +21,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const validated = checkinSchema.safeParse(body);
+    const validated = goalCheckinSchema.safeParse(body);
 
     if (!validated.success) {
       return NextResponse.json(
@@ -34,46 +30,22 @@ export async function POST(
       );
     }
 
-    const goalRepository = new GoalRepository();
-    const goal = await goalRepository.findById(id, session.user.id);
-    if (!goal) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-
-    if (goal.type !== 'DAILY') {
-      return NextResponse.json(
-        { error: 'Daily check-in is only available for DAILY goals' },
-        { status: 400 }
-      );
-    }
-
-    const { date, completed } = validated.data;
-    const value = completed ? 1 : 0;
-
-    await goalRepository.addProgressLog({
-      goal: { connect: { id } },
-      value,
-      note: completed ? 'daily-checkin:done' : 'daily-checkin:cleared',
-      date: new Date(`${date}T00:00:00.000Z`),
-    });
-
-    const updated = await goalRepository.update(id, session.user.id, {
-      currentValue: value,
-      status: completed ? 'COMPLETED' : 'ACTIVE',
-      completedAt: completed ? new Date() : null,
-    });
+    const updated = await new GoalService().checkInDaily(
+      session.user.id,
+      id,
+      validated.data
+    );
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error saving goal check-in:', error);
 
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to save check-in' },
-      { status: 500 }
-    );
+    /**
+     * `GoalService` raises `NotFoundError` / `ValidationError`, which `handleError`
+     * maps to 404 / 400 with their own messages — the same shapes this route
+     * used to build by hand. Everything else is masked in production instead of
+     * having its message echoed back.
+     */
+    return handleError(error);
   }
 }

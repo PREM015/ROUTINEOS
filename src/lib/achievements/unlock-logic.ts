@@ -37,11 +37,12 @@ export function hasUnlocked(
 export function evaluateUnlocks(
   _userId: string,
   state: AchievementWorldState,
-  ownedIds: readonly string[]
+  ownedIds: readonly string[],
+  today?: string
 ): AchievementDefinitionConfig[] {
   return allDefinitions.filter(
     (definition) =>
-      checkDefinition(definition, state) && !hasUnlocked(definition.id, ownedIds)
+      checkDefinition(definition, state, today) && !hasUnlocked(definition.id, ownedIds)
   );
 }
 

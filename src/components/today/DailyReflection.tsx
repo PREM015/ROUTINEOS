@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Card } from '@/components/ui/Card';
+
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Slider } from '@/components/ui/Slider';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { GlassPanel } from '@/components/today/ui';
 
 interface ReflectionData {
   energy: number | null;
@@ -172,19 +173,19 @@ export function DailyReflection({ date }: DailyReflectionProps) {
 
   if (loading) {
     return (
-      <Card className="p-6" aria-busy="true" aria-label="Loading reflection">
+      <GlassPanel accent="focus" className="p-4 sm:p-5" aria-busy="true" aria-label="Loading reflection">
         <Skeleton shine className="mb-4 h-6 w-1/3" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
         </div>
-      </Card>
+      </GlassPanel>
     );
   }
 
   if (!isEditing && !hasSaved) {
     return (
-      <Card className="p-6 fade-rise-in">
+      <GlassPanel accent="focus" className="p-4 sm:p-5 fade-rise-in">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Daily Reflection</h3>
         </div>
@@ -195,7 +196,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
             Start Reflection
           </Button>
         </div>
-      </Card>
+      </GlassPanel>
     );
   }
 
@@ -207,7 +208,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
       { key: 'focus' as const, label: 'Focus' },
     ];
     return (
-      <Card className="p-6 fade-rise-in">
+      <GlassPanel accent="focus" className="p-4 sm:p-5 fade-rise-in">
         <h3 className="text-lg font-semibold mb-6">Daily Reflection</h3>
 
         <div className="space-y-6">
@@ -216,8 +217,9 @@ export function DailyReflection({ date }: DailyReflectionProps) {
               <label htmlFor={`reflection-${key}`} className="block text-sm font-medium mb-2">
                 {label}: {formData[key] ?? 3}/5
               </label>
-              <Slider
-                value={[formData[key] || 3]}
+                <Slider
+                  id={`reflection-${key}`}
+                  value={[formData[key] || 3]}
                 onValueChange={([value]) => set({ [key]: value ?? 3 })}
                 min={1}
                 max={5}
@@ -318,7 +320,7 @@ export function DailyReflection({ date }: DailyReflectionProps) {
 
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button onClick={saveReflection} disabled={saving} className="flex-1">
               {saving ? 'Saving...' : 'Save Reflection'}
             </Button>
@@ -340,12 +342,12 @@ export function DailyReflection({ date }: DailyReflectionProps) {
             </Button>
           </div>
         </div>
-      </Card>
+      </GlassPanel>
     );
   }
 
   return (
-    <Card className="p-6 fade-rise-in">
+    <GlassPanel accent="focus" className="p-4 sm:p-5 fade-rise-in">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Daily Reflection</h3>
         <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
@@ -353,11 +355,11 @@ export function DailyReflection({ date }: DailyReflectionProps) {
         </Button>
       </div>
 
-      {notice && <p role="status" className="text-sm text-emerald-600 mb-3">{notice}</p>}
+      {notice && <p role="status" className="mb-3 text-sm text-emerald-600 dark:text-emerald-400">{notice}</p>}
       {error && <p role="alert" className="text-sm text-destructive mb-3">{error}</p>}
 
       <div className="space-y-4">
-        <div className="grid grid-cols-4 gap-4 pb-4 border-b">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 pb-4 border-b">
           {(['energy', 'mood', 'stress', 'focus'] as const).map((k) => (
             <div key={k} className="text-center">
               <p className="text-sm text-muted-foreground capitalize">{k}</p>
@@ -401,6 +403,6 @@ export function DailyReflection({ date }: DailyReflectionProps) {
           </div>
         )}
       </div>
-    </Card>
+    </GlassPanel>
   );
 }

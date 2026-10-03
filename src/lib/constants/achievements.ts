@@ -1,4 +1,5 @@
 import type { AchievementType } from '@/generated/prisma';
+import { accentChipStyle, accentTint } from '@/lib/utils';
 
 /**
  * Achievement Constants
@@ -106,6 +107,24 @@ export type AchievementRarity = keyof typeof ACHIEVEMENT_RARITIES;
 
 export type AchievementRarityConfig = (typeof ACHIEVEMENT_RARITIES)[AchievementRarity];
 
+/*
+ * Theme-correct colours for a rarity (or any per-achievement accent) on a chip.
+ *
+ * ERROR.md I3: "the UI blocks of the Achievements section are not good in black
+ * theme and white theme".
+ *
+ * `ACHIEVEMENT_RARITIES[...].color` is a mid-tone hue chosen to read as a
+ * swatch, and three call sites used it directly as the **text** colour of a
+ * `Badge`. Against a white card those fail WCAG AA — `#22c55e` is 2.3:1,
+ * `#f59e0b` 2.2:1 — while against a near-black card they are fine, so the page
+ * looked right in dark mode and washed out in light mode.
+ *
+ * `accentChipStyle` / `accentTint` are the shared implementation; these are
+ * re-exported under the domain name so the achievement call sites read clearly
+ * and so the rule stays documented next to the palette that causes it.
+ */
+export { accentChipStyle as rarityChipStyle, accentTint as rarityTint };
+
 // ============================================================================
 // Achievement Definitions
 // ============================================================================
@@ -114,6 +133,16 @@ export interface AchievementCriteria {
   field: string;
   operator: '>=' | '<=' | '==' | '>';
   value: number;
+  /**
+   * The window the criterion is measured over.
+   *
+   * Honoured by `resolveCriterionValue`, and only meaningful for a `field` that
+   * has a dated series in the world state (`<field>Dates`): `DAY` / `WEEK` /
+   * `MONTH` / `YEAR` are trailing windows ending on the user's current day, and
+   * `ALL_TIME` (or omitting it) uses the lifetime aggregate. A windowed
+   * criterion whose field has no dated series cannot be measured and stays
+   * locked — see `lib/achievements/timeframes.ts`.
+   */
   timeframe?: 'DAY' | 'WEEK' | 'MONTH' | 'YEAR' | 'ALL_TIME';
 }
 
@@ -227,40 +256,40 @@ export const ACHIEVEMENT_DEFINITIONS = {
     rarity: 'UNCOMMON',
     icon: '💯',
     color: '#8b5cf6',
-    criteria: [{ field: 'dailyScore', operator: '>=', value: 95, timeframe: 'DAY' }],
+    criteria: [{ field: 'perfectDays', operator: '>=', value: 1, timeframe: 'ALL_TIME' }],
   },
   'perfect-week': {
     id: 'perfect-week',
     type: 'PERFECT_WEEK',
     category: 'CONSISTENCY',
     name: 'Perfect Week',
-    description: 'Log 7 consecutive perfect days',
+    description: 'Score 95 or higher on 7 days in a row',
     rarity: 'RARE',
     icon: '🔥',
     color: '#8b5cf6',
-    criteria: [{ field: 'perfectDays', operator: '>=', value: 7, timeframe: 'WEEK' }],
+    criteria: [{ field: 'perfectDayStreak', operator: '>=', value: 7, timeframe: 'ALL_TIME' }],
   },
   'perfect-month': {
     id: 'perfect-month',
     type: 'PERFECT_MONTH',
     category: 'CONSISTENCY',
     name: 'Perfect Month',
-    description: 'Log 30 consecutive perfect days',
+    description: 'Score 95 or higher on 30 days in a row',
     rarity: 'EPIC',
     icon: '👑',
     color: '#8b5cf6',
-    criteria: [{ field: 'perfectDays', operator: '>=', value: 30, timeframe: 'MONTH' }],
+    criteria: [{ field: 'perfectDayStreak', operator: '>=', value: 30, timeframe: 'ALL_TIME' }],
   },
   'perfect-year': {
     id: 'perfect-year',
     type: 'PERFECT_YEAR',
     category: 'CONSISTENCY',
     name: 'Perfect Year',
-    description: 'Log 365 consecutive perfect days',
+    description: 'Score 95 or higher on 365 days in a row',
     rarity: 'LEGENDARY',
     icon: '🌟',
     color: '#f59e0b',
-    criteria: [{ field: 'perfectDays', operator: '>=', value: 365, timeframe: 'YEAR' }],
+    criteria: [{ field: 'perfectDayStreak', operator: '>=', value: 365, timeframe: 'ALL_TIME' }],
   },
   'early-riser': {
     id: 'early-riser',
@@ -326,7 +355,9 @@ export const ACHIEVEMENT_DEFINITIONS = {
     rarity: 'EPIC',
     icon: '👑',
     color: '#ef4444',
-    criteria: [{ field: 'perfectWeeks', operator: '>=', value: 4, timeframe: 'MONTH' }],
+    criteria: [
+      { field: 'perfectWeekStreak', operator: '>=', value: 4, timeframe: 'ALL_TIME' },
+    ],
   },
   'milestone-habits-1000': {
     id: 'milestone-habits-1000',

@@ -520,4 +520,21 @@ export class UserRepository extends BaseRepository {
       this.handleError(error, 'bumpSessionVersion');
     }
   }
+
+  /**
+   * Find all active user IDs.
+   * Used by cron jobs that need to process all users.
+   */
+  async findActiveUserIds(): Promise<string[]> {
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { isActive: true, isDeleted: false },
+        select: { id: true },
+      });
+      return users.map(u => u.id);
+    } catch (error) {
+      this.handleError(error, 'findActiveUserIds');
+      return [];
+    }
+  }
 }

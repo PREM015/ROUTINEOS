@@ -167,6 +167,13 @@ const CATEGORY_OF: Record<NotificationType, NotificationCategory> = {
   SLEEP_ENDED: 'sleep',
   SLEEP_PROMPT: 'sleep',
   SLEEP_TRACKING_STARTED: 'sleep',
+  SLEEP_PRE_WARNING: 'sleep',
+  SLEEP_WAKE_CONFIRMATION: 'sleep',
+
+  // Enhanced routine notifications
+  ROUTINE_PRE_START: 'routine',
+  ROUTINE_COMPLETION: 'routine',
+  ROUTINE_END_REMINDER: 'routine',
 
   // Focus
   FOCUS_SESSION_START: 'focus',

@@ -14,6 +14,15 @@ export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   query?: Record<string, unknown>;
+  /**
+   * Abort the request.
+   *
+   * Needed by any hook that re-fetches on a changing key (a date, a query). It
+   * used to be impossible to cancel an `apiRequest`, so a component switching
+   * dates had no way to stop the previous response from landing — which is how a
+   * slow request for Monday could paint over Tuesday.
+   */
+  signal?: AbortSignal;
 }
 
 interface ApiEnvelope {
@@ -61,7 +70,7 @@ export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const { method = 'GET', body, query } = options;
+  const { method = 'GET', body, query, signal } = options;
 
   const headers: Record<string, string> = {};
   let payload: BodyInit | undefined;
@@ -81,8 +90,14 @@ export async function apiRequest<T>(
       body: payload,
       credentials: 'include',
       cache: 'no-store',
+      signal,
     });
   } catch (err) {
+    // An abort is not a failure. Swallowing it into `ApiError(…, 0)` made a
+    // cancelled request indistinguishable from a network outage, so a caller
+    // replacing its data on failure would blank the screen every time the user
+    // simply changed the date.
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
     throw new ApiError(
       err instanceof Error ? err.message : 'Network request failed',
       0
@@ -111,6 +126,33 @@ export async function apiRequest<T>(
   }
 
   return json as T;
+}
+
+/**
+ * Extract a readable message from a failed API response.
+ *
+ * Prefers the first Zod `fieldErrors` entry, because "startTime: Start time
+ * must be HH:mm" tells a user what to fix and a bare "Invalid input" does not.
+ * Exported so there is one implementation: `AppContext` carried its own copy
+ * and the two could drift.
+ */
+export function apiErrorMessage(json: unknown, fallback: string): string {
+  if (json && typeof json === 'object') {
+    const envelope = json as {
+      error?: string;
+      details?: { fieldErrors?: Record<string, string[] | undefined> };
+    };
+    const first = Object.entries(envelope.details?.fieldErrors ?? {}).find(
+      ([, messages]) => messages?.length
+    );
+    if (first) {
+      const [field, messages] = first;
+      const detail = messages?.[0];
+      if (detail) return `${field}: ${detail}`;
+    }
+    if (typeof envelope.error === 'string' && envelope.error) return envelope.error;
+  }
+  return fallback;
 }
 
 /** Simple fetch wrapper that throws on non-ok responses */

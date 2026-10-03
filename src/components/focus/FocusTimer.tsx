@@ -34,7 +34,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { accentFill, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Switch } from '@/components/ui/Switch';
@@ -1038,7 +1038,13 @@ export function FocusTimer(props: FocusTimerProps) {
                       ? 'border-transparent text-white'
                       : 'border-border bg-card text-muted-foreground hover:bg-muted'
                   )}
-                  style={active ? { backgroundColor: MODE_META[tab].color } : undefined}
+                  // ERROR.md F1/F2. The active tab is a filled pill with white
+                  // text, and the raw `MODE_META` hue was used as that fill:
+                  // white on `#22c55e` is 2.2:1 and on `#f59e0b` is 2.1:1, so the
+                  // *selected* mode — the one the label you are reading — was the
+                  // least readable thing on the control. `accentFill` darkens the
+                  // hue enough for white to clear AA in both themes.
+                  style={active ? { backgroundColor: accentFill(MODE_META[tab].color) } : undefined}
                 >
                   <TabIcon className="h-3.5 w-3.5" aria-hidden="true" />
                   {MODE_META[tab].label}
@@ -1145,7 +1151,11 @@ export function FocusTimer(props: FocusTimerProps) {
                 >
                   {displayText}
                 </span>
-                <span className="mt-1 text-xs font-medium uppercase tracking-wide" style={{ color: meta.color }}>
+                {/* Same WCAG problem as the tab above, on text this time. */}
+                <span
+                  className="mt-1 text-xs font-medium uppercase tracking-wide"
+                  style={{ color: `color-mix(in oklab, ${meta.color} 72%, var(--foreground))` }}
+                >
                   {statusLabel}
                 </span>
                 {cycles > 0 && (

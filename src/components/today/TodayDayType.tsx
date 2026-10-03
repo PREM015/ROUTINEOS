@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CalendarDays, RefreshCw } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Collapsible } from '@/components/ui/Collapsible';
@@ -12,8 +11,10 @@ import DayContextSelector, {
   type CustomDayType,
 } from '@/components/context/DayContextSelector';
 import { DAY_TYPE_CONFIG } from '@/constants/routine';
+import { notifyTodayDataChanged } from '@/lib/today-sync';
 import { cn } from '@/lib/utils';
 import type { DayType } from '@/generated/prisma';
+import { GlassPanel, PanelHeader } from '@/components/today/ui';
 
 interface TodayDayTypeProps {
   date: string;
@@ -130,7 +131,21 @@ export function TodayDayType({ date, className, resolvedDayType }: TodayDayTypeP
       // The POST returns the mutation result, not the full snapshot, so re-read
       // to pick up the derived fields (`dayTypeName`, `isRestDay`, …).
       await fetchMode();
+      /*
+        BOTH events, and the second one is the important one.
+
+        `day-mode-changed` only refreshes the routine block. But a day type
+        filters the habit checklist, the score, the streak and the score trend -
+        so changing it changes what all four should say, and dispatching only the
+        narrow event left the page showing four cards computed against the OLD day
+        type. Two cards on one screen contradicting each other after a deliberate
+        user action is worse than a slow refresh.
+
+        `notifyTodayDataChanged` is the same broadcast the other `/today` writers
+        use (habit tick, routine log), so this card now behaves like them.
+      */
       window.dispatchEvent(new Event('day-mode-changed'));
+      notifyTodayDataChanged('day-type');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to set day type');
     } finally {
@@ -151,7 +166,9 @@ export function TodayDayType({ date, className, resolvedDayType }: TodayDayTypeP
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to reset day type');
       await fetchMode();
+      // Both events, for the same reason as the set path above.
       window.dispatchEvent(new Event('day-mode-changed'));
+      notifyTodayDataChanged('day-type-reset');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset day type');
     } finally {
@@ -183,19 +200,21 @@ export function TodayDayType({ date, className, resolvedDayType }: TodayDayTypeP
     mode?.dayTypeName ?? activeDefinition?.name ?? (current ? current.label : null);
 
   if (loading) {
-    // The card still renders (with a placeholder name) rather than collapsing
-    // to a bare skeleton line, so the day-type block does not jump or vanish
-    // while the day-mode request is in flight.
+    // The card still renders (with a placeholder) rather than collapsing to a
+    // bare skeleton line, so the day-type block does not jump or vanish while
+    // the day-mode request is in flight.
     return (
-      <Card className={cn('p-5', className)} aria-busy="true" aria-label="Loading day type">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />
-            <h2 className="text-sm font-semibold text-muted-foreground">Day Type</h2>
-          </div>
-          <Skeleton className="h-6 w-40" />
+      <GlassPanel accent="insights"
+        className={cn('flex min-h-[12rem] flex-col p-5', className)}
+        aria-busy="true"
+        aria-label="Loading day type"
+      >
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-accent-insights" aria-hidden="true" />
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">Day Type</h2>
         </div>
-      </Card>
+        <Skeleton className="mt-3 h-[4.5rem] w-full rounded-xl" />
+      </GlassPanel>
     );
   }
 
@@ -206,33 +225,60 @@ export function TodayDayType({ date, className, resolvedDayType }: TodayDayTypeP
   const hasDayTypes = dayTypes.length > 0;
 
   return (
-    <Card className={cn('p-5', className)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h2 className="text-sm font-semibold text-muted-foreground">Day Type</h2>
-        </div>
-        {activeDayTypeName && (
-          <span className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="primary"
-              className="flex items-center gap-1.5 border border-primary/30 text-foreground"
-            >
-              {current?.icon && (
-                <span aria-hidden="true">{current.icon}</span>
-              )}
-              <span className="font-semibold">{activeDayTypeName}</span>
-            </Badge>
-            {/* Say *which* day type is active and whether it is the natural one or
-                a manual override, rather than leaving the reader to infer it. */}
-            <span className="text-xs text-muted-foreground">
-              {mode
-                ? isNatural
-                  ? 'Natural schedule for today'
-                  : 'Manually overridden for today'
-                : 'Checking today’s day type…'}
-            </span>
-          </span>
+    <GlassPanel accent="insights" className={cn('flex h-full flex-col', className)}>
+      <PanelHeader
+        title="Day Type"
+        icon={<CalendarDays className="h-4 w-4 text-accent-insights" aria-hidden="true" />}
+      />
+
+      <div className="flex flex-1 flex-col px-5 pb-5">
+        {/*
+          The active day type is the answer to "what kind of day is this?", so it
+          is the card's headline rather than a small pill in the corner. It used to
+          be a `text-xs` badge beside the heading, which put the single most
+          scannable fact on the page at the smallest type in the panel.
+        */}
+        <div className="mt-1 flex flex-1 flex-col justify-center gap-3">
+        {activeDayTypeName ? (
+          <div
+            className={cn(
+              'flex items-center gap-3 rounded-xl border px-4 py-3',
+              isNatural
+                ? 'border-primary/25 bg-primary/[0.07]'
+                : 'border-amber-500/30 bg-amber-500/[0.08]'
+            )}
+          >
+            {current?.icon && (
+              <span className="shrink-0 text-3xl leading-none" aria-hidden="true">
+                {current.icon}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold leading-tight text-foreground sm:text-xl">
+                {activeDayTypeName}
+              </p>
+              <p
+                className={cn(
+                  'mt-0.5 text-xs font-medium',
+                  isNatural ? 'text-primary' : 'text-amber-700 dark:text-amber-300'
+                )}
+              >
+                {mode
+                  ? isNatural
+                    ? 'Natural schedule for today'
+                    : 'Manually overridden for today'
+                  : 'Checking today’s day type…'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Checking today’s day type…</p>
+        )}
+
+        {mode?.templateId && (
+          <p className="text-[11px] text-muted-foreground">
+            Using a one-off routine for today.
+          </p>
         )}
       </div>
 
@@ -264,37 +310,38 @@ export function TodayDayType({ date, className, resolvedDayType }: TodayDayTypeP
         </p>
       ) : (
         <Collapsible
-        className="mt-3"
-        trigger={
-          <span className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
-            Change day type
-          </span>
-        }
-      >
-        <DayContextSelector
-          value={mode?.dayType ?? undefined}
-          dayTypeId={mode?.dayTypeId ?? null}
-          onChange={selectDayType}
-          customDayTypes={dayTypes}
-          loading={loading || saving}
-          className="mt-2"
-        />
-        <div className="mt-2 flex items-center justify-end">
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={resetDayType}
-            disabled={saving || isNatural}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
-            {isNatural ? 'Using natural schedule' : 'Reset to schedule'}
-          </Button>
-        </div>
-      </Collapsible>
+          className="mt-3"
+          trigger={
+            <span className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
+              Change day type
+            </span>
+          }
+        >
+          <DayContextSelector
+            value={mode?.dayType ?? undefined}
+            dayTypeId={mode?.dayTypeId ?? null}
+            onChange={selectDayType}
+            customDayTypes={dayTypes}
+            loading={loading || saving}
+            className="mt-2"
+          />
+          <div className="mt-2 flex items-center justify-end">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={resetDayType}
+              disabled={saving || isNatural}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              {isNatural ? 'Using natural schedule' : 'Reset to schedule'}
+            </Button>
+          </div>
+        </Collapsible>
       )}
-    </Card>
+      </div>
+    </GlassPanel>
   );
 }
 

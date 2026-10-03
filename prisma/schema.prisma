@@ -188,6 +188,14 @@ enum WeatherCondition {
   WINDY
 }
 
+// Focus & Productivity Enums
+enum FocusSessionType {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+  STOPWATCH
+}
+
 // Achievement Enums
 enum AchievementType {
   HABIT_STREAK
@@ -271,6 +279,13 @@ enum NotificationType {
   SLEEP_ENDED
   SLEEP_PROMPT
   SLEEP_TRACKING_STARTED
+  SLEEP_PRE_WARNING
+  SLEEP_WAKE_CONFIRMATION
+
+  // Enhanced routine notifications
+  ROUTINE_PRE_START
+  ROUTINE_COMPLETION
+  ROUTINE_END_REMINDER
 
   MOTIVATIONAL
   PRODUCTIVITY_INSIGHT
@@ -362,6 +377,20 @@ enum AuditAction {
   GOAL_UPDATED
   GOAL_DELETED
   GOAL_COMPLETED
+  // Goal-scoped variants for the two domains that were writing the `GOAL_*`
+  // values above for non-goal entities. `ProjectService` stamped
+  // `GOAL_CREATED` with `entityType: 'PROJECT'` and `TaskService` did the same
+  // with `'TASK'`, so any query on `action: 'GOAL_CREATED'` that did not also
+  // filter `entityType` returned goals + projects + tasks. These give each domain
+  // its own values, so the action alone is unambiguous.
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+  PROJECT_ARCHIVED
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_DELETED
+  TASK_ARCHIVED
   ROUTINE_CREATED
   ROUTINE_CHANGED
   ROUTINE_DELETED
@@ -469,6 +498,10 @@ model User {
 
   // Productivity & Focus
   focusSessions        FocusSession[]
+  focusSessionEvents   FocusSessionEvent[]
+  focusSettings        FocusSettings?
+  focusPresets         FocusPreset[]
+  focusDayTypeTargets  FocusDayTypeTarget[]
   breaks               Break[]
   timeEntries          TimeEntry[]
   productivityPatterns ProductivityPattern[]
@@ -513,6 +546,7 @@ model User {
   apiKeys                 APIKey[]
   dayTypeDefinitions      DayTypeDefinition[]
   goalDayTypes          GoalDayType[]
+  tomorrowDayTypePlans  TomorrowDayTypePlan[]
 
   @@index([email])
   @@index([isActive, isDeleted])
@@ -604,9 +638,13 @@ model UserSettings {
   minSleepDuration          Int?
   sleepReminder             Boolean @default(false)
   sleepReminderTime         String?
+  sleepPreWarningEnabled    Boolean @default(false)
+  sleepPreWarningTime       String?
   autoStartSleepAfterMinutes Int    @default(15)
   sleepAutoStartEnabled     Boolean @default(true)
   sleepAutoStartAfterMinutes Int    @default(15)
+  wakeConfirmationEnabled   Boolean @default(false)
+  wakeConfirmationTime      String?
 
   // Scoring weights
   weightNonNeg Float @default(1.0)
@@ -627,6 +665,8 @@ model UserSettings {
   routineStartNotifications    Boolean @default(true)
   upcomingRoutineNotifications Boolean @default(true)
   sleepReminderNotifications   Boolean @default(true)
+  sleepPreWarningNotifications Boolean @default(true)
+  wakeConfirmationNotifications Boolean @default(true)
   habitReminderNotifications   Boolean @default(true)
   goalReminderNotifications    Boolean @default(true)
 
@@ -726,6 +766,8 @@ model Category {
   @@index([userId, isArchived])
   @@index([userId, createdAt])
   @@index([sortOrder])
+
+  focusPresets FocusPreset[]
 }
 
 model Tag {
@@ -881,6 +923,8 @@ model RoutineBlock {
   @@index([templateId, sortOrder])
   @@index([userId, trackCompletion])
   @@index([userId, createdAt])
+
+  focusSessions FocusSession[]
 }
 
 model RoutineException {
@@ -1007,6 +1051,8 @@ model Habit {
   @@index([categoryId])
   @@index([userId, createdAt])
   @@index([status, tier])
+
+  focusSessions FocusSession[]
 }
 
 model HabitLog {
@@ -1187,6 +1233,8 @@ model Goal {
   @@index([projectId])
   @@index([status, priority])
   @@index([userId, createdAt])
+
+  focusSessions FocusSession[]
 }
 
 model Milestone {
@@ -1222,6 +1270,17 @@ model GoalProgress {
 
   createdAt DateTime @default(now())
 
+  // One row per goal per calendar day.
+  //
+  // This was only `@@index([goalId, date])`, so the same goal could accumulate
+  // many rows on one date — a check-in plus its undo, or several progress writes.
+  // `sum(GoalProgress.value)` then diverged from `Goal.currentValue`, and every
+  // streak, sparkline and velocity figure derived from the log was quietly wrong.
+  //
+  // `checkInDaily` now *deletes* the day's rows on undo, which keeps the
+  // invariant true without relying on this constraint, but the constraint is what
+  // makes it impossible to violate rather than merely avoided.
+  @@unique([goalId, date])
   @@index([goalId, date])
 }
 
@@ -1243,8 +1302,12 @@ model Task {
   // Relations
   projectId String?
   project   Project? @relation(fields: [projectId], references: [id])
+  // `SetNull` so deleting a goal unlinks its tasks instead of failing the delete.
+  // With no `onDelete`, Postgres refused the delete outright (Prisma P2003) the
+  // moment anything referenced the goal. SetNull is the right semantic too:
+  // deleting a commitment should not destroy the record of the work done on it.
   goalId    String?
-  goal      Goal?    @relation(fields: [goalId], references: [id])
+  goal      Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
 
   parentTaskId String?
   parentTask   Task?   @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
@@ -1275,6 +1338,10 @@ model Task {
   @@index([dueDate])
   @@index([scheduledFor])
   @@index([userId, createdAt])
+
+  /// Focus sessions worked on this task. Nulled, not cascaded, on delete — see
+  /// `FocusSession.taskId`.
+  focusSessions FocusSession[]
 }
 
 model TaskDependency {
@@ -1607,6 +1674,20 @@ model FocusSession {
   title       String
   description String? @db.Text
 
+  /// What kind of timer row this is.
+  ///
+  /// This is the only thing that distinguishes real work from a break. Before
+  /// the column existed, the *title* was the only record of it ('Focus session'
+  /// / 'Short break' / 'Long break' / 'Stopwatch session'), so every aggregate
+  /// that wanted "focus minutes" had to guess — and the timer wrote a completed
+  /// row for each break, so a 5-minute break was added to every focus total in
+  /// the product. `src/lib/focus/type-backfill.ts` owns the title mapping used
+  /// to backfill existing rows.
+  ///
+  /// Defaults to `FOCUS`, which is exactly what the old (title-blind)
+  /// aggregations counted, so the default is behaviour-preserving.
+  type FocusSessionType @default(FOCUS)
+
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
@@ -1625,6 +1706,90 @@ model FocusSession {
   abortedAt   DateTime?
   pausedAt    DateTime?
 
+  /// Total seconds spent paused across the whole session.
+  ///
+  /// A paused session's deadline is `startedAt + planned + pausedTotal`, so this
+  /// is what keeps the reconstructed end time in `adoptFromServerRow` honest
+  /// across a resume. Without it every pause permanently shortens the session.
+  ///
+  /// Non-null with a zero default, deliberately. Every reader would otherwise
+  /// need `(pausedTotalSeconds ?? 0)`, and the one place it really matters —
+  /// `settleSession`, which derives whether a countdown has expired — is exactly
+  /// the place a silent `null` would read as "no pause" and expire a session
+  /// early.
+  pausedTotalSeconds Int @default(0)
+
+  /// Why the session ended. Null while it is active.
+  ///
+  /// Only `COMPLETED` counts as completed work; everything else is a partial or
+  /// abandoned session. This is what makes a completion *rate* meaningful —
+  /// without it, a session the user stopped at 30 seconds is indistinguishable
+  /// from one that ran the full timebox.
+  endReason FocusSessionEndReason?
+
+  /// Where the row came from. Distinguishes a timer run from a session the user
+  /// logged after the fact, and from one recovered after an interruption, so
+  /// analytics can exclude the latter two if they should not count.
+  source FocusSessionSource @default(TIMER)
+
+  /// How many times the session was paused. Denormalised from the event log so
+  /// interruption analytics need not scan events.
+  pauseCount Int @default(0)
+
+  /// Extra time granted by "+5 minutes". Kept separate from `plannedDuration` so
+  /// planned-versus-actual accuracy stays answerable after an extension.
+  extendedSeconds Int @default(0)
+
+  /// Denormalised count of DISTRACTION events, written when a session ends.
+  distractionCount Int @default(0)
+
+  /// Last time a client proved the session was still being watched.
+  ///
+  /// Evidence only, never authority — see the recovery policy. A countdown whose
+  /// deadline passed with heartbeats continuing to the deadline is full credit;
+  /// one whose heartbeats stopped early is not.
+  lastHeartbeatAt DateTime?
+
+  /// The user's timezone at the moment the session started.
+  ///
+  /// Snapshotted so history does not silently re-bucket if the user later moves
+  /// timezone: a session worked at 09:00 in Tokyo stays a morning session.
+  timezone String?
+
+  /// `startedAt` as a calendar date in `timezone`, stored as a `Date`.
+  ///
+  /// Denormalised purely so per-day queries and heatmaps are an index scan
+  /// rather than a zone conversion per row.
+  localDate DateTime? @db.Date
+
+  /// Groups a chain of focus and break sessions the user moved through without
+  /// stopping ("run"), so the pomodoro cycle count survives a reload.
+  runId String?
+
+  /// Position in the run's cycle, 0-based.
+  cycleIndex Int?
+
+  /// Client-generated idempotency key.
+  ///
+  /// Makes Start safe to retry, so a double click, a second tab, or an offline
+  /// replay after reconnect cannot create two rows for one run.
+  clientId String?
+
+  // Links into the rest of the product. All nullable and all `SetNull`, so
+  // deleting a task unlinks the session instead of failing the delete — the same
+  // rule `TimeEntry` already follows for `goalId`.
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  habitId String?
+  habit   Habit? @relation(fields: [habitId], references: [id], onDelete: SetNull)
+
+  routineBlockId String?
+  routineBlock   RoutineBlock? @relation(fields: [routineBlockId], references: [id], onDelete: SetNull)
+
   // Ratings
   focusRating        Int? // 1-5
   productivityRating Int? // 1-5
@@ -1640,12 +1805,222 @@ model FocusSession {
 
   breaks Break[]
 
+  /// Append-only lifecycle log. See the model's own docstring for why this is not
+  /// derivable from the session row.
+  events FocusSessionEvent[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, startedAt])
   @@index([categoryId])
   @@index([userId, createdAt])
+  // Every focus aggregate filters `completedAt`/`abortedAt` to decide what counts
+  // as finished work, and the active-session lookup filters both to null. These
+  // replace the `(userId, startedAt)`-only index for the stats queries, which are
+  // the hottest reads on this table.
+  @@index([userId, completedAt, abortedAt])
+  // Per-type listings and per-type stats.
+  @@index([userId, type, startedAt])
+  // Per-day history, heatmaps and streak scans without a zone conversion.
+  @@index([userId, localDate])
+  // Run grouping for cycle counting.
+  @@index([userId, runId])
+  // Idempotent Start: a retried create collides here instead of duplicating.
+  @@unique([userId, clientId])
+  // Reverse lookups and roll-ups for the linked entities.
+  @@index([taskId])
+  @@index([goalId])
+  @@index([habitId])
+  @@index([routineBlockId])
+}
+
+enum FocusSessionEndReason {
+  /// The timebox ran to zero, or the user confirmed it during recovery.
+  COMPLETED
+  /// The user pressed Reset or Stop.
+  STOPPED
+  /// The user pressed Skip.
+  SKIPPED
+  /// The user changed mode mid-run.
+  MODE_SWITCHED
+  /// Settled automatically after the session was abandoned.
+  AUTO_STALE
+  /// Logged by the user after the fact.
+  MANUAL
+}
+
+enum FocusSessionSource {
+  TIMER
+  MANUAL
+  RECOVERED
+}
+
+enum FocusEventType {
+  START
+  PAUSE
+  RESUME
+  EXTEND
+  DISTRACTION
+  NOTE
+  END
+  /// A pause the system caused rather than the user. Carries the reason so the
+  /// timeline can distinguish "I paused" from "sleep started".
+  PAUSE_REASON
+}
+
+enum BreakType {
+  SHORT
+  LONG
+  MEAL
+  WALK
+  STRETCH
+  REST
+  CUSTOM
+}
+
+/// How a focus session was reflected on. `MIN_LENGTH` is the pragmatic default:
+/// asking someone how a 3-minute block went is a chore they will skip forever.
+enum FocusReflectionMode {
+  ALWAYS
+  FOCUS_ONLY
+  MIN_LENGTH
+  NEVER
+}
+
+model FocusSessionEvent {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  focusSessionId String
+  focusSession   FocusSession @relation(fields: [focusSessionId], references: [id], onDelete: Cascade)
+
+  type       FocusEventType
+  occurredAt DateTime         @default(now())
+
+  /// Short machine-ish label, e.g. the distraction chip or the pause reason.
+  label String?
+
+  /// Free text: a parking-lot note, or the note attached to a distraction.
+  note String? @db.Text
+
+  /// Structured extras. Kept as JSON so a new event kind does not need a column.
+  metadata String?
+
+  createdAt DateTime @default(now())
+
+  // The detail timeline reads one session's events in order.
+  @@index([focusSessionId, occurredAt])
+  // "Distractions over the last month" without loading every session's events.
+  @@index([userId, occurredAt])
+  @@index([userId, type])
+}
+
+/// Server-stored focus preferences.
+///
+/// A separate one-to-one model rather than more columns on `UserSettings`, which
+/// is already very wide and has its own validation schema and settings page. The
+/// master switches — `UserSettings.soundEnabled`, `timezone`, `focusReminders`,
+/// `breakReminders` — are read from `UserSettings`, never duplicated here.
+model FocusSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Durations
+  focusMinutes           Int @default(25)
+  shortBreakMinutes      Int @default(5)
+  longBreakMinutes       Int @default(15)
+  cyclesBeforeLongBreak  Int @default(4)
+
+  // Behaviour
+  autoStartBreak  Boolean @default(true)
+  autoStartFocus  Boolean @default(false)
+  keepScreenAwake Boolean @default(false)
+
+  // Reflection
+  reflectionMode          FocusReflectionMode @default(MIN_LENGTH)
+  reflectionMinimumMinutes Int                @default(10)
+
+  // Goals
+  dailyTargetMinutes     Int @default(120)
+  /// Minutes that make a day count for the streak. Below this, opening the app
+  /// and starting two sessions is enough to hold a streak, which makes the
+  /// streak meaningless.
+  streakDayMinutes       Int @default(25)
+  weeklyTargetMinutes    Int?
+
+  // Sound. Off by default: a focus tool that makes noise unasked is a nuisance.
+  soundEnabled        Boolean @default(false)
+  soundVolume         Int     @default(50)
+  ambientSound        String?
+
+  // Display
+  showWallClock   Boolean @default(true)
+
+  // Intelligence
+  breakSuggestions        Boolean @default(true)
+  adaptiveSuggestions     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A named duration profile ("Deep work 90/20", "Study 50/10").
+///
+/// Replaces the eight hard-coded preset pills with something that can also carry
+/// a default category, which is what makes starting from a preset one tap.
+model FocusPreset {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name String
+
+  focusMinutes          Int @default(25)
+  shortBreakMinutes     Int @default(5)
+  longBreakMinutes      Int @default(15)
+  cyclesBeforeLongBreak Int @default(4)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  color String?
+  icon  String?
+
+  /// Position in the user's own ordering.
+  sortOrder Int     @default(0)
+  /// Archived presets keep their history but leave the picker.
+  isArchived Boolean @default(false)
+
+  /// Seeded on first use; a seeded preset is not deleted, only archived.
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, sortOrder])
+  @@index([userId, isArchived])
+}
+
+/// A per-day-type focus target, so an exam day can carry more and a low-energy
+/// day less. Ties into the existing `DayTypeDefinition` system.
+model FocusDayTypeTarget {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  dayTypeId String
+  dayType   DayTypeDefinition @relation(fields: [dayTypeId], references: [id], onDelete: Cascade)
+
+  targetMinutes Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, dayTypeId])
+  @@index([userId])
 }
 
 model Break {
@@ -1660,7 +2035,14 @@ model Break {
   endedAt         DateTime?
   durationMinutes Int?
 
-  breakType String? // SHORT, LONG, MEAL, WALK, etc.
+  /// What the user actually did during the break.
+  ///
+  /// Was free text, now an enum. `Break` is repositioned as an *annotation* of a
+  /// break session (the restorative activity and how good it was) rather than a
+  /// second source of break minutes: break minutes come only from the
+  /// SHORT_BREAK/LONG_BREAK `FocusSession` rows, so counting both would double
+  /// every break.
+  breakType BreakType?
   quality   Int? // 1-5
 
   notes String?
@@ -1691,8 +2073,10 @@ model TimeEntry {
   project   Project? @relation(fields: [projectId], references: [id])
   habitId   String?
   habit     Habit?   @relation(fields: [habitId], references: [id])
+  // Same reasoning as `Task.goalId`: a time entry outlives the goal it was
+  // logged against, so the link is nulled rather than blocking the delete.
   goalId    String?
-  goal      Goal?    @relation(fields: [goalId], references: [id])
+  goal      Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
 
   // Categorization
   billable Boolean @default(false)
@@ -1929,11 +2313,26 @@ model Achievement {
 
   metadata String? // JSON with achievement details
 
+  /// Stable catalogue key (an id in `ACHIEVEMENT_DEFINITIONS`).
+  ///
+  /// This is the canonical join key between an unlocked row and the definition
+  /// catalogue; `metadata.definitionId` carries the same value for rows written
+  /// before the column existed and is still read as a fallback. Matching on
+  /// `title` — which is what the achievements page used to do — breaks the
+  /// moment a definition is renamed, silently dropping the badge out of the
+  /// grid and out of the XP total.
+  ///
+  /// Nullable on purpose: `CUSTOM` achievements are not in the catalogue, and
+  /// Postgres treats NULLs as distinct inside a unique index, so those rows stay
+  /// unrestricted while a catalogue achievement can be earned exactly once.
+  definitionId String?
+
   createdAt DateTime @default(now())
 
   @@index([userId, unlockedAt])
   @@index([type, level])
   @@index([userId, createdAt])
+  @@unique([userId, definitionId], map: "userId_definitionId")
 }
 
 // ==========================================================================
@@ -2378,6 +2777,8 @@ model DayTypeDefinition {
   @@unique([userId, slug])
   @@index([userId, isArchived])
   @@index([userId, sortOrder])
+
+  focusTargets FocusDayTypeTarget[]
 }
 
 // NEW JOIN TABLE — Habit <-> DayTypeDefinition, fully separate from routine
@@ -2408,6 +2809,43 @@ model GoalDayType {
   @@unique([goalId, dayTypeId])
   @@index([dayTypeId])
   @@index([userId])
+}
+
+// ==========================================================================
+// TOMORROW DAY TYPE PLANNING
+// ==========================================================================
+
+enum PlanStatus {
+  PENDING
+  SELECTED
+  CONFIRMED
+  SYNCED
+  FALLBACK_APPLIED
+}
+
+model TomorrowDayTypePlan {
+  id                  String     @id @default(cuid())
+  userId              String
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date                DateTime   @db.Date
+  dayTypeId           String?
+  dayType             DayType
+  status              PlanStatus @default(PENDING)
+  isManual            Boolean    @default(true)
+  selectedAt          DateTime?
+  confirmedAt         DateTime?
+  changedAt           DateTime?
+  previousDayTypeId   String?
+  routineVersion      Int        @default(0)
+  notificationsScheduled Boolean  @default(false)
+  localSynced         Boolean    @default(false)
+  serverSynced        Boolean    @default(false)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([status])
 }
 
 // ==========================================================================

@@ -36,8 +36,8 @@ function startOfWeek(date: Date): Date {
   return result;
 }
 
-function buildGrid(): DayCell[] {
-  const end = new Date();
+function buildGrid(today: Date): DayCell[] {
+  const end = new Date(today);
   end.setHours(0, 0, 0, 0);
   const start = startOfWeek(end);
   start.setDate(start.getDate() - (WEEKS - 1) * 7);
@@ -57,7 +57,23 @@ function buildGrid(): DayCell[] {
 }
 
 export default function MoodCalendar({ moodByDate, onSelectDate, className }: MoodCalendarProps) {
-  const cells = React.useMemo(buildGrid, []);
+  /*
+    `React.useMemo(buildGrid, [])` looked like a free memoisation and was not.
+
+    The first argument has to be an inline function expression. Passing `buildGrid`
+    directly also read `new Date()` — impure — so the value depended on WHEN it
+    ran, not only on its (empty) dependencies. The grid could therefore be built
+    during a render that was later thrown away, and it never rebuilt: a calendar
+    left open across midnight kept showing yesterday's last week with no way to
+    notice.
+
+    Fixed by making the day an explicit input rather than something read from the
+    clock inside the memo. `todayKey` is parsed back into a Date so the memo body
+    is a pure function of it, and the dependency is therefore genuine rather than
+    decorative — the grid rolls over when the day changes.
+  */
+  const todayKey = new Date().toDateString();
+  const cells = React.useMemo(() => buildGrid(new Date(todayKey)), [todayKey]);
 
   const weeks = React.useMemo(() => {
     const rows: DayCell[][] = [];
