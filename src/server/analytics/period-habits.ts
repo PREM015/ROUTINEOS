@@ -7,6 +7,7 @@ import { toContributionHabit } from '@/lib/habits/contribution-eligibility';
 import { buildEligibilityContext } from '@/server/analytics/eligibility-context';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Load the period habit model for a date range in five queries.
@@ -27,7 +28,7 @@ import { RoutineRepository } from '@/server/repositories/routine.repository';
  * days the user has not lived yet. See `lib/analytics/period-habits` for why.
  */
 export async function loadPeriodHabits(
-  userId: string,
+  userId: UserId,
   start: string,
   end: string,
   today: string

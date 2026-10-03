@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { AchievementService } from '@/server/services/achievement.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 const achievementService = new AchievementService();
 
@@ -15,7 +16,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await achievementService.getStreakWithMilestones(session.user.id);
+    const data = await achievementService.getStreakWithMilestones(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

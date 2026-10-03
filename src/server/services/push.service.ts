@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { PushSubscriptionRepository } from '@/server/repositories/push-subscription.repository';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Push Service
@@ -110,7 +111,7 @@ export class PushService {
     return this.vapidConfigured ? (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null) : null;
   }
 
-  async sendToUser(userId: string, payload: PushPayload): Promise<SendResult> {
+  async sendToUser(userId: UserId, payload: PushPayload): Promise<SendResult> {
     if (!this.vapidConfigured) {
       // Previously a bare `{ sent: 0, failed: 0 }` with no explanation, so a
       // completely dead push system reported "nothing to do" and every caller
@@ -178,7 +179,7 @@ export class PushService {
         if (status === 404 || status === 410 || status === 400) {
           // Subscription is dead or unauthorized: prune it.
           await this.pushSubscriptionRepository
-            .delete(sub.userId, sub.id)
+            .delete(toUserId(sub.userId), sub.id)
             .catch(() => undefined);
           errors.push(`${sub.deviceName ?? 'device'}: subscription expired (${status})`);
         } else if (status === 403 && /do not correspond to the credentials/i.test(bodyText)) {
@@ -221,7 +222,7 @@ export class PushService {
    * Still never throws — a failed push must not break the sleep flow — but the
    * failure is logged instead of being discarded by `.catch(() => undefined)`.
    */
-  async notify(userId: string, payload: PushPayload): Promise<void> {
+  async notify(userId: UserId, payload: PushPayload): Promise<void> {
     try {
       const result = await this.sendToUser(userId, payload);
       if (result.failed > 0 || result.reason) {

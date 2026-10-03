@@ -1,4 +1,5 @@
 import { auditService } from './audit.service';
+import type { UserId } from '@/types/ids';
 
 /**
  * Audit Event Helpers
@@ -6,7 +7,7 @@ import { auditService } from './audit.service';
  */
 
 export async function auditHabitCreated(
-  userId: string,
+  userId: UserId,
   habitId: string,
   habitName: string
 ) {
@@ -20,7 +21,7 @@ export async function auditHabitCreated(
 }
 
 export async function auditHabitArchived(
-  userId: string,
+  userId: UserId,
   habitId: string,
   habitName: string,
   reason?: string
@@ -35,7 +36,7 @@ export async function auditHabitArchived(
 }
 
 export async function auditHabitDeleted(
-  userId: string,
+  userId: UserId,
   habitId: string,
   habitName: string
 ) {
@@ -49,7 +50,7 @@ export async function auditHabitDeleted(
 }
 
 export async function auditGoalCreated(
-  userId: string,
+  userId: UserId,
   goalId: string,
   goalTitle: string
 ) {
@@ -63,7 +64,7 @@ export async function auditGoalCreated(
 }
 
 export async function auditGoalCompleted(
-  userId: string,
+  userId: UserId,
   goalId: string,
   goalTitle: string
 ) {
@@ -77,7 +78,7 @@ export async function auditGoalCompleted(
 }
 
 export async function auditGoalDeleted(
-  userId: string,
+  userId: UserId,
   goalId: string,
   goalTitle: string
 ) {
@@ -91,7 +92,7 @@ export async function auditGoalDeleted(
 }
 
 export async function auditRoutineChanged(
-  userId: string,
+  userId: UserId,
   templateId: string,
   templateName: string
 ) {
@@ -105,7 +106,7 @@ export async function auditRoutineChanged(
 }
 
 export async function auditScoringSettingsChanged(
-  userId: string,
+  userId: UserId,
   oldSettings: any,
   newSettings: any
 ) {
@@ -118,7 +119,7 @@ export async function auditScoringSettingsChanged(
 }
 
 export async function auditMinimumDayActivated(
-  userId: string,
+  userId: UserId,
   date: string,
   reason?: string
 ) {
@@ -132,7 +133,7 @@ export async function auditMinimumDayActivated(
 }
 
 export async function auditRestDayActivated(
-  userId: string,
+  userId: UserId,
   date: string,
   reason?: string
 ) {
@@ -146,7 +147,7 @@ export async function auditRestDayActivated(
 }
 
 export async function auditDataExported(
-  userId: string,
+  userId: UserId,
   format: string,
   fileSize: number
 ) {
@@ -158,7 +159,7 @@ export async function auditDataExported(
 }
 
 export async function auditDataImported(
-  userId: string,
+  userId: UserId,
   recordsImported: number
 ) {
   await auditService.log({
@@ -169,7 +170,7 @@ export async function auditDataImported(
 }
 
 export async function auditAccountDeleted(
-  userId: string,
+  userId: UserId,
   reason?: string
 ) {
   await auditService.log({

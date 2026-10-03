@@ -1,7 +1,15 @@
 import { STORE_OUTBOX, idbGetAll, idbPutAll, idbDelete } from '@/lib/offline/idb';
-import { STORE_SCHEDULE } from '@/lib/pwa/offline-schedule';
 
 const SYNC_TAG = 'routineos-sync';
+
+/**
+ * The Background Sync API is not in the default `lib.dom` types, so
+ * `ServiceWorkerRegistration.sync` is absent. Declared locally rather than
+ * augmented globally so the shape is visible at the one call site that uses it.
+ */
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+  sync?: { register(tag: string): Promise<void> };
+}
 
 export interface OutboxItem {
   localId?: number;
@@ -50,7 +58,7 @@ export async function queueOfflineAction(
   // Register background sync
   if ('serviceWorker' in navigator) {
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = (await navigator.serviceWorker.ready) as ServiceWorkerRegistrationWithSync;
       if (registration.sync) {
         await registration.sync.register(SYNC_TAG);
       }
@@ -157,12 +165,19 @@ export async function flushOutbox(): Promise<SyncResult> {
 }
 
 /**
- * Handle conflict resolution for sync
- * Server wins for timestamps, client wins for user confirmations
+ * Handle conflict resolution for sync.
+ *
+ * Server wins for timestamps, client wins for user confirmations.
+ *
+ * The two payloads are not read: the decision is made from `entityType` alone,
+ * because a merge would need a field-level rule per entity and this function has
+ * no way to know which fields each entity has. They are kept in the signature
+ * because every call site already has them and dropping the parameters would be a
+ * wider change than the behaviour.
  */
 export async function resolveSyncConflict(
-  serverData: any,
-  localData: any,
+  _serverData: any,
+  _localData: any,
   entityType: string
 ): Promise<'server' | 'client' | 'merge'> {
   // For user confirmations (sleep, routine completion), client wins

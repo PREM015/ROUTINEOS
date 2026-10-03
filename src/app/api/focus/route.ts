@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { createFocusSessionSchema, focusQuerySchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/focus
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, meta } = await focusService.listSessions(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     const focusSession = await focusService.createSession(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 

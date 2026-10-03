@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import type { AuditAction } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Audit Service
@@ -45,7 +46,7 @@ export class AuditService {
    * Get audit logs for user
    */
   async getUserLogs(
-    userId: string,
+    userId: UserId,
     options?: {
       action?: AuditAction | AuditAction[];
       entityType?: string;
@@ -84,7 +85,7 @@ export class AuditService {
   /**
    * Get security events
    */
-  async getSecurityEvents(userId: string, limit: number = 50) {
+  async getSecurityEvents(userId: UserId, limit: number = 50) {
     const securityActions: AuditAction[] = [
       'LOGIN_FAILED',
       'LOGIN_SUCCESS',
@@ -109,7 +110,7 @@ export class AuditService {
    * Track entity changes
    */
   async getEntityHistory(
-    userId: string,
+    userId: UserId,
     entityType: string,
     entityId: string
   ) {
@@ -127,7 +128,7 @@ export class AuditService {
    * Get failed login attempts
    */
   async getFailedLoginAttempts(
-    userId: string,
+    userId: UserId,
     since: Date = new Date(Date.now() - 24 * 60 * 60 * 1000)
   ) {
     return await prisma.auditLog.count({
@@ -143,7 +144,7 @@ export class AuditService {
    * Bulk log activity
    */
   async logActivity(
-    userId: string,
+    userId: UserId,
     action: string,
     description?: string,
     metadata?: Record<string, any>

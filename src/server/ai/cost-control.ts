@@ -1,6 +1,7 @@
 import { PrismaClient } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
-export async function canGenerateInsights(userId: string, db: PrismaClient): Promise<{ allowed: boolean; reason?: string }> {
+export async function canGenerateInsights(userId: UserId, db: PrismaClient): Promise<{ allowed: boolean; reason?: string }> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -20,7 +21,7 @@ export async function canGenerateInsights(userId: string, db: PrismaClient): Pro
   return { allowed: true };
 }
 
-export async function recordInsightGeneration(userId: string, db: PrismaClient): Promise<void> {
+export async function recordInsightGeneration(userId: UserId, db: PrismaClient): Promise<void> {
   await (db as any).aIInsight?.create({
     data: {
       userId,

@@ -3,6 +3,7 @@ import { automationService } from '@/server/services/automation.service';
 import { automationQuerySchema } from '@/schemas/automation.schema';
 import { ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Automation Route
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const rules = await automationService.list(session.user.id, validated.data);
+    const rules = await automationService.list(userIdFromSession(session), validated.data);
 
     return NextResponse.json({
       success: true,
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const rule = await automationService.create(session.user.id, body);
+    const rule = await automationService.create(userIdFromSession(session), body);
 
     return NextResponse.json({ success: true, data: rule }, { status: 201 });
   } catch (error) {

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { userService } from '@/server/services/user.service';
 import { AuthorizationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const settings = await userService.getSettings(id);
+    const settings = await userService.getSettings(toUserId(id));
 
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {

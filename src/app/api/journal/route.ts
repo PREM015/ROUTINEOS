@@ -8,6 +8,7 @@ import {
 } from '@/schemas/journal.schema';
 import { ForeignTagError } from '@/server/repositories/journal.repository';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     const query = validated.data;
     const limit = query.limit ?? MAX_JOURNAL_PAGE_SIZE;
 
-    const result = await journalService.list(session.user.id, { ...query, limit });
+    const result = await journalService.list(userIdFromSession(session), { ...query, limit });
 
     return NextResponse.json({
       success: true,
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await journalService.create(session.user.id, validated.data);
+    const entry = await journalService.create(userIdFromSession(session), validated.data);
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {
     if (error instanceof AppError) {

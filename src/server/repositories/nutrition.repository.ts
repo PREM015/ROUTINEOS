@@ -1,5 +1,6 @@
 import type { NutritionEntry, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Nutrition Repository
@@ -28,7 +29,7 @@ export interface NutritionQueryParams {
 }
 
 function itemToCreateData(
-  userId: string,
+  userId: UserId,
   date: string,
   mealType: string,
   item: CreateNutritionItemData
@@ -54,7 +55,7 @@ export class NutritionRepository extends BaseRepository {
   /**
    * Create a single nutrition entry
    */
-  async create(userId: string, date: string, mealType: string, item: CreateNutritionItemData): Promise<NutritionEntry> {
+  async create(userId: UserId, date: string, mealType: string, item: CreateNutritionItemData): Promise<NutritionEntry> {
     try {
       return await this.prisma.nutritionEntry.create({
         data: itemToCreateData(userId, date, mealType, item),
@@ -68,7 +69,7 @@ export class NutritionRepository extends BaseRepository {
    * Create multiple nutrition entries for a meal in a single transaction
    */
   async createMany(
-    userId: string,
+    userId: UserId,
     date: string,
     mealType: string,
     items: CreateNutritionItemData[]
@@ -92,7 +93,7 @@ export class NutritionRepository extends BaseRepository {
   /**
    * Find nutrition entries for a user with optional filters
    */
-  async findAll(userId: string, query: NutritionQueryParams = {}): Promise<NutritionEntry[]> {
+  async findAll(userId: UserId, query: NutritionQueryParams = {}): Promise<NutritionEntry[]> {
     try {
       const where: Prisma.NutritionEntryWhereInput = { userId };
 
@@ -117,7 +118,7 @@ export class NutritionRepository extends BaseRepository {
   /**
    * Find a single nutrition entry owned by the user
    */
-  async findById(userId: string, entryId: string): Promise<NutritionEntry | null> {
+  async findById(userId: UserId, entryId: string): Promise<NutritionEntry | null> {
     try {
       return await this.prisma.nutritionEntry.findFirst({
         where: { id: entryId, userId },
@@ -131,7 +132,7 @@ export class NutritionRepository extends BaseRepository {
    * Update a nutrition entry owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     entryId: string,
     data: Partial<CreateNutritionItemData> & { date?: string; mealType?: string }
   ): Promise<NutritionEntry> {
@@ -161,7 +162,7 @@ export class NutritionRepository extends BaseRepository {
   /**
    * Delete a nutrition entry owned by the user
    */
-  async delete(userId: string, entryId: string): Promise<NutritionEntry> {
+  async delete(userId: UserId, entryId: string): Promise<NutritionEntry> {
     try {
       return await this.prisma.nutritionEntry.delete({
         where: { id: entryId, userId },

@@ -3,6 +3,7 @@ import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-
 import { z } from 'zod';
 import type { Challenge, ChallengeParticipant } from '@/generated/prisma';
 import type { CreateChallengeInput, UpdateChallengeProgressInput } from '@/schemas/challenge.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Challenge Service
@@ -36,7 +37,7 @@ export class ChallengeService {
    * showing it disappear with no explanation is the same class of bug as a habit
    * vanishing from `/habits` with nothing saying why.
    */
-  async listForUser(userId: string) {
+  async listForUser(userId: UserId) {
     const [active, joined] = await Promise.all([
       this.challengeRepository.listActive(),
       this.challengeRepository.listByUser(userId),
@@ -86,7 +87,7 @@ export class ChallengeService {
   }
 
   /** Create a challenge owned by the authenticated user. */
-  async create(userId: string, input: CreateChallengeInput): Promise<Challenge> {
+  async create(userId: UserId, input: CreateChallengeInput): Promise<Challenge> {
     return this.challengeRepository.create(userId, input);
   }
 
@@ -98,7 +99,7 @@ export class ChallengeService {
    * distinction matters, because a private challenge must not be confirmable as
    * existing by a stranger.
    */
-  async getForUser(challengeId: string, userId: string) {
+  async getForUser(challengeId: string, userId: UserId) {
     const challenge = await this.challengeRepository.getById(challengeId);
     if (!challenge) {
       throw new NotFoundError('Challenge');
@@ -122,7 +123,7 @@ export class ChallengeService {
    * `ConflictError` (409) when already a member, which is what the route used to
    * return inline.
    */
-  async join(challengeId: string, userId: string) {
+  async join(challengeId: string, userId: UserId) {
     const challenge = await this.challengeRepository.getById(challengeId);
     if (!challenge) {
       throw new NotFoundError('Challenge');
@@ -143,7 +144,7 @@ export class ChallengeService {
    * here, which is preserved, because "you are not in this" is a statement about
    * the user's own membership row and there is no resource to conflict with.
    */
-  async leave(challengeId: string, userId: string) {
+  async leave(challengeId: string, userId: UserId) {
     const isMember = await this.challengeRepository.isMember(challengeId, userId);
     if (!isMember) {
       throw new NotFoundError('Challenge participation');
@@ -159,7 +160,7 @@ export class ChallengeService {
    */
   async setProgress(
     challengeId: string,
-    userId: string,
+    userId: UserId,
     input: UpdateChallengeProgressInput
   ) {
     const challenge = await this.challengeRepository.getById(challengeId);
@@ -187,7 +188,7 @@ export class ChallengeService {
   /**
    * Delete a challenge. Only its creator may.
    */
-  async delete(challengeId: string, userId: string): Promise<void> {
+  async delete(challengeId: string, userId: UserId): Promise<void> {
     const challenge = await this.challengeRepository.getById(challengeId);
     if (!challenge) {
       throw new NotFoundError('Challenge');

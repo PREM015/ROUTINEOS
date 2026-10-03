@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type CSSProperties, type ReactNode } from 'react';
 import {
+  AlertTriangle,
   BarChart3,
   BookOpen,
   CalendarRange,
@@ -69,6 +70,16 @@ function formatDuration(minutes: number): string {
   if (mins === 0) return `${hours}h`;
   return `${hours}h ${mins}m`;
 }
+
+/**
+ * Id of the reporting panel the period strip drives.
+ *
+ * A module constant rather than `useId()` because the strip and the panel are
+ * siblings in one render, and a generated id would have to be threaded through
+ * both. It is stable across renders, so the `aria-controls` relationship
+ * survives a period change.
+ */
+const PERIOD_PANEL_ID = 'analytics-period-panel';
 
 /** What chart 1 shows, per period. The label must match the data's real range. */
 function habitChartCopy(period: Period, label: string): { title: string; description: string } {
@@ -178,7 +189,14 @@ export default function AnalyticsPage() {
             anchorDate={anchorDate}
             maxAnchor={userToday}
             timezone={timezone}
+            panelId={PERIOD_PANEL_ID}
           />
+          {/*
+            The strip is a real tablist, so it has to name the panel it drives —
+            and that panel is this whole reporting surface, which lives in the
+            caller. See `PeriodControl.panelId`.
+          */}
+          <FreshnessChip freshness={data.freshness} />
           {/*
             Status region rather than a full-screen spinner. The previous numbers
             stay readable underneath, but the page never claims they are current
@@ -192,7 +210,7 @@ export default function AnalyticsPage() {
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 Updating…
               </>
             ) : error ? (
@@ -205,7 +223,13 @@ export default function AnalyticsPage() {
       </div>
 
       <div
-        className={`transition-opacity duration-200 ${isStale ? 'opacity-60' : 'opacity-100'}`}
+        id={PERIOD_PANEL_ID}
+        role="tabpanel"
+        aria-labelledby={`${PERIOD_PANEL_ID}-tab-${period}`}
+        tabIndex={-1}
+        className={`transition-opacity duration-200 motion-reduce:transition-none ${
+          isStale ? 'opacity-60' : 'opacity-100'
+        }`}
         aria-busy={isLoading}
       >
         {/* ── Overview: the answer first ─────────────────────────────────── */}
@@ -238,8 +262,32 @@ export default function AnalyticsPage() {
                 ) : (
                   <div className="absolute inset-0 rounded-full border-4 border-dashed border-border" aria-hidden="true" />
                 )}
-                <div className="absolute inset-1.5 flex items-center justify-center rounded-full glass-panel shadow-soft">
-                  <span className="text-3xl font-black tabular-nums text-foreground">
+                {/*
+                  The ring itself is decoration; the number inside it is the fact.
+                  Both the conic fill and the dashed empty state are hidden from
+                  assistive tech, so without this the ring announced a bare "84" with
+                  no unit, no scale and no period — the most important number on the
+                  page, and the only one with no accessible name.
+                */}
+                <div
+                  className="absolute inset-1.5 flex items-center justify-center rounded-full glass-panel shadow-soft"
+                  role="img"
+                  aria-label={
+                    hero.total != null
+                      ? `Period score ${Math.round(hero.total)} out of 100${
+                          hero.grade != null
+                            ? `, grade ${hero.grade}${
+                                period === 'day' ? '' : `, averaged over ${hero.daysScored} scored days`
+                              }`
+                            : ''
+                        }`
+                      : 'No score recorded for this period'
+                  }
+                >
+                  <span
+                    className="text-3xl font-black tabular-nums text-foreground"
+                    aria-hidden="true"
+                  >
                     {hero.total != null ? Math.round(hero.total) : '—'}
                   </span>
                 </div>
@@ -250,6 +298,19 @@ export default function AnalyticsPage() {
                   {hero.grade != null
                     ? `Grade ${hero.grade}${period === 'day' ? '' : ' (average)'}`
                     : 'No score recorded for this period'}
+                  {/*
+                    The count the average is over, when it is not all of them. A
+                    week with three scored days used to claim seven, and a month
+                    claimed one, so "average" was describing a period that did not
+                    match the range on screen.
+                  */}
+                  {period !== 'day' && hero.daysScored > 0 ? (
+                    <span className="tabular-nums">
+                      {' '}
+                      over {hero.daysScored} scored{' '}
+                      {hero.daysScored === 1 ? 'day' : 'days'}
+                    </span>
+                  ) : null}
                 </p>
 
                 {/*
@@ -455,7 +516,7 @@ export default function AnalyticsPage() {
         </section>
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <MoodPulseCard moodPulse={data.moodPulse} />
+          <MoodPulseCard moodPulse={data.moodPulse} periodLabel={range.label} />
           {/*
             Rendered only when a real insight exists. The cron that generates them
             is still a stub, so the previous always-on empty state was a permanent
@@ -471,6 +532,44 @@ export default function AnalyticsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Says so when the scores behind this period are incomplete.
+ *
+ * Scores are computed by a bounded nightly job, so a period can hold days nobody
+ * has got to. The alternative was a page that quietly averaged whatever existed
+ * and called it the period — which reads as a decline when the truth is that four
+ * days are missing. A chip that appears only when something is missing keeps the
+ * common case quiet.
+ *
+ * `title` carries the explanation for anyone who cannot see the chip's short
+ * text, and `aria-live` is deliberately absent: it does not change on its own, and
+ * a live region that fires on every period change is noise.
+ */
+function FreshnessChip({ freshness }: { freshness: AnalyticsDashboard['freshness'] }) {
+  if (freshness.unscoredDays === 0) return null;
+
+  const explanation =
+    `Scores are computed by a nightly job. ${freshness.unscoredDays} of the ` +
+    `${freshness.elapsedDays} elapsed ${freshness.elapsedDays === 1 ? 'day has' : 'days have'} ` +
+    'no score yet, so the average above covers fewer days than the period.' +
+    (freshness.latestScoredDate ? ` Newest score: ${freshness.latestScoredDate}.` : '') +
+    ' Days still unscored can be computed on demand from Today.';
+
+  return (
+    <p
+      title={explanation}
+      className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+    >
+      <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
+      <span>
+        {freshness.unscoredDays} of {freshness.elapsedDays} elapsed{' '}
+        {freshness.elapsedDays === 1 ? 'day' : 'days'} not scored yet
+      </span>
+      <span className="sr-only">. {explanation}</span>
+    </p>
   );
 }
 

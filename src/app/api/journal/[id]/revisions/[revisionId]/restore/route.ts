@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import { journalRevisionIdSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/journal/[id]/revisions/[revisionId]/restore
@@ -33,7 +34,7 @@ export async function POST(
     }
 
     const entry = await journalService.restoreRevision(
-      session.user.id,
+      userIdFromSession(session),
       parsedParams.data.id,
       parsedParams.data.revisionId
     );

@@ -2,6 +2,7 @@ import { InsightRepository } from '@/server/repositories/insight.repository';
 import { aggregateUserDataForAI, validateDataSize } from '@/server/ai/aggregator';
 import { generateInsight, estimateCost } from '@/server/ai/provider';
 import type { InsightPeriod } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Insight Service (read/generate entry points for the API)
@@ -32,7 +33,7 @@ export class InsightReadService {
    * The user's most recent insight, optionally scoped to a period.
    */
   async getLatestInsight(
-    userId: string,
+    userId: UserId,
     period?: InsightPeriod
   ) {
     return this.insightRepository.findLatest(userId, period ? { period } : {});
@@ -42,7 +43,7 @@ export class InsightReadService {
    * Insights generated within an inclusive calendar window, newest first.
    */
   async getInsightHistory(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ) {
@@ -84,7 +85,7 @@ export class InsightGenerationService {
    * @throws when the aggregated payload exceeds {@link MAX_INSIGHT_DATA_KB}.
    */
   async generate(
-    userId: string,
+    userId: UserId,
     input: { period: GeneratableInsightPeriod; startDate: string; endDate: string }
   ): Promise<{ insight: unknown; cost: string; cached: boolean }> {
     const { period, startDate, endDate } = input;

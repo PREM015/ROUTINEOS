@@ -1,6 +1,7 @@
 import { WeatherRepository } from '@/server/repositories/weather.repository';
 import type { weatherLogSchema, weatherQuerySchema } from '@/schemas/wellness.schema';
 import type { z } from 'zod';
+import type { UserId } from '@/types/ids';
 
 type WeatherLogInput = z.infer<typeof weatherLogSchema>;
 type WeatherQuery = z.infer<typeof weatherQuerySchema>;
@@ -23,7 +24,7 @@ export class WeatherService {
   }
 
   /** Weather logs for a date range, oldest first. */
-  async listForUser(userId: string, query: WeatherQuery) {
+  async listForUser(userId: UserId, query: WeatherQuery) {
     return this.weatherRepository.findByUserId(userId, {
       startDate: query.startDate,
       endDate: query.endDate,
@@ -33,7 +34,7 @@ export class WeatherService {
   }
 
   /** Create or replace the weather log for a user+date. */
-  async log(userId: string, input: WeatherLogInput) {
+  async log(userId: UserId, input: WeatherLogInput) {
     return this.weatherRepository.upsert(userId, input);
   }
 }

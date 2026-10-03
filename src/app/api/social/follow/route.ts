@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { socialService } from '@/server/services/social.service';
 import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { followUserSchema } from '@/schemas/social.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/social/follow
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await socialService.follow(session.user.id, validated.data.userId);
+    const result = await socialService.follow(userIdFromSession(session), validated.data.userId);
 
     return NextResponse.json(
       { success: true, data: { following: true, connection: result.connection } },

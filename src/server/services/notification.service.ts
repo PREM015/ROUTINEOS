@@ -7,6 +7,7 @@ import {
 import { sendEmail } from '@/lib/email/sender';
 import { renderSimpleHtml } from '@/lib/email/html';
 import { pushService } from '@/server/services/push.service';
+import { toUserIdOptional, toUserId, type UserId  } from '@/types/ids';
 
 /**
  * Notification Service
@@ -136,7 +137,7 @@ export class NotificationService {
    * Create a notification for a user
    */
   async createNotification(
-    userId: string,
+    userId: UserId,
     input: CreateNotificationInput,
   ): Promise<NotificationLog> {
     const parsed = createNotificationSchema.safeParse(input);
@@ -161,7 +162,7 @@ export class NotificationService {
    * List notifications for a user
    */
   async getNotifications(
-    userId: string,
+    userId: UserId,
     query: { unreadOnly?: boolean; limit?: number; offset?: number } = {},
   ): Promise<NotificationLog[]> {
     return this.notificationRepository.findAll(userId, {
@@ -172,16 +173,118 @@ export class NotificationService {
   }
 
   /**
+   * The notification history feed behind `GET /api/notifications`.
+   *
+   * Supports the two filters the data can actually answer - `period`, applied to
+   * `createdAt`, and `limit`/`offset` paging.
+   *
+   * `category` and `tag` are accepted by the route's query schema but are
+   * deliberately not applied here: `NotificationLog` has no `category` column and
+   * no tag relation, and its `type` is a different taxonomy (`ROUTINE_REMINDER`,
+   * `HABIT_REMINDER`, ...) from the route's `category` vocabulary (`routine`,
+   * `habits`, ...). There is no honest mapping, and silently returning unfiltered
+   * rows would render a "Routine" filter over everything. Giving them real
+   * meaning needs a column, which is a schema change rather than a service one.
+   */
+  async getHistory(
+    userId: UserId,
+    query: {
+      limit?: number;
+      offset?: number;
+      category?: string;
+      tag?: string;
+      period?: 'all' | 'day' | 'week' | 'month' | 'year';
+    } = {},
+  ): Promise<NotificationLog[]> {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+
+    const period = query.period ?? 'all';
+    if (period === 'all') {
+      return this.notificationRepository.findAll(userId, { limit, offset });
+    }
+
+    // Anchored on the host clock here because the row filter is a storage concern
+    // (which rows fall in the window), not an attribution rule the user's timezone
+    // would change the meaning of.
+    const since = new Date();
+    switch (period) {
+      case 'day':
+        since.setUTCDate(since.getUTCDate() - 1);
+        break;
+      case 'week':
+        since.setUTCDate(since.getUTCDate() - 7);
+        break;
+      case 'month':
+        since.setUTCMonth(since.getUTCMonth() - 1);
+        break;
+      case 'year':
+        since.setUTCFullYear(since.getUTCFullYear() - 1);
+        break;
+    }
+
+    return this.notificationRepository.findAllSince(userId, since, { limit, offset });
+  }
+
+  /**
+   * Apply an action tapped on a notification.
+   *
+   * The push action buttons render on the notification itself, where there is no
+   * session to authorize against, so this is reached from an authenticated
+   * request that already carries `userId`; every branch below scopes by that id
+   * rather than trusting the id in the body.
+   *
+   * `DONE` and `SKIP` both close the notification out but mean different things
+   * to the history feed - read versus dismissed - so they are not collapsed.
+   */
+  async applyAction(
+    userId: UserId,
+    notificationId: string,
+    action: 'DONE' | 'SNOOZE' | 'SKIP',
+    snoozeMinutes = 10,
+  ): Promise<NotificationLog | { snoozed: boolean; scheduledFor: Date }> {
+    const existing = await this.notificationRepository.findById(userId, notificationId);
+    if (!existing) {
+      throw new Error('Notification not found');
+    }
+
+    if (action === 'DONE') {
+      return this.notificationRepository.markRead(userId, notificationId);
+    }
+
+    if (action === 'SKIP') {
+      const dismissed = await this.notificationRepository.markDismissed(userId, notificationId);
+      if (dismissed === 0) {
+        throw new Error('Notification could not be dismissed');
+      }
+      return this.notificationRepository.findById(userId, notificationId).then((row) => {
+        if (!row) throw new Error('Notification not found');
+        return row;
+      });
+    }
+
+    const scheduledFor = new Date(Date.now() + snoozeMinutes * 60 * 1000);
+    const snoozed = await this.notificationRepository.snooze(userId, notificationId, scheduledFor);
+    if (snoozed === 0) {
+      // `snooze` only touches `PENDING` rows, so this is a notification that has
+      // already been sent or closed. Reporting it is better than a silent no-op:
+      // the button would otherwise appear to work and change nothing.
+      throw new Error('Notification is no longer pending and cannot be snoozed');
+    }
+    return { snoozed: true, scheduledFor };
+  }
+
+  /**
    * Get unread notification count for the badge
    */
-  async getUnreadCount(userId: string): Promise<number> {
+  async getUnreadCount(userId: UserId): Promise<number> {
     return this.notificationRepository.unreadCount(userId);
   }
 
   /**
    * Mark a single notification as read (ownership-checked)
    */
-  async markRead(userId: string, notificationId: string): Promise<NotificationLog> {
+  async markRead(userId: UserId, notificationId: string): Promise<NotificationLog> {
     const existing = await this.notificationRepository.findById(userId, notificationId);
     if (!existing) {
       throw new Error('Notification not found');
@@ -192,7 +295,7 @@ export class NotificationService {
   /**
    * Mark all notifications as read; returns affected count
    */
-  async markAllRead(userId: string): Promise<{ success: boolean; count: number }> {
+  async markAllRead(userId: UserId): Promise<{ success: boolean; count: number }> {
     const count = await this.notificationRepository.markAllRead(userId);
     return { success: true, count };
   }
@@ -200,7 +303,7 @@ export class NotificationService {
   /**
    * Dismiss a single notification (ownership-checked; idempotent).
    */
-  async dismiss(userId: string, notificationId: string): Promise<NotificationLog> {
+  async dismiss(userId: UserId, notificationId: string): Promise<NotificationLog> {
     const existing = await this.notificationRepository.findById(userId, notificationId);
     if (!existing) {
       throw new Error('Notification not found');
@@ -215,7 +318,7 @@ export class NotificationService {
   /**
    * Delete a notification (ownership-checked)
    */
-  async delete(userId: string, notificationId: string): Promise<{ success: boolean }> {
+  async delete(userId: UserId, notificationId: string): Promise<{ success: boolean }> {
     const existing = await this.notificationRepository.findById(userId, notificationId);
     if (!existing) {
       throw new Error('Notification not found');
@@ -228,7 +331,7 @@ export class NotificationService {
    * Notify the user that a goal is due soon or overdue
    */
   async notifyGoalDue(
-    userId: string,
+    userId: UserId,
     goal: { id: string; title: string; dueDate?: Date | null; endDate?: Date | null },
   ): Promise<NotificationLog> {
     return this.createNotification(userId, {
@@ -250,7 +353,7 @@ export class NotificationService {
    * Notify the user about a habit reminder
    */
   async notifyHabitReminder(
-    userId: string,
+    userId: UserId,
     habit: { id: string; name: string },
     scheduledFor: Date = new Date(),
   ): Promise<NotificationLog> {
@@ -268,7 +371,7 @@ export class NotificationService {
    * Notify the user that an achievement was unlocked
    */
   async notifyAchievement(
-    userId: string,
+    userId: UserId,
     achievement: { id: string; title: string },
     scheduledFor: Date = new Date(),
   ): Promise<NotificationLog> {
@@ -316,7 +419,7 @@ export class NotificationService {
       now,
       limit,
       DISPATCH_EXCLUDED_TYPES,
-      options.userId,
+      toUserIdOptional(options.userId),
       DISPATCH_MAX_RETRIES,
     );
     result.claimed = due.length;
@@ -330,7 +433,7 @@ export class NotificationService {
       if (!enabled) {
         // Opted out everywhere: retire the row without contacting any channel.
         const marked = await this.notificationRepository.markSent(
-          notification.userId,
+          toUserId(notification.userId),
           notification.id,
         );
         if (marked > 0) result.skipped += 1;
@@ -342,7 +445,7 @@ export class NotificationService {
       const gate = CATEGORY_GATES[notification.type];
       if (gate && (settings as CategorySettings | null)?.[gate] === false) {
         const marked = await this.notificationRepository.markSent(
-          notification.userId,
+          toUserId(notification.userId),
           notification.id,
         );
         if (marked > 0) result.skipped += 1;
@@ -389,7 +492,7 @@ export class NotificationService {
            * by the routine producer.
            */
           const actionData = parseActionData(notification.actionData);
-          const push = await pushService.sendToUser(notification.userId, {
+          const push = await pushService.sendToUser(toUserId(notification.userId), {
             title: notification.title,
             body: notification.body ?? undefined,
             url: notification.actionUrl ?? undefined,
@@ -421,7 +524,7 @@ export class NotificationService {
 
       if (failures.length > 0) {
         const marked = await this.notificationRepository.markFailed(
-          notification.userId,
+          toUserId(notification.userId),
           notification.id,
           failures.join('; '),
           DISPATCH_MAX_RETRIES,
@@ -433,7 +536,7 @@ export class NotificationService {
       // `markSent` is guarded on status = PENDING, so a row another worker
       // already claimed reports 0 and is not counted twice.
       const marked = await this.notificationRepository.markSent(
-        notification.userId,
+        toUserId(notification.userId),
         notification.id,
         channels,
       );

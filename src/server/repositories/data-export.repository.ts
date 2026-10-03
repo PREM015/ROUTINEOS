@@ -1,5 +1,6 @@
 import type { DataExport, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Data Export Repository
@@ -37,7 +38,7 @@ export class DataExportRepository extends BaseRepository {
   /**
    * All of a user's exports, newest first.
    */
-  async findAllByUser(userId: string): Promise<DataExport[]> {
+  async findAllByUser(userId: UserId): Promise<DataExport[]> {
     try {
       return await this.prisma.dataExport.findMany({
         where: { userId },

@@ -41,6 +41,10 @@ const eslintConfig = [
       'playwright-report/**',
       'test-results/**',
       'next-env.d.ts',
+      // Standalone Node maintenance scripts (.cjs). `@typescript-eslint/no-require-imports`
+      // is a false positive here: a CommonJS file cannot use an ESM import, and these
+      // are run by hand via `node`, not bundled by Next.
+      'scripts/**',
     ],
   },
   ...nextVitals,

@@ -3,6 +3,7 @@ import { createTagSchema } from '@/schemas/tag.schema';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { TagRepository } from '@/server/repositories/tag.repository';
 import type { Tag } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Tag Service
@@ -27,11 +28,11 @@ export class TagService {
     this.tagRepository = new TagRepository();
   }
 
-  async list(userId: string): Promise<Tag[]> {
+  async list(userId: UserId): Promise<Tag[]> {
     return this.tagRepository.listForUser(userId);
   }
 
-  async create(userId: string, input: unknown): Promise<Tag> {
+  async create(userId: UserId, input: unknown): Promise<Tag> {
     const parsed = createTagSchema.safeParse(input);
     if (!parsed.success) {
       throw new RangeError(parsed.error.errors[0]?.message ?? 'Invalid tag data');
@@ -40,11 +41,11 @@ export class TagService {
   }
 
   /** Ownership-checked read. Returns null rather than throwing on a miss. */
-  async get(userId: string, tagId: string): Promise<Tag | null> {
+  async get(userId: UserId, tagId: string): Promise<Tag | null> {
     return this.tagRepository.findById(userId, tagId);
   }
 
-  async update(userId: string, tagId: string, input: unknown): Promise<Tag> {
+  async update(userId: UserId, tagId: string, input: unknown): Promise<Tag> {
     const parsed = updateTagSchema.safeParse(input);
     if (!parsed.success) {
       throw new RangeError(parsed.error.errors[0]?.message ?? 'Invalid tag data');
@@ -55,7 +56,7 @@ export class TagService {
     return this.tagRepository.update(userId, tagId, parsed.data);
   }
 
-  async delete(userId: string, tagId: string): Promise<void> {
+  async delete(userId: UserId, tagId: string): Promise<void> {
     if (!(await this.tagRepository.findById(userId, tagId))) {
       throw new NotFoundError('Tag not found');
     }
@@ -63,7 +64,7 @@ export class TagService {
   }
 
   /** Idempotent helper used by importers and bulk tooling. */
-  getOrCreate(userId: string, name: string): Promise<Tag> {
+  getOrCreate(userId: UserId, name: string): Promise<Tag> {
     return this.tagRepository.getOrCreate(userId, name);
   }
 }

@@ -14,6 +14,7 @@ import type {
   ProjectQueryParams,
 } from '@/schemas/project.schema';
 import { calculateGoalProgress } from '@/server/domain/goal/goal-tracker';
+import type { UserId } from '@/types/ids';
 
 /**
  * Project Service
@@ -33,7 +34,7 @@ export class ProjectService {
    * Create a new project, optionally connecting existing goals
    */
   async createProject(
-    userId: string,
+    userId: UserId,
     input: CreateProjectInput & { goalIds?: string[] }
   ) {
     const parsed = createProjectSchema.parse(input);
@@ -65,7 +66,7 @@ export class ProjectService {
   /**
    * List projects for a user with optional filters
    */
-  async getProjects(userId: string, query: ProjectQueryParams = {}) {
+  async getProjects(userId: UserId, query: ProjectQueryParams = {}) {
     const parsed = projectQuerySchema.parse(query);
 
     const projects = await this.projectRepository.findAll(userId, {
@@ -83,7 +84,7 @@ export class ProjectService {
   /**
    * Get a single project with goals and milestones
    */
-  async getProject(userId: string, projectId: string) {
+  async getProject(userId: UserId, projectId: string) {
     const project = await this.projectRepository.findById(userId, projectId);
     if (!project) {
       throw new Error('Project not found');
@@ -95,7 +96,7 @@ export class ProjectService {
    * Update a project owned by the user
    */
   async updateProject(
-    userId: string,
+    userId: UserId,
     projectId: string,
     input: UpdateProjectInput
   ) {
@@ -135,7 +136,7 @@ export class ProjectService {
   /**
    * Archive a project
    */
-  async archiveProject(userId: string, projectId: string) {
+  async archiveProject(userId: UserId, projectId: string) {
     await this.getProject(userId, projectId);
 
     await this.projectRepository.archive(userId, projectId);
@@ -154,7 +155,7 @@ export class ProjectService {
   /**
    * Delete a project (permanently removes it)
    */
-  async deleteProject(userId: string, projectId: string): Promise<void> {
+  async deleteProject(userId: UserId, projectId: string): Promise<void> {
     await this.getProject(userId, projectId);
 
     await this.projectRepository.delete(userId, projectId);
@@ -170,7 +171,7 @@ export class ProjectService {
   /**
    * Update a project's status (active, on hold, completed, archived...)
    */
-  async updateStatus(userId: string, projectId: string, status: ProjectStatus) {
+  async updateStatus(userId: UserId, projectId: string, status: ProjectStatus) {
     await this.getProject(userId, projectId);
 
     return this.projectRepository.updateStatus(userId, projectId, status);
@@ -179,7 +180,7 @@ export class ProjectService {
   /**
    * Get milestones for a project's goals
    */
-  async getMilestones(userId: string, projectId: string) {
+  async getMilestones(userId: UserId, projectId: string) {
     await this.getProject(userId, projectId);
 
     return this.projectRepository.getMilestones(userId, projectId);
@@ -189,7 +190,7 @@ export class ProjectService {
    * Add a milestone to a goal within the user's project
    */
   async addMilestone(
-    userId: string,
+    userId: UserId,
     projectId: string,
     goalId: string,
     input: MilestoneInput
@@ -208,7 +209,7 @@ export class ProjectService {
    * Update a milestone owned by the user (through its goal)
    */
   async updateMilestone(
-    userId: string,
+    userId: UserId,
     milestoneId: string,
     input: Partial<MilestoneInput>
   ) {
@@ -227,7 +228,7 @@ export class ProjectService {
   /**
    * Delete a milestone owned by the user (through its goal)
    */
-  async deleteMilestone(userId: string, milestoneId: string): Promise<void> {
+  async deleteMilestone(userId: UserId, milestoneId: string): Promise<void> {
     const count = await this.projectRepository.deleteMilestone(milestoneId, userId);
     if (count === 0) {
       throw new Error('Milestone not found');
@@ -237,7 +238,7 @@ export class ProjectService {
   /**
    * Get aggregated stats for a project (goal + task + milestone progress)
    */
-  async getProjectStats(userId: string, projectId: string) {
+  async getProjectStats(userId: UserId, projectId: string) {
     const project = await this.getProject(userId, projectId);
 
     const tasks = project.tasks;

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { adminService, ForbiddenError } from '@/server/services/admin.service';
 import { adminAnalyticsQuerySchema } from '@/schemas/admin.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 function toDateOnly(value: string): Date {
   const [y = '1970', m = '1', d = '1'] = value.split('-');
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      await adminService.requireAdmin(session.user.id);
+      await adminService.requireAdmin(userIdFromSession(session));
     } catch (error) {
       if (error instanceof ForbiddenError) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

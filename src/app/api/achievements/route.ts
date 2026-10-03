@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { AchievementService } from '@/server/services/achievement.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Achievements Route
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     const limit = validated.data.limit ?? 50;
     const { achievements, total } = await new AchievementService().listRecent(
-      session.user.id,
+      userIdFromSession(session),
       limit,
     );
 

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { habitContributionService } from '@/server/services/habit-contribution.service';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const querySchema = z.object({
   year: z.coerce.number().int().min(1970).max(9999),
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const data = await habitContributionService.getYear(session.user.id, parsed.data.year);
+    const data = await habitContributionService.getYear(userIdFromSession(session), parsed.data.year);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

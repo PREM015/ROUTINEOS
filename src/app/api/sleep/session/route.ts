@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/sleep/session – resolve the user's current sleep state (active
@@ -15,7 +16,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await sleepSessionService.resolveSleepState(session.user.id);
+    const data = await sleepSessionService.resolveSleepState(userIdFromSession(session));
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching sleep session status:', error);

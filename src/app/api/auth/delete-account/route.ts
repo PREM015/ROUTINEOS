@@ -2,6 +2,7 @@ import { auth, signOut } from '@/lib/auth';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const deleteAccountSchema = z.object({
   confirm: z.literal(true, {
@@ -32,7 +33,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const authService = new AuthService();
-    await authService.deleteAccount(session.user.id, validated.data.reason);
+    await authService.deleteAccount(userIdFromSession(session), validated.data.reason);
     await signOut({ redirect: false });
 
     return NextResponse.json({ success: true, message: 'Account deleted' });

@@ -4,6 +4,7 @@ import { isStreakActiveDay } from '@/server/domain/streak/streak-calculator';
 import type { HabitTier } from '@/generated/prisma';
 import { THRESHOLDS } from '@/config/scoring';
 import { previousCalendarDay } from '@/lib/dates';
+import type { UserId } from '@/types/ids';
 
 /**
  * Streak Calculation
@@ -25,7 +26,7 @@ export interface StreakCalculationResult {
  * Calculate streak for a user on a specific date
  */
 export async function calculateStreak(
-  userId: string,
+  userId: UserId,
   date: string,
   _habitTier?: HabitTier,
 ): Promise<StreakCalculationResult> {
@@ -148,7 +149,7 @@ function checkStreakMilestone(currentStreak: number): number | undefined {
  * Record streak milestone
  */
 export async function recordStreakMilestone(
-  userId: string,
+  userId: UserId,
   milestoneDays: number,
   streakType: string = 'current',
   /** The user's today. Required: UTC was used before and mis-dated the row. */

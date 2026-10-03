@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { attachmentService } from '@/server/services/attachment.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Attachments Route
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const { attachments, total, limit, offset } = await attachmentService.list(session.user.id, {
+    const { attachments, total, limit, offset } = await attachmentService.list(userIdFromSession(session), {
       limit: parseInt(searchParams.get('limit') ?? '50', 10) || 50,
       offset: Math.max(0, parseInt(searchParams.get('offset') ?? '0', 10) || 0),
       entityType: searchParams.get('entityType') ?? undefined,

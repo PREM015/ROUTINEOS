@@ -1,5 +1,6 @@
 import type { DailyReflection, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Reflection Repository
@@ -10,7 +11,7 @@ export class ReflectionRepository extends BaseRepository {
   /**
    * Find reflection by date
    */
-  async findByDate(userId: string, date: string): Promise<DailyReflection | null> {
+  async findByDate(userId: UserId, date: string): Promise<DailyReflection | null> {
     try {
       return await this.prisma.dailyReflection.findFirst({
         where: { userId, date },
@@ -24,7 +25,7 @@ export class ReflectionRepository extends BaseRepository {
    * Find reflections for range
    */
   async findByRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<DailyReflection[]> {
@@ -50,7 +51,7 @@ export class ReflectionRepository extends BaseRepository {
    * scalar FK with a `user: { connect }` relation in the same input.
    */
   async upsertReflection(
-    userId: string,
+    userId: UserId,
     date: string,
     data: Omit<Prisma.DailyReflectionUncheckedCreateInput, 'userId' | 'date'>
   ): Promise<DailyReflection> {
@@ -73,7 +74,7 @@ export class ReflectionRepository extends BaseRepository {
    * Get average energy
    */
   async getAverageEnergy(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -100,7 +101,7 @@ export class ReflectionRepository extends BaseRepository {
    * Get average mood
    */
   async getAverageMood(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -127,7 +128,7 @@ export class ReflectionRepository extends BaseRepository {
    * Get average stress
    */
   async getAverageStress(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -154,7 +155,7 @@ export class ReflectionRepository extends BaseRepository {
    * Count reflections with data
    */
   async countWithData(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {

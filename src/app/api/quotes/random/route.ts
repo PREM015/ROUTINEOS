@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { QuoteService, FALLBACK_QUOTE } from '@/server/services/quote.service';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const quoteService = new QuoteService();
 
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const pick = await quoteService.getRandomQuote(session.user.id, {
+    const pick = await quoteService.getRandomQuote(userIdFromSession(session), {
       exclude: validated.data.exclude,
       scope: validated.data.scope,
     });

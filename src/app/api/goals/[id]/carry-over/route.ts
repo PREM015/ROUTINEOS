@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const carryOverSchema = z.object({
   newEndDate: z.coerce.date(),
@@ -31,7 +32,7 @@ export async function POST(
 
     const goalService = new GoalService();
     const newGoal = await goalService.carryOverGoal(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data.newEndDate,
       validated.data.adjustProgress

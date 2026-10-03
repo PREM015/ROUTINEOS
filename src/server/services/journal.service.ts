@@ -27,6 +27,7 @@ import {
   type JournalSortOrder,
 } from '@/server/repositories/journal.repository';
 import type { JournalEntryWithRelations, JournalSearchResult } from '@/types/journal';
+import type { UserId } from '@/types/ids';
 
 /**
  * How many candidates ranking may consider per requested result.
@@ -176,7 +177,7 @@ export class JournalService {
    * `deletedAt`, so a create for a trashed day would fail on the constraint
    * even though no active entry exists. The caller is told to restore first.
    */
-  async create(userId: string, input: CreateJournalEntryInput): Promise<JournalEntryWithRelations> {
+  async create(userId: UserId, input: CreateJournalEntryInput): Promise<JournalEntryWithRelations> {
     const data = createJournalEntrySchema.parse(input);
 
     if (!isValidDateKey(data.date)) {
@@ -220,7 +221,7 @@ export class JournalService {
    * recorded incompletely.
    */
   async update(
-    userId: string,
+    userId: UserId,
     entryId: string,
     input: UpdateJournalEntryInput
   ): Promise<JournalEntryWithRelations> {
@@ -259,13 +260,13 @@ export class JournalService {
   }
 
   /** One entry, or null. Does not throw on a miss. */
-  async get(userId: string, entryId: string): Promise<JournalEntryWithRelations | null> {
+  async get(userId: UserId, entryId: string): Promise<JournalEntryWithRelations | null> {
     const entry = await this.journalRepository.findById(userId, entryId);
     return entry ? toEntry(entry) : null;
   }
 
   /** One entry by its `findById` result, throwing when it is absent. */
-  async getOrThrow(userId: string, entryId: string): Promise<JournalEntryWithRelations> {
+  async getOrThrow(userId: UserId, entryId: string): Promise<JournalEntryWithRelations> {
     const entry = await this.get(userId, entryId);
     if (!entry) throw new NotFoundError('Journal entry');
     return entry;
@@ -278,7 +279,7 @@ export class JournalService {
    * from "the entry for this day is in the trash and must be restored first".
    */
   async getByDateIncludingDeleted(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<JournalEntryWithRelations | null> {
     if (!isValidDateKey(date)) {
@@ -296,7 +297,7 @@ export class JournalService {
    * always the only page, so page 2 was unreachable no matter how many entries
    * existed.
    */
-  async list(userId: string, filters: JournalListFilters = {}): Promise<JournalPageResult> {
+  async list(userId: UserId, filters: JournalListFilters = {}): Promise<JournalPageResult> {
     const query = this.toRepositoryQuery(filters);
 
     const [entries, total] = await Promise.all([
@@ -326,7 +327,7 @@ export class JournalService {
    * request; the response says so rather than truncating silently.
    */
   async exportEntries(
-    userId: string,
+    userId: UserId,
     format: JournalExportFormat,
     filters: JournalListFilters = {}
   ): Promise<JournalExportResult> {
@@ -359,7 +360,7 @@ export class JournalService {
    * ranking reorders it; taking exactly `limit` candidates would make the limit
    * a cap on what is *considered*, not on what is returned.
    */
-  async search(userId: string, term: string, limit: number = 20): Promise<JournalSearchResult[]> {
+  async search(userId: UserId, term: string, limit: number = 20): Promise<JournalSearchResult[]> {
     const normalized = normalizeSearchTerm(term);
     if (normalized.length === 0) return [];
 
@@ -373,28 +374,28 @@ export class JournalService {
   }
 
   /** Soft delete. The row and its revisions are kept so it can be restored. */
-  async softDelete(userId: string, entryId: string): Promise<JournalEntryWithRelations> {
+  async softDelete(userId: UserId, entryId: string): Promise<JournalEntryWithRelations> {
     await this.requireEntry(userId, entryId);
     await this.journalRepository.softDelete(userId, entryId);
     return toEntry(await this.journalRepository.findById(userId, entryId, true));
   }
 
   /** Restore a soft-deleted entry. */
-  async restore(userId: string, entryId: string): Promise<JournalEntryWithRelations> {
+  async restore(userId: UserId, entryId: string): Promise<JournalEntryWithRelations> {
     await this.requireEntry(userId, entryId);
     await this.journalRepository.restore(userId, entryId);
     return toEntry(await this.journalRepository.findById(userId, entryId));
   }
 
   /** Permanently delete an entry and, by cascade, its revisions. */
-  async permanentlyDelete(userId: string, entryId: string): Promise<void> {
+  async permanentlyDelete(userId: UserId, entryId: string): Promise<void> {
     await this.requireEntry(userId, entryId);
     await this.journalRepository.permanentDelete(userId, entryId);
   }
 
   /** The trash, newest deletion first. */
   async listDeleted(
-    userId: string,
+    userId: UserId,
     options: { limit?: number; offset?: number } = {}
   ): Promise<{ entries: JournalEntryWithRelations[]; total: number }> {
     const [entries, total] = await Promise.all([
@@ -404,19 +405,19 @@ export class JournalService {
     return { entries: entries as JournalEntryWithRelations[], total };
   }
 
-  async countDeleted(userId: string): Promise<number> {
+  async countDeleted(userId: UserId): Promise<number> {
     return this.journalRepository.countDeleted(userId);
   }
 
   /** Revision history, newest first. */
-  async listRevisions(userId: string, entryId: string): Promise<JournalRevision[]> {
+  async listRevisions(userId: UserId, entryId: string): Promise<JournalRevision[]> {
     await this.requireEntry(userId, entryId);
     return this.journalRepository.listRevisions(userId, entryId);
   }
 
   /** Restore a revision's title and content onto its entry. */
   async restoreRevision(
-    userId: string,
+    userId: UserId,
     entryId: string,
     revisionId: string
   ): Promise<JournalEntryWithRelations> {
@@ -426,21 +427,21 @@ export class JournalService {
   }
 
   /** Toggle the favorite flag. Returns the value now stored. */
-  async setFavorite(userId: string, entryId: string, isFavorite: boolean): Promise<boolean> {
+  async setFavorite(userId: UserId, entryId: string, isFavorite: boolean): Promise<boolean> {
     await this.requireEntry(userId, entryId);
     await this.journalRepository.update(userId, entryId, { isFavorite });
     return isFavorite;
   }
 
   /** Set the archived flag. Returns the value now stored. */
-  async setArchived(userId: string, entryId: string, isArchived: boolean): Promise<boolean> {
+  async setArchived(userId: UserId, entryId: string, isArchived: boolean): Promise<boolean> {
     await this.requireEntry(userId, entryId);
     await this.journalRepository.update(userId, entryId, { isArchived });
     return isArchived;
   }
 
   /** Replace the tag set, rejecting any tag the caller does not own. */
-  async setTags(userId: string, entryId: string, tagIds: string[]): Promise<number> {
+  async setTags(userId: UserId, entryId: string, tagIds: string[]): Promise<number> {
     await this.requireEntry(userId, entryId);
     await this.assertTagsOwned(userId, tagIds);
     return this.journalRepository.setTags(userId, entryId, tagIds);
@@ -453,7 +454,7 @@ export class JournalService {
    * be loaded, so a day in the middle of a long month still has a colour.
    */
   async getMonthData(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<{ startDate: string; endDate: string; cells: Array<{ date: string; mood: number | null; entryId: string; isFavorite: boolean }> }> {
@@ -472,7 +473,7 @@ export class JournalService {
    * entry and read that user's tag name back through their own journal. The
    * ids are reported back so the caller can say which ones failed.
    */
-  private async assertTagsOwned(userId: string, tagIds: string[]): Promise<void> {
+  private async assertTagsOwned(userId: UserId, tagIds: string[]): Promise<void> {
     const unique = [...new Set(tagIds)];
     if (unique.length === 0) return;
 
@@ -484,7 +485,7 @@ export class JournalService {
     throw new ForeignTagError(foreign);
   }
 
-  private async requireEntry(userId: string, entryId: string): Promise<void> {
+  private async requireEntry(userId: UserId, entryId: string): Promise<void> {
     const entry = await this.journalRepository.findById(userId, entryId, true);
     if (!entry) throw new NotFoundError('Journal entry');
   }

@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryIdSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * DELETE /api/journal/[id]/permanent
@@ -30,7 +31,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await journalService.permanentlyDelete(session.user.id, parsedParams.data.id);
+    await journalService.permanentlyDelete(userIdFromSession(session), parsedParams.data.id);
 
     return NextResponse.json({ success: true, data: { id: parsedParams.data.id } });
   } catch (error) {

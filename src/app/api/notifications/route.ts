@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { notificationService } from '@/server/services/notification.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { toUserId, userIdFromSession, type UserId } from '@/types/ids';
 
 /**
  * Notification History Route (ERROR.md L)
@@ -90,9 +91,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await notificationService.getHistory(userId, parsed.data);
+    const data = await notificationService.getHistory(toUserId(userId), parsed.data);
 
-    void runCatchUp(userId);
+    void runCatchUp(toUserId(userId));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const updated = await notificationService.markAllRead(session.user.id);
+    const updated = await notificationService.markAllRead(userIdFromSession(session));
     return NextResponse.json({ success: true, data: { updated } });
   } catch (error) {
     console.error('Error marking notifications read:', error);
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
  *
  * Never rejects: a catch-up failure is logged and the next attempt retries.
  */
-async function runCatchUp(userId: string): Promise<void> {
+async function runCatchUp(userId: UserId): Promise<void> {
   const now = Date.now();
   const previous = lastCatchUp.get(userId);
   if (previous !== undefined && now - previous < CATCH_UP_THROTTLE_MS) return;

@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { ErrorReporter } from '@/lib/monitoring/error-reporter';
 import { useSession } from 'next-auth/react';
+import { toUserIdOptional } from '@/types/ids';
 
 interface ErrorHandlerOptions {
   showNotification?: boolean;
@@ -33,7 +34,7 @@ export function useErrorHandler() {
 
     // Report to monitoring service
     if (reportToService) {
-      ErrorReporter.reportClientError(error, session?.user?.id);
+      ErrorReporter.reportClientError(error, toUserIdOptional(session?.user?.id));
     }
 
     // Show user-friendly notification

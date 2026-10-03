@@ -14,6 +14,7 @@ import {
   type SleepLogLike,
 } from '@/server/domain/sleep/sleep-analyzer';
 import type { DateRange } from '@/types/analytics';
+import type { UserId } from '@/types/ids';
 
 /**
  * Yearly Analytics
@@ -116,7 +117,7 @@ function monthKey(year: number, month: number): string {
  * `.toISOString()`, which did the same thing in the other direction.
  */
 export async function yearlySummary(
-  userId: string,
+  userId: UserId,
   year: number,
   timezone: string,
   today?: string,

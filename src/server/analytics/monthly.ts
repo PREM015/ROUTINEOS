@@ -13,6 +13,7 @@ import {
   type SleepLogLike,
 } from '@/server/domain/sleep/sleep-analyzer';
 import type { DateRange } from '@/types/analytics';
+import type { UserId } from '@/types/ids';
 
 /**
  * Monthly Analytics
@@ -131,7 +132,7 @@ function monthWeeks(startDate: string, endDate: string): Array<{ index: number; 
  * after.
  */
 export async function monthlySummary(
-  userId: string,
+  userId: UserId,
   month: string,
   timezone: string,
   today?: string,

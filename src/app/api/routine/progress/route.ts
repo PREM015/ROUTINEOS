@@ -3,6 +3,7 @@ import { RoutineService } from '@/server/services/routine.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { calendarDateSchema } from '@/lib/validation/routine.schema';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/routine/progress
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     const routineService = new RoutineService();
     const data = await routineService.getRoutineProgress(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.period,
       validated.data.date
     );

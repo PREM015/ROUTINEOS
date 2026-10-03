@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/habits/[id]/resume
@@ -18,7 +19,7 @@ export async function POST(
     }
 
     const habitService = new HabitService();
-    await habitService.resumeHabit(session.user.id, id);
+    await habitService.resumeHabit(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

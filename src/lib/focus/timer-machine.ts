@@ -186,6 +186,13 @@ export function isExpired(state: FocusMachineState, now: number): boolean {
 
 /** Milliseconds left in a countdown. Zero once expired. */
 export function remainingMs(state: FocusMachineState, now: number): number {
+  // A stopwatch has no "remaining" at all, so this is checked before the plan:
+  // otherwise an idle stopwatch would report its elapsed time as time remaining.
+  if (state.plannedMs <= 0) return 0;
+  // Idle shows the plan, not zero. An idle dial reading `00:00` instead of `25:00`
+  // reads as "you have no time", which is a strange thing to show someone who has
+  // not started yet.
+  if (state.status === 'idle') return state.plannedMs;
   if (state.endsAt === null) return 0;
   if (state.status === 'paused') {
     return Math.max(0, state.endsAt - (state.pausedAt ?? now));
@@ -298,9 +305,10 @@ export function formatForState(state: FocusMachineState, now: number): string {
  *   - `finish` is idempotent-ish by construction: once `status` is not `running`
  *     or `paused`, `finish` returns the state unchanged, so a completion timeout
  *     racing with a manual Stop cannot double-count the cycle.
- *   - Every action clears `error`, so a successful interaction always clears a
- *     previous save failure rather than leaving a stale message next to a
- *     working timer.
+ *   - Actions that *attempt something* clear `error`; purely presentational ones
+ *     do not. Typing in the intent field must not dismiss "could not save your
+ *     session" — that message is about the save, and clearing it on every
+ *     keystroke would let someone talk themselves into believing it went through.
  */
 export function focusReducer(
   state: FocusMachineState,

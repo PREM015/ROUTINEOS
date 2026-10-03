@@ -13,6 +13,7 @@ import type {
   IntegrationUpdateInput,
 } from '@/schemas/integration.schema';
 import type { Integration, IntegrationProvider } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Integration Service
@@ -68,7 +69,7 @@ export class IntegrationService {
    * client sees cannot differ between the list, the single-fetch and the
    * connect response.
    */
-  async listForUser(userId: string) {
+  async listForUser(userId: UserId) {
     const integrations = await this.integrationRepository.findAll(userId);
 
     return integrations.map((integration) => ({
@@ -78,7 +79,7 @@ export class IntegrationService {
   }
 
   /** One provider's connection, or `NotFoundError`. */
-  async getForUser(userId: string, provider: IntegrationProvider) {
+  async getForUser(userId: UserId, provider: IntegrationProvider) {
     const integration = await this.integrationRepository.findByProvider(
       userId,
       provider
@@ -104,7 +105,7 @@ export class IntegrationService {
    *  - a provider that needs credentials but was given none is a 400
    */
   async connect(
-    userId: string,
+    userId: UserId,
     input: ConnectIntegrationInput
   ): Promise<
     | { requiresRedirect: true; authorizationUrl: string }
@@ -171,7 +172,7 @@ export class IntegrationService {
    * request that changes one does not silently reset the other.
    */
   async update(
-    userId: string,
+    userId: UserId,
     provider: IntegrationProvider,
     input: IntegrationUpdateInput
   ) {
@@ -219,7 +220,7 @@ export class IntegrationService {
    * Tokens are left on the row and the record is not deleted, so reconnecting
    * does not require the provider to re-authorise from scratch.
    */
-  async disconnect(userId: string, provider: IntegrationProvider) {
+  async disconnect(userId: UserId, provider: IntegrationProvider) {
     const integration = await this.integrationRepository.findByProvider(
       userId,
       provider
@@ -246,7 +247,7 @@ export class IntegrationService {
    * identically on purpose: telling a stranger which providers a user has
    * connected even if disabled is information the API should not hand out.
    */
-  async sync(userId: string, provider: IntegrationProvider) {
+  async sync(userId: UserId, provider: IntegrationProvider) {
     const integration = await this.integrationRepository.findByProvider(
       userId,
       provider

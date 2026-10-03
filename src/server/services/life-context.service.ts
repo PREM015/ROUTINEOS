@@ -7,6 +7,7 @@ import {
 } from '@/lib/context';
 import type { z } from 'zod';
 import type { reflectionSchema } from '@/schemas/reflection.schema';
+import type { UserId } from '@/types/ids';
 
 type ReflectionInput = z.infer<typeof reflectionSchema>;
 
@@ -34,7 +35,7 @@ export class LifeContextService {
    * than throwing, matching the previous behaviour of this endpoint.
    */
   async getLifeContext(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<LifeContextSnapshot> {
     let reflection = null;
@@ -56,7 +57,7 @@ export class LifeContextService {
   /**
    * The stored reflection for a date, or null.
    */
-  async getReflection(userId: string, date: string) {
+  async getReflection(userId: UserId, date: string) {
     return this.reflectionRepository.findByDate(userId, date);
   }
 
@@ -66,7 +67,7 @@ export class LifeContextService {
    * `gratitude` and `tomorrowPriorities` arrive as arrays but are stored in
    * String columns, so they are serialised here — never written as raw arrays.
    */
-  async saveReflection(userId: string, input: ReflectionInput) {
+  async saveReflection(userId: UserId, input: ReflectionInput) {
     const { date, gratitude, tomorrowPriorities, ...rest } = input;
 
     return this.reflectionRepository.upsertReflection(userId, date, {

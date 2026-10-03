@@ -13,6 +13,7 @@ import { UserRepository } from '@/server/repositories/user.repository';
 import { ScoringService } from './scoring.service';
 import { AchievementService } from './achievement.service';
 import { automationService } from './automation.service';
+import type { UserId } from '@/types/ids';
 
 /**
  * Habit Service
@@ -37,7 +38,7 @@ export class HabitService {
    * parsed filters straight through, so filtering lives in one place.
    */
   async listHabits(
-    userId: string,
+    userId: UserId,
     filters: Parameters<HabitRepository['findAll']>[1] = {}
   ) {
     return this.habitRepository.findAll(userId, filters);
@@ -58,12 +59,12 @@ export class HabitService {
    * Returns `null` rather than throwing so the route can answer 404 for a habit
    * that does not belong to the caller without inspecting an error type.
    */
-  async getHabitWithRelations(habitId: string, userId: string) {
+  async getHabitWithRelations(habitId: string, userId: UserId) {
     return this.habitRepository.findWithRelations(habitId, userId);
   }
 
   async countHabits(
-    userId: string,
+    userId: UserId,
     filters: Parameters<HabitRepository['findAll']>[1] = {}
   ) {
     return this.habitRepository.countAll(userId, filters);
@@ -78,7 +79,7 @@ export class HabitService {
    * ones. Ad-hoc inclusions (added manually for the date) come back flagged
    * with `source: 'MANUAL'`.
    */
-  async getHabitsForDate(userId: string, date: string) {
+  async getHabitsForDate(userId: UserId, date: string) {
     const [habits, logs] = await Promise.all([
       this.habitRepository.findAll(userId, { status: 'ACTIVE' }),
       this.habitRepository.findLogsByDate(userId, date),
@@ -129,7 +130,7 @@ export class HabitService {
    * Create new habit
    */
   async createHabit(
-    userId: string,
+    userId: UserId,
     input: CreateHabitInput
   ): Promise<HabitWithRelations> {
     // Validate input
@@ -192,7 +193,7 @@ export class HabitService {
    * Update existing habit
    */
   async updateHabit(
-    userId: string,
+    userId: UserId,
     habitId: string,
     input: UpdateHabitInput
   ): Promise<HabitWithRelations> {
@@ -276,7 +277,7 @@ export class HabitService {
    * Log habit completion
    */
   async logHabit(
-    userId: string,
+    userId: UserId,
     input: LogHabitInput
   ): Promise<{
     log: HabitLog;
@@ -405,7 +406,7 @@ export class HabitService {
    * day, not evidence the habit was completed, so it gets its own path.
    */
   async setNote(
-    userId: string,
+    userId: UserId,
     habitId: string,
     date: string,
     note: string | null
@@ -421,7 +422,7 @@ export class HabitService {
    * Archive habit
    */
   async archiveHabit(
-    userId: string,
+    userId: UserId,
     habitId: string,
     reason?: string
   ): Promise<void> {
@@ -453,7 +454,7 @@ export class HabitService {
    * returns to `ACTIVE` — a habit that was `PAUSED` before being archived
    * cannot be recovered as `PAUSED`, because the previous status is not stored.
    */
-  async restoreHabit(userId: string, habitId: string) {
+  async restoreHabit(userId: UserId, habitId: string) {
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
       throw new ValidationError('Habit not found');
@@ -481,7 +482,7 @@ export class HabitService {
    * Pause habit
    */
   async pauseHabit(
-    userId: string,
+    userId: UserId,
     habitId: string,
     reason?: string,
     resumeDate?: string
@@ -522,7 +523,7 @@ export class HabitService {
   /**
    * Resume habit
    */
-  async resumeHabit(userId: string, habitId: string): Promise<void> {
+  async resumeHabit(userId: UserId, habitId: string): Promise<void> {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
@@ -551,7 +552,7 @@ export class HabitService {
    * every habit checkbox rendering as "not done" after a refresh. This is the
    * read path that answers the question the client was actually asking.
    */
-  async getLogsForDate(userId: string, date: string) {
+  async getLogsForDate(userId: UserId, date: string) {
     return this.habitRepository.findLogsByUserRange(userId, date, date);
   }
 
@@ -559,7 +560,7 @@ export class HabitService {
    * Habit-log rows for an arbitrary window, across every habit. Used by the
    * dashboard health widget and the /habits list so both read one source.
    */
-  async getLogsInRange(userId: string, startDate: string, endDate: string) {
+  async getLogsInRange(userId: UserId, startDate: string, endDate: string) {
     return this.habitRepository.findLogsByUserRange(userId, startDate, endDate);
   }
 
@@ -569,7 +570,7 @@ export class HabitService {
    * missed + skipped) within the window, classified into healthy / at-risk /
    * unhealthy. Habits with no logs in the window report "no data".
    */
-  async getHabitHealth(userId: string, windowDays = 28) {
+  async getHabitHealth(userId: UserId, windowDays = 28) {
     // The window's *end* decides which logs count, so it has to be the user's
     // today. It was pinned to `DEFAULT_TZ`, which meant the last day of the
     // 28-day window was a different calendar day than the one the user logs
@@ -655,7 +656,7 @@ export class HabitService {
    * list even though it isn't scheduled by frequency.
    */
   async addHabitToToday(
-    userId: string,
+    userId: UserId,
     habitId: string,
     date: string
   ): Promise<void> {
@@ -693,7 +694,7 @@ export class HabitService {
    * override that added the habit; the habit itself is untouched.
    */
   async removeHabitFromToday(
-    userId: string,
+    userId: UserId,
     habitId: string,
     date: string
   ): Promise<void> {
@@ -714,7 +715,7 @@ export class HabitService {
    * Skip habit for date
    */
   async skipHabit(
-    userId: string,
+    userId: UserId,
     habitId: string,
     date: string,
     reason?: string
@@ -752,7 +753,7 @@ export class HabitService {
   /**
    * Delete habit
    */
-  async deleteHabit(userId: string, habitId: string): Promise<void> {
+  async deleteHabit(userId: UserId, habitId: string): Promise<void> {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
@@ -776,7 +777,7 @@ export class HabitService {
    * Delete habit
    */
   async getHabitAnalytics(
-    userId: string,
+    userId: UserId,
     habitId: string,
     startDate: string,
     endDate: string

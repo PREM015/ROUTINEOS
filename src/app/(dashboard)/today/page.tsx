@@ -18,6 +18,7 @@ import { StreakCard } from '@/components/streak/StreakCard';
 import { getTodayString } from '@/lib/dates';
 import { resolveDayTypeForDate } from '@/lib/scheduling/resolve-routine';
 import { userService } from '@/server/services/user.service';
+import { userIdFromSession } from '@/types/ids';
 
 export default async function TodayPage() {
   const session = await auth();
@@ -26,7 +27,7 @@ export default async function TodayPage() {
     redirect('/login');
   }
 
-  const timezone = await userService.getTimezone(session.user.id);
+  const timezone = await userService.getTimezone(userIdFromSession(session));
   const today = getTodayString(timezone);
   
   // Resolve the actual day type for today (respects RoutineException)
@@ -40,7 +41,7 @@ export default async function TodayPage() {
   // identical `dayType` but also loaded the template, every block and every
   // routine log for the date â€” all of which `CurrentRoutineBlock` then fetched
   // again through `/api/routine/today`. The page only ever used `.dayType`.
-  const { dayType: resolvedDayType } = await resolveDayTypeForDate(session.user.id, today);
+  const { dayType: resolvedDayType } = await resolveDayTypeForDate(userIdFromSession(session), today);
 
   return (
     <div className="relative mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">

@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import type { UserId } from '@/types/ids';
 
 /**
  * Logging middleware for API routes.
@@ -91,7 +92,7 @@ export function describeRequest(
   req: NextRequest,
   response: Response,
   durationMs: number,
-  userId?: string
+  userId?: UserId
 ): RequestLogEntry {
   const status = response.status;
   const level: LogLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';

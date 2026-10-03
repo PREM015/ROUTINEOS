@@ -5,6 +5,7 @@ import { getTodayString } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const habitService = new HabitService();
 
@@ -24,9 +25,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date =
       searchParams.get('date') ||
-      getTodayString(await new UserService().getTimezone(session.user.id));
+      getTodayString(await new UserService().getTimezone(userIdFromSession(session)));
 
-    const data = await habitService.getHabitsForDate(session.user.id, date);
+    const data = await habitService.getHabitsForDate(userIdFromSession(session), date);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -70,9 +71,9 @@ export async function POST(request: NextRequest) {
     const habitService = new HabitService();
 
     if (action === 'ADD') {
-      await habitService.addHabitToToday(session.user.id, habitId, date);
+      await habitService.addHabitToToday(userIdFromSession(session), habitId, date);
     } else {
-      await habitService.removeHabitFromToday(session.user.id, habitId, date);
+      await habitService.removeHabitFromToday(userIdFromSession(session), habitId, date);
     }
 
     return NextResponse.json({

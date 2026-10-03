@@ -1,5 +1,6 @@
 import type { FocusSessionEvent, FocusEventType, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Focus Session Event Repository
@@ -40,7 +41,7 @@ export class FocusSessionEventRepository extends BaseRepository {
    * (every pause, resume and distraction tap). Ownership of the session is
    * asserted by the service before it gets here.
    */
-  async create(userId: string, data: CreateFocusEventData): Promise<FocusSessionEvent> {
+  async create(userId: UserId, data: CreateFocusEventData): Promise<FocusSessionEvent> {
     try {
       return await this.prisma.focusSessionEvent.create({
         data: {
@@ -67,7 +68,7 @@ export class FocusSessionEventRepository extends BaseRepository {
    * an END and no explanation.
    */
   async createMany(
-    userId: string,
+    userId: UserId,
     events: CreateFocusEventData[]
   ): Promise<number> {
     if (events.length === 0) return 0;
@@ -91,7 +92,7 @@ export class FocusSessionEventRepository extends BaseRepository {
 
   /** The ordered timeline for one session, for the detail sheet. */
   async listForSession(
-    userId: string,
+    userId: UserId,
     focusSessionId: string
   ): Promise<FocusSessionEvent[]> {
     try {
@@ -111,7 +112,7 @@ export class FocusSessionEventRepository extends BaseRepository {
    * session row against the log that is supposed to be authoritative.
    */
   async countByType(
-    userId: string,
+    userId: UserId,
     focusSessionId: string,
     type: FocusEventType
   ): Promise<number> {
@@ -132,7 +133,7 @@ export class FocusSessionEventRepository extends BaseRepository {
    * the shape of data that turns a naive implementation into a timeout.
    */
   async topLabels(
-    userId: string,
+    userId: UserId,
     type: FocusEventType,
     from: Date,
     limit = 8
@@ -159,7 +160,7 @@ export class FocusSessionEventRepository extends BaseRepository {
   }
 
   /** Delete every event for a session. Cascades handle this in the schema too. */
-  async deleteForSession(userId: string, focusSessionId: string): Promise<number> {
+  async deleteForSession(userId: UserId, focusSessionId: string): Promise<number> {
     try {
       const result = await this.prisma.focusSessionEvent.deleteMany({
         where: { userId, focusSessionId },
@@ -177,7 +178,7 @@ export class FocusSessionEventRepository extends BaseRepository {
    * the denormalised column is ever found to disagree with the trail.
    */
   async pauseSpans(
-    userId: string,
+    userId: UserId,
     focusSessionId: string
   ): Promise<Array<{ startedAt: Date; endedAt: Date | null }>> {
     try {
@@ -211,7 +212,7 @@ export class FocusSessionEventRepository extends BaseRepository {
 
   /** Total paused seconds implied by the log. */
   async totalPausedSeconds(
-    userId: string,
+    userId: UserId,
     focusSessionId: string,
     openEndedAt?: Date
   ): Promise<number> {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { socialService } from '@/server/services/social.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { followUserSchema } from '@/schemas/social.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/social/unfollow
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await socialService.unfollow(session.user.id, validated.data.userId);
+    await socialService.unfollow(userIdFromSession(session), validated.data.userId);
 
     return NextResponse.json({ success: true, data: { following: false } });
   } catch (error) {

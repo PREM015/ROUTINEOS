@@ -7,6 +7,7 @@ import {
   updateJournalEntrySchema,
 } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal/[id]
@@ -31,7 +32,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await journalService.get(session.user.id, parsedParams.data.id);
+    const entry = await journalService.get(userIdFromSession(session), parsedParams.data.id);
     if (!entry) {
       return NextResponse.json({ error: 'Journal entry not found' }, { status: 404 });
     }
@@ -81,7 +82,7 @@ export async function PATCH(
     }
 
     const entry = await journalService.update(
-      session.user.id,
+      userIdFromSession(session),
       parsedParams.data.id,
       validated.data
     );
@@ -128,7 +129,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await journalService.softDelete(session.user.id, parsedParams.data.id);
+    const entry = await journalService.softDelete(userIdFromSession(session), parsedParams.data.id);
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
     if (error instanceof AppError) {

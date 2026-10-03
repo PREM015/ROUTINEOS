@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { createGoalSchema } from '@/schemas/goal.schema';
 import type { GoalPriority, GoalStatus, GoalType } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/goals
@@ -51,8 +52,8 @@ export async function GET(request: NextRequest) {
     // different filter than the page is how a total ends up describing a
     // different result set than the rows beside it.
     const [goals, total] = await Promise.all([
-      service.listGoals(session.user.id, { ...filters, limit, offset }),
-      service.countGoals(session.user.id, filters),
+      service.listGoals(userIdFromSession(session), { ...filters, limit, offset }),
+      service.countGoals(userIdFromSession(session), filters),
     ]);
 
     return NextResponse.json({
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // The service owns day-type assignment; the route just forwards validated input.
-    const goal = await new GoalService().createGoal(session.user.id, {
+    const goal = await new GoalService().createGoal(userIdFromSession(session), {
       ...validated.data,
       appliesEveryDay: validated.data.appliesEveryDay ?? true,
     });

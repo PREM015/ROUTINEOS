@@ -6,6 +6,7 @@ import { resolveDayTypeForDate, resolveNaturalDayType } from '@/lib/scheduling/r
 import { DEFAULT_TZ } from '@/lib/dates';
 import { ValidationError } from '@/lib/errors/app-error';
 import type { DayType } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Day Mode Service
@@ -77,7 +78,7 @@ export class DayModeService {
   /**
    * Resolved day-mode state for a date.
    */
-  async getDayMode(userId: string, date: string): Promise<DayModeSnapshot> {
+  async getDayMode(userId: UserId, date: string): Promise<DayModeSnapshot> {
     const timezone = await this.userService.getTimezone(userId).catch(
       () => DEFAULT_TZ
     );
@@ -117,7 +118,7 @@ export class DayModeService {
    * Apply a day-mode change for a date and return the mode-specific payload.
    */
   async setDayMode(
-    userId: string,
+    userId: UserId,
     input: SetDayModeInput
   ): Promise<Record<string, unknown>> {
     const { date, mode, dayType, dayTypeId, reason, templateId } = input;

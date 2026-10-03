@@ -1,5 +1,6 @@
 import type { MoodLog, EnergyLog, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Mood Repository
@@ -68,7 +69,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Log a mood entry
    */
-  async logMood(userId: string, data: LogMoodData): Promise<MoodLog> {
+  async logMood(userId: UserId, data: LogMoodData): Promise<MoodLog> {
     try {
       return await this.prisma.moodLog.create({
         data: {
@@ -98,7 +99,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Log an energy entry
    */
-  async logEnergy(userId: string, data: LogEnergyData): Promise<EnergyLog> {
+  async logEnergy(userId: UserId, data: LogEnergyData): Promise<EnergyLog> {
     try {
       return await this.prisma.energyLog.create({
         data: {
@@ -118,7 +119,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Find a mood log by ID with ownership check
    */
-  async findById(userId: string, logId: string): Promise<MoodLog | null> {
+  async findById(userId: UserId, logId: string): Promise<MoodLog | null> {
     try {
       return await this.prisma.moodLog.findFirst({
         where: { id: logId, userId },
@@ -132,7 +133,7 @@ export class MoodRepository extends BaseRepository {
    * Find mood logs for a user with optional filters
    */
   async findByUserId(
-    userId: string,
+    userId: UserId,
     query: LogQueryParams = {}
   ): Promise<MoodLog[]> {
     try {
@@ -160,7 +161,7 @@ export class MoodRepository extends BaseRepository {
    * Find energy logs for a user with optional filters
    */
   async findEnergyByUserId(
-    userId: string,
+    userId: UserId,
     query: LogQueryParams = {}
   ): Promise<EnergyLog[]> {
     try {
@@ -188,7 +189,7 @@ export class MoodRepository extends BaseRepository {
    * Update a mood log owned by the user
    */
   async updateMood(
-    userId: string,
+    userId: UserId,
     logId: string,
     data: UpdateMoodData
   ): Promise<MoodLog> {
@@ -220,7 +221,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Delete a mood log owned by the user
    */
-  async delete(userId: string, logId: string): Promise<MoodLog> {
+  async delete(userId: UserId, logId: string): Promise<MoodLog> {
     try {
       return await this.prisma.moodLog.delete({
         where: { id: logId, userId },
@@ -234,7 +235,7 @@ export class MoodRepository extends BaseRepository {
    * Get mood logs within a date range
    */
   async getMoodRange(
-    userId: string,
+    userId: UserId,
     from?: DateFilter,
     to?: DateFilter
   ): Promise<MoodLog[]> {
@@ -262,7 +263,7 @@ export class MoodRepository extends BaseRepository {
    * Get energy logs within a date range
    */
   async getEnergyRange(
-    userId: string,
+    userId: UserId,
     from?: DateFilter,
     to?: DateFilter
   ): Promise<EnergyLog[]> {
@@ -289,7 +290,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Get the latest mood log for a user
    */
-  async latestMood(userId: string): Promise<MoodLog | null> {
+  async latestMood(userId: UserId): Promise<MoodLog | null> {
     try {
       return await this.prisma.moodLog.findFirst({
         where: { userId },
@@ -303,7 +304,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Get the latest energy log for a user
    */
-  async latestEnergy(userId: string): Promise<EnergyLog | null> {
+  async latestEnergy(userId: UserId): Promise<EnergyLog | null> {
     try {
       return await this.prisma.energyLog.findFirst({
         where: { userId },
@@ -320,7 +321,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Total number of mood logs for a user.
    */
-  async countMoodLogs(userId: string): Promise<number> {
+  async countMoodLogs(userId: UserId): Promise<number> {
     try {
       return await this.prisma.moodLog.count({ where: { userId } });
     } catch (error) {
@@ -331,7 +332,7 @@ export class MoodRepository extends BaseRepository {
   /**
    * Total number of energy logs for a user.
    */
-  async countEnergyLogs(userId: string): Promise<number> {
+  async countEnergyLogs(userId: UserId): Promise<number> {
     try {
       return await this.prisma.energyLog.count({ where: { userId } });
     } catch (error) {
@@ -339,7 +340,7 @@ export class MoodRepository extends BaseRepository {
     }
   }
   async getStats(
-    userId: string,
+    userId: UserId,
     from?: DateFilter,
     to?: DateFilter
   ): Promise<MoodStats> {

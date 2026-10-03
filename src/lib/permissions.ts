@@ -1,3 +1,5 @@
+import type { UserId } from '@/types/ids';
+
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   USER: ['read:own', 'write:own'],
   ADMIN: ['read:own', 'write:own', 'read:any', 'write:any', 'delete:any'],
@@ -12,7 +14,7 @@ export function hasPermission(role: string, permission: string): boolean {
   return permissions.includes(permission) || permissions.includes('write:any');
 }
 
-export function canEditResource(userId: string, resourceUserId: string, role: string = 'USER'): boolean {
+export function canEditResource(userId: UserId, resourceUserId: string, role: string = 'USER'): boolean {
   if (hasPermission(role, 'write:any')) return true;
   return userId === resourceUserId;
 }

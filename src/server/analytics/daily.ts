@@ -6,6 +6,7 @@ import { ReflectionRepository } from '@/server/repositories/reflection.repositor
 import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Daily Analytics
@@ -100,7 +101,7 @@ function round(value: number, decimals = 2): number {
  * counted it as a habit the user failed.
  */
 export async function dailyBreakdown(
-  userId: string,
+  userId: UserId,
   date: string,
   timezone: string,
   today?: string,

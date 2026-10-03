@@ -34,8 +34,9 @@ vi.mock('@/server/services/achievement.service', () => ({
 vi.mock('@/lib/prisma', () => ({ default: {} }));
 
 import { GoalService } from '@/server/services/goal.service';
+import { toUserId } from '@/types/ids';
 
-const USER = 'user_1';
+const USER = toUserId('user_1');
 const GOAL = 'goal_a';
 
 const repositoryMock = {

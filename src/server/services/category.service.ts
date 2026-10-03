@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { CategoryRepository } from '@/server/repositories/category.repository';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import type { Category, Prisma } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Category Service
@@ -45,15 +46,15 @@ export class CategoryService {
     this.categoryRepository = new CategoryRepository();
   }
 
-  async list(userId: string, includeArchived = false): Promise<Category[]> {
+  async list(userId: UserId, includeArchived = false): Promise<Category[]> {
     return this.categoryRepository.findAll(userId, includeArchived);
   }
 
-  async get(userId: string, categoryId: string): Promise<Category | null> {
+  async get(userId: UserId, categoryId: string): Promise<Category | null> {
     return this.categoryRepository.findById(categoryId, userId);
   }
 
-  async create(userId: string, input: unknown): Promise<Category> {
+  async create(userId: UserId, input: unknown): Promise<Category> {
     const parsed = createCategorySchema.safeParse(input);
     if (!parsed.success) {
       throw new RangeError(parsed.error.errors[0]?.message ?? 'Invalid category data');
@@ -79,7 +80,7 @@ export class CategoryService {
     return this.categoryRepository.create(data);
   }
 
-  async update(userId: string, categoryId: string, input: unknown): Promise<Category> {
+  async update(userId: UserId, categoryId: string, input: unknown): Promise<Category> {
     const parsed = updateCategorySchema.safeParse(input);
     if (!parsed.success) {
       throw new RangeError(parsed.error.errors[0]?.message ?? 'Invalid category data');
@@ -107,7 +108,7 @@ export class CategoryService {
     return this.categoryRepository.update(categoryId, userId, data);
   }
 
-  async delete(userId: string, categoryId: string): Promise<void> {
+  async delete(userId: UserId, categoryId: string): Promise<void> {
     const existing = await this.categoryRepository.findById(categoryId, userId);
     if (!existing) {
       throw new NotFoundError('Category not found');
@@ -115,7 +116,7 @@ export class CategoryService {
     await this.categoryRepository.delete(categoryId, userId);
   }
 
-  async archive(userId: string, categoryId: string): Promise<Category> {
+  async archive(userId: UserId, categoryId: string): Promise<Category> {
     const existing = await this.categoryRepository.findById(categoryId, userId);
     if (!existing) {
       throw new NotFoundError('Category not found');
@@ -123,7 +124,7 @@ export class CategoryService {
     return this.categoryRepository.archive(categoryId, userId);
   }
 
-  async reorder(userId: string, ordering: Array<{ id: string; sortOrder: number }>): Promise<void> {
+  async reorder(userId: UserId, ordering: Array<{ id: string; sortOrder: number }>): Promise<void> {
     return this.categoryRepository.reorder(userId, ordering);
   }
 }

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { breakQuerySchema, createBreakSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/breaks
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, meta } = await focusService.listBreaks(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const record = await focusService.createBreak(session.user.id, validated.data);
+    const record = await focusService.createBreak(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: record }, { status: 201 });
   } catch (error) {

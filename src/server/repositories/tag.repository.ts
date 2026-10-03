@@ -7,6 +7,7 @@ import {
   normalizeTagName,
 } from '@/lib/tags/helpers';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
+import type { UserId } from '@/types/ids';
 
 /**
  * Tag Repository
@@ -29,7 +30,7 @@ export class TagRepository extends BaseRepository {
   /**
    * List all tags for a user, oldest first
    */
-  async listForUser(userId: string): Promise<Tag[]> {
+  async listForUser(userId: UserId): Promise<Tag[]> {
     try {
       return await this.prisma.tag.findMany({
         where: { userId },
@@ -43,7 +44,7 @@ export class TagRepository extends BaseRepository {
   /**
    * Find a tag owned by the user, or `null` when it does not exist
    */
-  async findById(userId: string, tagId: string): Promise<Tag | null> {
+  async findById(userId: UserId, tagId: string): Promise<Tag | null> {
     try {
       return await this.prisma.tag.findFirst({
         where: { id: tagId, userId },
@@ -57,7 +58,7 @@ export class TagRepository extends BaseRepository {
    * Create a tag for the user. Rejects duplicate names with `ConflictError`
    * and rejects invalid names/colors with a `RangeError`.
    */
-  async create(userId: string, input: TagCreateInput): Promise<Tag> {
+  async create(userId: UserId, input: TagCreateInput): Promise<Tag> {
     try {
       const name = normalizeTagName(input.name);
       if (!isValidTagName(name)) {
@@ -90,7 +91,7 @@ export class TagRepository extends BaseRepository {
   /**
    * Update a tag owned by the user, guarding the per-user name uniqueness.
    */
-  async update(userId: string, tagId: string, input: TagUpdateInput): Promise<Tag> {
+  async update(userId: UserId, tagId: string, input: TagUpdateInput): Promise<Tag> {
     try {
       const tag = await this.findById(userId, tagId);
       if (!tag) {
@@ -133,7 +134,7 @@ export class TagRepository extends BaseRepository {
   /**
    * Delete a tag owned by the user (join rows are removed by cascade)
    */
-  async delete(userId: string, tagId: string): Promise<void> {
+  async delete(userId: UserId, tagId: string): Promise<void> {
     try {
       const tag = await this.findById(userId, tagId);
       if (!tag) {
@@ -149,7 +150,7 @@ export class TagRepository extends BaseRepository {
    * Find a tag by normalized name, creating it (with a palette color) when it
    * does not yet exist for the user.
    */
-  async getOrCreate(userId: string, name: string): Promise<Tag> {
+  async getOrCreate(userId: UserId, name: string): Promise<Tag> {
     try {
       const normalized = normalizeTagName(name);
       if (!isValidTagName(normalized)) {

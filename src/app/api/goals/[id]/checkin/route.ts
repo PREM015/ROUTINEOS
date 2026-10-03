@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { handleError } from '@/lib/errors/error-handler';
 import { goalCheckinSchema } from '@/schemas/goal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/goals/[id]/checkin
@@ -31,7 +32,7 @@ export async function POST(
     }
 
     const updated = await new GoalService().checkInDaily(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data
     );

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -28,7 +29,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid goal id' }, { status: 400 });
     }
 
-    const tags = await new GoalService().getTags(session.user.id, id);
+    const tags = await new GoalService().getTags(userIdFromSession(session), id);
 
     return NextResponse.json({
       success: true,
@@ -70,7 +71,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     const tags = await new GoalService().setTags(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data.tagIds
     );

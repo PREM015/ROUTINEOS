@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { wellnessService } from '@/server/services/wellness.service';
 import { logMoodSchema, moodQuerySchema } from '@/schemas/mood.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Wellness: Mood Route
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, summary, meta } = await wellnessService.getMoodLogs(
-      session.user.id,
+      userIdFromSession(session),
       {
         startDate: validated.data.startDate,
         endDate: validated.data.endDate,
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const log = await wellnessService.logMood(session.user.id, validated.data);
+    const log = await wellnessService.logMood(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: log }, { status: 201 });
   } catch (error) {

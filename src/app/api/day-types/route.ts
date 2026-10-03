@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { DayTypeService } from '@/server/services/day-type.service';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const dayTypeService = new DayTypeService();
 
@@ -32,11 +33,11 @@ export async function GET(req: NextRequest) {
   // `?active=true` returns only non-archived definitions without counts, which
   // is what a picker needs; the default is the full management list.
   if (req.nextUrl.searchParams.get('active') === 'true') {
-    const dayTypes = await dayTypeService.listDayTypes(session.user.id);
+    const dayTypes = await dayTypeService.listDayTypes(userIdFromSession(session));
     return NextResponse.json({ success: true, data: dayTypes });
   }
 
-  const dayTypes = await dayTypeService.listAllDayTypes(session.user.id);
+  const dayTypes = await dayTypeService.listAllDayTypes(userIdFromSession(session));
 
   return NextResponse.json({ success: true, data: dayTypes });
 }
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = createDayTypeSchema.parse(body);
 
-    const dayType = await dayTypeService.createDayType(session.user.id, data);
+    const dayType = await dayTypeService.createDayType(userIdFromSession(session), data);
 
     return NextResponse.json({ success: true, data: dayType }, { status: 201 });
   } catch (error) {

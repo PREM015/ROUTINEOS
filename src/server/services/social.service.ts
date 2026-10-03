@@ -2,6 +2,7 @@ import { SocialRepository, type ConnectionUser } from '@/server/repositories/soc
 import { UserRepository } from '@/server/repositories/user.repository';
 import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import type { User } from '@/generated/prisma';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Social Service
@@ -35,12 +36,12 @@ export class SocialService {
    * Self-follow is rejected here rather than in the route: it is a property of
    * the relationship, not of the HTTP verb, so it holds for every caller.
    */
-  async follow(userId: string, targetId: string) {
+  async follow(userId: UserId, targetId: string) {
     if (userId === targetId) {
       throw new ValidationError('You cannot follow yourself');
     }
 
-    const target = await this.userRepository.findById(targetId);
+    const target = await this.userRepository.findById(toUserId(targetId));
     if (!target) {
       throw new NotFoundError('User');
     }
@@ -59,7 +60,7 @@ export class SocialService {
    * `NotFoundError` (404) rather than a conflict: the subject of the statement
    * is the caller's own follow row, and there is nothing to conflict with.
    */
-  async unfollow(userId: string, targetId: string) {
+  async unfollow(userId: UserId, targetId: string) {
     if (userId === targetId) {
       throw new ValidationError('You cannot unfollow yourself');
     }
@@ -80,7 +81,7 @@ export class SocialService {
    * `isMutual` is resolved by intersecting with the caller's own following list
    * rather than by asking per row.
    */
-  async followers(userId: string) {
+  async followers(userId: UserId) {
     const [followers, following] = await Promise.all([
       this.socialRepository.followers(userId),
       this.socialRepository.following(userId),
@@ -95,7 +96,7 @@ export class SocialService {
   }
 
   /** The caller's following list, each annotated with whether it follows back. */
-  async following(userId: string) {
+  async following(userId: UserId) {
     const [following, followers] = await Promise.all([
       this.socialRepository.following(userId),
       this.socialRepository.followers(userId),
@@ -116,7 +117,7 @@ export class SocialService {
    * viewer from the suggestions. A viewer appearing in their own suggestion list
    * is the kind of small wrongness that reads as a bug in the whole feature.
    */
-  async connections(userId: string) {
+  async connections(userId: UserId) {
     const [mutual, suggestions] = await Promise.all([
       this.socialRepository.mutualConnections(userId),
       this.socialRepository.suggestions(userId),
@@ -129,12 +130,12 @@ export class SocialService {
   }
 
   /** Whether the caller follows the given user. */
-  async isFollowing(userId: string, otherUserId: string): Promise<boolean> {
+  async isFollowing(userId: UserId, otherUserId: string): Promise<boolean> {
     return this.socialRepository.isFollowing(userId, otherUserId);
   }
 
   /** Users the caller does not yet follow. */
-  async suggestions(userId: string): Promise<User[]> {
+  async suggestions(userId: UserId): Promise<User[]> {
     return this.socialRepository.suggestions(userId);
   }
 }

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const noteSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
@@ -42,7 +43,7 @@ export async function PATCH(
     const habitService = new HabitService();
     const trimmed = validated.data.note?.trim() || null;
     const log = await habitService.setNote(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data.date,
       trimmed

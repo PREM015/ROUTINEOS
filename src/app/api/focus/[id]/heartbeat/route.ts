@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -33,7 +34,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
     }
 
     const { id } = await params;
-    await focusService.heartbeat(session.user.id, id);
+    await focusService.heartbeat(userIdFromSession(session), id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('Error recording focus heartbeat:', error);

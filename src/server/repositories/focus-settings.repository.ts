@@ -1,5 +1,6 @@
 import type { FocusSettings, FocusPreset, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Focus Settings and Preset Repository
@@ -75,7 +76,7 @@ export class FocusSettingsRepository extends BaseRepository {
    * Returns null rather than creating, because `getOrCreate` is called on every
    * page load and writing a row per load would be a write on the hot path.
    */
-  async get(userId: string): Promise<FocusSettings | null> {
+  async get(userId: UserId): Promise<FocusSettings | null> {
     try {
       return await this.prisma.focusSettings.findUnique({ where: { userId } });
     } catch (error) {
@@ -90,7 +91,7 @@ export class FocusSettingsRepository extends BaseRepository {
    * concurrent first-loads cannot both insert. `FocusSettings.userId` is unique,
    * so the loser of that race is a no-op rather than a unique-violation error.
    */
-  async getOrCreate(userId: string): Promise<FocusSettings> {
+  async getOrCreate(userId: UserId): Promise<FocusSettings> {
     try {
       const existing = await this.prisma.focusSettings.findUnique({ where: { userId } });
       if (existing) return existing;
@@ -104,7 +105,7 @@ export class FocusSettingsRepository extends BaseRepository {
     }
   }
 
-  async update(userId: string, data: UpsertFocusSettingsData): Promise<FocusSettings> {
+  async update(userId: UserId, data: UpsertFocusSettingsData): Promise<FocusSettings> {
     try {
       // An explicitly-typed payload. The original `abortedAt` bug was a field
       // silently dropped between a service and its repository, and the cheapest
@@ -121,7 +122,7 @@ export class FocusSettingsRepository extends BaseRepository {
   }
 
   /** Presets in the user's order, archived ones excluded. */
-  async listPresets(userId: string, includeArchived = false): Promise<FocusPreset[]> {
+  async listPresets(userId: UserId, includeArchived = false): Promise<FocusPreset[]> {
     try {
       return await this.prisma.focusPreset.findMany({
         where: {
@@ -143,7 +144,7 @@ export class FocusSettingsRepository extends BaseRepository {
    * user who deletes every preset does not get them silently recreated on their
    * next visit — which is the failure mode a boolean "seeded" flag produces.
    */
-  async seedDefaultsIfEmpty(userId: string): Promise<FocusPreset[]> {
+  async seedDefaultsIfEmpty(userId: UserId): Promise<FocusPreset[]> {
     try {
       const count = await this.prisma.focusPreset.count({ where: { userId } });
       if (count > 0) return this.listPresets(userId);
@@ -162,7 +163,7 @@ export class FocusSettingsRepository extends BaseRepository {
     }
   }
 
-  async createPreset(userId: string, data: UpsertFocusPresetData): Promise<FocusPreset> {
+  async createPreset(userId: UserId, data: UpsertFocusPresetData): Promise<FocusPreset> {
     try {
       if (data.categoryId) {
         const owned = await this.prisma.category.findFirst({
@@ -197,7 +198,7 @@ export class FocusSettingsRepository extends BaseRepository {
   }
 
   async updatePreset(
-    userId: string,
+    userId: UserId,
     presetId: string,
     data: Partial<UpsertFocusPresetData> & { isArchived?: boolean }
   ): Promise<FocusPreset> {
@@ -229,7 +230,7 @@ export class FocusSettingsRepository extends BaseRepository {
    * reference one, so there is nothing to preserve. A seeded preset can be
    * deleted like any other.
    */
-  async deletePreset(userId: string, presetId: string): Promise<FocusPreset> {
+  async deletePreset(userId: UserId, presetId: string): Promise<FocusPreset> {
     try {
       return await this.prisma.focusPreset.delete({ where: { id: presetId, userId } });
     } catch (error) {
@@ -238,7 +239,7 @@ export class FocusSettingsRepository extends BaseRepository {
   }
 
   /** Per-day-type targets, as a flat map keyed by day type id. */
-  async listDayTypeTargets(userId: string): Promise<Map<string, number>> {
+  async listDayTypeTargets(userId: UserId): Promise<Map<string, number>> {
     try {
       const rows = await this.prisma.focusDayTypeTarget.findMany({
         where: { userId },
@@ -250,7 +251,7 @@ export class FocusSettingsRepository extends BaseRepository {
     }
   }
 
-  async setDayTypeTarget(userId: string, dayTypeId: string, targetMinutes: number): Promise<void> {
+  async setDayTypeTarget(userId: UserId, dayTypeId: string, targetMinutes: number): Promise<void> {
     try {
       const owned = await this.prisma.dayTypeDefinition.findFirst({
         where: { id: dayTypeId, userId },
@@ -269,7 +270,7 @@ export class FocusSettingsRepository extends BaseRepository {
     }
   }
 
-  async deleteDayTypeTarget(userId: string, dayTypeId: string): Promise<void> {
+  async deleteDayTypeTarget(userId: UserId, dayTypeId: string): Promise<void> {
     try {
       await this.prisma.focusDayTypeTarget.deleteMany({ where: { userId, dayTypeId } });
     } catch (error) {

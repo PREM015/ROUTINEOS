@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { createTaskSchema, updateTaskSchema } from '@/schemas/task.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 const bulkTasksSchema = z.object({
   create: z.array(createTaskSchema).max(100).optional(),
@@ -44,13 +45,13 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
 
     const createdCount = validated.data.create?.length
-      ? await taskService.bulkCreate(userId, validated.data.create)
+      ? await taskService.bulkCreate(toUserId(userId), validated.data.create)
       : 0;
 
     const updated: BulkOutput[] = [];
     for (const { id, data } of validated.data.update ?? []) {
       try {
-        const task = await taskService.updateTask(userId, id, data);
+        const task = await taskService.updateTask(toUserId(userId), id, data);
         updated.push({ id, success: true, data: task });
       } catch (error) {
         updated.push({
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     const deleted: BulkOutput[] = [];
     for (const id of validated.data.delete ?? []) {
       try {
-        await taskService.deleteTask(userId, id);
+        await taskService.deleteTask(toUserId(userId), id);
         deleted.push({ id, success: true });
       } catch (error) {
         deleted.push({

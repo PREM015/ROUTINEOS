@@ -20,13 +20,48 @@ import {
   Repeat,
   Settings2,
   ShieldCheck,
-  SlidersHorizontal,
+SlidersHorizontal,
+  Timer,
   User,
   type LucideIcon,
 } from 'lucide-react';
 
+/**
+ * Every settings link's label, which is also its key into `ICONS`.
+ *
+ * Typed as a union rather than `string` so a link without a matching icon is a compile
+ * error. It used to be `string` with `ICONS[link.name as SettingsIconKey]` at the call
+ * site, which cast away the only check that mattered: adding a link with no icon
+ * compiled cleanly and then failed at prerender with "Element type is invalid ... got:
+ * undefined". The cast made the missing entry invisible to `tsc` and only visible in a
+ * production build.
+ */
+type SettingsIconKey =
+  | 'Profile'
+  | 'Appearance'
+  | 'Time Zone'
+  | 'Dashboard'
+  | 'Habits'
+  | 'Routine'
+  | 'Sleep'
+  | 'Focus'
+  | 'Quotes'
+  | 'Scoring Weights'
+  | 'Notifications'
+  | 'Security'
+  | 'Active Sessions'
+  | 'Privacy'
+  | 'Integrations'
+  | 'API Keys'
+  | 'Subscription'
+  | 'Billing'
+  | 'Data'
+  | 'Export'
+  | 'Import'
+  | 'Danger Zone';
+
 interface SettingsLink {
-  name: string;
+  name: SettingsIconKey;
   href: string;
   desc: string;
 }
@@ -47,6 +82,7 @@ const settingsGroups: SettingsGroup[] = [
       { name: 'Habits', href: '/settings/habits', desc: 'Configure habit defaults' },
       { name: 'Routine', href: '/settings/routine', desc: 'Routine preferences and defaults' },
       { name: 'Sleep', href: '/settings/sleep', desc: 'Set sleep targets and reminders' },
+      { name: 'Focus', href: '/settings/focus', desc: 'Timer lengths, goals and reflection' },
       { name: 'Quotes', href: '/settings/quotes', desc: 'Manage your quotes and widget pool' },
       { name: 'Scoring Weights', href: '/settings/scoring', desc: 'Adjust how habits are scored' },
       { name: 'Notifications', href: '/settings/notifications', desc: 'Configure reminders' },
@@ -85,30 +121,8 @@ const settingsGroups: SettingsGroup[] = [
   },
 ];
 
-type SettingsIconKey =
-  | 'Profile'
-  | 'Appearance'
-  | 'Time Zone'
-  | 'Dashboard'
-  | 'Habits'
-  | 'Routine'
-  | 'Sleep'
-  | 'Quotes'
-  | 'Scoring Weights'
-  | 'Notifications'
-  | 'Security'
-  | 'Active Sessions'
-  | 'Privacy'
-  | 'Integrations'
-  | 'API Keys'
-  | 'Subscription'
-  | 'Billing'
-  | 'Data'
-  | 'Export'
-  | 'Import'
-  | 'Danger Zone';
-
-const ICONS: Record<SettingsIconKey, LucideIcon> = {
+const ICONS
+: Record<SettingsIconKey, LucideIcon> = {
   Profile: User,
   Appearance: Palette,
   'Time Zone': Clock,
@@ -116,6 +130,7 @@ const ICONS: Record<SettingsIconKey, LucideIcon> = {
   Habits: Repeat,
   Routine: CalendarRange,
   Sleep: Moon,
+  Focus: Timer,
   Quotes: Quote,
   'Scoring Weights': SlidersHorizontal,
   Notifications: Bell,
@@ -155,7 +170,7 @@ export default function SettingsHubPage() {
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             {group.links.map((link) => {
-              const Icon = ICONS[link.name as SettingsIconKey];
+              const Icon = ICONS[link.name];
               return (
                 <Link
                   key={link.href}

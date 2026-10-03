@@ -15,6 +15,7 @@ import type {
   UpdateTaskInput,
   TaskQueryParams,
 } from '@/schemas/task.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Task Service
@@ -39,7 +40,7 @@ export class TaskService {
   /**
    * Create a task, validating referenced entities first
    */
-  async createTask(userId: string, input: CreateTaskInput) {
+  async createTask(userId: UserId, input: CreateTaskInput) {
     const parsed = createTaskSchema.parse(input);
 
     if (parsed.goalId) {
@@ -103,7 +104,7 @@ export class TaskService {
   /**
    * List tasks for a user with optional filters
    */
-  async getTasks(userId: string, query: TaskQueryParams = {}) {
+  async getTasks(userId: UserId, query: TaskQueryParams = {}) {
     const parsed = taskQuerySchema.parse(query);
 
     let tasks: Task[] = await this.taskRepository.findAll(userId, {
@@ -130,7 +131,7 @@ export class TaskService {
   /**
    * Get a single task with full relations
    */
-  async getTask(userId: string, taskId: string) {
+  async getTask(userId: UserId, taskId: string) {
     const task = await this.taskRepository.findById(userId, taskId);
     if (!task) {
       throw new Error('Task not found');
@@ -141,7 +142,7 @@ export class TaskService {
   /**
    * Update a task owned by the user
    */
-  async updateTask(userId: string, taskId: string, input: UpdateTaskInput) {
+  async updateTask(userId: UserId, taskId: string, input: UpdateTaskInput) {
     const before = await this.getTask(userId, taskId);
 
     const parsed = updateTaskSchema.parse(input);
@@ -203,7 +204,7 @@ export class TaskService {
   /**
    * Complete a task, optionally progressing its linked goal
    */
-  async completeTask(userId: string, taskId: string) {
+  async completeTask(userId: UserId, taskId: string) {
     const task = await this.getTask(userId, taskId);
 
     if (task.status === 'COMPLETED') {
@@ -229,7 +230,7 @@ export class TaskService {
   /**
    * Archive a task (marks it as cancelled)
    */
-  async archiveTask(userId: string, taskId: string) {
+  async archiveTask(userId: UserId, taskId: string) {
     await this.getTask(userId, taskId);
 
     return this.taskRepository.archive(userId, taskId);
@@ -244,7 +245,7 @@ export class TaskService {
    * `TaskRepository.updateStatus`, skipping every check `getTask` performs — that
    * branch would have reset a task belonging to someone else.
    */
-  async restoreTask(userId: string, taskId: string) {
+  async restoreTask(userId: UserId, taskId: string) {
     await this.getTask(userId, taskId);
 
     return this.taskRepository.updateStatus(userId, taskId, TaskStatus.TODO);
@@ -253,7 +254,7 @@ export class TaskService {
   /**
    * Delete a task (permanently removes it)
    */
-  async deleteTask(userId: string, taskId: string): Promise<void> {
+  async deleteTask(userId: UserId, taskId: string): Promise<void> {
     await this.getTask(userId, taskId);
 
     await this.taskRepository.delete(userId, taskId);
@@ -269,7 +270,7 @@ export class TaskService {
   /**
    * Bulk create tasks for a user
    */
-  async bulkCreate(userId: string, tasks: CreateTaskInput[]): Promise<number> {
+  async bulkCreate(userId: UserId, tasks: CreateTaskInput[]): Promise<number> {
     const parsed = tasks.map((task) => createTaskSchema.parse(task));
 
     return this.taskRepository.bulkCreate(
@@ -295,7 +296,7 @@ export class TaskService {
    * Replace the dependencies of a task, preventing circular dependencies
    */
   async setDependencies(
-    userId: string,
+    userId: UserId,
     taskId: string,
     dependsOnIds: string[]
   ): Promise<{ taskId: string; dependencyCount: number }> {
@@ -325,7 +326,7 @@ export class TaskService {
   /**
    * Get the dependencies of a task
    */
-  async getDependencies(userId: string, taskId: string) {
+  async getDependencies(userId: UserId, taskId: string) {
     await this.getTask(userId, taskId);
 
     return this.taskRepository.getDependencies(userId, taskId);
@@ -334,7 +335,7 @@ export class TaskService {
   /**
    * Get aggregated stats for a user's tasks
    */
-  async getTaskStats(userId: string, query: TaskQueryParams = {}) {
+  async getTaskStats(userId: UserId, query: TaskQueryParams = {}) {
     const parsed = taskQuerySchema.parse(query);
 
     const allTasks = await this.getAllTasks(userId);
@@ -485,7 +486,7 @@ export class TaskService {
   /**
    * Fetch all of a user's tasks in pages
    */
-  private async getAllTasks(userId: string): Promise<Task[]> {
+  private async getAllTasks(userId: UserId): Promise<Task[]> {
     const tasks: Task[] = [];
     const pageSize = 100;
     let offset = 0;
@@ -509,7 +510,7 @@ export class TaskService {
    * Detect whether adding `dependsOnIds` to `taskId` would create a cycle
    */
   private async wouldCreateCycle(
-    userId: string,
+    userId: UserId,
     taskId: string,
     dependsOnIds: string[]
   ): Promise<boolean> {

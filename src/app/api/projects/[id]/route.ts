@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { ProjectService } from '@/server/services/project.service';
 import { updateProjectSchema } from '@/schemas/project.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
 
     const projectService = new ProjectService();
-    const project = await projectService.getProject(session.user.id, id);
+    const project = await projectService.getProject(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: project });
   } catch (error) {
@@ -65,7 +66,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const projectService = new ProjectService();
-    const project = await projectService.updateProject(session.user.id, id, validated.data);
+    const project = await projectService.updateProject(userIdFromSession(session), id, validated.data);
 
     return NextResponse.json({ success: true, data: project });
   } catch (error) {
@@ -97,7 +98,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }
 
     const projectService = new ProjectService();
-    await projectService.deleteProject(session.user.id, id);
+    await projectService.deleteProject(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -26,6 +26,7 @@ import {
   resetPasswordSchema,
   verifyEmailSchema,
 } from '@/lib/validation/auth';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Auth Service
@@ -157,7 +158,7 @@ export class AuthService {
       timezone: input.timezone || undefined,
     });
 
-  await this.userRepository.createSettings(user.id, {
+  await this.userRepository.createSettings(toUserId(user.id), {
     timezone: input.timezone || undefined,
   });
 
@@ -170,7 +171,7 @@ export class AuthService {
   // types exist. Best-effort: a failure here must not block sign-up, the user
   // can still create day types by hand.
   try {
-    await this.routineRepository.createDefaultDayTypes(user.id);
+    await this.routineRepository.createDefaultDayTypes(toUserId(user.id));
   } catch (err) {
     console.error(
       '[auth.register] failed to seed default day types; user can create them manually:',
@@ -180,12 +181,12 @@ export class AuthService {
 
 
     try {
-      await this.streakRepository.create(user.id);
+      await this.streakRepository.create(toUserId(user.id));
     } catch {
       // Streak initialization is best-effort; do not fail registration
     }
 
-    const token = await this.createEmailVerificationToken(user.id);
+    const token = await this.createEmailVerificationToken(toUserId(user.id));
     await this.emailService.sendVerificationEmail(user.email, token);
 
     return toSafeUser(user);
@@ -229,14 +230,14 @@ export class AuthService {
       user.passwordHash ?? ''
     );
     if (!passwordMatch) {
-      await this.userRepository.incrementFailedLogin(user.id);
+      await this.userRepository.incrementFailedLogin(toUserId(user.id));
       return null;
     }
     if (!user.emailVerified) {
       throw new Error('Please verify your email first');
     }
 
-    await this.userRepository.updateLastLogin(user.id);
+    await this.userRepository.updateLastLogin(toUserId(user.id));
     await this.auditRepository.create({
       userId: user.id,
       action: 'LOGIN_SUCCESS',
@@ -256,7 +257,7 @@ export class AuthService {
   /**
    * Get the full current user row plus settings (no passwordHash)
    */
-  async getCurrentUser(userId: string) {
+  async getCurrentUser(userId: UserId) {
     const user = await this.userRepository.findWithSettings(userId);
     if (!user) {
       throw new Error('User not found');
@@ -273,7 +274,7 @@ export class AuthService {
    * invalidate all existing device sessions
    */
   async changePassword(
-    userId: string,
+    userId: UserId,
     currentPassword: string,
     newPassword: string
   ): Promise<void> {
@@ -345,7 +346,7 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-    await this.userRepository.updatePassword(tokenRow.userId, passwordHash);
+    await this.userRepository.updatePassword(toUserId(tokenRow.userId), passwordHash);
     await this.authTokenRepository.markResetTokenUsed(tokenRow.id);
 
     // A password reset is the standard response to "my account was
@@ -354,8 +355,8 @@ export class AuthService {
     // nothing. NextAuth uses the `jwt` strategy, so deleting DeviceSession rows
     // is not enough on its own — `sessionVersion` is what actually invalidates
     // already-issued tokens (see the check in `lib/auth.ts`).
-    await this.userRepository.deleteAllDeviceSessions(tokenRow.userId);
-    await this.userRepository.bumpSessionVersion(tokenRow.userId);
+    await this.userRepository.deleteAllDeviceSessions(toUserId(tokenRow.userId));
+    await this.userRepository.bumpSessionVersion(toUserId(tokenRow.userId));
 
     await this.auditRepository.create({
       userId: tokenRow.userId,
@@ -389,7 +390,7 @@ export class AuthService {
 
     const token = randomBytes(32).toString('hex');
     await this.authTokenRepository.createResetToken(
-      user.id,
+      toUserId(user.id),
       token,
       new Date(Date.now() + RESET_TOKEN_TTL_MS)
     );
@@ -428,7 +429,7 @@ export class AuthService {
       throw new Error('Invalid or expired verification token');
     }
 
-    await this.userRepository.verifyEmail(tokenRow.userId);
+    await this.userRepository.verifyEmail(toUserId(tokenRow.userId));
     await this.authTokenRepository.markVerificationTokenUsed(tokenRow.id);
     await this.auditRepository.create({
       userId: tokenRow.userId,
@@ -462,14 +463,14 @@ export class AuthService {
     }
 
     const previous =
-      await this.authTokenRepository.findLatestUnusedVerificationToken(user.id);
+      await this.authTokenRepository.findLatestUnusedVerificationToken(toUserId(user.id));
     if (previous && previous.createdAt.getTime() > Date.now() - 60_000) {
       throw new Error(
         'Please wait a moment before requesting another verification email'
       );
     }
 
-    const token = await this.createEmailVerificationToken(user.id);
+    const token = await this.createEmailVerificationToken(toUserId(user.id));
     await this.emailService.sendVerificationEmail(user.email, token);
 
     return { success: true, message: 'Verification email sent' };
@@ -481,7 +482,7 @@ export class AuthService {
    * The secret is always generated server-side. It used to be accepted as a
    * caller-supplied argument, which let the client decide the shared secret.
    */
-  async setupTwoFactor(userId: string): Promise<{ otpauthUrl: string; secret: string }> {
+  async setupTwoFactor(userId: UserId): Promise<{ otpauthUrl: string; secret: string }> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -513,7 +514,7 @@ export class AuthService {
    * Verify a TOTP code and enable two-factor authentication
    */
   async verifyTwoFactor(
-    userId: string,
+    userId: UserId,
     code: string
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.userRepository.findById(userId);
@@ -548,7 +549,7 @@ export class AuthService {
    * it away, so any six digits turned 2FA off.
    */
   async disableTwoFactor(
-    userId: string,
+    userId: UserId,
     code: string
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.userRepository.findById(userId);
@@ -586,7 +587,7 @@ export class AuthService {
    * Soft-delete the account and revoke all sessions
    */
   async deleteAccount(
-    userId: string,
+    userId: UserId,
     reason?: string
   ): Promise<{ success: boolean }> {
     const user = await this.userRepository.findById(userId);
@@ -617,7 +618,7 @@ export class AuthService {
    * cleared the database rows and left the sessions themselves alive.
    */
   async logoutAll(
-    userId: string
+    userId: UserId
   ): Promise<{ success: boolean; revoked: number }> {
     const revoked = await this.userRepository.deleteAllDeviceSessions(userId);
     await this.userRepository.bumpSessionVersion(userId);
@@ -629,7 +630,7 @@ export class AuthService {
     return { success: true, revoked };
   }
 
-  private async createEmailVerificationToken(userId: string): Promise<string> {
+  private async createEmailVerificationToken(userId: UserId): Promise<string> {
     const token = randomBytes(32).toString('hex');
     await this.authTokenRepository.createVerificationToken(
       userId,

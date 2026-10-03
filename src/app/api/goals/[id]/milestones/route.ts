@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { milestoneSchema } from '@/schemas/project.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid goal id' }, { status: 400 });
     }
 
-    const milestones = await new GoalService().getMilestones(session.user.id, id);
+    const milestones = await new GoalService().getMilestones(userIdFromSession(session), id);
 
     return NextResponse.json({
       success: true,
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const milestone = await new GoalService().addMilestone(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data
     );

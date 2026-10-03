@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { recapService } from '@/server/services/recap.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/recap?period=day|week|month|year&date=YYYY-MM-DD
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await recapService.getReport(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.period,
       validated.data.date
     );

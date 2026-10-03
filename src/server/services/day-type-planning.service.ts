@@ -1,10 +1,7 @@
 import prisma from '@/lib/prisma';
 import { DayType, PlanStatus } from '@/generated/prisma';
 import { getTodayString, shiftCalendarDay, DEFAULT_TZ } from '@/lib/dates';
-import { RoutineRepository } from '@/server/repositories/routine.repository';
-
-const routineRepository = new RoutineRepository();
-
+import type { UserId } from '@/types/ids';
 export interface TomorrowPlanView {
   id: string;
   date: string;
@@ -48,7 +45,7 @@ export class DayTypePlanningService {
    * Get tomorrow's plan for the user.
    * Creates a PENDING plan if none exists.
    */
-  async getTomorrowPlan(userId: string): Promise<TomorrowPlanView | null> {
+  async getTomorrowPlan(userId: UserId): Promise<TomorrowPlanView | null> {
     const timezone = await this.getUserTimezone(userId);
     const tomorrow = shiftCalendarDay(getTodayString(timezone), 1);
 
@@ -66,7 +63,7 @@ export class DayTypePlanningService {
   /**
    * Create a pending plan for tomorrow.
    */
-  private async createPendingPlan(userId: string, date: string) {
+  private async createPendingPlan(userId: UserId, date: string) {
     return prisma.tomorrowDayTypePlan.create({
       data: {
         userId,
@@ -82,7 +79,7 @@ export class DayTypePlanningService {
    * User selects tomorrow's DayType (but doesn't confirm yet).
    * Status changes to SELECTED.
    */
-  async selectTomorrowDayType(userId: string, input: SelectDayTypeInput): Promise<PlanResult> {
+  async selectTomorrowDayType(userId: UserId, input: SelectDayTypeInput): Promise<PlanResult> {
     const timezone = await this.getUserTimezone(userId);
     const tomorrow = shiftCalendarDay(getTodayString(timezone), 1);
 
@@ -136,7 +133,7 @@ export class DayTypePlanningService {
    * Generates routine blocks and schedules notifications.
    * Status changes to CONFIRMED.
    */
-  async confirmTomorrowPlan(userId: string, input: ConfirmPlanInput): Promise<PlanResult> {
+  async confirmTomorrowPlan(userId: UserId, input: ConfirmPlanInput): Promise<PlanResult> {
     const timezone = await this.getUserTimezone(userId);
     const tomorrow = shiftCalendarDay(getTodayString(timezone), 1);
 
@@ -213,7 +210,7 @@ export class DayTypePlanningService {
    * User changes tomorrow's DayType after confirmation.
    * Regenerates routine and reschedules notifications.
    */
-  async changeTomorrowPlan(userId: string, input: ChangePlanInput): Promise<PlanResult> {
+  async changeTomorrowPlan(userId: UserId, input: ChangePlanInput): Promise<PlanResult> {
     const timezone = await this.getUserTimezone(userId);
     const tomorrow = shiftCalendarDay(getTodayString(timezone), 1);
 
@@ -289,7 +286,7 @@ export class DayTypePlanningService {
    * Apply fallback DayType if no plan was confirmed by midnight.
    * This should be called by a cron job at midnight.
    */
-  async applyFallbackIfNeeded(userId: string): Promise<PlanResult | null> {
+  async applyFallbackIfNeeded(userId: UserId): Promise<PlanResult | null> {
     const timezone = await this.getUserTimezone(userId);
     const tomorrow = shiftCalendarDay(getTodayString(timezone), 1);
 
@@ -355,7 +352,7 @@ export class DayTypePlanningService {
   /**
    * Cancel all scheduled notifications for tomorrow.
    */
-  private async cancelTomorrowNotifications(userId: string, date: string): Promise<void> {
+  private async cancelTomorrowNotifications(userId: UserId, date: string): Promise<void> {
     // Mark all pending notifications for tomorrow as dismissed
     const types = [
       'ROUTINE_PRE_START',
@@ -387,7 +384,7 @@ export class DayTypePlanningService {
   /**
    * Get all user's DayTypeDefinitions for the selector.
    */
-  async getAvailableDayTypes(userId: string) {
+  async getAvailableDayTypes(userId: UserId) {
     return prisma.dayTypeDefinition.findMany({
       where: { userId, isArchived: false },
       orderBy: { sortOrder: 'asc' },
@@ -402,7 +399,7 @@ export class DayTypePlanningService {
     });
   }
 
-  private async getUserTimezone(userId: string): Promise<string> {
+  private async getUserTimezone(userId: UserId): Promise<string> {
     const settings = await prisma.userSettings.findUnique({
       where: { userId },
       select: { timezone: true },

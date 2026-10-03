@@ -4,6 +4,7 @@ import { RoutineService } from '@/server/services/routine.service';
 import { z } from 'zod';
 import { energyLevelSchema, timeSchema } from '@/lib/validation/routine.schema';
 import { NotFoundError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 const routineService = new RoutineService();
 
@@ -66,7 +67,7 @@ export async function PUT(
     const peerId = req.nextUrl.searchParams.get('peerId');
     if (peerId) {
       const blocks = await routineService.reorderBlock(
-        session.user.id,
+        userIdFromSession(session),
         id,
         blockId,
         peerId
@@ -75,7 +76,7 @@ export async function PUT(
     }
 
     const { block, warnings } = await routineService.updateBlock(
-      session.user.id,
+      userIdFromSession(session),
       id,
       blockId,
       data
@@ -118,7 +119,7 @@ export async function DELETE(
   const { id, blockId } = await params;
 
   try {
-    await routineService.deleteBlock(session.user.id, id, blockId);
+    await routineService.deleteBlock(userIdFromSession(session), id, blockId);
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof NotFoundError) {

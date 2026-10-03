@@ -3,6 +3,7 @@ import { templateService } from '@/server/services/template.service';
 import { updateTemplateSchema } from '@/schemas/template.schema';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Template by ID Route
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const template = await templateService.getForUser(session.user.id, paramId);
+    const template = await templateService.getForUser(userIdFromSession(session), paramId);
 
     return NextResponse.json({ success: true, data: template });
   } catch (error) {
@@ -67,12 +68,12 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     // An empty patch is a no-op, and the existing row is echoed back unchanged.
     if (Object.keys(validated.data).length === 0) {
-      const existing = await templateService.getForUser(session.user.id, paramId);
+      const existing = await templateService.getForUser(userIdFromSession(session), paramId);
       return NextResponse.json({ success: true, data: existing });
     }
 
     const updated = await templateService.update(
-      session.user.id,
+      userIdFromSession(session),
       paramId,
       validated.data
     );
@@ -102,7 +103,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await templateService.delete(session.user.id, paramId);
+    await templateService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting template:', error);

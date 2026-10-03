@@ -1,5 +1,6 @@
 import type { Streak, StreakMilestone, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Streak Repository
@@ -10,7 +11,7 @@ export class StreakRepository extends BaseRepository {
   /**
    * Find user's streak
    */
-  async findByUserId(userId: string): Promise<Streak | null> {
+  async findByUserId(userId: UserId): Promise<Streak | null> {
     try {
       return await this.prisma.streak.findFirst({
         where: { userId },
@@ -23,7 +24,7 @@ export class StreakRepository extends BaseRepository {
   /**
    * Create streak
    */
-  async create(userId: string): Promise<Streak> {
+  async create(userId: UserId): Promise<Streak> {
     try {
       return await this.prisma.streak.create({
         data: { userId },
@@ -37,7 +38,7 @@ export class StreakRepository extends BaseRepository {
    * Update streak
    */
   async update(
-    userId: string,
+    userId: UserId,
     data: Prisma.StreakUpdateInput
   ): Promise<Streak> {
     try {
@@ -63,7 +64,7 @@ export class StreakRepository extends BaseRepository {
    * a different day than the score it was derived from.
    */
   async incrementCurrentStreak(
-    userId: string,
+    userId: UserId,
     days: number = 1,
     completedDate?: string
   ): Promise<Streak> {
@@ -84,7 +85,7 @@ export class StreakRepository extends BaseRepository {
   /**
    * Reset current streak
    */
-  async resetCurrentStreak(userId: string): Promise<Streak> {
+  async resetCurrentStreak(userId: UserId): Promise<Streak> {
     try {
       return await this.prisma.streak.update({
         where: { userId },
@@ -98,7 +99,7 @@ export class StreakRepository extends BaseRepository {
   /**
    * Add rest day
    */
-  async addRestDay(userId: string): Promise<Streak> {
+  async addRestDay(userId: UserId): Promise<Streak> {
     try {
       return await this.prisma.streak.update({
         where: { userId },
@@ -115,7 +116,7 @@ export class StreakRepository extends BaseRepository {
    * Add a minimum day. See `incrementCurrentStreak` on why `completedDate` is
    * passed in rather than derived from `new Date()`.
    */
-  async addMinimumDay(userId: string, completedDate?: string): Promise<Streak> {
+  async addMinimumDay(userId: UserId, completedDate?: string): Promise<Streak> {
     try {
       return await this.prisma.streak.update({
         where: { userId },
@@ -153,7 +154,7 @@ export class StreakRepository extends BaseRepository {
    * Find milestone
    */
   async findMilestone(
-    userId: string,
+    userId: UserId,
     milestoneDays: number,
     streakType: string
   ): Promise<StreakMilestone | null> {
@@ -169,7 +170,7 @@ export class StreakRepository extends BaseRepository {
   /**
    * Get uncelebrated milestones
    */
-  async getUncelebratedMilestones(userId: string): Promise<StreakMilestone[]> {
+  async getUncelebratedMilestones(userId: UserId): Promise<StreakMilestone[]> {
     try {
       return await this.prisma.streakMilestone.findMany({
         where: { userId, celebrated: false },
@@ -188,7 +189,7 @@ export class StreakRepository extends BaseRepository {
    */
   async findMilestoneById(
     milestoneId: string,
-    userId: string
+    userId: UserId
   ): Promise<StreakMilestone | null> {
     try {
       return await this.prisma.streakMilestone.findFirst({

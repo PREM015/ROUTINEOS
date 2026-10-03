@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { featureFlagService } from '@/server/services/feature-flag.service';
 import { AuthorizationError, ConflictError } from '@/lib/errors/app-error';
 import { createFeatureFlagSchema } from '@/schemas/feature-flag.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/admin/feature-flags
@@ -18,7 +19,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const flags = await featureFlagService.listAllForAdmin(session.user.id);
+    const flags = await featureFlagService.listAllForAdmin(userIdFromSession(session));
 
     return NextResponse.json({
       success: true,
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const flag = await featureFlagService.createStrict(session.user.id, validated.data);
+    const flag = await featureFlagService.createStrict(userIdFromSession(session), validated.data);
 
     return NextResponse.json(
       { success: true, data: flag },

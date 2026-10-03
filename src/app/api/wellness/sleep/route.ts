@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { wellnessService } from '@/server/services/wellness.service';
 import { wellnessQuerySchema } from '@/schemas/wellness.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Wellness: Sleep Insights Route
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data, meta } = await wellnessService.getSleepAnalysis(session.user.id, {
+    const { data, meta } = await wellnessService.getSleepAnalysis(userIdFromSession(session), {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       limit: validated.data.limit,

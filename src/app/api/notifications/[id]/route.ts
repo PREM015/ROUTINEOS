@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { notificationService } from '@/server/services/notification.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * PATCH /api/notifications/[id]
@@ -35,8 +36,8 @@ export async function PATCH(
 
     const data =
       parsed.data.action === 'read'
-        ? await notificationService.markRead(session.user.id, id)
-        : await notificationService.dismiss(session.user.id, id);
+        ? await notificationService.markRead(userIdFromSession(session), id)
+        : await notificationService.dismiss(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

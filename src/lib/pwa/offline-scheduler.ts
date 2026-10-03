@@ -1,9 +1,7 @@
 import { STORE_SCHEDULE, idbGetAll, idbPutAll, idbDelete } from '@/lib/offline/idb';
-import { resolveDayTypeFromException } from '@/lib/scheduling/resolve-routine';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
-import { getTodayString, shiftCalendarDay, DEFAULT_TZ } from '@/lib/dates';
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
-import { differenceInMinutes } from 'date-fns';
+import { fromZonedTime } from 'date-fns-tz';
+import type { UserId } from '@/types/ids';
 
 const routineRepository = new RoutineRepository();
 
@@ -33,24 +31,11 @@ export interface LocalScheduledRecord {
 }
 
 /**
- * Parse action data from notification row
- */
-function parseActionData(raw: string | null | undefined): Record<string, unknown> {
-  if (!raw) return {};
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
-/**
  * Generate tomorrow's notifications locally based on confirmed DayType.
  * This works offline using cached routine templates and user settings.
  */
 export async function generateTomorrowNotificationsLocally(
-  userId: string,
+  userId: UserId,
   timezone: string,
   tomorrowDate: string,
   dayTypeId: string | null,
@@ -58,6 +43,10 @@ export async function generateTomorrowNotificationsLocally(
   userSettings: any
 ): Promise<LocalScheduledRecord[]> {
   const now = new Date();
+  // The far edge of the local scheduling horizon, as a Date. Written as
+  // `horizonEnd` it would be numeric addition on a Date, which does
+  // not compile and, if it had, would compare a timestamp against a Date.
+  const horizonEnd = new Date(now.getTime() + LOCAL_HORIZON_MS);
   const records: LocalScheduledRecord[] = [];
 
   try {
@@ -89,7 +78,7 @@ export async function generateTomorrowNotificationsLocally(
         timezone
       );
       
-      if (preWarningAt > now && preWarningAt < now + LOCAL_HORIZON_MS) {
+      if (preWarningAt > now && preWarningAt < horizonEnd) {
         records.push({
           id: `local:sleep-pre-warning:${tomorrowDate}`,
           title: 'Sleep schedule approaching',
@@ -114,7 +103,7 @@ export async function generateTomorrowNotificationsLocally(
         timezone
       );
       
-      if (bedtimeAt > now && bedtimeAt < now + LOCAL_HORIZON_MS) {
+      if (bedtimeAt > now && bedtimeAt < horizonEnd) {
         records.push({
           id: `local:sleep-prompt:${tomorrowDate}`,
           title: 'Time to sleep',
@@ -142,7 +131,7 @@ export async function generateTomorrowNotificationsLocally(
         timezone
       );
       
-      if (wakeAt > now && wakeAt < now + LOCAL_HORIZON_MS) {
+      if (wakeAt > now && wakeAt < horizonEnd) {
         records.push({
           id: `local:sleep-wake:${tomorrowDate}`,
           title: 'Good morning!',
@@ -181,7 +170,7 @@ export async function generateTomorrowNotificationsLocally(
       // Pre-start
       if (advanceEnabled && advanceMinutes > 0) {
         const preStartAt = new Date(startAt.getTime() - advanceMinutes * 60 * 1000);
-        if (preStartAt > now && preStartAt < now + LOCAL_HORIZON_MS) {
+        if (preStartAt > now && preStartAt < horizonEnd) {
           records.push({
             id: `local:routine-pre-start:${block.id}:${tomorrowDate}`,
             title: `${block.title} starting soon`,
@@ -203,13 +192,13 @@ export async function generateTomorrowNotificationsLocally(
       }
 
       // Start
-      const startScheduledAt = advanceEnabled && advanceMinutes > 0 
+      let startScheduledAt = advanceEnabled && advanceMinutes > 0 
         ? new Date(startAt.getTime() - advanceMinutes * 60 * 1000)
         : startAt;
       
       if (startScheduledAt < now) startScheduledAt = startAt;
       
-      if (startScheduledAt < now + LOCAL_HORIZON_MS) {
+      if (startScheduledAt < horizonEnd) {
         records.push({
           id: `local:routine-start:${block.id}:${tomorrowDate}`,
           title: `${block.title} Time`,
@@ -231,7 +220,7 @@ export async function generateTomorrowNotificationsLocally(
       }
 
       // Completion
-      if (endAt > now && endAt < now + LOCAL_HORIZON_MS) {
+      if (endAt > now && endAt < horizonEnd) {
         records.push({
           id: `local:routine-completion:${block.id}:${tomorrowDate}`,
           title: `${block.title} session ended`,
@@ -262,7 +251,7 @@ export async function generateTomorrowNotificationsLocally(
         timezone
       );
       
-      if (reminderAt > now && reminderAt < now + LOCAL_HORIZON_MS) {
+      if (reminderAt > now && reminderAt < horizonEnd) {
         records.push({
           id: `local:habit-daily:${tomorrowDate}`,
           title: 'Daily check-in',
@@ -345,8 +334,11 @@ function getEndOccurrence(
 
   let endLocalDate = localDate;
   if (isOvernight) {
+    // `split` is index-accessed, so each part is possibly undefined under
+    // `noUncheckedIndexedAccess`. A malformed date yields an invalid Date, which
+    // the caller's formatting already guards against.
     const [year, month, day] = localDate.split('-').map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
+    const date = new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 1));
     date.setUTCDate(date.getUTCDate() + 1);
     endLocalDate = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
   }

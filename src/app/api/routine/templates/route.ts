@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { dayTypeSchema } from '@/lib/validation/routine.schema';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const routineService = new RoutineService();
 
@@ -32,13 +33,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid dayTypeId' }, { status: 400 });
     }
     const template = await routineService.getTemplateForDayTypeId(
-      session.user.id,
+      userIdFromSession(session),
       requested
     );
     return NextResponse.json({ success: true, data: template ? [template] : [] });
   }
 
-  const templates = await routineService.listTemplates(session.user.id);
+  const templates = await routineService.listTemplates(userIdFromSession(session));
 
   return NextResponse.json({ success: true, data: templates });
 }
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const template = await routineService.createSimpleTemplate(session.user.id, {
+    const template = await routineService.createSimpleTemplate(userIdFromSession(session), {
       name: validated.data.name,
       dayType: validated.data.dayType,
       isDefault: validated.data.isDefault,
@@ -110,7 +111,7 @@ export async function PUT(request: Request) {
     }
 
     const template = await routineService.updateTemplate(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.id,
       { name: validated.data.name, isDefault: validated.data.isDefault }
     );

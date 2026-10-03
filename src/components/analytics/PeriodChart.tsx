@@ -128,7 +128,7 @@ export function PeriodChart({
 
       <div className="mt-4 h-72">
         <BarChart
-          data={data.map((point) => ({ ...point, value: point.value ?? 0 }))}
+          data={data.map((point) => ({ ...point }))}
           xKey="name"
           dataKey="value"
           height={288}

@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryIdSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/journal/[id]/restore
@@ -31,7 +32,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await journalService.restore(session.user.id, parsedParams.data.id);
+    const entry = await journalService.restore(userIdFromSession(session), parsedParams.data.id);
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
     if (error instanceof AppError) {

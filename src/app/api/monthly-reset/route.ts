@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { reviewService } from '@/server/services/review.service';
 import { createMonthlyResetSchema } from '@/lib/validation/review.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Archiving dropped habits, applying goal decisions and recording the reset
     // are all service concerns.
     const reset = await reviewService.createMonthlyReset(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 

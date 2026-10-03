@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/habits/[id]/archive
@@ -25,7 +26,7 @@ export async function POST(
     const habitService = new HabitService();
 
     if (request.nextUrl.searchParams.get('restore') === 'true') {
-      const habit = await habitService.restoreHabit(session.user.id, id);
+      const habit = await habitService.restoreHabit(userIdFromSession(session), id);
       return NextResponse.json({ success: true, data: habit });
     }
 
@@ -34,7 +35,7 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
     const { reason } = body ?? {};
 
-    await habitService.archiveHabit(session.user.id, id, reason);
+    await habitService.archiveHabit(userIdFromSession(session), id, reason);
 
     return NextResponse.json({ success: true });
   } catch (error) {

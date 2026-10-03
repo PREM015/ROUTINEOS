@@ -1,4 +1,5 @@
 import type { User, Role, DeviceType } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Authentication and Authorization Types
@@ -331,7 +332,7 @@ export function isAuthError(error: unknown): error is AuthError {
 // ============================================================================
 
 export type AuthenticatedHandler<T = void> = (
-  userId: string,
+  userId: UserId,
   session: SessionData
 ) => Promise<T>;
 

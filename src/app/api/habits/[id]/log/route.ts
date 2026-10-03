@@ -3,6 +3,7 @@ import { HabitService } from '@/server/services/habit.service';
 import { logHabitSchema } from '@/schemas/habit.schema';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId, userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/habits/[id]/log
@@ -35,7 +36,7 @@ export async function POST(
     }
 
     const habitService = new HabitService();
-    const result = await habitService.logHabit(session.user.id, validated.data);
+    const result = await habitService.logHabit(userIdFromSession(session), validated.data);
 
     /**
      * Recompute the day's score so `/today` reflects the tick immediately.
@@ -55,7 +56,7 @@ export async function POST(
      */
     void import('@/server/services/scoring.service')
       .then(({ ScoringService }) =>
-        new ScoringService().recalculateDate(session.user!.id!, validated.data.date)
+        new ScoringService().recalculateDate(toUserId(session.user!.id!), validated.data.date)
       )
       .catch((error) => {
         console.error('Score recalculation failed after habit log:', error);

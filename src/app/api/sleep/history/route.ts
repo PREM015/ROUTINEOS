@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { sleepService } from '@/server/services/sleep.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/sleep/history
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await sleepService.getSleepHistory(
-      session.user.id,
+      userIdFromSession(session),
       startDate,
       endDate
     );

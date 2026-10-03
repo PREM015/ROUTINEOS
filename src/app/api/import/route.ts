@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { importService } from '@/server/services/import.service';
 import { importPayloadSchema } from '@/lib/validation/import.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/import
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await importService.importUserData(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 

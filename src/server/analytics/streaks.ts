@@ -10,6 +10,7 @@ import {
   isStreakActiveDay,
 } from '@/server/domain/streak/streak-calculator';
 import type { DateRange, StreakAnalytics } from '@/types/analytics';
+import type { UserId } from '@/types/ids';
 
 /**
  * Streak Analytics
@@ -140,7 +141,7 @@ export function streakProjections(
  * Full streak report with a daily timeline, milestone history, and risk
  * projection based on how recently the streak was last completed.
  */
-export async function streakAnalytics(userId: string, range: DateRange): Promise<StreakAnalytics> {
+export async function streakAnalytics(userId: UserId, range: DateRange): Promise<StreakAnalytics> {
   const [scores, streak, uncelebratedMilestones] = await Promise.all([
     scoreRepository.findByRange(userId, range.startDate, range.endDate),
     streakRepository.findByUserId(userId),

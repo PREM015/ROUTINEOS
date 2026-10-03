@@ -1,5 +1,6 @@
 import type { EnergyLog, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Energy Repository
@@ -30,7 +31,7 @@ export class EnergyRepository extends BaseRepository {
   /**
    * Create an energy check-in for a user
    */
-  async create(userId: string, data: CreateEnergyData): Promise<EnergyLog> {
+  async create(userId: UserId, data: CreateEnergyData): Promise<EnergyLog> {
     try {
       return await this.prisma.energyLog.create({
         data: {
@@ -50,7 +51,7 @@ export class EnergyRepository extends BaseRepository {
   /**
    * Find energy logs for a user with optional date range and pagination
    */
-  async findByUserId(userId: string, query: EnergyQueryParams = {}): Promise<EnergyLog[]> {
+  async findByUserId(userId: UserId, query: EnergyQueryParams = {}): Promise<EnergyLog[]> {
     try {
       const where: Prisma.EnergyLogWhereInput = { userId };
 
@@ -75,7 +76,7 @@ export class EnergyRepository extends BaseRepository {
   /**
    * Get energy logs within a date range, oldest first
    */
-  async getRange(userId: string, from?: Date | string, to?: Date | string): Promise<EnergyLog[]> {
+  async getRange(userId: UserId, from?: Date | string, to?: Date | string): Promise<EnergyLog[]> {
     try {
       const where: Prisma.EnergyLogWhereInput = { userId };
 
@@ -99,7 +100,7 @@ export class EnergyRepository extends BaseRepository {
   /**
    * Find a single energy log owned by the user
    */
-  async findById(userId: string, logId: string): Promise<EnergyLog | null> {
+  async findById(userId: UserId, logId: string): Promise<EnergyLog | null> {
     try {
       return await this.prisma.energyLog.findFirst({
         where: { id: logId, userId },
@@ -112,7 +113,7 @@ export class EnergyRepository extends BaseRepository {
   /**
    * Get the latest energy log for a user
    */
-  async findLatest(userId: string): Promise<EnergyLog | null> {
+  async findLatest(userId: UserId): Promise<EnergyLog | null> {
     try {
       return await this.prisma.energyLog.findFirst({
         where: { userId },
@@ -127,7 +128,7 @@ export class EnergyRepository extends BaseRepository {
    * Update an energy log owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     logId: string,
     data: Partial<CreateEnergyData>
   ): Promise<EnergyLog> {
@@ -150,7 +151,7 @@ export class EnergyRepository extends BaseRepository {
   /**
    * Delete an energy log owned by the user
    */
-  async delete(userId: string, logId: string): Promise<EnergyLog> {
+  async delete(userId: UserId, logId: string): Promise<EnergyLog> {
     try {
       return await this.prisma.energyLog.delete({
         where: { id: logId, userId },

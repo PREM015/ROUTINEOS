@@ -1,6 +1,7 @@
 import { HabitService } from '@/server/services/habit.service';
 import { GoalService } from '@/server/services/goal.service';
 import { TaskService } from '@/server/services/task.service';
+import type { UserId } from '@/types/ids';
 
 /**
  * Bulk Service
@@ -38,7 +39,7 @@ export class BulkService {
    * Each item is attempted independently: one failure does not abort the batch,
    * and every outcome is reported.
    */
-  async archive(userId: string, type: BulkEntity, ids: string[]): Promise<BulkResult[]> {
+  async archive(userId: UserId, type: BulkEntity, ids: string[]): Promise<BulkResult[]> {
     const results: BulkResult[] = [];
 
     for (const id of ids) {
@@ -66,7 +67,7 @@ export class BulkService {
   /**
    * Delete a batch of entities of one type.
    */
-  async remove(userId: string, type: BulkEntity, ids: string[]): Promise<BulkResult[]> {
+  async remove(userId: UserId, type: BulkEntity, ids: string[]): Promise<BulkResult[]> {
     const results: BulkResult[] = [];
 
     for (const id of ids) {

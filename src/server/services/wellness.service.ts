@@ -10,6 +10,7 @@ import {
   type SleepLogLike,
 } from '@/server/domain/sleep/sleep-analyzer';
 import type { EnergyLog, MoodLog } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Wellness Service
@@ -114,7 +115,7 @@ export class WellnessService {
   }
 
   /** The user's configured sleep target, or the default. */
-  private async sleepTargetMinutes(userId: string): Promise<number> {
+  private async sleepTargetMinutes(userId: UserId): Promise<number> {
     const settings = await this.userRepository.getSettings(userId);
     return settings?.minSleepDuration ?? DEFAULT_SLEEP_TARGET_MINUTES;
   }
@@ -128,7 +129,7 @@ export class WellnessService {
    * there are any, otherwise from the whole period.
    */
   async getMoodLogs(
-    userId: string,
+    userId: UserId,
     input: WellnessRange & { limit?: number; offset?: number }
   ) {
     const { startDate, endDate } = this.resolveRange(input);
@@ -155,7 +156,7 @@ export class WellnessService {
   }
 
   /** Record a mood check-in. */
-  async logMood(userId: string, input: Parameters<MoodRepository['logMood']>[1]) {
+  async logMood(userId: UserId, input: Parameters<MoodRepository['logMood']>[1]) {
     return this.moodRepository.logMood(userId, input);
   }
 
@@ -167,7 +168,7 @@ export class WellnessService {
    * Energy check-ins over a range, or the pattern analysis when requested.
    */
   async getEnergyLogs(
-    userId: string,
+    userId: UserId,
     input: {
       from?: string;
       to?: string;
@@ -204,7 +205,7 @@ export class WellnessService {
   }
 
   /** Record an energy check-in. */
-  async logEnergy(userId: string, input: Parameters<MoodRepository['logEnergy']>[1]) {
+  async logEnergy(userId: UserId, input: Parameters<MoodRepository['logEnergy']>[1]) {
     return this.moodRepository.logEnergy(userId, input);
   }
 
@@ -217,7 +218,7 @@ export class WellnessService {
    * when the caller asked for it, so the analysis always sees the full period.
    */
   async getSleepAnalysis(
-    userId: string,
+    userId: UserId,
     input: WellnessRange & { limit?: number; offset?: number }
   ) {
     const { startDate, endDate } = this.resolveRange(input);
@@ -254,7 +255,7 @@ export class WellnessService {
    * Combined mood + energy + sleep analytics, their correlation, and generated
    * insights for the period.
    */
-  async getWellnessStats(userId: string, input: WellnessRange) {
+  async getWellnessStats(userId: UserId, input: WellnessRange) {
     const { startDate, endDate } = this.resolveRange(input);
     const daysAnalyzed = daysBetween(startDate, endDate);
 

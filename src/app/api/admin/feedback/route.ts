@@ -6,6 +6,7 @@ import {
   feedbackQuerySchema,
   updateFeedbackStatusSchema,
 } from '@/schemas/feedback.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/admin/feedback
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { items, total } = await feedbackService.listAllForAdmin(session.user.id, {
+    const { items, total } = await feedbackService.listAllForAdmin(userIdFromSession(session), {
       type: validated.data.type,
       status: validated.data.status,
       limit: validated.data.limit,
@@ -81,7 +82,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const feedback = await feedbackService.updateStatus(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.id,
       validated.data.status
     );

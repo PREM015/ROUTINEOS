@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/focus/active
@@ -13,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await focusService.getActiveSession(session.user.id);
+    const data = await focusService.getActiveSession(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

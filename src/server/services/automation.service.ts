@@ -8,6 +8,7 @@ import {
   type AutomationQueryParams,
 } from '@/schemas/automation.schema';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import type { UserId } from '@/types/ids';
 
 /**
  * Automation Service
@@ -116,15 +117,15 @@ export class AutomationService {
   // the two cannot disagree about what a valid rule is.
   // ---------------------------------------------------------------------
 
-  async list(userId: string, query: AutomationQueryParams = {}): Promise<AutomationRule[]> {
+  async list(userId: UserId, query: AutomationQueryParams = {}): Promise<AutomationRule[]> {
     return this.automationRepository.findByUserId(userId, query);
   }
 
-  async get(userId: string, ruleId: string): Promise<AutomationRule | null> {
+  async get(userId: UserId, ruleId: string): Promise<AutomationRule | null> {
     return this.automationRepository.findById(userId, ruleId);
   }
 
-  async create(userId: string, input: unknown): Promise<AutomationRule> {
+  async create(userId: UserId, input: unknown): Promise<AutomationRule> {
     const parsed = automationSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.errors[0]?.message ?? 'Invalid automation rule');
@@ -142,7 +143,7 @@ export class AutomationService {
     });
   }
 
-  async update(userId: string, ruleId: string, input: unknown): Promise<AutomationRule> {
+  async update(userId: UserId, ruleId: string, input: unknown): Promise<AutomationRule> {
     const parsed = updateAutomationSchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.errors[0]?.message ?? 'Invalid automation rule');
@@ -164,7 +165,7 @@ export class AutomationService {
     return this.automationRepository.update(userId, ruleId, data);
   }
 
-  async delete(userId: string, ruleId: string): Promise<void> {
+  async delete(userId: UserId, ruleId: string): Promise<void> {
     if (!(await this.automationRepository.findById(userId, ruleId))) {
       throw new NotFoundError('Automation rule not found');
     }
@@ -172,7 +173,7 @@ export class AutomationService {
   }
 
   /** Enable or disable a rule. Idempotent. */
-  async setActive(userId: string, ruleId: string, isActive: boolean): Promise<AutomationRule> {
+  async setActive(userId: UserId, ruleId: string, isActive: boolean): Promise<AutomationRule> {
     const existing = await this.automationRepository.findById(userId, ruleId);
     if (!existing) {
       throw new NotFoundError('Automation rule not found');
@@ -190,7 +191,7 @@ export class AutomationService {
    * habit log must not fail because an automation did), so failures are reported
    * per-rule in the result and logged.
    */
-  async handleEvent(userId: string, event: AutomationEvent): Promise<AutomationRunResult> {
+  async handleEvent(userId: UserId, event: AutomationEvent): Promise<AutomationRunResult> {
     const result: AutomationRunResult = { matched: 0, fired: 0, outcomes: [] };
 
     let rules: AutomationRule[];
@@ -287,7 +288,7 @@ export class AutomationService {
    * Throws on an unusable configuration rather than silently doing nothing, so
    * a misconfigured rule is visible as a failure rather than a false success.
    */
-  private async executeAction(userId: string, rule: AutomationRule): Promise<string | undefined> {
+  private async executeAction(userId: UserId, rule: AutomationRule): Promise<string | undefined> {
     const config = parseConfig(rule.actionConfig);
 
     switch (rule.actionType) {
@@ -390,7 +391,7 @@ export const automationService = new AutomationService();
  * timezone to decide which "HH:MM" it is.
  */
 export async function runTimeReachedAutomations(
-  userId: string,
+  userId: UserId,
   timezone: string,
   now: Date = new Date(),
 ): Promise<AutomationRunResult> {

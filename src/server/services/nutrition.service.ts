@@ -5,6 +5,7 @@ import type {
   UpdateNutritionInput,
 } from '@/schemas/nutrition.schema';
 import type { NutritionEntry } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /** Summed macros for a page of entries. All four are non-nullable in practice. */
 export interface NutritionTotals {
@@ -43,7 +44,7 @@ export class NutritionService {
    * `total` in the response but means "entries in this page"; if a real total is
    * ever needed, add a `countAll` to the repository and change both at once.
    */
-  async listForUser(userId: string, query: Parameters<NutritionRepository['findAll']>[1]) {
+  async listForUser(userId: UserId, query: Parameters<NutritionRepository['findAll']>[1]) {
     const entries = await this.nutritionRepository.findAll(userId, query);
 
     const totals = entries.reduce<NutritionTotals>(
@@ -61,7 +62,7 @@ export class NutritionService {
   }
 
   /** Create every item of a meal. */
-  async createMany(userId: string, input: CreateNutritionInput) {
+  async createMany(userId: UserId, input: CreateNutritionInput) {
     return this.nutritionRepository.createMany(
       userId,
       input.date,
@@ -71,7 +72,7 @@ export class NutritionService {
   }
 
   /** One entry, or `NotFoundError`. */
-  async getForUser(userId: string, entryId: string): Promise<NutritionEntry> {
+  async getForUser(userId: UserId, entryId: string): Promise<NutritionEntry> {
     const entry = await this.nutritionRepository.findById(userId, entryId);
     if (!entry) {
       throw new NotFoundError('Nutrition entry');
@@ -87,7 +88,7 @@ export class NutritionService {
    * `{}` on a save button is not making a mistake worth a write.
    */
   async update(
-    userId: string,
+    userId: UserId,
     entryId: string,
     input: UpdateNutritionInput
   ): Promise<NutritionEntry> {
@@ -101,7 +102,7 @@ export class NutritionService {
   }
 
   /** Delete an entry. */
-  async delete(userId: string, entryId: string): Promise<void> {
+  async delete(userId: UserId, entryId: string): Promise<void> {
     await this.getForUser(userId, entryId);
     await this.nutritionRepository.delete(userId, entryId);
   }

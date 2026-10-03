@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -32,8 +33,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // skipping the ownership check — so a caller who knew another user's task id
     // could reset its status through this endpoint.
     const task = restore
-      ? await taskService.restoreTask(userId, id)
-      : await taskService.archiveTask(userId, id);
+      ? await taskService.restoreTask(toUserId(userId), id)
+      : await taskService.archiveTask(toUserId(userId), id);
 
     return NextResponse.json({ success: true, data: task });
   } catch (error) {

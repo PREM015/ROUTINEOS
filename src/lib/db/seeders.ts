@@ -10,6 +10,7 @@
 import { Role, TemplateType, type Prisma } from '@/generated/prisma';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { toUserId, type UserId } from '@/types/ids';
 
 const DEFAULT_TIMEZONE = 'America/New_York';
 
@@ -106,7 +107,7 @@ export const DEFAULT_CATEGORIES: readonly SeedCategoryInput[] = [
  * `[userId, nameNormalized]` unique constraint. Returns the created/kept rows.
  */
 export async function seedCategories(
-  userId: string,
+  userId: UserId,
   categories: readonly SeedCategoryInput[] = DEFAULT_CATEGORIES
 ) {
   const results: Awaited<ReturnType<typeof seedCategory>>[] = [];
@@ -116,7 +117,7 @@ export async function seedCategories(
   return results;
 }
 
-async function seedCategory(userId: string, data: SeedCategoryInput) {
+async function seedCategory(userId: UserId, data: SeedCategoryInput) {
   const values = {
     name: data.name,
     description: data.description,
@@ -312,7 +313,7 @@ export async function seedDatabase(options: { withDemoUser?: boolean } = {}): Pr
       role: Role.USER,
       isActive: true,
     });
-    const categories = await seedCategories(demo.id);
+    const categories = await seedCategories(toUserId(demo.id));
     summary.users = 1;
     summary.categories = categories.length;
   }

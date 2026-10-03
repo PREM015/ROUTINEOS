@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { integrationService } from '@/server/services/integration.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Integration Disconnect Route
@@ -25,7 +26,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     }
 
     const provider = integrationService.providerFromSlug(paramProvider);
-    const result = await integrationService.disconnect(session.user.id, provider);
+    const result = await integrationService.disconnect(userIdFromSession(session), provider);
 
     return NextResponse.json({
       success: true,

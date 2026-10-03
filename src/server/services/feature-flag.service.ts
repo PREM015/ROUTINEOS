@@ -3,6 +3,7 @@ import { assertAdmin } from '@/server/admin-guard';
 import { evaluateFlag, evaluateFlags } from '@/lib/feature-flags/checker';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import type { FeatureFlag, Role } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Feature Flag Service
@@ -39,7 +40,7 @@ export class FeatureFlagService {
    * queries to annotate rows already in hand. `evaluateFlags` runs the same
    * decision logic over the rows directly.
    */
-  async listForUser(userId: string, role?: Role) {
+  async listForUser(userId: UserId, role?: Role) {
     const flags = await this.featureFlagRepository.findAll();
     const decisions = evaluateFlags(flags, { userId, role });
 
@@ -58,7 +59,7 @@ export class FeatureFlagService {
   }
 
   /** Every flag, admin only. */
-  async listAllForAdmin(userId: string): Promise<FeatureFlag[]> {
+  async listAllForAdmin(userId: UserId): Promise<FeatureFlag[]> {
     await assertAdmin(userId);
     return this.featureFlagRepository.findAll();
   }
@@ -78,7 +79,7 @@ export class FeatureFlagService {
   }
 
   /** Whether a flag is on for this user (global default, or their override). */
-  async isEnabledForUser(key: string, userId: string): Promise<boolean> {
+  async isEnabledForUser(key: string, userId: UserId): Promise<boolean> {
     const flags = await this.featureFlagRepository.listByUserId(userId);
     const flag = flags.find((item) => item.key === key);
     if (!flag) {
@@ -95,7 +96,7 @@ export class FeatureFlagService {
    * read — so the existence check and the evaluation were looking at two
    * separate reads that could disagree if the flag changed in between.
    */
-  async checkForUser(key: string, userId: string, role?: Role) {
+  async checkForUser(key: string, userId: UserId, role?: Role) {
     const flag = await this.getByKey(key);
     const decision = evaluateFlag(flag, { userId, role });
 
@@ -111,7 +112,7 @@ export class FeatureFlagService {
    */
   async setForUser(
     key: string,
-    userId: string,
+    userId: UserId,
     enabled: boolean
   ): Promise<FeatureFlag> {
     // Existence first, so toggling an unregistered key is a 404 rather than
@@ -121,7 +122,7 @@ export class FeatureFlagService {
   }
 
   /** Create a flag. Admin only. */
-  async create(userId: string, data: Parameters<FeatureFlagRepository['create']>[0]) {
+  async create(userId: UserId, data: Parameters<FeatureFlagRepository['create']>[0]) {
     await assertAdmin(userId);
     return this.featureFlagRepository.create(data);
   }
@@ -133,7 +134,7 @@ export class FeatureFlagService {
    * as a 409.
    */
   async update(
-    userId: string,
+    userId: UserId,
     key: string,
     data: Partial<Parameters<FeatureFlagRepository['update']>[1]>
   ): Promise<FeatureFlag> {
@@ -144,7 +145,7 @@ export class FeatureFlagService {
 
   /** Create or replace a flag. Admin only. */
   async upsert(
-    userId: string,
+    userId: UserId,
     data: Parameters<FeatureFlagRepository['upsert']>[0]
   ): Promise<FeatureFlag> {
     await assertAdmin(userId);
@@ -153,7 +154,7 @@ export class FeatureFlagService {
 
   /** Rejects a duplicate key, so `create` does not silently overwrite. */
   async createStrict(
-    userId: string,
+    userId: UserId,
     data: Parameters<FeatureFlagRepository['create']>[0]
   ): Promise<FeatureFlag> {
     await assertAdmin(userId);

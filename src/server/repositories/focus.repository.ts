@@ -1,6 +1,8 @@
 import type { FocusSession, FocusSessionType, FocusSessionEndReason, FocusSessionSource, Break, BreakType, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 import { FOCUS_TIME_TYPES } from '@/lib/focus/type-backfill';
+import { FOCUS_METRIC_DEFAULTS } from '@/lib/focus/metrics';
+import type { UserId } from '@/types/ids';
 
 /**
  * Focus Repository
@@ -139,7 +141,7 @@ export class FocusRepository extends BaseRepository {
    * `abortedAt: new Date()` was accepted by the compiler and thrown away.
    */
   async createSession(
-    userId: string,
+    userId: UserId,
     data: CreateFocusSessionData
   ): Promise<FocusSession> {
     try {
@@ -223,7 +225,7 @@ export class FocusRepository extends BaseRepository {
    * row, and this is the lookup that makes that true without the client having to
    * deduplicate its own queue.
    */
-  async findByClientId(userId: string, clientId: string): Promise<FocusSession | null> {
+  async findByClientId(userId: UserId, clientId: string): Promise<FocusSession | null> {
     try {
       return await this.prisma.focusSession.findFirst({
         where: { userId, clientId },
@@ -243,7 +245,7 @@ export class FocusRepository extends BaseRepository {
    * roll-ups.
    */
   async assertLinksOwned(
-    userId: string,
+    userId: UserId,
     links: { taskId?: string; goalId?: string; habitId?: string; routineBlockId?: string }
   ): Promise<void> {
     const checks: Array<{ label: string; id: string }> = [];
@@ -302,7 +304,7 @@ export class FocusRepository extends BaseRepository {
    *
    * `select: { id: true }` keeps this to the primary-key index.
    */
-  async assertCategoryOwned(userId: string, categoryId: string): Promise<void> {
+  async assertCategoryOwned(userId: UserId, categoryId: string): Promise<void> {
     try {
       const found = await this.prisma.category.findFirst({
         where: { id: categoryId, userId },
@@ -328,7 +330,7 @@ export class FocusRepository extends BaseRepository {
    * unique index in `prisma/sql/focus-lifecycle.sql`. The two must agree: the
    * index constrains exactly the state this method calls "running".
    */
-  async findActiveByUserId(userId: string): Promise<FocusSession | null> {
+  async findActiveByUserId(userId: UserId): Promise<FocusSession | null> {
     try {
       return await this.prisma.focusSession.findFirst({
         where: { userId, completedAt: null, abortedAt: null },
@@ -343,7 +345,7 @@ export class FocusRepository extends BaseRepository {
    * Complete a focus session with optional ratings and notes
    */
   async completeSession(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     data: CompleteFocusSessionData
   ): Promise<FocusSession> {
@@ -387,7 +389,7 @@ export class FocusRepository extends BaseRepository {
   /**
    * Find a focus session with category and breaks
    */
-  async findById(userId: string, sessionId: string) {
+  async findById(userId: UserId, sessionId: string) {
     try {
       return await this.prisma.focusSession.findFirst({
         where: { id: sessionId, userId },
@@ -434,7 +436,7 @@ export class FocusRepository extends BaseRepository {
 
   /** Build the `where` clause shared by `findSessions` and `countSessions`. */
   private buildSessionsWhere(
-    userId: string,
+    userId: UserId,
     query: FocusSessionQueryParams
   ): Prisma.FocusSessionWhereInput {
     const where: Prisma.FocusSessionWhereInput = { userId };
@@ -458,6 +460,21 @@ export class FocusRepository extends BaseRepository {
   private sessionsInclude() {
     return {
       category: { select: { id: true, name: true, color: true } },
+      /*
+       * The three context links, selected by id and title only.
+       *
+       * They are here so the history list can say *what a session was for*, which is
+       * the entire point of linking one. Only the label columns are taken - pulling the
+       * whole Task/Goal/Habit rows would drag their relations along with them and turn
+       * a 20-row page into several hundred.
+       *
+       * Nullable because every link is `onDelete: SetNull`: deleting the task a session
+       * pointed at leaves the session, not the reverse, so "linked then unlinked" is a
+       * normal state the UI has to render rather than an error.
+       */
+      task: { select: { id: true, title: true, status: true } },
+      goal: { select: { id: true, title: true, status: true } },
+      habit: { select: { id: true, name: true, status: true } },
       _count: { select: { breaks: true } },
     } as const;
   }
@@ -465,7 +482,7 @@ export class FocusRepository extends BaseRepository {
   /**
    * Find focus sessions for a user with optional filters
    */
-  async findSessions(userId: string, query: FocusSessionQueryParams = {}) {
+  async findSessions(userId: UserId, query: FocusSessionQueryParams = {}) {
     try {
       return await this.prisma.focusSession.findMany({
         where: this.buildSessionsWhere(userId, query),
@@ -485,7 +502,7 @@ export class FocusRepository extends BaseRepository {
    * describes one page. It shares `buildSessionsWhere` with `findSessions`, so
    * the count and the page can never be describing different result sets.
    */
-  async countSessions(userId: string, query: FocusSessionQueryParams = {}): Promise<number> {
+  async countSessions(userId: UserId, query: FocusSessionQueryParams = {}): Promise<number> {
     try {
       return await this.prisma.focusSession.count({
         where: this.buildSessionsWhere(userId, query),
@@ -500,7 +517,7 @@ export class FocusRepository extends BaseRepository {
    */
   async update(
     sessionId: string,
-    userId: string,
+    userId: UserId,
     data: FocusSessionUpdateData
   ): Promise<FocusSession> {
     try {
@@ -527,7 +544,7 @@ export class FocusRepository extends BaseRepository {
   /**
    * Delete a focus session owned by the user
    */
-  async delete(userId: string, sessionId: string): Promise<FocusSession> {
+  async delete(userId: UserId, sessionId: string): Promise<FocusSession> {
     try {
       return await this.prisma.focusSession.delete({
         where: { id: sessionId, userId },
@@ -546,7 +563,7 @@ export class FocusRepository extends BaseRepository {
    * and it used to include every completed break.
    */
   async countCompletedSessions(
-    userId: string,
+    userId: UserId,
     startedAfter?: Date,
     types: readonly FocusSessionType[] = FOCUS_TIME_TYPES
   ): Promise<number> {
@@ -578,7 +595,7 @@ export class FocusRepository extends BaseRepository {
    * a 5-minute break is not a late-evening focus session.
    */
   async findCompletedSessionStarts(
-    userId: string,
+    userId: UserId,
     types: readonly FocusSessionType[] = FOCUS_TIME_TYPES
   ): Promise<Date[]> {
     try {
@@ -593,24 +610,58 @@ export class FocusRepository extends BaseRepository {
   }
 
   /**
-   * Get aggregate focus stats for a user in a date range
+   * Aggregate focus stats for a range, on the shared glossary's definitions.
    *
-   * Counts only `FOCUS` and `STOPWATCH`. This single filter is what removes
-   * breaks from every "focus minutes" figure in the product — achievements,
-   * analytics, monthly/yearly recaps and the dashboard radar all read these four
-   * numbers, so there is no second place to keep in sync.
+   * This is the single number every consumer reads: achievements, `/analytics`, the
+   * dashboard radar, and the monthly and yearly recaps. Six call sites, one
+   * predicate — which is the only reason they can be trusted to agree.
+   *
+   * ## The counting rule, and why it is SQL and not JS
+   *
+   * `FOCUS_METRIC_DEFAULTS` counts a session when it completed with any positive
+   * duration, **or** ended early with at least `minimumCountedMinutes`. An earlier
+   * version of this comment claimed that rule could not be expressed in a `where`
+   * clause, because it keys on `endReason`. It can:
+   *
+   *   completed -> `completedAt IS NOT NULL AND actualDuration > 0`
+   *   partial   -> `abortedAt IS NOT NULL AND actualDuration >= minimum`
+   *
+   * `endReason` is a *derived convenience* over those same two timestamp columns
+   * (`getFocusSessionStatus` reads them as a pair, and so does the
+   * `one_active_session_per_user` partial index). Using the timestamps directly
+   * keeps this a single aggregate instead of a full row fetch.
+   *
+   * The floor is the substantive part. Counting every partial would let a streak or
+   * an achievement be manufactured by starting and stopping repeatedly; counting none
+   * would hide 22 real minutes because a session was incomplete.
+   *
+   * ## What is deliberately *not* here
+   *
+   * Rows with no terminal timestamp at all. They are neither completed nor aborted,
+   * so the glossary's "unknown" case applies and they contribute nothing — which is
+   * the honest answer, and why the backfill leaves their `endReason` null rather
+   * than guessing.
    */
   async getStats(
-    userId: string,
+    userId: UserId,
     from?: DateFilter,
     to?: DateFilter
   ): Promise<FocusStats> {
     try {
+      const minimum = FOCUS_METRIC_DEFAULTS.minimumCountedMinutes;
+
       const where: Prisma.FocusSessionWhereInput = {
         userId,
-        completedAt: { not: null },
         actualDuration: { not: null },
         ...FOCUS_TIME_TYPE_FILTER,
+        // The counting rule, expressed once. `OR` rather than two aggregates,
+        // because `_count`/`_sum`/`_avg`/`_max` all take this same clause and
+        // running them separately would let the four figures describe different
+        // populations.
+        OR: [
+          { completedAt: { not: null }, actualDuration: { gt: 0 } },
+          { abortedAt: { not: null }, actualDuration: { gte: minimum } },
+        ],
       };
 
       const fromDate = toFocusDate(from);
@@ -651,7 +702,7 @@ export class FocusRepository extends BaseRepository {
    * day, and dropping them here would make that count always zero.
    */
   async findRowsForStats(
-    userId: string,
+    userId: UserId,
     range: { gte: Date; lte: Date },
     types: readonly FocusSessionType[] = FOCUS_TIME_TYPES
   ) {
@@ -670,6 +721,11 @@ export class FocusRepository extends BaseRepository {
           completedAt: true,
           abortedAt: true,
           actualDuration: true,
+          // Both are read by the glossary: `endReason` decides completed-vs-partial,
+          // and `timezone` is the session's snapshot, so history does not re-bucket
+          // when the user moves.
+          endReason: true,
+          timezone: true,
         },
         orderBy: { startedAt: 'desc' },
       });
@@ -693,7 +749,7 @@ export class FocusRepository extends BaseRepository {
    * independently could produce a row that nothing can classify.
    */
   async applyTransition(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     patch: {
       actualDuration?: number;
@@ -746,7 +802,7 @@ export class FocusRepository extends BaseRepository {
   /**
    * Create a break (optionally linked to a focus session)
    */
-  async createBreak(userId: string, data: CreateBreakData): Promise<Break> {
+  async createBreak(userId: UserId, data: CreateBreakData): Promise<Break> {
     try {
       if (data.focusSessionId) {
         const owner = await this.prisma.focusSession.findFirst({
@@ -781,7 +837,7 @@ export class FocusRepository extends BaseRepository {
   /**
    * Find a break by ID with ownership check
    */
-  async findBreakById(userId: string, breakId: string) {
+  async findBreakById(userId: UserId, breakId: string) {
     try {
       return await this.prisma.break.findFirst({
         where: { id: breakId, userId },
@@ -803,7 +859,7 @@ export class FocusRepository extends BaseRepository {
    * List breaks for a user in a date range
    */
   async listBreaks(
-    userId: string,
+    userId: UserId,
     from?: DateFilter,
     to?: DateFilter
   ): Promise<Break[]> {

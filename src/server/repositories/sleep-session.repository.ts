@@ -1,6 +1,7 @@
 import type { SleepSession, SleepStartSource } from '@/generated/prisma';
 import { SleepSessionStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Sleep Session Repository
@@ -20,7 +21,7 @@ export class SleepSessionRepository extends BaseRepository {
   /**
    * Find the active (running) sleep session for a user.
    */
-  async findActive(userId: string): Promise<SleepSession | null> {
+  async findActive(userId: UserId): Promise<SleepSession | null> {
     try {
       return await this.prisma.sleepSession.findFirst({
         where: { userId, status: SleepSessionStatus.ACTIVE },
@@ -35,7 +36,7 @@ export class SleepSessionRepository extends BaseRepository {
    * Find a session created from a given prompt key (idempotency guard).
    */
   async findByPromptKey(
-    userId: string,
+    userId: UserId,
     promptKey: string
   ): Promise<SleepSession | null> {
     try {
@@ -50,7 +51,7 @@ export class SleepSessionRepository extends BaseRepository {
   /**
    * Find the latest sleep session for a user (ended or not).
    */
-  async findLatest(userId: string): Promise<SleepSession | null> {
+  async findLatest(userId: UserId): Promise<SleepSession | null> {
     try {
       return await this.prisma.sleepSession.findFirst({
         where: { userId },
@@ -65,7 +66,7 @@ export class SleepSessionRepository extends BaseRepository {
    * Find sleep sessions whose start falls within [from, to].
    */
   async findByRange(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date
   ): Promise<SleepSession[]> {
@@ -86,7 +87,7 @@ export class SleepSessionRepository extends BaseRepository {
    * Create a new sleep session.
    */
   async create(
-    userId: string,
+    userId: UserId,
     input: CreateSleepSessionInput
   ): Promise<SleepSession> {
     try {
@@ -110,7 +111,7 @@ export class SleepSessionRepository extends BaseRepository {
    * manual responses idempotent — only one session can be created per prompt.
    */
   async createFromPrompt(
-    userId: string,
+    userId: UserId,
     promptKey: string,
     startedAt: Date,
     source: SleepStartSource
@@ -137,7 +138,7 @@ export class SleepSessionRepository extends BaseRepository {
    * End an active sleep session, filling duration (minutes) and status.
    */
   async end(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     endedAt: Date,
     durationMinutes: number
@@ -159,7 +160,7 @@ export class SleepSessionRepository extends BaseRepository {
   /**
    * Cancel all active sessions for a user (safety net / account hygiene).
    */
-  async cancelAllActive(userId: string): Promise<number> {
+  async cancelAllActive(userId: UserId): Promise<number> {
     try {
       const result = await this.prisma.sleepSession.updateMany({
         where: { userId, status: SleepSessionStatus.ACTIVE },

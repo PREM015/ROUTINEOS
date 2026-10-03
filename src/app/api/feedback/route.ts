@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { feedbackService } from '@/server/services/feedback.service';
 import { createFeedbackSchema, feedbackQuerySchema } from '@/schemas/feedback.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/feedback
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { items, total } = await feedbackService.listOwn(session.user.id, {
+    const { items, total } = await feedbackService.listOwn(userIdFromSession(session), {
       type: validated.data.type,
       status: validated.data.status,
       limit: validated.data.limit,
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const feedback = await feedbackService.create(session.user.id, validated.data);
+    const feedback = await feedbackService.create(userIdFromSession(session), validated.data);
 
     return NextResponse.json(
       { success: true, data: feedback },

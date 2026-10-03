@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logRoutineBlockTodaySchema, calendarDateSchema } from '@/lib/validation/routine.schema';
 import { EditWindowError } from '@/lib/routine/edit-window';
 import { ValidationError } from '@/lib/errors/app-error';
+import { toUserId, userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/routine/today?date=YYYY-MM-DD
@@ -42,10 +43,10 @@ export async function GET(request: NextRequest) {
       }
       date = requested;
     } else {
-      date = getTodayString(await new UserService().getTimezone(session.user.id));
+      date = getTodayString(await new UserService().getTimezone(userIdFromSession(session)));
     }
 
-    const routine = await new RoutineService().getRoutineForDate(session.user.id, date);
+    const routine = await new RoutineService().getRoutineForDate(userIdFromSession(session), date);
 
     return NextResponse.json({
       success: true,
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     const { blockId, date, status, clear, ...rest } = validated.data;
 
     try {
-      const log = await new RoutineService().logBlockStatus(userId, {
+      const log = await new RoutineService().logBlockStatus(toUserId(userId), {
         blockId,
         date,
         clear,

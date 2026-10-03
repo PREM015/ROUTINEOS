@@ -30,6 +30,7 @@ import {
   calculateSleepDuration,
   calculateSleepScore,
 } from '@/lib/sleep/calculate-duration';
+import type { UserId } from '@/types/ids';
 
 /**
  * Score Service
@@ -88,7 +89,7 @@ export class ScoringService {
    * Calculate and persist the daily score for a date
    */
   async calculateDailyScore(
-    userId: string,
+    userId: UserId,
     date: string,
     options?: Omit<CalculateDailyScoreInput, 'userId' | 'date'>,
   ): Promise<DailyScoreWithContext> {
@@ -296,7 +297,7 @@ export class ScoringService {
   /**
    * Recalculate the persisted score for a date, preserving special-day flags
    */
-  async recalculateDate(userId: string, date: string): Promise<DailyScoreWithContext> {
+  async recalculateDate(userId: UserId, date: string): Promise<DailyScoreWithContext> {
     const existing = await this.scoreRepository.findByDate(userId, date);
 
     return this.calculateDailyScore(userId, date, {
@@ -311,14 +312,14 @@ export class ScoringService {
   /**
    * Daily scores across a date range, ascending by date.
    */
-  async getDailyScoreRange(userId: string, startDate: string, endDate: string) {
+  async getDailyScoreRange(userId: UserId, startDate: string, endDate: string) {
     return this.scoreRepository.findByRange(userId, startDate, endDate);
   }
 
   /**
    * Get stored daily score with its breakdown context
    */
-  async getDailyScore(userId: string, date: string): Promise<DailyScoreWithContext | null> {
+  async getDailyScore(userId: UserId, date: string): Promise<DailyScoreWithContext | null> {
     const parsed = calculateScoreSchema.parse({ date });
 
     const score = await this.scoreRepository.findByDate(userId, parsed.date);
@@ -329,7 +330,7 @@ export class ScoringService {
    * Get score history for a date range with a summary
    */
   async getScoreHistory(
-    userId: string,
+    userId: UserId,
     query: {
       startDate?: string;
       endDate?: string;

@@ -1,5 +1,6 @@
 import type { WeatherLog, WeatherCondition, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Weather Repository
@@ -25,7 +26,7 @@ export class WeatherRepository extends BaseRepository {
   /**
    * Create or update a weather log (one per user per date)
    */
-  async upsert(userId: string, data: CreateWeatherData): Promise<WeatherLog> {
+  async upsert(userId: UserId, data: CreateWeatherData): Promise<WeatherLog> {
     try {
       return await this.prisma.weatherLog.upsert({
         where: { userId_date: { userId, date: data.date } },
@@ -52,7 +53,7 @@ export class WeatherRepository extends BaseRepository {
   /**
    * Find weather logs for a user with optional date range and pagination
    */
-  async findByUserId(userId: string, query: WeatherQueryParams = {}): Promise<WeatherLog[]> {
+  async findByUserId(userId: UserId, query: WeatherQueryParams = {}): Promise<WeatherLog[]> {
     try {
       const where: Prisma.WeatherLogWhereInput = { userId };
 
@@ -75,7 +76,7 @@ export class WeatherRepository extends BaseRepository {
   /**
    * Get weather logs within a date range, oldest first
    */
-  async findByRange(userId: string, startDate: string, endDate: string): Promise<WeatherLog[]> {
+  async findByRange(userId: UserId, startDate: string, endDate: string): Promise<WeatherLog[]> {
     try {
       return await this.prisma.weatherLog.findMany({
         where: {
@@ -92,7 +93,7 @@ export class WeatherRepository extends BaseRepository {
   /**
    * Find a single weather log owned by the user
    */
-  async findById(userId: string, logId: string): Promise<WeatherLog | null> {
+  async findById(userId: UserId, logId: string): Promise<WeatherLog | null> {
     try {
       return await this.prisma.weatherLog.findFirst({
         where: { id: logId, userId },
@@ -105,7 +106,7 @@ export class WeatherRepository extends BaseRepository {
   /**
    * Get a weather log for a specific date
    */
-  async findByDate(userId: string, date: string): Promise<WeatherLog | null> {
+  async findByDate(userId: UserId, date: string): Promise<WeatherLog | null> {
     try {
       return await this.prisma.weatherLog.findFirst({
         where: { userId, date },
@@ -119,7 +120,7 @@ export class WeatherRepository extends BaseRepository {
    * Update a weather log owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     logId: string,
     data: Partial<CreateWeatherData>
   ): Promise<WeatherLog> {
@@ -141,7 +142,7 @@ export class WeatherRepository extends BaseRepository {
   /**
    * Delete a weather log owned by the user
    */
-  async delete(userId: string, logId: string): Promise<WeatherLog> {
+  async delete(userId: UserId, logId: string): Promise<WeatherLog> {
     try {
       return await this.prisma.weatherLog.delete({
         where: { id: logId, userId },

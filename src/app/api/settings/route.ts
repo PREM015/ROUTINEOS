@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { userService } from '@/server/services/user.service';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/settings
@@ -13,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const settings = await userService.getSettings(session.user.id);
+    const settings = await userService.getSettings(userIdFromSession(session));
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -34,7 +35,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const json = await req.json();
-    const updated = await userService.updateSettings(session.user.id, json);
+    const updated = await userService.updateSettings(userIdFromSession(session), json);
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Bad Request';

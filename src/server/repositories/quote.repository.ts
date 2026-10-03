@@ -1,5 +1,6 @@
 import type { Prisma, Quote } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Quote Repository
@@ -9,7 +10,7 @@ export class QuoteRepository extends BaseRepository {
   /**
    * Quotes visible to a user: public ones plus their own.
    */
-  async findVisible(userId: string): Promise<Quote[]> {
+  async findVisible(userId: UserId): Promise<Quote[]> {
     try {
       return await this.prisma.quote.findMany({
         where: { OR: [{ isPublic: true }, { userId }] },
@@ -24,7 +25,7 @@ export class QuoteRepository extends BaseRepository {
    * Quotes in the random pool: either only the user's own, or public + own.
    */
   async findPool(
-    userId: string,
+    userId: UserId,
     scope: 'all' | 'mine'
   ): Promise<Pick<Quote, 'id' | 'text' | 'author'>[]> {
     try {

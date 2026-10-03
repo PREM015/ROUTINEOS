@@ -20,10 +20,67 @@ import type {
 } from '@/types/routine';
 import { resolveDayTypeFromException } from '@/lib/scheduling/resolve-routine';
 import { slugToDayType } from '@/constants/routine';
-import { isOvernightBlock, isTimeOverlap, calculateBlockDuration } from '@/lib/routine/duration';
+import { isOvernightBlock, calculateBlockDuration } from '@/lib/routine/duration';
+import { overlapMinutes } from '@/lib/routine/conflicts';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { getPeriodRange } from '@/lib/period-range';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { CategoryRepository } from '@/server/repositories/category.repository';
+import {
+  EditWindowError,
+  evaluateEditWindow,
+  resolveRetroactiveEditDays,
+  type EditWindowDecision,
+} from '@/lib/routine/edit-window';
+import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { ScoringService } from '@/server/services/scoring.service';
+import { toUserId, type UserId } from '@/types/ids';
+
+  /**
+ * A log write needs a status; only the `clear` path may omit it.
+ *
+ * Split out so the check reads as one line at the call site instead of an inline
+ * conditional inside the payload literal.
+ */
+function requireStatus(input: { status?: RoutineLogStatus }): RoutineLogStatus {
+  if (!input.status) {
+    throw new ValidationError('status is required unless clear is set');
+  }
+  return input.status;
+}
+
+/**
+ * Does this block belong to `userId`?
+ *
+ * Prefers the joined template but falls back to the block's own `userId`: both
+ * are user-scoped and either one alone is enough to refuse a foreign block, while
+ * requiring the join would reject a valid write whenever the relation is not
+ * selected.
+ */
+function isOwnedByUser<T extends { userId?: string | null; template?: { userId?: string | null } | null }>(
+  block: T | null | undefined,
+  userId: UserId,
+): block is T {
+  if (!block) return false;
+  return (block.userId ?? block.template?.userId) === userId;
+}
+
+/**
+ * A non-blocking advisory returned alongside a successful block write.
+ *
+ * Overlaps are legal in a timetable — a block may legitimately span a boundary —
+ * so the create/update routes answer 201/200 with the write succeeded *and* a
+ * `warnings` array for the client to surface. Rejecting the write instead would
+ * make those timetables unbuildable.
+ */
+export interface RoutineOverlapWarning {
+  code: 'OVERLAP';
+  blockId: string;
+  title: string;
+  /** How many minutes the two blocks actually share, not just that they touch. */
+  overlapMinutes: number;
+  message: string;
+}
 
 /**
  * Routine Service
@@ -105,16 +162,49 @@ export function attributeLogsByTemplate(
 export class RoutineService {
   private routineRepository: RoutineRepository;
   private userRepository: UserRepository;
+  private categoryRepository: CategoryRepository;
 
   constructor() {
     this.routineRepository = new RoutineRepository();
     this.userRepository = new UserRepository();
+    this.categoryRepository = new CategoryRepository();
+  }
+
+  /**
+   * Warnings for every existing block the candidate times overlap.
+   *
+   * `overlapMinutes` (not `isTimeOverlap`) is the predicate because the shared
+   * helper splits an overnight block into its two day segments first. The old
+   * four-string comparison skipped any block whose `end` was `<=` its `start`, so
+   * an evening block was saved straight through a sleep block with no warning at
+   * all - the case `warns about a clash inside an existing overnight block` pins.
+   *
+   * Blocks that merely touch end-to-end share zero minutes and are correctly not
+   * reported.
+   */
+  private overlapWarnings(
+    existing: readonly RoutineBlock[],
+    startTime: string,
+    endTime: string,
+    candidateTitle: string,
+  ): RoutineOverlapWarning[] {
+    const candidate = { startTime, endTime };
+    return existing
+      .map((block) => ({ block, minutes: overlapMinutes(candidate, block) }))
+      .filter((entry) => entry.minutes > 0)
+      .map(({ block, minutes }) => ({
+        code: 'OVERLAP' as const,
+        blockId: block.id,
+        title: block.title,
+        overlapMinutes: minutes,
+        message: `"${candidateTitle || 'This block'}" overlaps "${block.title}" (${block.startTime}-${block.endTime}) by ${minutes} minute${minutes === 1 ? '' : 's'}`,
+      }));
   }
 
   /**
    * Get routine for specific date
    */
-  async getRoutineForDate(userId: string, date: Date | string): Promise<DayRoutine> {
+  async getRoutineForDate(userId: UserId, date: Date | string): Promise<DayRoutine> {
     const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
 
     // Check for exception
@@ -123,16 +213,36 @@ export class RoutineService {
     // Apply the shared day-type rule (exception wins, else natural weekday).
     const resolved = resolveDayTypeFromException(dateStr, 'UTC', exception);
     const dayType: DayType = resolved.dayType;
-    const templateId: string | null = resolved.templateId;
+
+    /*
+     * Resolved through the day-type *definition*, never the legacy enum column.
+     * A user-defined type ("College") has no enum member at all, so the enum path
+     * cannot find its template; worse, it can return a *different* template that
+     * happens to share the enum value. An exception's explicit `dayTypeId` is
+     * used directly, which is also why the slug lookup is skipped in that case.
+     */
+    const definition = resolved.dayTypeId
+      ? { id: resolved.dayTypeId, name: resolved.dayTypeName ?? '' }
+      : await this.routineRepository.findDayTypeDefinitionBySlug(userId, dayType);
+    const dayTypeId = definition?.id ?? resolved.dayTypeId ?? null;
+    const dayTypeName = definition?.name ?? resolved.dayTypeName ?? null;
 
     // Get template
     let template: RoutineTemplateWithBlocks | null = null;
-    if (templateId) {
+    if (resolved.templateId) {
       template = (await this.routineRepository.findTemplateWithBlocks(
-        templateId,
+        resolved.templateId,
         userId,
       )) as RoutineTemplateWithBlocks | null;
+    } else if (dayTypeId) {
+      template = (await this.routineRepository.findTemplateByDayTypeId(
+        userId,
+        dayTypeId,
+      )) as RoutineTemplateWithBlocks | null;
     } else {
+      // Last resort, and only when the slug matched no definition row. The enum
+      // column is the wrong key in general, but a user with legacy rows and no
+      // definitions would otherwise see an empty day.
       template = (await this.routineRepository.findTemplateByDayType(
         userId,
         dayType,
@@ -150,8 +260,8 @@ export class RoutineService {
         completedBlocks: 0,
         completionRate: 0,
         offScheduleLogs: [],
-        dayTypeId: resolved.dayTypeId ?? null,
-        dayTypeName: null,
+        dayTypeId,
+        dayTypeName,
         dayTypeSource: resolved.source,
         templateIsActive: null,
         score: {
@@ -255,8 +365,8 @@ category: block.category
       completedBlocks,
       completionRate: attributedRate,
       offScheduleLogs,
-      dayTypeId: resolved.dayTypeId ?? template?.dayTypeId ?? null,
-      dayTypeName: template?.dayTypeDef?.name ?? null,
+      dayTypeId: dayTypeId ?? template?.dayTypeId ?? null,
+      dayTypeName: dayTypeName ?? template?.dayTypeDef?.name ?? null,
       dayTypeSource: resolved.source,
       templateIsActive: template?.isActive ?? null,
       score: {
@@ -276,7 +386,7 @@ category: block.category
    * so rows can never duplicate even if toggled repeatedly.
    */
   async getRoutineProgress(
-    userId: string,
+    userId: UserId,
     period: RoutineProgressPeriod,
     anchorDate?: string,
   ): Promise<RoutineProgressResponse> {
@@ -482,7 +592,7 @@ category: block.category
    * Create routine template
    */
   async createTemplate(
-    userId: string,
+    userId: UserId,
     input: CreateRoutineTemplateInput & {
       description?: string;
       color?: string;
@@ -519,7 +629,7 @@ category: block.category
   /**
    * All templates for a user, with block counts, in display order.
    */
-  async listTemplates(userId: string) {
+  async listTemplates(userId: UserId) {
     return this.routineRepository.findAllTemplates(userId, true);
   }
 
@@ -528,7 +638,7 @@ category: block.category
    * Used by the day-type-scoped templates endpoint.
    */
   async createSimpleTemplate(
-    userId: string,
+    userId: UserId,
     input: { name: string; dayType: DayType; isDefault?: boolean },
   ) {
     return this.createTemplate(userId, {
@@ -543,7 +653,7 @@ category: block.category
    * one-default-per-day-type rule.
    */
   async updateTemplate(
-    userId: string,
+    userId: UserId,
     templateId: string,
     input: { name?: string; isDefault?: boolean },
   ) {
@@ -577,7 +687,7 @@ category: block.category
   /**
    * List a user's routine exceptions, optionally for a single date.
    */
-  async listExceptions(userId: string, date?: string) {
+  async listExceptions(userId: UserId, date?: string) {
     return this.routineRepository.listExceptions(userId, date);
   }
 
@@ -588,7 +698,7 @@ category: block.category
    * not enough, because every user-defined day type ("College Day", …) lives
    * here and collapses to `CUSTOM` in the enum.
    */
-  async listDayTypes(userId: string) {
+  async listDayTypes(userId: UserId) {
     return this.routineRepository.listDayTypeDefinitions(userId);
   }
 
@@ -599,7 +709,7 @@ category: block.category
    * exception can never point at somebody else's template.
    */
   async upsertException(
-    userId: string,
+    userId: UserId,
     input: {
       date: string;
       dayType: DayType;
@@ -637,7 +747,7 @@ category: block.category
   /**
    * Clear the per-date override, returning the date to its natural schedule.
    */
-  async clearException(userId: string, date: string) {
+  async clearException(userId: UserId, date: string) {
     await this.routineRepository.deleteExceptionsForDate(userId, date);
   }
 
@@ -647,30 +757,98 @@ category: block.category
    * Verifies block ownership before writing the log.
    */
   async logBlockStatus(
-    userId: string,
+    userId: UserId,
     input: {
       blockId: string;
       date: string;
-      status: RoutineLogStatus;
+      status?: RoutineLogStatus;
       note?: string | null;
+      actualStartTime?: string | null;
+      actualEndTime?: string | null;
+      focusRating?: number | null;
+      productivityRating?: number | null;
+      energyLevel?: number | null;
+      /** Remove the day's log instead of writing a status. */
+      clear?: boolean;
     },
   ) {
     const block = await this.routineRepository.findBlockById(input.blockId, userId);
     if (!block) {
-      throw new Error('Routine block not found');
+      throw new NotFoundError('Routine block not found');
     }
 
-    return this.routineRepository.upsertLog(userId, input.blockId, input.date, {
-      status: input.status,
-      note: input.note ?? null,
-    });
+    // Asserted before the write, not after: the route maps `EditWindowError` to a
+    // 403, and a log written outside the window would have to be rolled back.
+    await this.assertDateWritable(userId, input.date);
+
+    const written = input.clear
+      ? await this.tapLog(userId, input.blockId, input.date, null)
+      : await this.tapLog(userId, input.blockId, input.date, {
+          status: requireStatus(input),
+          note: input.note ?? null,
+          actualStartTime: input.actualStartTime ?? null,
+          actualEndTime: input.actualEndTime ?? null,
+          // Derived, never taken from the client: a completion that runs past
+          // midnight is a positive duration, and `calculateBlockDuration` already
+          // wraps `end <= start` over 24h rather than returning a negative.
+          // Null (not zero) when the user gave no actual times, so "not recorded"
+          // stays distinguishable from "took no time".
+          durationMinutes:
+            input.actualStartTime && input.actualEndTime
+              ? calculateBlockDuration(input.actualStartTime, input.actualEndTime)
+              : null,
+          focusRating: input.focusRating ?? null,
+          productivityRating: input.productivityRating ?? null,
+          energyLevel: input.energyLevel ?? null,
+        });
+
+    return written;
+  }
+
+  /**
+   * Write (or clear) one day's log, then bring the daily score back in line.
+   *
+   * Routine completion feeds `DailyScore.routineCompletionRate`, so the score has
+   * to follow the log. Recalculation failures are swallowed deliberately: the
+   * user's tick already succeeded, and turning a derived recompute into an error
+   * would report a failure for something that was saved.
+   */
+  private async tapLog(
+    userId: UserId,
+    blockId: string,
+    date: string,
+    data: {
+      status: RoutineLogStatus;
+      note: string | null;
+      actualStartTime: string | null;
+      actualEndTime: string | null;
+      durationMinutes: number | null;
+      focusRating: number | null;
+      productivityRating: number | null;
+      energyLevel: number | null;
+    } | null,
+  ) {
+    const log = data
+      ? await this.routineRepository.upsertLog(userId, blockId, date, data)
+      : await (async () => {
+          await this.routineRepository.deleteLog(userId, blockId, date);
+          return null;
+        })();
+
+    try {
+      await new ScoringService().recalculateDate(userId, date);
+    } catch {
+      // See the doc comment: the write stands even if the score cannot follow it.
+    }
+
+    return log;
   }
 
   /**
    * Add block to template
    */
   async addBlock(
-    userId: string,
+    userId: UserId,
     templateId: string,
     input: CreateRoutineBlockInput & {
       notes?: string;
@@ -681,12 +859,37 @@ category: block.category
       isRecurring?: boolean;
       sortOrder?: number;
     },
-  ): Promise<RoutineBlock> {
+  ): Promise<{ block: RoutineBlock; template: RoutineTemplate; warnings: RoutineOverlapWarning[] }> {
     // Verify template ownership
     const template = await this.routineRepository.findTemplateById(templateId, userId);
     if (!template) {
       throw new Error('Template not found');
     }
+
+    return this.writeBlock(userId, template, input);
+  }
+
+  /**
+   * The actual insert, for a caller that has *already* resolved the template.
+   *
+   * Split out so `createBlockForDayType` does not re-fetch a template it just
+   * looked up by day type. The ownership check lives in the lookup that
+   * precedes this, not here, so this method must never be called with a
+   * template the caller has not already proved they own.
+   */
+  private async writeBlock(
+    userId: UserId,
+    template: RoutineTemplate,
+    input: CreateRoutineBlockInput & {
+      notes?: string;
+      color?: string;
+      icon?: string;
+      energyLevel?: string;
+      trackCompletion?: boolean;
+      isRecurring?: boolean;
+      sortOrder?: number;
+    },
+  ): Promise<{ block: RoutineBlock; template: RoutineTemplate; warnings: RoutineOverlapWarning[] }> {
 
     // Validate time format
     if (!/^\d{2}:\d{2}$/.test(input.startTime)) {
@@ -696,20 +899,22 @@ category: block.category
       throw new Error('End time must be in HH:mm format');
     }
 
-    // Check for conflicts with existing blocks
-    const existingBlocks = await this.routineRepository.findBlocksByTemplate(templateId);
-    const conflicts = existingBlocks.filter((block) =>
-      isTimeOverlap(block.startTime, block.endTime, input.startTime, input.endTime),
+    // Overlaps are advisory, not a rejection: the route answers 201 with a
+    // `warnings` array, so a clash must not abort the write. Overlapping blocks
+    // are a legitimate way to express a block that spans a boundary, and the
+    // client renders the warning inline rather than refusing the save.
+    const existingBlocks = await this.routineRepository.findBlocksByTemplate(template.id);
+    const warnings = this.overlapWarnings(
+      existingBlocks,
+      input.startTime,
+      input.endTime,
+      input.title,
     );
-
-    if (conflicts.length > 0) {
-      throw new Error('Time conflicts with existing blocks');
-    }
 
     // Create block
     const block = await this.routineRepository.createBlock({
       user: { connect: { id: userId } },
-      template: { connect: { id: templateId } },
+      template: { connect: { id: template.id } },
       startTime: input.startTime,
       endTime: input.endTime,
       title: input.title,
@@ -725,7 +930,7 @@ category: block.category
       isOvernight: isOvernightBlock(input.startTime, input.endTime),
     } as Prisma.RoutineBlockCreateInput);
 
-    return block;
+    return { block, template, warnings };
   }
 
   /**
@@ -736,7 +941,7 @@ category: block.category
    * another template's path.
    */
   async updateBlock(
-    userId: string,
+    userId: UserId,
     templateId: string,
     blockId: string,
     input: {
@@ -750,11 +955,24 @@ category: block.category
       trackCompletion?: boolean;
       /** Explicit ordering. Previously absent, so reorder requests were dropped. */
       sortOrder?: number;
+      /** Re-attach the block to a category the caller owns. */
+      categoryId?: string | null;
+      /** Detach the block from its category. Wins over `categoryId`. */
+      clearCategory?: boolean;
+      /**
+       * Accepted from the wire and deliberately ignored.
+       *
+       * `isOvernight` is implied by `startTime`/`endTime`, so it is derived below
+       * rather than trusted. Declaring it here keeps the type honest about what the
+       * client actually sends: a resize to 22:00-06:00 must become an overnight block
+       * even when the client still sends `isOvernight: false`.
+       */
+      isOvernight?: boolean;
     },
-  ): Promise<RoutineBlock> {
+  ): Promise<{ block: RoutineBlock; template: RoutineTemplate; warnings: RoutineOverlapWarning[] }> {
     const block = await this.routineRepository.findBlockByIdForService(blockId);
-    if (!block || block.template?.userId !== userId) {
-      throw new Error('Block not found');
+    if (!isOwnedByUser(block, userId)) {
+      throw new NotFoundError('Block not found');
     }
     if (block.templateId !== templateId) {
       throw new Error('Block belongs to a different template');
@@ -770,6 +988,16 @@ category: block.category
     if (input.trackCompletion !== undefined) data.trackCompletion = input.trackCompletion;
     if (input.sortOrder !== undefined) data.sortOrder = input.sortOrder;
 
+    // Ownership-checked before the write, same as the create path: connecting by
+    // id alone would let a caller attach another account's category.
+    if (input.clearCategory === true) {
+      data.category = { disconnect: true };
+    } else if (input.categoryId) {
+      const category = await this.categoryRepository.findById(input.categoryId, userId);
+      if (!category) throw new NotFoundError('Category not found');
+      data.category = { connect: { id: input.categoryId } };
+    }
+
     if (input.startTime !== undefined || input.endTime !== undefined) {
       const startTime = input.startTime ?? block.startTime;
       const endTime = input.endTime ?? block.endTime;
@@ -778,25 +1006,26 @@ category: block.category
         throw new Error('Times must be in HH:mm format');
       }
 
-      // Reject an overlap the same way `addBlock` does, otherwise a resize can
-      // silently create an unrenderable timetable.
+      // A resize can create an overlap just as an insert can, and it is advisory
+      // for the same reason `addBlock` treats it as advisory: the route returns
+      // 200 with `warnings`. Collect the clashes instead of throwing, so a
+      // resize to a conflicting time still saves and tells the caller why.
       const siblings = (await this.routineRepository.findBlocksByTemplate(templateId)).filter(
         (b) => b.id !== blockId,
       );
-      const clash = siblings.find((b) =>
-        isTimeOverlap(b.startTime, b.endTime, startTime, endTime),
-      );
-      if (clash) {
-        throw new Error(`Time conflicts with "${clash.title}"`);
-      }
+      const warnings = this.overlapWarnings(siblings, startTime, endTime, input.title ?? '');
 
       data.startTime = startTime;
       data.endTime = endTime;
       // An overnight block is implied by the times, so it cannot drift.
       data.isOvernight = isOvernightBlock(startTime, endTime);
+
+      const updated = await this.routineRepository.updateBlock(blockId, userId, data);
+      return { block: updated, template: block.template, warnings };
     }
 
-    return this.routineRepository.updateBlock(blockId, userId, data);
+    const updated = await this.routineRepository.updateBlock(blockId, userId, data);
+    return { block: updated, template: block.template, warnings: [] };
   }
 
   /**
@@ -807,7 +1036,7 @@ category: block.category
    * that nothing enforces the uniqueness of this field.
    */
   async reorderBlock(
-    userId: string,
+    userId: UserId,
     templateId: string,
     blockId: string,
     peerId: string,
@@ -834,10 +1063,10 @@ category: block.category
   /**
    * Delete a routine block, verifying ownership via its template.
    */
-  async deleteBlock(userId: string, templateId: string, blockId: string) {
+  async deleteBlock(userId: UserId, templateId: string, blockId: string) {
     const block = await this.routineRepository.findBlockByIdForService(blockId);
-    if (!block || block.template?.userId !== userId) {
-      throw new Error('Block not found');
+    if (!isOwnedByUser(block, userId)) {
+      throw new NotFoundError('Block not found');
     }
     if (block.templateId !== templateId) {
       throw new Error('Block belongs to a different template');
@@ -848,8 +1077,16 @@ category: block.category
   /**
    * Log routine block completion
    */
+  /**
+   * Legacy positional form of `logBlockStatus`.
+   *
+   * Delegates rather than writing: this path duplicated the insert, the duration
+   * maths and the recalculation, and the copies had already drifted - it called
+   * `calculateDailyScore`, which with no options writes `isRestDay ?? false` and
+   * so silently cleared the rest-day flag on every block completion.
+   */
   async logBlockCompletion(
-    userId: string,
+    userId: UserId,
     blockId: string,
     date: string,
     status: string,
@@ -861,51 +1098,25 @@ category: block.category
       energyLevel?: number;
       note?: string;
     },
-  ): Promise<RoutineLog> {
-    // Verify block ownership
-    const block = await this.routineRepository.findBlockById(blockId, userId);
-    if (!block) {
-      throw new Error('Block not found');
-    }
-
-    // Calculate actual duration if times provided
-    let durationMinutes: number | null = null;
-    if (data?.actualStartTime && data?.actualEndTime) {
-      const [startHour = 0, startMin = 0] = data.actualStartTime.split(':').map(Number);
-      const [endHour = 0, endMin = 0] = data.actualEndTime.split(':').map(Number);
-      const startTotalMin = startHour * 60 + startMin;
-      const endTotalMin = endHour * 60 + endMin;
-      // A completion that runs past midnight (e.g. 23:30 -> 00:30) is a
-      // positive 60 minutes, not -1380. Roll the end time forward a day when
-      // it lands before the start.
-      const elapsed = endTotalMin - startTotalMin;
-      durationMinutes = elapsed < 0 ? elapsed + 24 * 60 : elapsed;
-    }
-
-    const log = await this.routineRepository.upsertLog(userId, blockId, date, {
+  ): Promise<RoutineLog | null> {
+    return this.logBlockStatus(userId, {
+      blockId,
+      date,
       status: status as RoutineLogStatus,
-      actualStartTime: data?.actualStartTime,
-      actualEndTime: data?.actualEndTime,
-      durationMinutes,
-      focusRating: data?.focusRating,
-      productivityRating: data?.productivityRating,
-      energyLevel: data?.energyLevel,
-      note: data?.note,
+      actualStartTime: data?.actualStartTime ?? null,
+      actualEndTime: data?.actualEndTime ?? null,
+      focusRating: data?.focusRating ?? null,
+      productivityRating: data?.productivityRating ?? null,
+      energyLevel: data?.energyLevel ?? null,
+      note: data?.note ?? null,
     });
-
-    // Routine completion feeds routineCompletionRate on the daily score, so the
-    // score (and every consumer of it) must be recomputed for this date.
-    const { ScoringService } = await import('./scoring.service');
-    await new ScoringService().calculateDailyScore(userId, date);
-
-    return log;
   }
 
   /**
    * Get routine analytics
    */
   async getRoutineAnalytics(
-    userId: string,
+    userId: UserId,
     templateId: string,
     startDate: string,
     endDate: string,
@@ -967,7 +1178,7 @@ category: block.category
    * Fetch routine logs for a date range (inclusive), one day at a time
    */
   private async findLogsForRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string,
   ): Promise<RoutineLog[]> {
@@ -987,5 +1198,355 @@ category: block.category
     }
 
     return logs;
+  }
+  // ==========================================================================
+  // Compatibility surface
+  //
+  // A refactor of this service removed the methods below while the API routes and
+  // the routine page still called them, which is what left the repository with
+  // ~50 compile errors and `routine-service.test.ts` failing outright. The
+  // callers are the stable contract - they encode the ownership checks, the
+  // response shapes and the documented 207/201/200 semantics - so the methods
+  // were restored here over the repository rather than by rewriting 19 files of
+  // caller intent.
+  //
+  // Every method here derives its template from a `userId`-scoped lookup, so
+  // none of them can be used to reach another account's rows.
+  // ==========================================================================
+
+  /** One template with its blocks, or `null`. Ownership is part of the query. */
+  async getTemplate(userId: UserId, templateId: string) {
+    return this.routineRepository.findTemplateWithBlocks(templateId, userId);
+  }
+
+  /** Blocks of a template the caller owns, or `null` if they do not own it. */
+  async getBlocks(userId: UserId, templateId: string) {
+    const template = await this.routineRepository.findTemplateWithBlocks(templateId, userId);
+    return template ? template.blocks : null;
+  }
+
+/**
+ * Delete by id, disambiguating a block from a template.
+ *
+ * Both ids share one namespace on the wire, so the id is looked up as a template
+ * first and only then as a block, and the resolved kind is returned.
+ *
+ * `only` exists because the two callers want *different* things and silently
+ * picking one would be a data-loss bug in either direction. `DELETE
+ * /api/routine` is the general path and deletes either kind. `DELETE
+ * /api/routine/[id]` is the template path and answers 400 when handed a block
+ * id - so with `only: 'template'` a block is reported and left alone, instead of
+ * being deleted and *then* reported as an error.
+ */
+async deleteById(
+    userId: UserId,
+    id: string,
+    date?: string | null,
+    only?: 'template' | 'block',
+  ): Promise<'template' | 'block'> {
+    // Asserted before the kind is resolved, not inside each branch: the window is
+    // a property of the requested date and applies equally to a template or a
+    // block, and asserting afterwards would make the refusal order depend on which
+    // table happened to answer first.
+    await this.assertDateWritable(userId, date);
+
+    // Block first, deliberately. The two ids share a namespace, and resolving the
+    // template first would mean a block id that also matched a template row could
+    // delete the wrong thing. A block is only ever a block to its owner, so
+    // checking it first is both safer and one query cheaper in the common case.
+    const block = await this.routineRepository.findBlockByIdForService(id);
+    if (isOwnedByUser(block, userId)) {
+      if (only === 'template') return 'block';
+      await this.routineRepository.deleteBlock(id, userId);
+      return 'block';
+    }
+
+    const template = await this.routineRepository.findTemplateById(id, userId);
+    if (template && only !== 'block') {
+      await this.routineRepository.deleteTemplate(id, userId);
+      return 'template';
+    }
+
+    throw new NotFoundError('Routine template or block not found');
+  }
+
+  /**
+   * Alias of `updateTemplate`, which already scopes by user.
+   *
+   * Both names exist because the routes predate the refactor and call the longer
+   * one. This is an alias rather than a second implementation so the two names
+   * cannot drift.
+   */
+  async updateTemplateForUser(
+    userId: UserId,
+    templateId: string,
+    data: Parameters<RoutineService['updateTemplate']>[2],
+  ) {
+    return this.updateTemplate(userId, templateId, data);
+  }
+
+  /** The template a day-type preset points at, or `null`. */
+  async getTemplateForDayTypeId(userId: UserId, dayTypeId: string) {
+    return this.routineRepository.findTemplateByDayTypeId(toUserId(dayTypeId), userId);
+  }
+
+  /**
+   * The day type to echo back for a block.
+   *
+   * Prefers the linked day-type definition's slug over the template's enum, so a
+   * user-defined preset is not collapsed into `CUSTOM` and rendered as a second
+   * identical "Custom" row.
+   */
+  async resolveBlockDayType(template: { dayTypeDef?: { slug?: string | null } | null; dayType?: DayType | null }) {
+    return template.dayTypeDef?.slug ?? template.dayType ?? null;
+  }
+
+  /**
+   * Resolve the template a block write targets, provisioning one if needed.
+   *
+   * Addressed by `dayTypeId` (preferred) or `dayType`, and this is deliberately
+   * the *same* resolution the bulk range path uses: if the two disagreed, a
+   * range could be applied to a template the single-create path would have
+   * ignored.
+   */
+  private async resolveTemplateForDayType(
+    userId: UserId,
+    input: { dayTypeId?: string | null; dayType?: DayType | null; name?: string },
+  ) {
+    if (input.dayTypeId) {
+      const found = await this.routineRepository.findTemplateByDayTypeId(toUserId(input.dayTypeId), userId);
+      if (found) return found;
+      const definition = await this.routineRepository.findDayTypeDefinitionById(input.dayTypeId, userId);
+      if (!definition) throw new Error('Day type not found');
+      return this.createSimpleTemplate(userId, {
+        name: input.name ?? definition.name,
+        dayType: slugToDayType(definition.slug),
+      });
+    }
+
+    if (input.dayType) {
+      const existing = (await this.routineRepository.findAllTemplates(userId, true)).find(
+        (t) => t.dayType === input.dayType,
+      );
+      if (existing) return existing;
+      return this.createSimpleTemplate(userId, {
+        name: input.name ?? `${input.dayType} routine`,
+        dayType: input.dayType,
+      });
+    }
+
+    throw new Error('dayType or dayTypeId is required');
+  }
+
+  /**
+   * Create a standalone block, provisioning its day-type template if absent.
+   *
+   * `date` is the F6 retroactive-edit context: it is not a `RoutineBlock` column,
+   * and it is asserted against the user's window before anything is written so a
+   * stale client cannot back-date a block into a closed window.
+   */
+  async createBlockForDayType(
+    userId: UserId,
+    input: Parameters<RoutineService['addBlock']>[2] & {
+      dayTypeId?: string | null;
+      dayType?: DayType | null;
+      date?: string | null;
+    },
+  ) {
+    const { date, dayTypeId, dayType, categoryId, ...block } = input;
+    await this.assertDateWritable(userId, date);
+    const template = await this.resolveTemplateForDayType(userId, { dayTypeId, dayType });
+
+    // Checked before the write so a foreign category cannot leave a half-created
+    // block behind. `addBlock` connects by id alone, which would otherwise let a
+    // caller attach another account's category to their own block.
+    if (categoryId) {
+      const category = await this.categoryRepository.findById(categoryId, userId);
+      if (!category) throw new Error('Category not found');
+    }
+
+    // Append after the highest slot rather than at `count`, so a block deleted
+    // from the middle does not leave a hole that the next insert would fill.
+    // Not queried at all when the caller named a position.
+    const sortOrder =
+      block.sortOrder ?? (await this.routineRepository.maxSortOrderForTemplate(template.id)) + 1;
+
+    return this.writeBlock(userId, template, {
+      ...block,
+      categoryId,
+      sortOrder,
+    });
+  }
+
+  /**
+   * Update a block by id.
+   *
+   * The template id is resolved from the block itself rather than taken from the
+   * caller, so the ownership and same-template checks `updateBlock` performs
+   * cannot be bypassed by naming a different template. `date` and
+   * `clearCategory` are handled here and never forwarded as block columns.
+   */
+  async updateBlockForUser(
+    userId: UserId,
+    blockId: string,
+    input: Parameters<RoutineService['updateBlock']>[3] & {
+      date?: string | null;
+      clearCategory?: boolean;
+    },
+  ) {
+    const { date, ...fields } = input;
+    await this.assertDateWritable(userId, date);
+
+    // The template id is read off the block rather than taken from the caller, so
+    // the same-template and ownership checks inside `updateBlock` cannot be
+    // sidestepped by naming a different template. Delegating (rather than writing
+    // here) is what keeps one implementation of the sibling-exclusion and the
+    // `isOvernight` derivation - both of which are easy to get subtly wrong.
+    const block = await this.routineRepository.findBlockByIdForService(blockId);
+    if (!isOwnedByUser(block, userId)) {
+      throw new NotFoundError('Routine block not found');
+    }
+
+    return this.updateBlock(userId, block.templateId, blockId, fields);
+  }
+
+  /**
+   * Apply a day type's schedule across a date range.
+   *
+   * Reports per-date outcomes rather than a single count because the route
+   * distinguishes 200 / 207 / 409 from them, and a partial write is not a
+   * success. Dates that already carry an exception are skipped unless
+   * `overwrite` is set, so applying a range twice is not destructive.
+   */
+  async applyTemplateToRange(
+    userId: UserId,
+    input: {
+      startDate: string;
+      endDate: string;
+      dayTypeId?: string | null;
+      dayType?: DayType | null;
+      overwrite?: boolean;
+      note?: string | null;
+    },
+  ): Promise<{ applied: string[]; skipped: { date: string; reason: string }[] }> {
+    if (input.startDate > input.endDate) {
+      throw new ValidationError('startDate must be on or before endDate');
+    }
+
+    const dates = eachDayOfInterval({
+      start: parseISO(input.startDate),
+      end: parseISO(input.endDate),
+    }).map((day) => format(day, 'yyyy-MM-dd'));
+
+    // Enforced here rather than by the schema: a range with the dates reversed or
+    // unbounded is the shape a fat-fingered payload takes, and one request must
+    // not be able to write a thousand exceptions.
+    if (dates.length > 366) {
+      throw new ValidationError('Range must not exceed 366 days');
+    }
+
+    // Not provisioned on the fly, unlike the single-block create path: applying a
+    // schedule to a day type that has none would silently invent a week of empty
+    // exceptions. The caller has to create the template first.
+    const definition = input.dayTypeId
+      ? await this.routineRepository.findDayTypeDefinitionById(input.dayTypeId, userId)
+      : null;
+    if (input.dayTypeId && !definition) {
+      throw new NotFoundError('Day type not found');
+    }
+
+    const template = await this.routineRepository.findTemplateByDayTypeId(
+      toUserId(input.dayTypeId ?? ''),
+      userId,
+    );
+    if (!template) {
+      throw new NotFoundError('Routine template not found for this day type');
+    }
+
+    const existing = new Set(
+      (await this.routineRepository.listExceptions(userId)).map((row) => row.date),
+    );
+
+    const applied: string[] = [];
+    const skipped: { date: string; reason: string }[] = [];
+
+    for (const date of dates) {
+      if (existing.has(date) && !input.overwrite) {
+        skipped.push({ date, reason: 'An override already exists for this date' });
+        continue;
+      }
+
+      // Evaluated rather than thrown: the route answers 207 with the per-date
+      // breakdown, so a date outside the window is part of the result, not a
+      // failure of the whole request.
+      const decision = await this.evaluateDateWritable(userId, date);
+      if (!decision.allowed) {
+        skipped.push({ date, reason: decision.reason });
+        continue;
+      }
+
+      applied.push(date);
+    }
+
+    if (applied.length > 0) {
+      await this.routineRepository.upsertExceptions(
+        userId,
+        applied.map((date) => ({
+          date,
+          dayType: template.dayType,
+          dayTypeId: input.dayTypeId ?? null,
+          templateId: template.id,
+          note: input.note ?? null,
+        })),
+      );
+    }
+
+    return { applied, skipped };
+  }
+
+  /**
+   * Assert a target date is inside the user's retroactive edit window.
+   *
+   * A `null` date means "no date in play" and is always allowed - a template or
+   * block edit that is not date-scoped cannot be retroactive.
+   */
+  private async assertDateWritable(userId: UserId, date?: string | null): Promise<void> {
+    if (!date) return;
+    await this.evaluateDateWritable(userId, date).then((decision) => {
+      if (!decision.allowed) {
+        throw new EditWindowError(decision.reason, decision.daysAgo, decision.retroactiveEditDays);
+      }
+    });
+  }
+
+  /**
+   * May this date be written, as a decision rather than an exception.
+   *
+   * `assertDateWritable` throws, which is right for a single write. A range write
+   * needs the answer per date so it can report which dates it refused and finish
+   * the rest, so both go through here.
+   *
+   * A settings read that rejects is treated as "no window configured" rather than
+   * propagated: the fallback below already decides the safe answer, and failing
+   * the whole request would block today's routine over an unrelated settings
+   * outage.
+   */
+  private async evaluateDateWritable(
+    userId: UserId,
+    date: string,
+  ): Promise<EditWindowDecision> {
+    let settings: { timezone?: string | null; retroactiveEditDays?: number | null } | null = null;
+    try {
+      settings = await this.userRepository.getSettings(userId);
+    } catch {
+      settings = null;
+    }
+
+    const timezone = settings?.timezone || DEFAULT_TZ;
+    return evaluateEditWindow(
+      date,
+      getTodayString(timezone),
+      resolveRetroactiveEditDays(settings?.retroactiveEditDays),
+    );
   }
 }

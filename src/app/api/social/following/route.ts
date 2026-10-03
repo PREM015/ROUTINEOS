@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { socialService } from '@/server/services/social.service';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/social/following
@@ -16,7 +17,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const enriched = await socialService.following(session.user.id);
+    const enriched = await socialService.following(userIdFromSession(session));
 
     return NextResponse.json({
       success: true,

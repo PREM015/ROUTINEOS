@@ -6,6 +6,7 @@ import {
   type DayTypeExceptionLike,
   type ResolvedDayType,
 } from '@/lib/scheduling/day-type';
+import type { UserId } from '@/types/ids';
 
 /**
  * Database-backed day-type resolution.
@@ -53,7 +54,7 @@ function getRoutineRepository(): RoutineRepository {
  * 30-day window.
  */
 export async function resolveDayTypeForDate(
-  userId: string,
+  userId: UserId,
   date: string
 ): Promise<ResolvedDayType> {
   // Check for routine exception
@@ -87,14 +88,14 @@ export async function resolveDayTypeForDate(
 /**
  * Find a day type definition by slug for a user
  */
-export async function findDayTypeDefinitionBySlug(userId: string, slug: string) {
+export async function findDayTypeDefinitionBySlug(userId: UserId, slug: string) {
   return getRoutineRepository().findDayTypeDefinitionBySlug(userId, slug);
 }
 
 /**
  * Find a routine template by day type ID
  */
-export async function findTemplateByDayTypeId(userId: string, dayTypeId: string) {
+export async function findTemplateByDayTypeId(userId: UserId, dayTypeId: string) {
   return getRoutineRepository().findTemplateByDayTypeId(userId, dayTypeId);
 }
 

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
+import { userIdFromSession } from '@/types/ids';
 
 const monthQuerySchema = z.object({
   // A plain /^\d{4}-\d{2}$/ also accepts 2026-99, which would reach the service
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     // `DEFAULT_TZ` instead, so a `America/Los_Angeles` user at 20:00 local on
     // the 1st was served September data — the month boundary was off by hours.
     const timezone = await new UserService()
-      .getTimezone(session.user.id)
+      .getTimezone(userIdFromSession(session))
       .catch(() => DEFAULT_TZ);
     const month = searchParams.get('month') ?? getTodayString(timezone).slice(0, 7);
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await analyticsService.getMonthly(session.user.id, validated.data.month);
+    const data = await analyticsService.getMonthly(userIdFromSession(session), validated.data.month);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

@@ -3,6 +3,7 @@ import { focusService } from '@/server/services/focus.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { updateFocusSessionSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -21,7 +22,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const focusSession = await focusService.getSession(session.user.id, id);
+    const focusSession = await focusService.getSession(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: focusSession });
   } catch (error) {
@@ -60,7 +61,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const focusSession = await focusService.updateSession(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data
     );
@@ -96,7 +97,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     const { id } = await context.params;
 
-    const deleted = await focusService.deleteSession(session.user.id, id);
+    const deleted = await focusService.deleteSession(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {

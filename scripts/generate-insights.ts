@@ -4,6 +4,7 @@ import { DEFAULT_TZ, todayForUser } from '@/lib/dates';
 import prisma from '@/lib/prisma';
 import { insightGenerationService } from '@/server/services/insight.service';
 import { patternService } from '@/server/services/pattern.service';
+import { toUserId } from '@/types/ids';
 
 /**
  * Weekly insight generation.
@@ -88,7 +89,7 @@ export async function generateInsights(
     );
 
     try {
-      const outcome = await insightGenerationService.generate(user.id, {
+      const outcome = await insightGenerationService.generate(toUserId(user.id), {
         period,
         startDate,
         endDate,
@@ -108,7 +109,7 @@ export async function generateInsights(
     // even when insight generation failed. Without it the `ProductivityPattern`
     // table stays empty, since nothing else writes to it.
     try {
-      const detected = await patternService.detectPeakHours(user.id, timezone);
+      const detected = await patternService.detectPeakHours(toUserId(user.id), timezone);
       result.patternsUpdated += detected.patternsFound;
     } catch (error) {
       result.errors.push({

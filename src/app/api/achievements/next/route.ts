@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { AchievementService } from '@/server/services/achievement.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/achievements/next
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     }
 
     const next = await new AchievementService().getNextUnearned(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.count ?? 3
     );
 

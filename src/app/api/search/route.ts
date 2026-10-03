@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { SearchService } from '@/server/services/search.service';
 import { globalSearchSchema } from '@/schemas/search.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/search
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchService = new SearchService();
-    const results = await searchService.globalSearch(session.user.id, validated.data);
+    const results = await searchService.globalSearch(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: results });
   } catch (error) {

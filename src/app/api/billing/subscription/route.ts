@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/server/services/subscription.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/billing/subscription
@@ -18,7 +19,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const subscription = await subscriptionService.getSubscription(session.user.id);
+    const subscription = await subscriptionService.getSubscription(userIdFromSession(session));
     return NextResponse.json({ success: true, data: subscription });
   } catch (error) {
     console.error('Error fetching subscription:', error);

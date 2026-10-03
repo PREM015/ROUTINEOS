@@ -11,6 +11,7 @@ import { updateProfileSchema } from '@/lib/validation/user';
 import { updateSettingsSchema } from '@/lib/validation/settings.schema';
 import type { UserStats } from '@/types/auth';
 import type { DeviceSessionInfo } from '@/types/auth';
+import type { UserId } from '@/types/ids';
 
 /**
  * User Service
@@ -59,7 +60,7 @@ export class UserService {
   /**
    * Get a public profile view of a user
    */
-  async getProfile(userId: string): Promise<Omit<User, 'passwordHash'>> {
+  async getProfile(userId: UserId): Promise<Omit<User, 'passwordHash'>> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -90,7 +91,7 @@ export class UserService {
    * account-age signal useful for fingerprinting).
    */
   async getPublicProfile(
-    userId: string,
+    userId: UserId,
     viewerId?: string
   ): Promise<{
     id: string;
@@ -134,7 +135,7 @@ export class UserService {
    * endpoint, which leaked both the profile fields and the activity counts.
    */
   async getPublicProfileWithStats(
-    userId: string,
+    userId: UserId,
     viewerId?: string
   ): Promise<{
     profile: {
@@ -171,7 +172,7 @@ export class UserService {
   /**
    * Resolve the user's timezone (falling back to the app default).
    */
-    async getTimezone(userId: string): Promise<string> {
+    async getTimezone(userId: UserId): Promise<string> {
     const settings = await this.userRepository.getSettings(userId);
     return settings?.timezone || DEFAULT_TZ;
   }
@@ -196,7 +197,7 @@ export class UserService {
    * to trust — `UserSettings` wins.
    */
   async updateProfile(
-    userId: string,
+    userId: UserId,
     input: Record<string, unknown>
   ): Promise<Omit<User, 'passwordHash'>> {
     const parsed = updateProfileSchema.safeParse(input);
@@ -271,7 +272,7 @@ export class UserService {
   /**
    * Get (and create-on-first-access) the user's settings.
    */
-  async getSettings(userId: string): Promise<UserSettings> {
+  async getSettings(userId: UserId): Promise<UserSettings> {
     let settings = await this.userRepository.getSettings(userId);
     if (!settings) {
       settings = await this.userRepository.createSettings(userId);
@@ -289,7 +290,7 @@ export class UserService {
    * always written alongside it and is the column the rest of the app reads.
    */
   async updateSettings(
-    userId: string,
+    userId: UserId,
     input: Record<string, unknown>
   ) {
     const parsed = updateSettingsSchema.safeParse(input);
@@ -334,7 +335,7 @@ export class UserService {
    * a fresh verification email (email service is best-effort here).
    */
   async changeEmail(
-    userId: string,
+    userId: UserId,
     newEmail: string
   ): Promise<Omit<User, 'passwordHash'>> {
     if (typeof newEmail !== 'string' || !newEmail.includes('@')) {
@@ -451,7 +452,7 @@ export class UserService {
    * current, which disabled the Revoke button on all of them.
    */
   async getSessions(
-    userId: string,
+    userId: UserId,
     currentDeviceId?: string | null
   ): Promise<DeviceSessionInfo[]> {
     const user = await this.userRepository.findById(userId);
@@ -481,7 +482,7 @@ export class UserService {
    * `(userId, deviceId)` so repeat calls update rather than duplicate.
    */
   async registerDeviceSession(
-    userId: string,
+    userId: UserId,
     input: {
       deviceId: string;
       deviceName?: string | null;
@@ -516,7 +517,7 @@ export class UserService {
    * Find this browser's session row, scoped to the user so a device id from
    * another account can never be resolved.
    */
-  async getDeviceSession(userId: string, deviceId: string) {
+  async getDeviceSession(userId: UserId, deviceId: string) {
     return this.userRepository.findDeviceSessionByDeviceId(userId, deviceId);
   }
 
@@ -525,7 +526,7 @@ export class UserService {
    * does not belong to the user.
    */
   async revokeSession(
-    userId: string,
+    userId: UserId,
     sessionId: string
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.userRepository.findById(userId);
@@ -547,7 +548,7 @@ export class UserService {
    * Mark onboarding as completed for the user
    */
   async completeOnboarding(
-    userId: string
+    userId: UserId
   ): Promise<Omit<User, 'passwordHash'>> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -561,7 +562,7 @@ export class UserService {
   /**
    * Aggregate profile statistics from habits, goals, streak and scores
    */
-  async getUserStats(userId: string): Promise<UserStats> {
+  async getUserStats(userId: UserId): Promise<UserStats> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new Error('User not found');

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { timeTrackingService } from '@/server/services/time-tracking.service';
 import { createTimeEntrySchema, timeTrackingQuerySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/time-tracking
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     // `entries` + `total` are fetched together in the service, so the row count
     // and the page can never come from two different queries that disagree.
     const { entries, total } = await timeTrackingService.listForUser(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await timeTrackingService.create(session.user.id, {
+    const entry = await timeTrackingService.create(userIdFromSession(session), {
       description: validated.data.description,
       startTime: validated.data.startTime,
       endTime: validated.data.endTime ?? undefined,

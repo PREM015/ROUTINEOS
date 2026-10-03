@@ -5,6 +5,7 @@ import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
 import prisma from '@/lib/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Data Exporter
@@ -12,7 +13,7 @@ import prisma from '@/lib/prisma';
  */
 
 export async function exportUserData(
-  userId: string,
+  userId: UserId,
   options?: {
     includeArchived?: boolean;
     startDate?: string;

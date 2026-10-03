@@ -5,6 +5,7 @@ import { focusSessionEndReasonSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const { endReason, claimedActualSeconds, ...reflection } = parsed.data;
-    const ended = await focusService.endSession(session.user.id, id, {
+    const ended = await focusService.endSession(userIdFromSession(session), id, {
       // A body-less request means "I stopped", which is the safe default: it
       // records a partial session rather than claiming finished work.
       endReason: endReason ?? 'STOPPED',

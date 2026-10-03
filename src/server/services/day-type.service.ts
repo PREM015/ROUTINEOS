@@ -1,5 +1,6 @@
 ﻿import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { normalizeDayTypeSlug } from '@/lib/routine/day-type-slug';
+import type { UserId } from '@/types/ids';
 
 // Re-exported so existing server call sites keep one import path. The
 // implementation lives in `lib/routine/day-type-slug` because it is pure and
@@ -57,7 +58,7 @@ export class DayTypeService {
   /**
    * All day types for a user, in display order.
    */
-  async listDayTypes(userId: string) {
+  async listDayTypes(userId: UserId) {
     return this.routineRepository.listDayTypeDefinitions(userId);
   }
 
@@ -70,11 +71,11 @@ export class DayTypeService {
    * `include`, so Prisma rejects `_count` on it at runtime — the two lists are
    * not interchangeable.
    */
-  async listAllDayTypes(userId: string) {
+  async listAllDayTypes(userId: UserId) {
     return this.routineRepository.listDayTypeDefinitionsWithCounts(userId);
   }
 
-  async getDayType(userId: string, dayTypeId: string) {
+  async getDayType(userId: UserId, dayTypeId: string) {
     return this.routineRepository.findDayTypeDefinitionById(dayTypeId, userId);
   }
 
@@ -83,7 +84,7 @@ export class DayTypeService {
    *
    * Enforces slug uniqueness per user and the "at most one default" invariant.
    */
-  async createDayType(userId: string, input: CreateDayTypeInput) {
+  async createDayType(userId: UserId, input: CreateDayTypeInput) {
     const slug = normalizeDayTypeSlug(input.slug);
     if (!slug) {
       throw new Error('Slug must contain at least one letter or number');
@@ -116,7 +117,7 @@ export class DayTypeService {
   /**
    * Update a day type, preserving both invariants.
    */
-  async updateDayType(userId: string, dayTypeId: string, input: UpdateDayTypeInput) {
+  async updateDayType(userId: UserId, dayTypeId: string, input: UpdateDayTypeInput) {
     const current = await this.routineRepository.findDayTypeDefinitionById(dayTypeId, userId);
     if (!current) {
       throw new Error('Day type not found');
@@ -168,7 +169,7 @@ export class DayTypeService {
    * list, but existing exceptions keep resolving via their own `dayType`
    * column.
    */
-  async archiveDayType(userId: string, dayTypeId: string) {
+  async archiveDayType(userId: UserId, dayTypeId: string) {
     const current = await this.routineRepository.findDayTypeDefinitionById(dayTypeId, userId);
     if (!current) {
       throw new Error('Day type not found');
@@ -193,7 +194,7 @@ export class DayTypeService {
   /**
    * Restore a previously archived day type.
    */
-  async unarchiveDayType(userId: string, dayTypeId: string) {
+  async unarchiveDayType(userId: UserId, dayTypeId: string) {
     const current = await this.routineRepository.findDayTypeDefinitionById(dayTypeId, userId);
     if (!current) {
       throw new Error('Day type not found');
@@ -208,7 +209,7 @@ export class DayTypeService {
    * `onDelete: SetNull` and the delete would silently detach templates,
    * exceptions and habit assignments rather than refusing. Archive first.
    */
-  async deleteDayType(userId: string, dayTypeId: string) {
+  async deleteDayType(userId: UserId, dayTypeId: string) {
     const current = await this.routineRepository.findDayTypeDefinitionById(dayTypeId, userId);
     if (!current) {
       throw new Error('Day type not found');

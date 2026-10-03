@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { ProjectService } from '@/server/services/project.service';
 import { milestoneSchema } from '@/schemas/project.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -29,7 +30,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
 
     const projectService = new ProjectService();
-    const milestones = await projectService.getMilestones(session.user.id, id);
+    const milestones = await projectService.getMilestones(userIdFromSession(session), id);
 
     return NextResponse.json({
       success: true,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { goalId, ...milestone } = validated.data;
 
     const projectService = new ProjectService();
-    const created = await projectService.addMilestone(session.user.id, id, goalId, milestone);
+    const created = await projectService.addMilestone(userIdFromSession(session), id, goalId, milestone);
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (error) {

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { categoryService } from '@/server/services/category.service';
 import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId, userIdFromSession } from '@/types/ids';
 
 /**
  * DELETE /api/categories/[id]
@@ -21,13 +22,13 @@ export async function DELETE(
       return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
     }
 
-    const category = await categoryService.get(id, session.user.id);
+    const category = await categoryService.get(toUserId(id), userIdFromSession(session));
 
     if (!category) {
       return NextResponse.json(notFoundResponse('Category'), { status: 404 });
     }
 
-    await categoryService.delete(id, session.user.id);
+    await categoryService.delete(toUserId(id), userIdFromSession(session));
 
     return NextResponse.json(successResponse({ deleted: true }));
   } catch (error) {

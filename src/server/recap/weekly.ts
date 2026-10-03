@@ -2,13 +2,14 @@ import { HabitRepository } from '@/server/repositories/habit.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Weekly Recap Generation
  * Generate comprehensive weekly summary
  */
 
-export async function generateWeeklyRecap(userId: string, weekStart: string, weekEnd: string) {
+export async function generateWeeklyRecap(userId: UserId, weekStart: string, weekEnd: string) {
   const habitRepository = new HabitRepository();
   const scoreRepository = new ScoreRepository();
   const goalRepository = new GoalRepository();

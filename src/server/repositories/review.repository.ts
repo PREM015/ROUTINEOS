@@ -1,5 +1,6 @@
 import type { MonthlyReset, Prisma, WeeklyReview } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Review Repository
@@ -15,7 +16,7 @@ export class ReviewRepository extends BaseRepository {
   /**
    * All of a user's weekly reviews, newest week first.
    */
-  async findReviewsByUser(userId: string): Promise<WeeklyReview[]> {
+  async findReviewsByUser(userId: UserId): Promise<WeeklyReview[]> {
     try {
       return await this.prisma.weeklyReview.findMany({
         where: { userId },
@@ -30,7 +31,7 @@ export class ReviewRepository extends BaseRepository {
    * The review for a specific week, scoped to its owner.
    */
   async findReviewByWeek(
-    userId: string,
+    userId: UserId,
     weekStart: string
   ): Promise<WeeklyReview | null> {
     try {
@@ -46,7 +47,7 @@ export class ReviewRepository extends BaseRepository {
    * Create or replace the review for a (user, week) pair.
    */
   async upsertReview(
-    userId: string,
+    userId: UserId,
     weekStart: string,
     create: Omit<Prisma.WeeklyReviewUncheckedCreateInput, 'userId' | 'weekStart'>,
     update: Prisma.WeeklyReviewUncheckedUpdateInput
@@ -70,7 +71,7 @@ export class ReviewRepository extends BaseRepository {
    * The monthly reset for a given YYYY-MM, scoped to its owner.
    */
   async findMonthlyByMonth(
-    userId: string,
+    userId: UserId,
     month: string
   ): Promise<MonthlyReset | null> {
     try {
@@ -85,7 +86,7 @@ export class ReviewRepository extends BaseRepository {
   /**
    * All of a user's monthly resets, newest month first.
    */
-  async findResetsByUser(userId: string): Promise<MonthlyReset[]> {
+  async findResetsByUser(userId: UserId): Promise<MonthlyReset[]> {
     try {
       return await this.prisma.monthlyReset.findMany({
         where: { userId },

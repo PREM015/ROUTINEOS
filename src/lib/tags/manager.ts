@@ -7,6 +7,7 @@ import {
   isValidTagName,
   normalizeTagName,
 } from './helpers';
+import type { UserId } from '@/types/ids';
 
 /**
  * Tag management.
@@ -22,7 +23,7 @@ export interface TagInput {
 /**
  * List all tags for a user in the order they were created.
  */
-export async function listTags(userId: string): Promise<Tag[]> {
+export async function listTags(userId: UserId): Promise<Tag[]> {
   return prisma.tag.findMany({
     where: { userId },
     orderBy: { createdAt: 'asc' },
@@ -32,7 +33,7 @@ export async function listTags(userId: string): Promise<Tag[]> {
 /**
  * Fetch a tag owned by the user, or `null` when it does not exist.
  */
-export async function getTag(userId: string, tagId: string): Promise<Tag | null> {
+export async function getTag(userId: UserId, tagId: string): Promise<Tag | null> {
   return prisma.tag.findFirst({ where: { id: tagId, userId } });
 }
 
@@ -40,7 +41,7 @@ export async function getTag(userId: string, tagId: string): Promise<Tag | null>
  * Create a tag, throwing `ConflictError` when the user already has one with
  * the same name. The color defaults to a deterministic palette color.
  */
-export async function createTag(userId: string, input: TagInput): Promise<Tag> {
+export async function createTag(userId: UserId, input: TagInput): Promise<Tag> {
   const name = normalizeTagName(input.name);
   if (!isValidTagName(name)) {
     throw new RangeError(`Tag name must be 1-${50} characters after trimming`);
@@ -64,7 +65,7 @@ export async function createTag(userId: string, input: TagInput): Promise<Tag> {
  * Update a tag owned by the user, guarding the per-user name uniqueness.
  */
 export async function updateTag(
-  userId: string,
+  userId: UserId,
   tagId: string,
   input: Partial<TagInput>
 ): Promise<Tag> {
@@ -101,7 +102,7 @@ export async function updateTag(
 /**
  * Delete a tag (join rows are removed by cascade).
  */
-export async function deleteTag(userId: string, tagId: string): Promise<void> {
+export async function deleteTag(userId: UserId, tagId: string): Promise<void> {
   const tag = await prisma.tag.findFirst({ where: { id: tagId, userId } });
   if (!tag) throw new NotFoundError('Tag');
   await prisma.tag.delete({ where: { id: tagId } });
@@ -110,7 +111,7 @@ export async function deleteTag(userId: string, tagId: string): Promise<void> {
 /**
  * How many entities reference a tag (across all join models).
  */
-export async function countTagUsage(userId: string, tagId: string): Promise<number> {
+export async function countTagUsage(userId: UserId, tagId: string): Promise<number> {
   const tag = await prisma.tag.findFirst({ where: { id: tagId, userId } });
   if (!tag) throw new NotFoundError('Tag');
 
@@ -130,7 +131,7 @@ export type TagEntity = 'habit' | 'goal' | 'task' | 'journal';
  * user owns are applied. Returns the number of tags attached.
  */
 export async function setEntityTags(
-  userId: string,
+  userId: UserId,
   entity: TagEntity,
   entityId: string,
   tagIds: readonly string[]
@@ -182,7 +183,7 @@ export async function setEntityTags(
  * Returns the ids in the order the names were provided.
  */
 export async function getOrCreateTagIds(
-  userId: string,
+  userId: UserId,
   names: readonly string[]
 ): Promise<string[]> {
   const ids: string[] = [];

@@ -88,5 +88,3 @@ export const SelectValue = React.forwardRef<HTMLSpanElement, SelectValueProps>(
   }
 );
 SelectValue.displayName = 'SelectValue';
-
-export { SelectValue };

@@ -28,6 +28,7 @@ import {
   type PeriodRange,
 } from '@/lib/period-range';
 import type { RecapExtras } from '@/types/recap';
+import type { UserId } from '@/types/ids';
 
 /**
  * Recap Service
@@ -160,7 +161,7 @@ export class RecapService {
   }
 
   async getReport(
-    userId: string,
+    userId: UserId,
     period: RecapPeriod,
     anchorDate?: string
   ): Promise<RecapReport> {
@@ -202,7 +203,7 @@ export class RecapService {
    * empty arrays or null so each client card decides its own empty state.
    */
   private async buildExtras(
-    userId: string,
+    userId: UserId,
     period: RecapPeriod,
     range: PeriodRange,
     timezone: string
@@ -480,7 +481,7 @@ export class RecapService {
   }
 
   private async linkedReviewFor(
-    userId: string,
+    userId: UserId,
     period: RecapPeriod,
     range: PeriodRange
   ): Promise<RecapExtras['linkedReview']> {
@@ -514,7 +515,7 @@ export class RecapService {
     return null;
   }
 
-private async buildDay(userId: string, range: PeriodRange, timezone: string) {
+private async buildDay(userId: UserId, range: PeriodRange, timezone: string) {
     const anchor = range.anchorDate;
     const breakdown = await dailyBreakdown(userId, anchor, timezone);
     const score = await this.scoreRepository.findByDate(userId, anchor);
@@ -539,7 +540,7 @@ private async buildDay(userId: string, range: PeriodRange, timezone: string) {
     return { hasData, points, day: breakdown };
   }
 
-private async buildWeek(userId: string, range: PeriodRange, timezone: string) {
+private async buildWeek(userId: UserId, range: PeriodRange, timezone: string) {
     const summary = await weeklySummary(userId, range.start, timezone);
     const scores = await this.scoreRepository.findByRange(userId, range.start, range.end);
     const points = toPoints(scores);
@@ -555,7 +556,7 @@ private async buildWeek(userId: string, range: PeriodRange, timezone: string) {
     return { hasData, points, week: summary };
   }
 
-private async buildMonth(userId: string, range: PeriodRange, timezone: string) {
+private async buildMonth(userId: UserId, range: PeriodRange, timezone: string) {
     const month = range.anchorDate.slice(0, 7);
     const summary = await monthlySummary(userId, month, timezone);
     const scores = await this.scoreRepository.findByRange(userId, range.start, range.end);
@@ -572,7 +573,7 @@ private async buildMonth(userId: string, range: PeriodRange, timezone: string) {
     return { hasData, points, month: summary };
   }
 
-private async buildYear(userId: string, range: PeriodRange, timezone: string) {
+private async buildYear(userId: UserId, range: PeriodRange, timezone: string) {
     const year = Number(range.anchorDate.slice(0, 4));
     const summary = await yearlySummary(userId, year, timezone);
 

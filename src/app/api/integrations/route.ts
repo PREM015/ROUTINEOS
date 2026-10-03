@@ -4,6 +4,7 @@ import { integrationService } from '@/server/services/integration.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { connectIntegrationSchema } from '@/schemas/integration.schema';
 import { IntegrationError } from '@/lib/integrations/manager';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Integrations Route
@@ -22,7 +23,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await integrationService.listForUser(session.user.id);
+    const data = await integrationService.listForUser(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = await integrationService.connect(session.user.id, validated.data);
+    const data = await integrationService.connect(userIdFromSession(session), validated.data);
 
     // A provider with no credentials returns an authorization URL rather than a
     // stored connection, so this is a 200 and not a 201.

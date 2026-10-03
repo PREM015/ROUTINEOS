@@ -3,6 +3,7 @@ import { nutritionService } from '@/server/services/nutrition.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { updateNutritionSchema } from '@/schemas/nutrition.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Nutrition Entry by ID Route
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await nutritionService.getForUser(session.user.id, paramId);
+    const entry = await nutritionService.getForUser(userIdFromSession(session), paramId);
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
@@ -61,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const entry = await nutritionService.update(
-      session.user.id,
+      userIdFromSession(session),
       paramId,
       validated.data
     );
@@ -90,7 +91,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await nutritionService.delete(session.user.id, paramId);
+    await nutritionService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting nutrition entry:', error);

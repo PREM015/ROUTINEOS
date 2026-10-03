@@ -11,6 +11,7 @@ import type {
 } from '@/schemas/template.schema';
 import type { z } from 'zod';
 import { randomUUID } from 'node:crypto';
+import type { UserId } from '@/types/ids';
 
 type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
 type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
@@ -75,7 +76,7 @@ export class TemplateService {
    * Templates the user can see: their own plus public ones.
    */
   async listForUser(
-    userId: string,
+    userId: UserId,
     query: Parameters<TemplateRepository['findAll']>[1] = {}
   ) {
     return this.templateRepository.findAll(userId, query);
@@ -92,7 +93,7 @@ export class TemplateService {
   }
 
   /** Create a template owned by the user. */
-  async create(userId: string, input: CreateTemplateInput) {
+  async create(userId: UserId, input: CreateTemplateInput) {
     return this.templateRepository.createTemplate(userId, input);
   }
 
@@ -106,7 +107,7 @@ export class TemplateService {
    * older writer with non-JSON content is still readable — it just has no
    * structured preview.
    */
-  async getForUser(userId: string, templateId: string) {
+  async getForUser(userId: UserId, templateId: string) {
     const template = await this.templateRepository.findById(userId, templateId);
     if (!template) {
       throw new NotFoundError('Template');
@@ -124,7 +125,7 @@ export class TemplateService {
    * **string** (the raw template document), and the repository takes it as-is.
    * Only `tags` is serialised, because that column is a JSON array.
    */
-  async update(userId: string, templateId: string, input: UpdateTemplateInput) {
+  async update(userId: UserId, templateId: string, input: UpdateTemplateInput) {
     await this.getForUser(userId, templateId);
 
     const updated = await this.templateRepository.update(userId, templateId, {
@@ -144,7 +145,7 @@ export class TemplateService {
   }
 
   /** Delete a template the user owns. */
-  async delete(userId: string, templateId: string) {
+  async delete(userId: UserId, templateId: string) {
     await this.getForUser(userId, templateId);
     return this.templateRepository.delete(userId, templateId);
   }
@@ -157,7 +158,7 @@ export class TemplateService {
    *
    * @throws when the template id matches neither a built-in nor an owned template.
    */
-  async applyTemplate(userId: string, templateId: string) {
+  async applyTemplate(userId: UserId, templateId: string) {
     const defaultTemplate = loadDefaultTemplateById(templateId);
     let template: {
       id: string;
@@ -266,7 +267,7 @@ export class TemplateService {
    * the parent has to exist first.
    */
   private async materialiseSet(
-    userId: string,
+    userId: UserId,
     template: { id: string; type: string; name: string; content: string }
   ) {
     const definition = this.parseSetDefinition(template.content);

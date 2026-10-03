@@ -1,65 +1,235 @@
 'use client';
 
-import { Timer } from 'lucide-react';
-import { FlipClock } from '@/components/focus/FlipClock';
-import { FocusTimer } from '@/components/focus/FocusTimer';
-import { useSleepSession } from '@/hooks/useSleepSession';
-import { Stagger } from '@/components/today/ui';
+import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
+import { HelpCircle, History, Maximize2, Minimize2 } from 'lucide-react';
+
+import { TimerDial } from '@/components/focus/TimerDial';
+import { ModeSwitch, MODE_PANEL_ID } from '@/components/focus/ModeSwitch';
+import { IntentRow } from '@/components/focus/IntentRow';
+import { ContextRail } from '@/components/focus/ContextRail';
+import { Transport } from '@/components/focus/Transport';
+import { DaySummary } from '@/components/focus/DaySummary';
+import { ReflectionStrip } from '@/components/focus/ReflectionStrip';
+import { ShortcutsDialog } from '@/components/focus/ShortcutsDialog';
+import { useFocusShortcuts } from '@/components/focus/useFocusShortcuts';
+import { cn } from '@/lib/utils';
+import { getFocusRuntime, useFocusStore, isLive } from '@/store/focus.store';
+import type { FocusMode } from '@/lib/focus/type-backfill';
 
 /**
- * Focus Page (spec P1-7).
+ * The drawer is code-split.
  *
- * Composition only: the wall clock (FlipClock) plus the self-contained
- * FocusTimer, which owns the timer state, settings, session POSTs, and the
- * single `GET /api/focus?limit=100` history fetch. History is deliberately
- * not fetched anywhere else on this page (e.g. FocusStats is not embedded)
- * so the endpoint is requested exactly once.
+ * It pulls in the history table, the filters, the detail sheet and the stats panel —
+ * none of which are needed to run a timer, and all of which were previously in the
+ * initial bundle for a page whose primary action is pressing Start. `ssr: false`
+ * because it renders inside a Radix portal that measures the viewport, so a server
+ * render would produce markup the client immediately discards.
+ */
+const SessionsDrawer = dynamic(
+  () => import('@/components/focus/SessionsDrawer').then((m) => m.SessionsDrawer),
+  { ssr: false }
+);
+
+/**
+ * `/focus` — the stage.
+ *
+ * Composition only. The page used to lay out `FlipClock` beside a 1,506-line
+ * `FocusTimer` that owned the timer state, the settings, the session POSTs and the
+ * history fetch. All of that now lives in `FocusRuntime` (mounted in the dashboard
+ * layout, because a runtime owned by a page dies with the page) and in the store.
+ *
+ * `FlipClock` is gone rather than demoted. It ran its own second-aligned interval
+ * to show a wall clock, competing for the page's attention with the thing the page
+ * is for, and its 3D flip is exactly the movement that pulls focus.
  */
 export default function FocusPage() {
-  const { state } = useSleepSession();
-  const sleepActive = Boolean(state?.active);
+  const mode = useFocusStore((s) => s.mode);
+  const status = useFocusStore((s) => s.status);
+  const cycles = useFocusStore((s) => s.cycles);
+
+  /**
+   * `?panel=sessions|stats` opens the drawer on a given tab.
+   *
+   * Read from the URL rather than passed through a store so the command palette can
+   * deep-link into the drawer without knowing anything about this component's state.
+   * `useSearchParams` is wrapped in a Suspense boundary by the parent layout, which is
+   * why this is read here rather than at the top level of the route.
+   */
+  const searchParams = useSearchParams();
+  const panel = searchParams.get('panel');
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [initialTab, setInitialTab] = useState<'sessions' | 'stats'>('sessions');
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [zen, setZen] = useState(false);
+
+  useEffect(() => {
+    if (panel === 'sessions' || panel === 'stats') {
+      setDrawerOpen(true);
+      setInitialTab(panel);
+    }
+  }, [panel]);
+
+  const toggle = useCallback(() => {
+    const runtime = getFocusRuntime();
+    if (!runtime) return;
+    const store = useFocusStore.getState();
+    if (store.status === 'running') void runtime.pause();
+    else if (store.status === 'paused') void runtime.resume();
+    else void runtime.start();
+  }, []);
+
+  useFocusShortcuts({
+    onToggle: toggle,
+    onReset: () => void getFocusRuntime()?.reset(),
+    onSkip: () => {
+      const runtime = getFocusRuntime();
+      if (runtime && isLive(useFocusStore.getState().status)) {
+        void runtime.stop('SKIPPED');
+      }
+    },
+    onLap: () => {
+      // A lap is a display concern, not a lifecycle event, so it is not written to
+      // the event log. Stopwatch-only, mirroring the button.
+      if (useFocusStore.getState().mode === 'stopwatch') return;
+    },
+    onExtend: () => void getFocusRuntime()?.extend(300),
+    onMode: (next: FocusMode) => useFocusStore.getState().adopt({ mode: next }),
+    onZen: () => setZen((prev) => !prev),
+    onHelp: () => setShortcutsOpen(true),
+  });
 
   return (
-    <div className="relative mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
-      {/*
-        ERROR.md F1: "the page UI can be improved as it is very boring and not
-        mobile responsive."
-
-        The two components are unchanged — the fixes that mattered were the
-        contrast ones inside `FocusTimer` (see `accentFill` there). What the page
-        shell lacked was any structure: a static header above two full-width
-        stacked blocks, so on a wide screen the clock and the timer each sat in
-        their own centred ribbon with dead space either side. They are now side by
-        side from `lg`, where the dial has room for a second column beside it and
-        the user's eyes do not have to travel the full width between them.
-      */}
+    <div
+      className={cn(
+        'relative mx-auto w-full px-4 py-8 transition-[max-width] duration-300 sm:py-12',
+        zen ? 'max-w-2xl' : 'max-w-2xl'
+      )}
+    >
       <div
-        className="gradient-mesh-animated pointer-events-none absolute inset-0 -z-10 opacity-60"
+        className="gradient-mesh-animated pointer-events-none absolute inset-0 -z-10 opacity-40"
         aria-hidden="true"
       />
 
-      <div className="relative">
-        <Stagger>
-          <header className="mb-6 sm:mb-8">
-            <h1 className="flex items-center gap-2 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              <Timer className="h-7 w-7 text-sky-600 dark:text-sky-400" aria-hidden="true" />
-              Focus
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-              Run a focus session, take planned breaks, and watch your focus minutes add up.
-            </p>
-          </header>
-        </Stagger>
+      {/*
+        Zen mode drops the header and the intent row, leaving the dial and its
+        controls. It is a visibility reduction rather than a fullscreen takeover on
+        purpose: `requestFullscreen` needs a gesture, blocks on some mobile
+        browsers, and exits unexpectedly on tab switch. Reducing what is on screen
+        achieves the same thing without a permission prompt or a trap.
+      */}
+      {!zen && (
+        <header className="mb-6 flex items-center justify-between gap-3">
+          <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
+            Focus
+          </h1>
+          <div className="flex items-center gap-1">
+            <IconAction
+              label="Session history and stats"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <History className="h-4 w-4" aria-hidden="true" />
+            </IconAction>
+            <IconAction
+              label={zen ? 'Exit zen mode' : 'Zen mode'}
+              onClick={() => setZen(true)}
+            >
+              <Maximize2 className="h-4 w-4" aria-hidden="true" />
+            </IconAction>
+            <IconAction label="Keyboard shortcuts" onClick={() => setShortcutsOpen(true)}>
+              <HelpCircle className="h-4 w-4" aria-hidden="true" />
+            </IconAction>
+          </div>
+        </header>
+      )}
 
-        <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 lg:grid-cols-2">
-          <Stagger delay={0.06} className="min-w-0">
-            <FlipClock />
-          </Stagger>
-          <Stagger delay={0.12} className="min-w-0">
-            <FocusTimer sleepActive={sleepActive} />
-          </Stagger>
+      {zen && (
+        <>
+          {/*
+            Zen mode hides the visible header, which would leave the page with no
+            `<h1>` at all. A screen-reader user toggling zen would land in a document
+            with no top-level heading — so the heading stays in the accessibility
+            tree and only its visual presentation is removed.
+          */}
+          <h1 className="sr-only">Focus — zen mode</h1>
+          <div className="mb-4 flex justify-end">
+            <IconAction label="Exit zen mode" onClick={() => setZen(false)}>
+              <Minimize2 className="h-4 w-4" aria-hidden="true" />
+            </IconAction>
+          </div>
+        </>
+      )}
+
+      <div className="flex flex-col items-center gap-6">
+        <ModeSwitch />
+
+        {/*
+          The panel the tablist points at. `aria-labelledby` names the active tab,
+          so the mode is announced with the region — the pairing `aria-controls`
+          promises and the old markup never provided.
+        */}
+        <div
+          role="tabpanel"
+          id={MODE_PANEL_ID}
+          aria-labelledby={`focus-tab-${mode}`}
+          className="glass-panel flex w-full flex-col items-center gap-8 rounded-2xl p-6 shadow-soft sm:p-10"
+        >
+          <TimerDial />
+          <Transport />
         </div>
+
+{!zen && (
+          <>
+            <IntentRow />
+            {/* Above the reflection strip: what you are working on is an input to the
+                session, so it belongs next to the intent field rather than below the
+                summary of what happened. */}
+            <ContextRail />
+            {/* Keyed on the cycle count: a new finished block remounts the strip with
+                an empty rating, rather than resetting it in an effect. */}
+            <ReflectionStrip key={cycles} resetKey={cycles} />
+            <DaySummary />
+          </>
+        )}
       </div>
+
+      <SessionsDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        initialTab={initialTab}
+      />
+      <ShortcutsDialog
+        open={shortcutsOpen}
+        onOpenChange={setShortcutsOpen}
+        status={status}
+        mode={mode}
+      />
     </div>
+  );
+}
+
+function IconAction({
+  label,
+  onClick,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      // `tap-target` because the 36px visual box is under the 44px minimum; the
+      // class expands the hit area without inflating the icon button.
+      className="tap-target inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      {children}
+    </button>
   );
 }

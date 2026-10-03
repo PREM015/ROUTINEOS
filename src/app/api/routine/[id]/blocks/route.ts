@@ -5,6 +5,7 @@ import { NotFoundError } from '@/lib/errors/app-error';
 import { ValidationError } from '@/lib/errors/app-error';
 import { timeSchema, energyLevelSchema } from '@/lib/validation/routine.schema';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET  /api/routine/[id]/blocks   the template's blocks, in time order
@@ -65,12 +66,12 @@ export async function GET(
   try {
     // Ownership first: the service refuses a template the caller does not own,
     // so this cannot be used to enumerate another account's block ids.
-    const template = await routineService.getTemplate(session.user.id, id);
+    const template = await routineService.getTemplate(userIdFromSession(session), id);
     if (!template) {
       return NextResponse.json({ error: 'Not Found' }, { status: 404 });
     }
 
-    const blocks = await routineService.getBlocks(session.user.id, id);
+    const blocks = await routineService.getBlocks(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: blocks });
   } catch (error) {
     console.error('Error fetching routine blocks:', error);
@@ -93,7 +94,7 @@ export async function POST(
     const body = await req.json();
     const data = createBlockSchema.parse(body);
 
-    const { block, warnings } = await routineService.addBlock(session.user.id, id, {
+    const { block, warnings } = await routineService.addBlock(userIdFromSession(session), id, {
       title: data.title,
       startTime: data.startTime,
       endTime: data.endTime,

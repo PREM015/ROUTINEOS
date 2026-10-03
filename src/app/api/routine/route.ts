@@ -1,4 +1,4 @@
-﻿import { auth } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
@@ -13,6 +13,7 @@ import {
 } from '@/lib/validation/routine.schema';
 import { EditWindowError } from '@/lib/routine/edit-window';
 import type { DayType } from '@/generated/prisma';
+import { toUserId, userIdFromSession } from '@/types/ids';
 
 /**
  * The body fields that mean "this is a block update, not a template update".
@@ -147,7 +148,7 @@ export async function GET(_request: NextRequest) {
     const routineService = new RoutineService();
     // Was `routineService['routineRepository'].findAllTemplates(...)` - a route
     // reaching through a private field to get at the repository it already owns.
-    const templates = await routineService.listTemplates(session.user.id);
+    const templates = await routineService.listTemplates(userIdFromSession(session));
 
     // Derive each template's classification from its day-type definition so the
     // list agrees with the single-block create response; otherwise a block added
@@ -215,7 +216,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = await new RoutineService().applyTemplateToRange(userId, validated.data);
+      const result = await new RoutineService().applyTemplateToRange(toUserId(userId), validated.data);
 
       /*
        * 207 rather than 200 when part of the range was refused. A partial write
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest) {
       const routineService = new RoutineService();
       const { data } = validated;
       const { block, template, warnings } =
-        await routineService.createBlockForDayType(userId, {
+        await routineService.createBlockForDayType(toUserId(userId), {
           title: data.title,
           startTime: data.startTime,
           endTime: data.endTime,
@@ -308,7 +309,7 @@ export async function POST(request: NextRequest) {
 
     const routineService = new RoutineService();
     const template = await routineService.createTemplate(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 
@@ -375,7 +376,7 @@ export async function PUT(request: NextRequest) {
         ...fields
       } = validated.data;
 
-      const existing = await routineService.updateBlockForUser(userId, id, {
+      const existing = await routineService.updateBlockForUser(toUserId(userId), id, {
         ...fields,
         ...(clearCategory !== undefined && { clearCategory }),
       });
@@ -402,7 +403,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { id, ...fields } = validated.data;
-    const updated = await routineService.updateTemplateForUser(userId, id, fields);
+    const updated = await routineService.updateTemplateForUser(toUserId(userId), id, fields);
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     return toErrorResponse(error, 'Failed to update routine');
@@ -437,7 +438,7 @@ export async function DELETE(request: NextRequest) {
     // resolves which one it is. Both lookups used to be raw
     // `routineRepository['prisma']` queries issued from this handler.
     const deleted = await new RoutineService().deleteById(
-      userId,
+      toUserId(userId),
       validated.data.id,
       validated.data.date
     );

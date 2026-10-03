@@ -1,5 +1,6 @@
 import type { UserSubscription } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Subscription Repository
@@ -20,7 +21,7 @@ export class SubscriptionRepository extends BaseRepository {
   /**
    * Find the subscription for a user (may be null for free-tier accounts)
    */
-  async findByUserId(userId: string): Promise<UserSubscription | null> {
+  async findByUserId(userId: UserId): Promise<UserSubscription | null> {
     try {
       return await this.prisma.userSubscription.findUnique({
         where: { userId },
@@ -34,7 +35,7 @@ export class SubscriptionRepository extends BaseRepository {
    * Upsert a subscription row for a user (creates if absent, updates if present)
    */
   async upsertByUserId(
-    userId: string,
+    userId: UserId,
     data: UpsertSubscriptionData
   ): Promise<UserSubscription> {
     try {
@@ -68,7 +69,7 @@ export class SubscriptionRepository extends BaseRepository {
   /**
    * Mark a subscription as cancelled
    */
-  async markCancelled(userId: string): Promise<UserSubscription> {
+  async markCancelled(userId: UserId): Promise<UserSubscription> {
     try {
       return await this.prisma.userSubscription.update({
         where: { userId },

@@ -54,7 +54,6 @@ export default function AddGoalModal({ open, onClose, defaultType = 'WEEKLY' }: 
       await addGoal({
         type,
         priority,
-        status: 'ACTIVE',
         title: title.trim(),
         description: description.trim() || undefined,
         // Daily goals are a per-day check-off: target 1.

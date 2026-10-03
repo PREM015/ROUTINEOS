@@ -7,6 +7,7 @@ import {
   checkAuthRateLimit,
   rateLimited,
 } from '@/lib/security/auth-rate-limit';
+import { userIdFromSession } from '@/types/ids';
 
 const disableTwoFactorSchema = z.object({
   code: z.string().regex(/^\d{6}$/, 'Code must be a 6-digit code'),
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     // The validated code must be passed through — it used to be discarded here,
     // which meant any six digits disabled 2FA.
     const result = await authService.disableTwoFactor(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.code
     );
 

@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PERIOD_LABEL, PERIOD_ORDER, shiftAnchor, type Period } from '@/lib/period-range';
 import { DEFAULT_TZ } from '@/lib/dates';
-import { useMemo } from 'react';
+import { useCallback, useId, useMemo, useRef } from 'react';
 
 interface PeriodControlProps {
   period: Period;
@@ -29,6 +29,17 @@ interface PeriodControlProps {
   anchorDate?: string;
   maxAnchor?: string;
   /**
+   * Id of the element this control drives.
+   *
+   * The tabs below are a real ARIA tablist, and a tablist is only correct if each
+   * tab names the panel it controls. That panel is rendered by the *caller* — the
+   * dashboard body, the recap body — so the caller supplies the id and puts the
+   * matching `role="tabpanel"` on its own content. The default keeps the roving
+   * focus and arrow keys working for a caller that has not wired a panel yet,
+   * rather than emitting `aria-controls` pointing at nothing.
+   */
+  panelId?: string;
+  /**
    * IANA zone used for the period math. Required whenever `anchorDate` and
    * `maxAnchor` are supplied — it is the 4th parameter of `shiftAnchor`.
    */
@@ -51,15 +62,20 @@ export function PeriodControl({
   size = 'md',
   anchorDate,
   maxAnchor,
+  panelId,
   timezone = DEFAULT_TZ,
 }: PeriodControlProps) {
   const tabSize = size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm';
   // `p-1`/`p-1.5` around a 16px icon is a 24-28px target, well under the ~44px
   // minimum for touch. The buttons are sized to the target instead of the glyph.
   const navSize = size === 'sm' ? 'p-2.5' : 'p-3';
-  const arrowClass = size === 'sm' ? 'h-4 w-4' : 'h-4 w-4';
+  const arrowClass = 'h-4 w-4';
   const labelClass = size === 'sm' ? 'text-xs' : 'text-sm';
   const todayClass = size === 'sm' ? 'text-xs' : 'text-sm';
+
+  const generatedPanelId = useId();
+  const controls = panelId ?? generatedPanelId;
+  const tabRefs = useRef(new Map<Period, HTMLButtonElement>());
 
   // Disabled once stepping forward would leave the current period, i.e. when
   // the period already in view contains today. String comparison is safe: both
@@ -80,6 +96,56 @@ export function PeriodControl({
     }
   }, [anchorDate, maxAnchor, period, timezone]);
 
+  /*
+    Arrow keys, Home and End, per the ARIA tabs pattern.
+
+    A tablist is one tab stop, not four: Tab should move past the whole strip, and
+    the arrow keys move within it. Every button was independently tabbable before,
+    which meant a keyboard user tabbed through all four periods on their way to the
+    date label — four stops to express a choice the widget had already made.
+
+    Selection follows focus, which is what the pattern prescribes for an
+    automatic-activation tablist, and it is also what the previous behaviour
+    already did on click: the period changes the moment it is chosen, so making
+    the arrow keys wait for Enter would desynchronise the strip from the page.
+  */
+  const focusTab = useCallback((next: Period) => {
+    tabRefs.current.get(next)?.focus();
+    onPeriodChange(next);
+  }, [onPeriodChange]);
+
+  const onTabKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      const currentIndex = PERIOD_ORDER.indexOf(period);
+      let nextIndex: number | null = null;
+
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          nextIndex = (currentIndex + 1) % PERIOD_ORDER.length;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          nextIndex = (currentIndex - 1 + PERIOD_ORDER.length) % PERIOD_ORDER.length;
+          break;
+        case 'Home':
+          nextIndex = 0;
+          break;
+        case 'End':
+          nextIndex = PERIOD_ORDER.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      const next = PERIOD_ORDER[nextIndex];
+      if (!next) return;
+      event.preventDefault();
+      focusTab(next);
+    },
+    [focusTab, period]
+  );
+
   return (
     // Wraps below ~640px. The control is a five-tab strip plus two arrows, a
     // 150px label and a link: at 375px that is wider than the viewport, and the
@@ -95,10 +161,22 @@ export function PeriodControl({
             key={p}
             type="button"
             role="tab"
+            id={`${controls}-tab-${p}`}
             aria-selected={period === p}
+            aria-controls={controls}
+            tabIndex={period === p ? 0 : -1}
+            ref={(node) => {
+              if (node) {
+                tabRefs.current.set(p, node);
+              } else {
+                tabRefs.current.delete(p);
+              }
+            }}
+            onKeyDown={onTabKeyDown}
             onClick={() => onPeriodChange(p)}
             className={cn(
               'rounded-md font-semibold transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               tabSize,
               period === p
                 ? 'bg-card text-foreground shadow-sm'
@@ -115,6 +193,7 @@ export function PeriodControl({
         aria-label="Previous period"
         className={cn(
           'rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           navSize
         )}
       >
@@ -137,6 +216,7 @@ export function PeriodControl({
         disabled={atCurrentPeriod}
         className={cn(
           'rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           'disabled:pointer-events-none disabled:opacity-40',
           navSize
         )}
@@ -148,6 +228,7 @@ export function PeriodControl({
         onClick={onToday}
         className={cn(
           'rounded-md px-2 py-1.5 font-semibold text-primary hover:underline break-keep',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background',
           todayClass
         )}
       >

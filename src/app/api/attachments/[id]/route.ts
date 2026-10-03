@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { uploadService } from '@/server/services/upload.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/attachments/[id]
@@ -21,7 +22,7 @@ export async function GET(_request: NextRequest, ctx: { params: Promise<{ id: st
       return NextResponse.json({ error: 'Invalid attachment id' }, { status: 400 });
     }
 
-    const attachment = await uploadService.getAttachment(session.user.id, id);
+    const attachment = await uploadService.getAttachment(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: attachment });
   } catch (error) {
     console.error('Error fetching attachment:', error);
@@ -44,7 +45,7 @@ export async function DELETE(_request: NextRequest, ctx: { params: Promise<{ id:
       return NextResponse.json({ error: 'Invalid attachment id' }, { status: 400 });
     }
 
-    const result = await uploadService.deleteAttachment(session.user.id, id);
+    const result = await uploadService.deleteAttachment(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error deleting attachment:', error);

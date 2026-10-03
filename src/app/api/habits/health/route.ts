@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const healthQuerySchema = z.object({
   days: z.coerce.number().int().min(7).max(90).optional(),
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     const health = await new HabitService().getHabitHealth(
-      session.user.id,
+      userIdFromSession(session),
       parsed.data.days ?? 28
     );
 

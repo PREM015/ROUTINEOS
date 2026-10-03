@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { apiKeyService } from '@/server/services/api-key.service';
 import { ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/api-keys
@@ -14,7 +15,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const keys = await apiKeyService.listForUser(session.user.id);
+    const keys = await apiKeyService.listForUser(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: keys });
   } catch (error) {
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const created = await apiKeyService.issue(session.user.id, body as {
+    const created = await apiKeyService.issue(userIdFromSession(session), body as {
       name: string;
       description?: string;
     });

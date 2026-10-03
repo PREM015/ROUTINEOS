@@ -1,8 +1,9 @@
 import { HabitOverride } from "@/types/habit";
+import type { UserId } from '@/types/ids';
 
 export function createSkipOverride(
   habitId: string,
-  userId: string,
+  userId: UserId,
   date: string,
   reason: string
 ): Pick<HabitOverride, 'habitId' | 'userId' | 'type' | 'startDate' | 'reason'> {

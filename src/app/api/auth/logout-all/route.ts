@@ -1,6 +1,7 @@
 import { auth, signOut } from '@/lib/auth';
 import { AuthService } from '@/server/services/auth.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/auth/logout-all
@@ -15,7 +16,7 @@ export async function POST() {
     }
 
     const authService = new AuthService();
-    const result = await authService.logoutAll(session.user.id);
+    const result = await authService.logoutAll(userIdFromSession(session));
     await signOut({ redirect: false });
 
     return NextResponse.json({ success: true, data: result });

@@ -1,6 +1,7 @@
 import type { UserSubscription } from '@/generated/prisma';
 import { SubscriptionRepository } from '@/server/repositories/subscription.repository';
 import Stripe from 'stripe';
+import type { UserId } from '@/types/ids';
 
 /**
  * Subscription Service
@@ -68,7 +69,7 @@ export class SubscriptionService {
    * exists. Never throws for a missing subscription — absence *is* the free
    * plan.
    */
-  async getSubscription(userId: string): Promise<SubscriptionView> {
+  async getSubscription(userId: UserId): Promise<SubscriptionView> {
     const row = await this.subscriptionRepository.findByUserId(userId);
 
     if (!row) {
@@ -110,7 +111,7 @@ export class SubscriptionService {
    * signed-in user open the billing portal of an arbitrary customer.
    */
   async createPortalSession(
-    userId: string,
+    userId: UserId,
     returnUrl: string
   ): Promise<PortalResult> {
     const stripe = this.getStripe();

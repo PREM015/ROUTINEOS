@@ -3,6 +3,7 @@ import { apiKeyService } from '@/server/services/api-key.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import type { APIKey } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * API Key Revoke Route
@@ -27,7 +28,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid API key id' }, { status: 400 });
     }
 
-    const key = await apiKeyService.revoke(session.user.id, id);
+    const key = await apiKeyService.revoke(userIdFromSession(session), id);
     return NextResponse.json({
       success: true,
       data: {

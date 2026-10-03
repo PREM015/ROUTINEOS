@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Auth Token Repository
@@ -62,7 +63,7 @@ export class AuthTokenRepository extends BaseRepository {
   /**
    * Issue a password-reset token, storing only its hash.
    */
-  async createResetToken(userId: string, token: string, expiresAt: Date) {
+  async createResetToken(userId: UserId, token: string, expiresAt: Date) {
     try {
       return await this.prisma.passwordResetToken.create({
         data: { userId, tokenHash: hashToken(token), expiresAt },
@@ -106,7 +107,7 @@ export class AuthTokenRepository extends BaseRepository {
   /**
    * Issue an email-verification token, storing only its hash.
    */
-  async createVerificationToken(userId: string, token: string, expiresAt: Date) {
+  async createVerificationToken(userId: UserId, token: string, expiresAt: Date) {
     try {
       return await this.prisma.emailVerificationToken.create({
         data: { userId, tokenHash: hashToken(token), expiresAt },
@@ -133,7 +134,7 @@ export class AuthTokenRepository extends BaseRepository {
   /**
    * Most recent unused verification token for a user, used for resend throttling.
    */
-  async findLatestUnusedVerificationToken(userId: string) {
+  async findLatestUnusedVerificationToken(userId: UserId) {
     try {
       return await this.prisma.emailVerificationToken.findFirst({
         where: { userId, usedAt: null },

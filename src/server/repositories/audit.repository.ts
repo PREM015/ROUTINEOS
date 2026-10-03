@@ -1,5 +1,6 @@
 import type { AuditLog, ActivityLog, Prisma, AuditAction } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Audit Repository
@@ -76,7 +77,7 @@ export class AuditRepository extends BaseRepository {
    * Find audit logs for a user with optional filters
    */
   async findByUserId(
-    userId: string,
+    userId: UserId,
     query: AuditQueryOptions = {}
   ): Promise<AuditLog[]> {
     try {
@@ -207,7 +208,7 @@ export class AuditRepository extends BaseRepository {
    * Find activity logs for a user with optional filters
    */
   async findActivityLogs(
-    userId: string,
+    userId: UserId,
     query: { limit?: number; offset?: number; from?: Date | string; to?: Date | string } = {}
   ): Promise<ActivityLog[]> {
     try {

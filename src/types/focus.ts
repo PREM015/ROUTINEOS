@@ -8,6 +8,14 @@ import type {
   Habit,
   Goal,
 } from '@/generated/prisma';
+import { FOCUS_END_REASON_LABELS as END_REASON_LABELS } from '@/constants/prisma-enums';
+
+/**
+ * Re-exported so a client component can label an end reason without importing a
+ * Prisma enum *as a value* into the browser bundle — `@/generated/prisma` resolves
+ * to the Node client entry point, which drags Node built-ins with it.
+ */
+export const FOCUS_END_REASON_LABELS = END_REASON_LABELS;
 
 /**
  * Focus & Time Tracking Types
@@ -36,6 +44,88 @@ export interface FocusSessionWithRelations extends FocusSession {
 
 export interface BreakWithRelations extends Break {
   focusSession: FocusSession | null;
+}
+
+/**
+ * The one canonical focus-session row, as the API returns it.
+ *
+ * This type was previously declared **three times** — `focus/session/page.tsx`,
+ * `FocusStats.tsx` and `FocusTimer.tsx` — each with a slightly different field set.
+ * That is not a cosmetic duplication: a component typed against the 8-field copy
+ * could read `status` as `string` while another read it as a union, and a field
+ * added to the API would typecheck against one copy and fail against the others.
+ *
+ * Dates are **strings**, not `Date`, because this is the JSON boundary. `startedAt`
+ * crosses the wire as ISO-8601 and is `Date` only after being parsed; typing it as
+ * `Date` here would be a lie the compiler cannot catch.
+ */
+export interface FocusSessionRow {
+  id: string;
+  title: string;
+  description: string | null;
+  /** `FOCUS | SHORT_BREAK | LONG_BREAK | STOPWATCH`. */
+  type: 'FOCUS' | 'SHORT_BREAK' | 'LONG_BREAK' | 'STOPWATCH';
+  categoryId: string | null;
+  category: { id: string; name: string; color: string | null } | null;
+  /**
+   * What the session was linked to.
+   *
+   * Present as a nested label rather than a bare id so the history list can render
+   * "Deep work · DSA" without a second round trip per row. Null on both sides of each
+   * pair: the column is null when the session was never linked, and the relation is
+   * null when it *was* linked and the linked row has since been deleted - which
+   * happens routinely, because all three links are `onDelete: SetNull`.
+   */
+  task: { id: string; title: string; status: string } | null;
+  goal: { id: string; title: string; status: string } | null;
+  habit: { id: string; name: string; status: string } | null;
+  plannedDuration: number;
+  actualDuration: number | null;
+  startedAt: string;
+  completedAt: string | null;
+  abortedAt: string | null;
+  pausedAt: string | null;
+  pausedTotalSeconds: number;
+  /** `COMPLETED | STOPPED | SKIPPED | MODE_SWITCHED | AUTO_STALE | MANUAL | null`. */
+  endReason:
+    | 'COMPLETED'
+    | 'STOPPED'
+    | 'SKIPPED'
+    | 'MODE_SWITCHED'
+    | 'AUTO_STALE'
+    | 'MANUAL'
+    | null;
+  focusRating: number | null;
+  energyAfter: number | null;
+  notes: string | null;
+  runId: string | null;
+}
+
+/** Pagination envelope from `GET /api/focus`. */
+export interface FocusSessionsMeta {
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** What `GET /api/focus/active` returns. */
+export interface ActiveFocusSession {
+  id: string;
+  type: FocusSessionRow['type'];
+  startedAt: string;
+  pausedAt: string | null;
+  pausedTotalSeconds: number;
+  plannedDuration: number;
+  title: string | null;
+  categoryId: string | null;
+  needsRecovery: boolean;
+  recovery: {
+    recommended: 'credit-evidence' | 'credit-full' | 'discard';
+    options: Array<'credit-evidence' | 'credit-full' | 'discard'>;
+    evidenceMs: number;
+    fullMs: number;
+    reason: string;
+  } | null;
 }
 
 export interface FocusSessionListItem {

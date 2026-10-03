@@ -3,6 +3,7 @@ import { timeTrackingService } from '@/server/services/time-tracking.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { updateTimeEntrySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -30,7 +31,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await timeTrackingService.getForUser(session.user.id, paramId);
+    const entry = await timeTrackingService.getForUser(userIdFromSession(session), paramId);
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
@@ -68,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const entry = await timeTrackingService.update(
-      session.user.id,
+      userIdFromSession(session),
       paramId,
       validated.data
     );
@@ -100,7 +101,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const deleted = await timeTrackingService.delete(session.user.id, paramId);
+    const deleted = await timeTrackingService.delete(userIdFromSession(session), paramId);
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {

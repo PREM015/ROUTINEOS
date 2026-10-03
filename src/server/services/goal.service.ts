@@ -9,6 +9,7 @@ import type { GoalCheckinInput } from '@/schemas/goal.schema';
 import { AchievementService } from './achievement.service';
 import { AuditService } from '@/server/audit/audit.service';
 import { resolveDayTypeForDate } from '@/lib/scheduling/resolve-routine';
+import type { UserId } from '@/types/ids';
 
 /** Input for {@link GoalService.addMilestone}, inferred from the shared schema. */
 type MilestoneInput = import('zod').infer<typeof milestoneSchema>;
@@ -70,7 +71,7 @@ export class GoalService {
    * Owns the filter composition so every caller (the API route, and any future
    * consumer) gets identical filtering instead of each re-deriving it.
    */
-  async listGoals(userId: string, filters: ListGoalsFilters = {}) {
+  async listGoals(userId: UserId, filters: ListGoalsFilters = {}) {
     return this.goalRepository.findAll(userId, filters);
   }
 
@@ -87,7 +88,7 @@ export class GoalService {
    * pagination, and composes the identical `where` clause in the repository, so
    * the total cannot describe a different result set than the rows beside it.
    */
-  async countGoals(userId: string, filters: ListGoalsFilters = {}) {
+  async countGoals(userId: UserId, filters: ListGoalsFilters = {}) {
     const { limit: _limit, offset: _offset, sortBy: _sortBy, sortOrder: _sortOrder, ...where } = filters;
     return this.goalRepository.countAll(userId, where);
   }
@@ -95,7 +96,7 @@ export class GoalService {
 /**
  * Progress-log rows recorded on a given calendar date, with their goals.
  */
-  async getProgressLogsForDate(userId: string, date: string) {
+  async getProgressLogsForDate(userId: UserId, date: string) {
     return this.goalRepository.findProgressLogsByDate(userId, date);
   }
 
@@ -110,7 +111,7 @@ export class GoalService {
    * `from` is inclusive and `to` exclusive, both `YYYY-MM-DD` labels, so a
    * 30-day strip is `[today - 29, tomorrow)`.
    */
-  async getProgressRange(userId: string, from: string, to: string) {
+  async getProgressRange(userId: UserId, from: string, to: string) {
     return this.goalRepository.findProgressLogsInRange(
       userId,
       new Date(`${from}T00:00:00.000Z`),
@@ -127,7 +128,7 @@ export class GoalService {
    * that date. Day-type resolution goes through the single shared resolver, so
    * /today, /dashboard and /goals cannot disagree about which goals apply.
    */
-  async getVisibleGoalsForDate(userId: string, date: string) {
+  async getVisibleGoalsForDate(userId: UserId, date: string) {
     // Shared day-type resolution (RoutineException override first, then natural).
     const resolved = await resolveDayTypeForDate(userId, date);
     const { start, end } = dayWindow(date);
@@ -174,7 +175,7 @@ export class GoalService {
    * previously never written, so "archived before X" and archive-time ordering
    * were impossible.
    */
-  async archiveGoal(userId: string, goalId: string) {
+  async archiveGoal(userId: UserId, goalId: string) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -191,7 +192,7 @@ export class GoalService {
   /**
    * Create new goal
    */
-  async createGoal(userId: string, input: CreateGoalInput) {
+  async createGoal(userId: UserId, input: CreateGoalInput) {
     // `startDate` / `endDate` are non-null columns, but the schema now allows
     // them to be omitted or explicitly null so the Edit modal can clear a
     // field. Default rather than reject: an omitted date means "starts now,
@@ -276,7 +277,7 @@ export class GoalService {
   /**
    * Update goal
    */
-  async updateGoal(userId: string, goalId: string, input: UpdateGoalInput) {
+  async updateGoal(userId: UserId, goalId: string, input: UpdateGoalInput) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -395,7 +396,7 @@ export class GoalService {
  * check-in cannot reach it.
  */
   async updateProgress(
-    userId: string,
+    userId: UserId,
     goalId: string,
     value: number,
     note?: string,
@@ -453,7 +454,7 @@ export class GoalService {
   /**
    * Complete goal
    */
-  async completeGoal(userId: string, goalId: string, finalValue?: number) {
+  async completeGoal(userId: UserId, goalId: string, finalValue?: number) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -478,7 +479,7 @@ export class GoalService {
    * Carry over goal to next period
    */
   async carryOverGoal(
-    userId: string,
+    userId: UserId,
     goalId: string,
     newEndDate: Date,
     adjustProgress: boolean = false
@@ -572,7 +573,7 @@ export class GoalService {
    * 2. the new parent must not be the goal itself or one of its descendants.
    */
   private async assertValidParent(
-    userId: string,
+    userId: UserId,
     goalId: string,
     parentGoalId: string | null
   ): Promise<void> {
@@ -603,7 +604,7 @@ export class GoalService {
    * (404) from a genuine failure (500) without the repository call escaping into
    * the handler.
    */
-  async getGoal(userId: string, goalId: string) {
+  async getGoal(userId: UserId, goalId: string) {
     return this.goalRepository.findWithRelations(goalId, userId);
   }
 
@@ -642,7 +643,7 @@ export class GoalService {
    * because it is a calendar label — the goal's day-type and timezone handling
    * happens elsewhere, on the user's zone.
    */
-  async checkInDaily(userId: string, goalId: string, input: GoalCheckinInput) {
+  async checkInDaily(userId: UserId, goalId: string, input: GoalCheckinInput) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -681,7 +682,7 @@ export class GoalService {
   /**
    * Tags attached to a goal the caller owns.
    */
-  async getTags(userId: string, goalId: string) {
+  async getTags(userId: UserId, goalId: string) {
     const goal = await this.goalRepository.findWithRelations(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -698,7 +699,7 @@ export class GoalService {
    * single `listForUser` and a set lookup, which matters because this endpoint
    * accepts up to 50 tags and was issuing up to 50 queries to check them.
    */
-  async setTags(userId: string, goalId: string, requestedTagIds: string[]) {
+  async setTags(userId: UserId, goalId: string, requestedTagIds: string[]) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -730,7 +731,7 @@ export class GoalService {
   /**
    * Goals attached to a project the caller owns.
    */
-  async getProjectGoals(userId: string, projectId: string) {
+  async getProjectGoals(userId: UserId, projectId: string) {
     const project = await this.projectRepository.findById(userId, projectId);
     if (!project) {
       throw new NotFoundError('Project');
@@ -747,7 +748,7 @@ export class GoalService {
    * goal service — the one place that decides what a goal update may change.
    */
   async attachToProject(
-    userId: string,
+    userId: UserId,
     projectId: string,
     goalId: string
   ) {
@@ -775,7 +776,7 @@ export class GoalService {
    * it, and doing the ownership lookup here means the caller gets the 404 before
    * any history is read.
    */
-  async getHistory(userId: string, goalId: string, limit: number, offset: number) {
+  async getHistory(userId: UserId, goalId: string, limit: number, offset: number) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -793,7 +794,7 @@ export class GoalService {
    * would return another user's milestones, so the goal lookup that gates it has
    * to be part of the same method or a future caller will skip it.
    */
-  async getMilestones(userId: string, goalId: string) {
+  async getMilestones(userId: UserId, goalId: string) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -809,7 +810,7 @@ export class GoalService {
    * write, so it lives here where the ordering rule is visible; a caller that
    * skipped the read would append a milestone at position 0.
    */
-  async addMilestone(userId: string, goalId: string, input: MilestoneInput) {
+  async addMilestone(userId: UserId, goalId: string, input: MilestoneInput) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -844,7 +845,7 @@ export class GoalService {
    * merely sharing the table.
    */
   async setMilestoneComplete(
-    userId: string,
+    userId: UserId,
     goalId: string,
     milestoneId: string,
     completed: boolean
@@ -858,7 +859,7 @@ export class GoalService {
   }
 
   /** Delete one of the caller's milestones. Same ownership gate as above. */
-  async deleteMilestone(userId: string, goalId: string, milestoneId: string) {
+  async deleteMilestone(userId: UserId, goalId: string, milestoneId: string) {
     await this.assertMilestoneOwned(userId, goalId, milestoneId);
     return this.goalRepository.deleteMilestone(milestoneId);
   }
@@ -869,7 +870,7 @@ export class GoalService {
    * their own goal and act on someone else's id.
    */
   private async assertMilestoneOwned(
-    userId: string,
+    userId: UserId,
     goalId: string,
     milestoneId: string
   ): Promise<void> {
@@ -905,7 +906,7 @@ export class GoalService {
    * Archive remains the safe default offered first — this method is the
    * deliberate, informed choice.
    */
-  async getDeleteImpact(userId: string, goalId: string) {
+  async getDeleteImpact(userId: UserId, goalId: string) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -922,7 +923,7 @@ export class GoalService {
     };
   }
 
-  async deleteGoal(userId: string, goalId: string) {
+  async deleteGoal(userId: UserId, goalId: string) {
     const goal = await this.goalRepository.findById(goalId, userId);
     if (!goal) {
       throw new NotFoundError('Goal');
@@ -965,7 +966,7 @@ export class GoalService {
    * on its own route because it is the action the UI should offer *before*
    * delete: it keeps the whole progress history and reverses in one click.
    */
-  async cancelGoal(userId: string, goalId: string) {
+  async cancelGoal(userId: UserId, goalId: string) {
     return this.archiveGoal(userId, goalId);
   }
 }

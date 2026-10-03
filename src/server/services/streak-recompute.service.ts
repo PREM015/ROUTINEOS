@@ -2,6 +2,7 @@ import { StreakRepository } from '@/server/repositories/streak.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { isStreakActiveDay } from '@/server/domain/streak/streak-calculator';
 import { format, subDays, differenceInCalendarDays, parseISO } from 'date-fns';
+import type { UserId } from '@/types/ids';
 
 /**
  * Streak Recompute
@@ -58,7 +59,7 @@ export class StreakRecomputeService {
    *   `repair: true` to recompute it from the data and let it fall.
    */
   async recompute(
-    userId: string,
+    userId: UserId,
     asOfDate?: string,
     options: { repair?: boolean } = {}
   ): Promise<RecomputeStreakResult> {

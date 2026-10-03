@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       : 0;
 
     const { history, goalTitle } = await new GoalService().getHistory(
-      session.user.id,
+      userIdFromSession(session),
       id,
       limit,
       offset

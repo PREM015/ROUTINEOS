@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/server/services/subscription.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/billing/portal
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
         : '/settings/billing';
 
     const result = await subscriptionService.createPortalSession(
-      session.user.id,
+      userIdFromSession(session),
       safeReturnUrl
     );
 

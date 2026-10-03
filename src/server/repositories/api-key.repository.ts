@@ -1,5 +1,6 @@
 import type { APIKey, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * API Key Repository
@@ -22,7 +23,7 @@ export class ApiKeyRepository extends BaseRepository {
   /**
    * List all API keys for a user, ordered by creation date descending
    */
-  async findAllByUser(userId: string): Promise<APIKey[]> {
+  async findAllByUser(userId: UserId): Promise<APIKey[]> {
     try {
       return await this.prisma.aPIKey.findMany({
         where: { userId },
@@ -91,7 +92,7 @@ export class ApiKeyRepository extends BaseRepository {
   /**
    * Find an API key by ID, scoped to a specific user (ownership check)
    */
-  async findByIdScoped(id: string, userId: string): Promise<APIKey | null> {
+  async findByIdScoped(id: string, userId: UserId): Promise<APIKey | null> {
     try {
       const key = await this.prisma.aPIKey.findUnique({ where: { id } });
       if (!key || key.userId !== userId) {
@@ -108,7 +109,7 @@ export class ApiKeyRepository extends BaseRepository {
    */
   async update(
     id: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.APIKeyUpdateInput
   ): Promise<APIKey> {
     try {
@@ -128,7 +129,7 @@ export class ApiKeyRepository extends BaseRepository {
   /**
    * Soft-delete an API key by setting isActive = false (revoke)
    */
-  async revoke(id: string, userId: string): Promise<APIKey> {
+  async revoke(id: string, userId: UserId): Promise<APIKey> {
     try {
       const existing = await this.findByIdScoped(id, userId);
       if (!existing) {
@@ -146,7 +147,7 @@ export class ApiKeyRepository extends BaseRepository {
   /**
    * Permanently delete an API key (scoped to user)
    */
-  async deleteById(id: string, userId: string): Promise<{ success: boolean }> {
+  async deleteById(id: string, userId: UserId): Promise<{ success: boolean }> {
     try {
       const existing = await this.findByIdScoped(id, userId);
       if (!existing) {
@@ -162,7 +163,7 @@ export class ApiKeyRepository extends BaseRepository {
   /**
    * Count API keys for a user
    */
-  async countByUser(userId: string): Promise<number> {
+  async countByUser(userId: UserId): Promise<number> {
     try {
       return await this.prisma.aPIKey.count({ where: { userId } });
     } catch (error) {

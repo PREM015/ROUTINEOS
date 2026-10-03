@@ -1,5 +1,6 @@
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { assertSelf } from '@/server/admin-guard';
+import { toUserId } from '@/types/ids';
 
 /**
  * Audit Service
@@ -31,7 +32,7 @@ export class AuditService {
     offset: number
   ) {
     assertSelf(callerId, resourceUserId);
-    return this.auditRepository.findByUserId(resourceUserId, { limit, offset });
+    return this.auditRepository.findByUserId(toUserId(resourceUserId), { limit, offset });
   }
 }
 

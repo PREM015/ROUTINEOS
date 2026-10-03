@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const progressSchema = z.object({
   value: z.number(),
@@ -32,7 +33,7 @@ export async function POST(
 
     const goalService = new GoalService();
     const result = await goalService.updateProgress(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data.value,
       validated.data.note,

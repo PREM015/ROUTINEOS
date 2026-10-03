@@ -3,6 +3,7 @@ import { automationService } from '@/server/services/automation.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { updateAutomationSchema } from '@/schemas/automation.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Automation by ID Route
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const rule = await automationService.get(session.user.id, paramId);
+    const rule = await automationService.get(userIdFromSession(session), paramId);
 
     if (!rule) {
       return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
@@ -69,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const rule = await automationService.update(
-      session.user.id,
+      userIdFromSession(session),
       paramId,
       validated.data
     );
@@ -99,7 +100,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await automationService.delete(session.user.id, paramId);
+    await automationService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting automation:', error);

@@ -8,6 +8,7 @@ import {
 } from '@/lib/sleep/calculate-duration';
 import { DEFAULT_TZ, getTodayString } from '@/lib/dates';
 import type { LogSleepInput } from '@/schemas/sleep.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Sleep Service
@@ -53,7 +54,7 @@ export class SleepService {
    * on write is also the only way the plan a night was judged against survives
    * a later change to the user's settings.
    */
-  async logSleep(userId: string, input: LogSleepInput): Promise<SleepLog> {
+  async logSleep(userId: UserId, input: LogSleepInput): Promise<SleepLog> {
     const settings = await this.userRepository.getSettings(userId);
     const target = settings?.minSleepDuration ?? this.defaultTarget;
     const bedtime = normalizeTime(input.actualBedtime);
@@ -91,7 +92,7 @@ export class SleepService {
    * List sleep logs. Without an explicit date range the last 30 days ending
    * "today" in the user's timezone are used (never UTC).
    */
-  async listLogs(userId: string, params: ListLogsParams = {}): Promise<{
+  async listLogs(userId: UserId, params: ListLogsParams = {}): Promise<{
     logs: SleepLog[];
     total: number;
     startDate: string;
@@ -131,7 +132,7 @@ export class SleepService {
    * denominator — dividing by every logged day (as this used to) under-reports
    * the average whenever a night was missed.
    */
-  async getSleepStats(userId: string, startDate: string, endDate: string) {
+  async getSleepStats(userId: UserId, startDate: string, endDate: string) {
     const logs = await this.sleepRepository.findByRange(userId, startDate, endDate);
     const valid = logs.filter((l) => l.actualDurationMinutes !== null);
     if (valid.length === 0) return null;
@@ -148,7 +149,7 @@ export class SleepService {
    * inline (and divided by all logged days rather than only the ones with a
    * recorded duration).
    */
-  async getSleepHistory(userId: string, startDate: string, endDate: string) {
+  async getSleepHistory(userId: UserId, startDate: string, endDate: string) {
     const logs = await this.sleepRepository.findByRange(userId, startDate, endDate);
 
     const validLogs = logs.filter((l) => l.actualDurationMinutes !== null);

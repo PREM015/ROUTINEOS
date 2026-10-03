@@ -5,6 +5,7 @@ import { DEFAULT_TZ, todayForUser } from '@/lib/dates';
 import prisma from '@/lib/prisma';
 import { ScoringService } from '@/server/services/scoring.service';
 import { streakRecomputeService } from '@/server/services/streak-recompute.service';
+import { toUserId } from '@/types/ids';
 
 /**
  * Backfill DailyScore rows for days the user never generated one.
@@ -135,7 +136,7 @@ export async function computeDailyScores(
       }
 
       try {
-        await scoringService.calculateDailyScore(user.id, date);
+        await scoringService.calculateDailyScore(toUserId(user.id), date);
         result.updated += 1;
       } catch (error) {
         // One bad day must not abort the whole backfill.
@@ -153,7 +154,7 @@ export async function computeDailyScores(
     // instead of leaving `currentStreak` permanently wrong.
     if (result.updated > 0) {
       try {
-        const recomputed = await streakRecomputeService.recompute(user.id, yesterday);
+        const recomputed = await streakRecomputeService.recompute(toUserId(user.id), yesterday);
         result.streaksRecomputed += 1;
         if (recomputed.changed) {
           result.streaksChanged += 1;

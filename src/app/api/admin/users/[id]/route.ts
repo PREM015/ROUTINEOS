@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminUserService } from '@/server/services/admin-user.service';
 import { AuthorizationError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { updateUserAdminSchema } from '@/schemas/admin.schema';
+import { toUserId, userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
     }
 
-    const user = await adminUserService.getForAdmin(session.user.id, id);
+    const user = await adminUserService.getForAdmin(userIdFromSession(session), toUserId(id));
 
     return NextResponse.json({ success: true, data: user });
   } catch (error) {
@@ -68,8 +69,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const user = await adminUserService.updateForAdmin(
-      session.user.id,
-      id,
+      userIdFromSession(session),
+      toUserId(id),
       validated.data
     );
 
@@ -108,7 +109,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 });
     }
 
-    const user = await adminUserService.softDeleteForAdmin(session.user.id, id);
+    const user = await adminUserService.softDeleteForAdmin(userIdFromSession(session), toUserId(id));
 
     return NextResponse.json({ success: true, data: user });
   } catch (error) {

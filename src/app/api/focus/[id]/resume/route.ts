@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -26,7 +27,7 @@ export async function POST(_request: Request, { params }: RouteContext) {
     }
 
     const { id } = await params;
-    const resumed = await focusService.resumeSession(session.user.id, id);
+    const resumed = await focusService.resumeSession(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: resumed });
   } catch (error) {
     if (error instanceof NotFoundError) {

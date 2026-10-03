@@ -1,8 +1,9 @@
 import prisma from '@/lib/prisma';
 import type { InsightPeriod, Prisma } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 export class InsightRepository {
-  async findLatestByUser(userId: string, limit = 5) {
+  async findLatestByUser(userId: UserId, limit = 5) {
     return prisma.aIInsight.findMany({
       where: { userId },
       orderBy: { generatedAt: 'desc' },
@@ -11,13 +12,13 @@ export class InsightRepository {
   }
 
   /** Delete an insight only when it belongs to the user. Returns null on miss. */
-  async deleteOwned(userId: string, id: string) {
+  async deleteOwned(userId: UserId, id: string) {
     return prisma.aIInsight.deleteMany({
       where: { id, userId },
     });
   }
 
-  async findByPeriod(userId: string, startDate: Date, endDate: Date) {
+  async findByPeriod(userId: UserId, startDate: Date, endDate: Date) {
     return prisma.aIInsight.findMany({
       where: {
         userId,
@@ -38,7 +39,7 @@ export class InsightRepository {
    * startDate/endDate columns are strings, so they are matched directly.
    */
   async findLatest(
-    userId: string,
+    userId: UserId,
     filter: { period?: InsightPeriod; startDate?: string; endDate?: string } = {}
   ) {
     return prisma.aIInsight.findFirst({
@@ -56,7 +57,7 @@ export class InsightRepository {
    * Insights for a user within a generation window, newest first.
    */
   async findHistory(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ) {

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { integrationService } from '@/server/services/integration.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Integration Sync Route
@@ -26,7 +27,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     }
 
     const provider = integrationService.providerFromSlug(paramProvider);
-    const data = await integrationService.sync(session.user.id, provider);
+    const data = await integrationService.sync(userIdFromSession(session), provider);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { ScoringService } from '@/server/services/scoring.service';
 import { UserService } from '@/server/services/user.service';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { toUserId, userIdFromSession } from '@/types/ids';
 
 const scoringService = new ScoringService();
 
@@ -18,7 +19,7 @@ const scoringService = new ScoringService();
  */
 async function todayFor(sessionUserId: string): Promise<string> {
   const timezone = await new UserService()
-    .getTimezone(sessionUserId)
+    .getTimezone(toUserId(sessionUserId))
     .catch(() => DEFAULT_TZ);
   return getTodayString(timezone);
 }
@@ -32,16 +33,16 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const requested = searchParams.get('date');
-    const today = await todayFor(session.user.id);
+    const today = await todayFor(userIdFromSession(session));
     const date = requested || today;
 
     // Same reasoning as `/api/score/[date]`: today's inputs can still change, so
     // today is re-derived; a past date is history and is served as stored.
-    const existing = await scoringService.getDailyScore(session.user.id, date);
+    const existing = await scoringService.getDailyScore(userIdFromSession(session), date);
     const score =
       date === today
-        ? await scoringService.recalculateDate(session.user.id, date)
-        : (existing ?? (await scoringService.calculateDailyScore(session.user.id, date)));
+        ? await scoringService.recalculateDate(userIdFromSession(session), date)
+        : (existing ?? (await scoringService.calculateDailyScore(userIdFromSession(session), date)));
 
     // `{ success, data }` envelope, matching every other route. This returned a
     // bare row, which is why `CoreScoreWidget` and `TodayScore` had grown
@@ -63,9 +64,9 @@ export async function POST(req: Request) {
     // Force recalculate. A `date` is accepted so a client can recompute a past
     // day; the default is the user's today, not UTC.
     const { searchParams } = new URL(req.url);
-    const date = searchParams.get('date') || (await todayFor(session.user.id));
+    const date = searchParams.get('date') || (await todayFor(userIdFromSession(session)));
 
-    const score = await scoringService.calculateDailyScore(session.user.id, date);
+    const score = await scoringService.calculateDailyScore(userIdFromSession(session), date);
 
     return NextResponse.json({ success: true, data: score });
   } catch (error) {

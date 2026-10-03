@@ -3,6 +3,7 @@ import { focusService } from '@/server/services/focus.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const extended = await focusService.extendSession(
-      session.user.id,
+      userIdFromSession(session),
       id,
       parsed.data.seconds ?? 5 * 60
     );

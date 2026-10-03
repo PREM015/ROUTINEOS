@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { AchievementService } from '@/server/services/achievement.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const showcaseQuerySchema = z.object({
   locked: z.coerce.number().int().min(0).max(40).optional(),
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     const showcase = await new AchievementService().getShowcase(
-      session.user.id,
+      userIdFromSession(session),
       parsed.data.locked ?? 12
     );
 

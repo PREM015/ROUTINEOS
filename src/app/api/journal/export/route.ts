@@ -4,6 +4,7 @@ import { ForeignTagError } from '@/server/repositories/journal.repository';
 import { journalService } from '@/server/services/journal.service';
 import { journalExportQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal/export
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       delete filters.date;
     }
 
-    const result = await journalService.exportEntries(session.user.id, format, filters);
+    const result = await journalService.exportEntries(userIdFromSession(session), format, filters);
 
     // Surfaced as a header so the browser download can report it: the file is
     // a real partial backup, not a silently clipped one.

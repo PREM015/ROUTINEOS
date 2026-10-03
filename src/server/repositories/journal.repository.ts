@@ -1,6 +1,7 @@
 import type { JournalEntry, JournalRevision, Prisma } from '@/generated/prisma';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Journal Repository
@@ -102,15 +103,25 @@ const ENTRY_WITH_TAGS = {
  * Explicit `nulls` pins that down so both directions put unnamed entries last,
  * where an unnamed entry belongs.
  *
- * `satisfies` with no type annotation: an annotation would widen `'desc'` to
- * `string`, which Prisma's `SortOrder` rejects.
+ * Annotated directly rather than via a bare `satisfies`, which still infers
+ * `sort: string` and rejects at the point of use; `as const` is not an option
+ * either, because it makes the properties `readonly` and Prisma's own
+ * `SortOrderInput` refuses that. Annotating the record contextually types the
+ * plain directions, and the per-entry `satisfies` does the same for the two
+ * object shapes - in both cases `'desc'` is checked as a `SortOrder` instead of
+ * being widened and compared later.
+ *
+ * `date` and `createdAt` carry no `nulls`: both columns are non-nullable, and
+ * Prisma types them as a bare `SortOrder` rather than `SortOrderInput`, so an
+ * object there is a compile error. Only the two genuinely nullable columns below
+ * can - and need - to pin null placement.
  */
-const SORT_FIELDS = {
-  date: { date: { sort: 'desc', nulls: 'last' } },
-  createdAt: { createdAt: { sort: 'desc', nulls: 'last' } },
-  title: { title: { sort: 'asc', nulls: 'last' } },
-  mood: { mood: { sort: 'desc', nulls: 'last' } },
-} satisfies Record<JournalSortField, Prisma.JournalEntryOrderByWithRelationInput>;
+const SORT_FIELDS: Record<JournalSortField, Prisma.JournalEntryOrderByWithRelationInput> = {
+  date: { date: 'desc' },
+  createdAt: { createdAt: 'desc' },
+  title: { title: { sort: 'asc', nulls: 'last' } satisfies Prisma.SortOrderInput },
+  mood: { mood: { sort: 'desc', nulls: 'last' } satisfies Prisma.SortOrderInput },
+};
 
 function buildOrderBy(
   sortBy: JournalSortField | undefined,
@@ -134,7 +145,7 @@ export class JournalRepository extends BaseRepository {
    * nested here, so create and update share one ownership-checked code path —
    * see the note on `setTags`.
    */
-  async create(userId: string, data: CreateJournalData): Promise<JournalEntry> {
+  async create(userId: UserId, data: CreateJournalData): Promise<JournalEntry> {
     try {
       return await this.prisma.journalEntry.create({
         data: {
@@ -157,7 +168,7 @@ export class JournalRepository extends BaseRepository {
    * Find a journal entry by ID with tags.
    * Soft-deleted entries are hidden unless `includeDeleted` is set.
    */
-  async findById(userId: string, entryId: string, includeDeleted = false) {
+  async findById(userId: UserId, entryId: string, includeDeleted = false) {
     try {
       return await this.prisma.journalEntry.findFirst({
         where: {
@@ -177,7 +188,7 @@ export class JournalRepository extends BaseRepository {
    * Soft-deleted entries are excluded.
    */
   async findByDate(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<JournalEntry | null> {
     try {
@@ -198,13 +209,15 @@ export class JournalRepository extends BaseRepository {
    * deleted has to see the deleted row, or it would look free and fail on the
    * `@@unique([userId, date])` constraint instead.
    */
-  async findByDateIncludingDeleted(
-    userId: string,
-    date: string
-  ): Promise<JournalEntry | null> {
+  async findByDateIncludingDeleted(userId: UserId, date: string) {
     try {
+      // Includes `ENTRY_WITH_TAGS` because the caller turns this into a
+      // `JournalDateConflictError`, whose payload is a `JournalEntryWithRelations`
+      // - the client renders the conflicting entry's tags, so returning the bare
+      // row would silently drop them from that message.
       return await this.prisma.journalEntry.findUnique({
         where: { userId_date: { userId, date } },
+        include: ENTRY_WITH_TAGS,
       });
     } catch (error) {
       this.handleError(error, 'findByDateIncludingDeleted');
@@ -215,7 +228,7 @@ export class JournalRepository extends BaseRepository {
    * Where clause shared by `findAll` and `countAll`, so a page and its total
    * can never be computed from different predicates.
    */
-  private buildWhere(userId: string, query: JournalQueryParams): Prisma.JournalEntryWhereInput {
+  private buildWhere(userId: UserId, query: JournalQueryParams): Prisma.JournalEntryWhereInput {
     const where: Prisma.JournalEntryWhereInput = {
       userId,
       deletedAt: null,
@@ -256,7 +269,7 @@ export class JournalRepository extends BaseRepository {
   /**
    * Find journal entries for a user with optional filters, one page at a time.
    */
-  async findAll(userId: string, query: JournalQueryParams = {}) {
+  async findAll(userId: UserId, query: JournalQueryParams = {}) {
     try {
       return await this.prisma.journalEntry.findMany({
         where: this.buildWhere(userId, query),
@@ -276,7 +289,7 @@ export class JournalRepository extends BaseRepository {
    * which is the size of the current page. A paginator built on that either
    * shows one page forever or invents pages that 404 on load.
    */
-  async countAll(userId: string, query: JournalQueryParams = {}): Promise<number> {
+  async countAll(userId: UserId, query: JournalQueryParams = {}): Promise<number> {
     try {
       return await this.prisma.journalEntry.count({
         where: this.buildWhere(userId, query),
@@ -293,7 +306,7 @@ export class JournalRepository extends BaseRepository {
    * query in the domain with no `take`, and an unbounded read is how a long
    * journal turns a download into an out-of-memory crash.
    */
-  async findAllForExport(userId: string, query: JournalQueryParams = {}): Promise<JournalEntry[]> {
+  async findAllForExport(userId: UserId, query: JournalQueryParams = {}): Promise<JournalEntry[]> {
     try {
       return await this.prisma.journalEntry.findMany({
         where: this.buildWhere(userId, query),
@@ -310,7 +323,7 @@ export class JournalRepository extends BaseRepository {
    * Update a journal entry owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     entryId: string,
     data: Prisma.JournalEntryUpdateInput
   ): Promise<JournalEntry> {
@@ -328,7 +341,7 @@ export class JournalRepository extends BaseRepository {
    * Delete a journal entry owned by the user (hard delete).
    * Prefer `softDelete` unless the user explicitly purges the entry.
    */
-  async delete(userId: string, entryId: string): Promise<JournalEntry> {
+  async delete(userId: UserId, entryId: string): Promise<JournalEntry> {
     try {
       return await this.prisma.journalEntry.delete({
         where: { id: entryId, userId },
@@ -341,7 +354,7 @@ export class JournalRepository extends BaseRepository {
   /**
    * List soft-deleted journal entries (the trash), newest deletion first.
    */
-  async findDeleted(userId: string, query: JournalTrashQueryParams = {}) {
+  async findDeleted(userId: UserId, query: JournalTrashQueryParams = {}) {
     try {
       return await this.prisma.journalEntry.findMany({
         where: { userId, deletedAt: { not: null } },
@@ -361,7 +374,7 @@ export class JournalRepository extends BaseRepository {
    * — the trash count labels the collapsed section, so it is needed whether or
    * not the list has been opened.
    */
-  async countDeleted(userId: string): Promise<number> {
+  async countDeleted(userId: UserId): Promise<number> {
     try {
       return await this.prisma.journalEntry.count({
         where: { userId, deletedAt: { not: null } },
@@ -375,7 +388,7 @@ export class JournalRepository extends BaseRepository {
    * Soft delete a journal entry owned by the user (sets `deletedAt`).
    * The row and its revision history are preserved for restore.
    */
-  async softDelete(userId: string, entryId: string): Promise<JournalEntry> {
+  async softDelete(userId: UserId, entryId: string): Promise<JournalEntry> {
     try {
       const existing = await this.prisma.journalEntry.findFirst({
         where: { id: entryId, userId },
@@ -395,7 +408,7 @@ export class JournalRepository extends BaseRepository {
   /**
    * Restore a soft-deleted journal entry (clears `deletedAt`).
    */
-  async restore(userId: string, entryId: string): Promise<JournalEntry> {
+  async restore(userId: UserId, entryId: string): Promise<JournalEntry> {
     try {
       const existing = await this.prisma.journalEntry.findFirst({
         where: { id: entryId, userId },
@@ -416,7 +429,7 @@ export class JournalRepository extends BaseRepository {
    * Permanently delete a journal entry owned by the user.
    * Revisions are removed via the `onDelete: Cascade` relation.
    */
-  async permanentDelete(userId: string, entryId: string): Promise<JournalEntry> {
+  async permanentDelete(userId: UserId, entryId: string): Promise<JournalEntry> {
     try {
       const existing = await this.prisma.journalEntry.findFirst({
         where: { id: entryId, userId },
@@ -437,7 +450,7 @@ export class JournalRepository extends BaseRepository {
    * Call this BEFORE overwriting so history is never lost.
    */
   async createRevision(
-    userId: string,
+    userId: UserId,
     entryId: string,
     title: string | null,
     content: string
@@ -465,7 +478,7 @@ export class JournalRepository extends BaseRepository {
    * dialog.
    */
   async listRevisions(
-    userId: string,
+    userId: UserId,
     entryId: string
   ): Promise<JournalRevision[]> {
     try {
@@ -491,7 +504,7 @@ export class JournalRepository extends BaseRepository {
    * so restoring never destroys history.
    */
   async restoreRevision(
-    userId: string,
+    userId: UserId,
     entryId: string,
     revisionId: string
   ): Promise<JournalEntry> {
@@ -541,7 +554,7 @@ export class JournalRepository extends BaseRepository {
    * left the entry with no tags at all.
    */
   async setTags(
-    userId: string,
+    userId: UserId,
     entryId: string,
     tagIds: string[]
   ): Promise<number> {
@@ -588,7 +601,7 @@ export class JournalRepository extends BaseRepository {
    * For the service's pre-write check, so a create can fail before it has
    * written anything rather than after.
    */
-  async findOwnedTagIds(userId: string, tagIds: string[]): Promise<string[]> {
+  async findOwnedTagIds(userId: UserId, tagIds: string[]): Promise<string[]> {
     try {
       const owned = await this.prisma.tag.findMany({
         where: { id: { in: [...new Set(tagIds)] }, userId },
@@ -609,7 +622,7 @@ export class JournalRepository extends BaseRepository {
    * the middle of a long month simply had no colour.
    */
   async findMonthCells(
-    userId: string,
+    userId: UserId,
     from: string,
     to: string
   ): Promise<JournalMonthCell[]> {
@@ -635,7 +648,7 @@ export class JournalRepository extends BaseRepository {
    * Count journal entries in a given month
    */
   async countByMonth(
-    userId: string,
+    userId: UserId,
     year: number,
     month: number
   ): Promise<number> {
@@ -665,7 +678,7 @@ export class JournalRepository extends BaseRepository {
    * `date` is a `YYYY-MM-DD` string column, so a plain `gte`/`lte` is an indexable
    * range scan. `startsWith` (what `countByMonth` used) cannot use that index.
    */
-  async countByRange(userId: string, startDate: string, endDate: string): Promise<number> {
+  async countByRange(userId: UserId, startDate: string, endDate: string): Promise<number> {
     try {
       return await this.prisma.journalEntry.count({
         where: {
@@ -682,7 +695,7 @@ export class JournalRepository extends BaseRepository {
   /**
    * Get distinct journal dates for streak calculation
    */
-  async getStreakData(userId: string): Promise<string[]> {
+  async getStreakData(userId: UserId): Promise<string[]> {
     try {
       const dates = await this.prisma.journalEntry.findMany({
         where: { userId, deletedAt: null },
@@ -701,7 +714,7 @@ export class JournalRepository extends BaseRepository {
    * Search journal entries by term
    */
   async search(
-    userId: string,
+    userId: UserId,
     term: string,
     limit?: number
   ): Promise<JournalEntry[]> {

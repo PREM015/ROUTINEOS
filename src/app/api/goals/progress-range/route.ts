@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Bounded so a malformed or absent `from` cannot ask for the entire history
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const rows = await new GoalService().getProgressRange(session.user.id, from, to);
+    const rows = await new GoalService().getProgressRange(userIdFromSession(session), from, to);
 
     return NextResponse.json({
       success: true,

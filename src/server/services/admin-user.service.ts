@@ -4,6 +4,7 @@ import { assertAdmin } from '@/server/admin-guard';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import type { UpdateUserAdminInput } from '@/schemas/admin.schema';
 import type { User } from '@/generated/prisma';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Admin User Service
@@ -45,7 +46,7 @@ export class AdminUserService {
     actorId: string,
     query: { limit: number; offset: number; search?: string }
   ) {
-    await assertAdmin(actorId);
+    await assertAdmin(toUserId(actorId));
 
     const [users, total] = await Promise.all([
       this.adminRepository.listUsers(query),
@@ -56,8 +57,8 @@ export class AdminUserService {
   }
 
   /** One user, for the admin console. Admin only. */
-  async getForAdmin(actorId: string, userId: string): Promise<User> {
-    await assertAdmin(actorId);
+  async getForAdmin(actorId: string, userId: UserId): Promise<User> {
+    await assertAdmin(toUserId(actorId));
 
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -74,10 +75,10 @@ export class AdminUserService {
    */
   async updateForAdmin(
     actorId: string,
-    userId: string,
+    userId: UserId,
     input: UpdateUserAdminInput
   ): Promise<User> {
-    await assertAdmin(actorId);
+    await assertAdmin(toUserId(actorId));
 
     if (userId === actorId && input.isActive === false) {
       throw new ValidationError('You cannot deactivate your own account');
@@ -100,8 +101,8 @@ export class AdminUserService {
    * Soft rather than hard: habits, goals and history are all keyed on the user
    * and are expensive to reconstruct, and the row stays available for audit.
    */
-  async softDeleteForAdmin(actorId: string, userId: string): Promise<User> {
-    await assertAdmin(actorId);
+  async softDeleteForAdmin(actorId: string, userId: UserId): Promise<User> {
+    await assertAdmin(toUserId(actorId));
 
     if (userId === actorId) {
       throw new ValidationError('You cannot delete your own account');

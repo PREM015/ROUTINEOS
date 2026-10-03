@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { SleepPromptHost } from '@/components/shared/SleepPromptHost';
 import { FloatingFocusBar } from '@/components/focus/FloatingFocusBar';
+import { FocusRuntime } from '@/components/focus/FocusRuntime';
 import { CelebrationHost } from '@/components/achievements/CelebrationHost';
 import type { Metadata } from 'next';
 import { privateMetadata } from '@/lib/seo';
@@ -43,6 +44,13 @@ export default function DashboardLayout({
       <SkipLink />
       <OfflineSync />
       <OfflineBanner />
+      {/* Owns the focus session lifecycle for every page in the group.
+          In the layout rather than on `/focus` because the previous design put the
+          clock inside the page: navigating away unmounted the component that owned
+          it, so the floating bar froze at 00:00 and its Pause/Resume/Stop buttons —
+          which were closures over that unmounted component's state — silently did
+          nothing. A runtime in the layout cannot be unmounted by navigating. */}
+      <FocusRuntime />
       {/* Surfaces AppContext.dataError, which was previously set but never read
           anywhere — a failed shared fetch looked like an empty dataset. */}
       <DataErrorBanner className="fixed inset-x-0 top-0 z-50" />

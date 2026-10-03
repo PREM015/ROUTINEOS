@@ -1,5 +1,6 @@
 import type { User, UserConnection } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Social Repository
@@ -73,7 +74,7 @@ export class SocialRepository extends BaseRepository {
     }
   }
 
-  async followers(userId: string): Promise<ConnectionUser[]> {
+  async followers(userId: UserId): Promise<ConnectionUser[]> {
     try {
       const rows = await this.prisma.userConnection.findMany({
         where: { followingId: userId },
@@ -89,7 +90,7 @@ export class SocialRepository extends BaseRepository {
     }
   }
 
-  async following(userId: string): Promise<ConnectionUser[]> {
+  async following(userId: UserId): Promise<ConnectionUser[]> {
     try {
       const rows = await this.prisma.userConnection.findMany({
         where: { followerId: userId },
@@ -105,7 +106,7 @@ export class SocialRepository extends BaseRepository {
     }
   }
 
-  async mutualConnections(userId: string): Promise<ConnectionUser[]> {
+  async mutualConnections(userId: UserId): Promise<ConnectionUser[]> {
     try {
       const followingRows = await this.prisma.userConnection.findMany({
         where: { followerId: userId },
@@ -129,7 +130,7 @@ export class SocialRepository extends BaseRepository {
     }
   }
 
-  async followBack(userId: string, otherUserId: string): Promise<boolean> {
+  async followBack(userId: UserId, otherUserId: string): Promise<boolean> {
     try {
       if (userId === otherUserId) return false;
       const theyFollowYou = await this.prisma.userConnection.findUnique({
@@ -143,7 +144,7 @@ export class SocialRepository extends BaseRepository {
     }
   }
 
-  async suggestions(userId: string): Promise<User[]> {
+  async suggestions(userId: UserId): Promise<User[]> {
     try {
       const followingRows = await this.prisma.userConnection.findMany({
         where: { followerId: userId },

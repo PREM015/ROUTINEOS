@@ -4,6 +4,7 @@ import { UserRepository } from '@/server/repositories/user.repository';
 import { getTodayString } from '@/lib/dates';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 const scoringService = new ScoringService();
 const userRepository = new UserRepository();
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     const { startDate, endDate } = validated.data;
     const scores = await scoringService.getDailyScoreRange(
-      session.user.id,
+      userIdFromSession(session),
       startDate,
       endDate
     );
@@ -64,13 +65,13 @@ export async function GET(request: NextRequest) {
     // Los Angeles, and the grid's "today" ring is drawn from the same value.
     // `UserSettings.timezone` is the authoritative column for every date-bucketing
     // read; `User.timezone` is a mirror kept in sync by `UserService`.
-    const settings = await userRepository.getSettings(session.user.id);
+    const settings = await userRepository.getSettings(userIdFromSession(session));
     const today = getTodayString(settings?.timezone ?? 'UTC');
     if (endDate >= today && startDate <= today) {
       const alreadyScored = scores.some((s) => s.date === today);
       if (!alreadyScored) {
         try {
-          const fresh = await scoringService.recalculateDate(session.user.id, today);
+          const fresh = await scoringService.recalculateDate(userIdFromSession(session), today);
           scores.push(fresh);
           scores.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
         } catch (error) {

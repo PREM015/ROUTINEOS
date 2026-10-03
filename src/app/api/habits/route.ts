@@ -3,6 +3,7 @@ import { HabitService } from '@/server/services/habit.service';
 import { habitQuerySchema, createHabitSchema } from '@/schemas/habit.schema';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/habits
@@ -56,13 +57,13 @@ export async function GET(request: NextRequest) {
     const service = new HabitService();
     const offset = validated.data.offset ?? 0;
     const [habits, total] = await Promise.all([
-      service.listHabits(session.user.id, validated.data),
+      service.listHabits(userIdFromSession(session), validated.data),
       // `meta.total` used to be `habits.length`, i.e. the length of the page
       // being returned. A client that trusted it to answer "is there more?" was
       // correct exactly once per page and wrong in the one case that mattered —
       // when `limit` had been reached. Now it is a real count of everything
       // matching the filters.
-      service.countHabits(session.user.id, validated.data),
+      service.countHabits(userIdFromSession(session), validated.data),
     ]);
 
     return NextResponse.json({
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
     // The service owns day-type assignment, so the route forwards validated
     // input as-is. Writing the assignments here too was a second code path
     // doing the same inserts.
-    const habit = await new HabitService().createHabit(session.user.id, {
+    const habit = await new HabitService().createHabit(userIdFromSession(session), {
       ...validated.data,
       appliesEveryDay: validated.data.appliesEveryDay ?? true,
     });

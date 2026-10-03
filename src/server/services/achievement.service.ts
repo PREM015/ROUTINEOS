@@ -43,6 +43,7 @@ import { MoodRepository } from '@/server/repositories/mood.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { notificationService } from '@/server/services/notification.service';
 import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
+import type { UserId } from '@/types/ids';
 
 /**
  * Upper bound on the history `buildWorldState` loads.
@@ -126,7 +127,7 @@ export interface AchievementShowcase {
  * across a midnight boundary mid-request.
  */
 async function buildWorldState(
-  userId: string,
+  userId: UserId,
   options: { includeActiveDates?: boolean } = {}
 ): Promise<{
   worldState: AchievementWorldState;
@@ -337,7 +338,7 @@ export class AchievementService {
    * config, not new data - the definitions are the source of truth, and
    * `getNextUnearned` was already reading them to get the icon and colour.
    */
-  async getShowcase(userId: string, lockedCount = 12): Promise<AchievementShowcase> {
+  async getShowcase(userId: UserId, lockedCount = 12): Promise<AchievementShowcase> {
     const [existing, snapshot] = await Promise.all([
       this.repository.findByUserId(userId),
       buildWorldState(userId, { includeActiveDates: false }),
@@ -422,7 +423,7 @@ export class AchievementService {
    * same query.
    */
   async listRecent(
-    userId: string,
+    userId: UserId,
     limit = 50,
   ): Promise<{ achievements: Achievement[]; total: number }> {
     const [achievements, unlocked] = await Promise.all([
@@ -450,7 +451,7 @@ export class AchievementService {
    * on a badge nobody has started.
    */
   async getNextUnearned(
-    userId: string,
+    userId: UserId,
     count = 3
   ): Promise<
     {
@@ -504,7 +505,7 @@ export class AchievementService {
    * concurrent checks cannot both insert. Returns the newly unlocked events in
    * catalog order (empty when nothing qualifies).
    */
-  async checkForUnlocks(userId: string): Promise<UnlockEvent[]> {
+  async checkForUnlocks(userId: UserId): Promise<UnlockEvent[]> {
     // Read the owned achievements FIRST and bail out before building the world
     // state when there is nothing left to unlock.
     //
@@ -578,7 +579,7 @@ export class AchievementService {
    * The user's streak, created on first access, plus any milestones they have
    * not celebrated yet.
    */
-  async getStreakWithMilestones(userId: string) {
+  async getStreakWithMilestones(userId: UserId) {
     const streakRepository = new StreakRepository();
     let streak = await streakRepository.findByUserId(userId);
 
@@ -597,7 +598,7 @@ export class AchievementService {
    * @throws when the milestone does not exist or belongs to someone else.
    */
   async celebrateMilestone(
-    userId: string,
+    userId: UserId,
     milestoneId: string,
   ): Promise<{ type: 'milestone'; milestone: StreakMilestone }> {
     const milestone = await new StreakRepository().findMilestoneById(milestoneId, userId);
@@ -629,7 +630,7 @@ export class AchievementService {
    * @throws when the achievement does not exist or is not unlocked by this user.
    */
   async celebrateAchievement(
-    userId: string,
+    userId: UserId,
     achievementId: string,
   ): Promise<{ type: 'achievement'; achievement: Achievement }> {
     /**

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { createGoalSchema, updateGoalSchema } from '@/schemas/goal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 const bulkGoalsSchema = z.object({
   create: z.array(createGoalSchema).max(100).optional(),
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     const created: BulkOutput[] = [];
     for (const input of validated.data.create ?? []) {
       try {
-        const goal = await goalService.createGoal(userId, input);
+        const goal = await goalService.createGoal(toUserId(userId), input);
         if (!goal) {
           throw new Error('Failed to create goal');
         }
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     const updated: BulkOutput[] = [];
     for (const { id, data } of validated.data.update ?? []) {
       try {
-        const goal = await goalService.updateGoal(userId, id, data);
+        const goal = await goalService.updateGoal(toUserId(userId), id, data);
         updated.push({ id, success: true, data: goal });
       } catch (error) {
         updated.push({
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     const deleted: BulkOutput[] = [];
     for (const id of validated.data.delete ?? []) {
       try {
-        await goalService.deleteGoal(userId, id);
+        await goalService.deleteGoal(toUserId(userId), id);
         deleted.push({ id, success: true });
       } catch (error) {
         deleted.push({

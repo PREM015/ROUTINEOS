@@ -2,6 +2,7 @@ import { AdminRepository } from '@/server/repositories/admin.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { AuditService } from '@/server/audit/audit.service';
 import type { AuditAction, Role } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Admin Service
@@ -43,7 +44,7 @@ export class AdminService {
    *
    * @throws {ForbiddenError} when the user is not an admin.
    */
-  async requireAdmin(userId: string): Promise<void> {
+  async requireAdmin(userId: UserId): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (user?.role !== 'ADMIN') {
       throw new ForbiddenError();
@@ -174,7 +175,7 @@ export class AdminService {
    * Audit-log entries for one user.
    */
   async getAuditLogs(
-    userId: string,
+    userId: UserId,
     opts: {
       action?: AuditAction | AuditAction[];
       limit?: number;

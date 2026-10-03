@@ -4,6 +4,7 @@ import { featureFlagService } from '@/server/services/feature-flag.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { featureFlagKeySchema } from '@/schemas/feature-flag.schema';
 import type { Role } from '@/generated/prisma';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/feature-flags/check?key=<flagKey>
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     const data = await featureFlagService.checkForUser(
       validated.data,
-      session.user.id,
+      userIdFromSession(session),
       (session.user as { role?: string }).role as Role | undefined
     );
 

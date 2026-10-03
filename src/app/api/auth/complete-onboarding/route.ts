@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { UserService } from '@/server/services/user.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/auth/complete-onboarding
@@ -18,7 +19,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await new UserService().completeOnboarding(session.user.id);
+    const user = await new UserService().completeOnboarding(userIdFromSession(session));
 
     return NextResponse.json({
       success: true,

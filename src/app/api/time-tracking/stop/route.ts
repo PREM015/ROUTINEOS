@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { timeTrackingService } from '@/server/services/time-tracking.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/time-tracking/stop
@@ -14,7 +15,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await timeTrackingService.stopRunning(session.user.id);
+    const entry = await timeTrackingService.stopRunning(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {

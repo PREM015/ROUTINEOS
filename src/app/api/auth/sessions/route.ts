@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const revokeSessionSchema = z.object({
   sessionId: z.string().min(1, 'Session id is required'),
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const deviceId = request.nextUrl.searchParams.get('deviceId');
 
     const userService = new UserService();
-    const sessions = await userService.getSessions(session.user.id, deviceId);
+    const sessions = await userService.getSessions(userIdFromSession(session), deviceId);
 
     return NextResponse.json({ success: true, data: sessions });
   } catch (error) {
@@ -64,7 +65,7 @@ export async function DELETE(request: NextRequest) {
 
     const userService = new UserService();
     const result = await userService.revokeSession(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.sessionId
     );
 

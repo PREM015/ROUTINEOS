@@ -4,6 +4,7 @@ import { calendarDateSchema, dayTypeSchema } from '@/lib/validation/routine.sche
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const dayModeSchema = z.object({
   date: calendarDateSchema,
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
     const date = parsedDate.data;
 
-    const snapshot = await dayModeService.getDayMode(session.user.id, date);
+    const snapshot = await dayModeService.getDayMode(userIdFromSession(session), date);
 
     return NextResponse.json({ success: true, data: snapshot });
   } catch (error) {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const { date, mode, dayType, dayTypeId, reason, templateId } = validated.data;
 
-    const result = await dayModeService.setDayMode(session.user.id, {
+    const result = await dayModeService.setDayMode(userIdFromSession(session), {
       date,
       mode: mode ?? 'DAY_TYPE',
       dayType,

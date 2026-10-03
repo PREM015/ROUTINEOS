@@ -3,6 +3,7 @@ import { HabitService } from '@/server/services/habit.service';
 import { updateHabitSchema } from '@/schemas/habit.schema';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/habits/[id]
@@ -23,7 +24,7 @@ export async function GET(
     // read was the remaining direct repository call.
     const habit = await new HabitService().getHabitWithRelations(
       id,
-      session.user.id
+      userIdFromSession(session)
     );
 
     if (!habit) {
@@ -68,7 +69,7 @@ export async function PUT(
 
     const habitService = new HabitService();
     const habit = await habitService.updateHabit(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data
     );
@@ -108,7 +109,7 @@ export async function DELETE(
 
     const { id } = await params;
     const habitService = new HabitService();
-    await habitService.deleteHabit(session.user.id, id);
+    await habitService.deleteHabit(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

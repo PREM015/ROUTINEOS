@@ -1,3 +1,5 @@
+import type { UserId } from '@/types/ids';
+
 interface ErrorContext {
   userId?: string;
   userEmail?: string;
@@ -95,7 +97,7 @@ export class ErrorReporter {
   /**
    * Report API error with request context
    */
-  static reportApiError(error: Error, req: Request, userId?: string): void {
+  static reportApiError(error: Error, req: Request, userId?: UserId): void {
     this.report(error, {
       userId,
       route: new URL(req.url).pathname,
@@ -107,7 +109,7 @@ export class ErrorReporter {
   /**
    * Report client-side error
    */
-  static reportClientError(error: Error, userId?: string, metadata?: Record<string, unknown>): void {
+  static reportClientError(error: Error, userId?: UserId, metadata?: Record<string, unknown>): void {
     this.report(error, {
       userId,
       route: typeof window !== 'undefined' ? window.location.pathname : undefined,

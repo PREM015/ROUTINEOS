@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { auditService } from '@/server/services/audit.service';
 import { AuthorizationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     // `assertSelf` throws for a mismatched id; the 403 mapping moved to the
     // catch below so the check has exactly one implementation.
-    const events = await auditService.activityFor(session.user.id, id, limit, offset);
+    const events = await auditService.activityFor(userIdFromSession(session), id, limit, offset);
 
     return NextResponse.json({
       success: true,

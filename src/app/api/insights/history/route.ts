@@ -4,6 +4,7 @@ import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
     const timezone = await new UserService()
-      .getTimezone(session.user.id)
+      .getTimezone(userIdFromSession(session))
       .catch(() => DEFAULT_TZ);
     const fallback = defaultWindow(timezone);
 
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
     const endDate = validated.data.endDate ?? fallback.endDate;
 
     const insights = await insightReadService.getInsightHistory(
-      session.user.id,
+      userIdFromSession(session),
       startDate,
       endDate
     );

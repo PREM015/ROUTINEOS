@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { ProjectService } from '@/server/services/project.service';
 import { createProjectSchema, projectQuerySchema } from '@/schemas/project.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 const goalIdsSchema = z.array(z.string().cuid()).max(50);
 
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     const projectService = new ProjectService();
-    const projects = await projectService.getProjects(session.user.id, validated.data);
+    const projects = await projectService.getProjects(userIdFromSession(session), validated.data);
 
     return NextResponse.json({
       success: true,
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const projectService = new ProjectService();
-    const project = await projectService.createProject(session.user.id, {
+    const project = await projectService.createProject(userIdFromSession(session), {
       ...validated.data,
       goalIds,
     });

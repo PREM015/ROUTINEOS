@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { automationService } from '@/server/services/automation.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Automation Disable Route
@@ -25,7 +26,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
     }
 
     const rule = await automationService.setActive(
-      session.user.id,
+      userIdFromSession(session),
       paramId,
       false
     );

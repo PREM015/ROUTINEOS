@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { uploadService } from '@/server/services/upload.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/attachments/upload
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const attachment = await uploadService.createAttachment(
-      session.user.id,
+      userIdFromSession(session),
       {
         fileName: file.name,
         mimeType: file.type || 'application/octet-stream',

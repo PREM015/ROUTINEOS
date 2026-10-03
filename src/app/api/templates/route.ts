@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { templateService } from '@/server/services/template.service';
 import { createTemplateSchema, templateQuerySchema } from '@/schemas/template.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Template Route
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const templates = await templateService.listForUser(session.user.id, {
+    const templates = await templateService.listForUser(userIdFromSession(session), {
       category: validated.data.category,
       search: validated.data.search,
       limit: validated.data.limit,
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const template = await templateService.create(session.user.id, {
+    const template = await templateService.create(userIdFromSession(session), {
       type: validated.data.type,
       name: validated.data.name,
       description: validated.data.description,

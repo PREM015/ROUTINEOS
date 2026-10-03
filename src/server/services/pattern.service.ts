@@ -1,6 +1,7 @@
 import { ProductivityPatternRepository } from '@/server/repositories/productivity-pattern.repository';
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { formatInTimeZone } from 'date-fns-tz';
+import type { UserId } from '@/types/ids';
 
 /**
  * Pattern Service
@@ -57,7 +58,7 @@ export class PatternService {
    * own clock, not the server's.
    */
   async detectPeakHours(
-    userId: string,
+    userId: UserId,
     timezone = 'UTC',
     windowDays = 90,
   ): Promise<PatternDetectionResult> {

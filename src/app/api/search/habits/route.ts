@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { SearchService } from '@/server/services/search.service';
 import { globalSearchSchema } from '@/schemas/search.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/search/habits
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const searchService = new SearchService();
     const habits = await searchService.searchHabits(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.query,
       validated.data.limit ?? 20,
       validated.data.offset ?? 0

@@ -7,6 +7,7 @@ import type {
   RegisterDeviceInput,
 } from '@/schemas/push-subscription.schema';
 import type { PushSubscription } from '@/generated/prisma';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Push Subscription Service
@@ -29,7 +30,7 @@ export class PushSubscriptionService {
   }
 
   /** Every device registered by the user. */
-  async listForUser(userId: string): Promise<PushSubscription[]> {
+  async listForUser(userId: UserId): Promise<PushSubscription[]> {
     return this.pushSubscriptionRepository.findAll(userId);
   }
 
@@ -41,7 +42,7 @@ export class PushSubscriptionService {
    * duplicate row would leave the old, dead endpoint in the table sending pushes
    * to nowhere on every notification.
    */
-  async register(userId: string, input: CreateSubscriptionInput) {
+  async register(userId: UserId, input: CreateSubscriptionInput) {
     const validated = createSubscriptionSchema.safeParse(input);
     if (!validated.success) {
       throw new ValidationError(
@@ -82,7 +83,7 @@ export class PushSubscriptionService {
       );
     }
 
-    return this.pushSubscriptionRepository.create(resourceUserId, {
+    return this.pushSubscriptionRepository.create(toUserId(resourceUserId), {
       endpoint: input.endpoint,
       p256dh: input.p256dh,
       auth: input.auth,
@@ -94,7 +95,7 @@ export class PushSubscriptionService {
   /** Devices registered by the caller, which must own `resourceUserId`. */
   async listForOwner(callerId: string, resourceUserId: string) {
     assertSelf(callerId, resourceUserId);
-    return this.pushSubscriptionRepository.findAll(resourceUserId);
+    return this.pushSubscriptionRepository.findAll(toUserId(resourceUserId));
   }
 
   /** Remove one of the caller's own devices. */
@@ -104,7 +105,7 @@ export class PushSubscriptionService {
     subscriptionId: string
   ) {
     assertSelf(callerId, resourceUserId);
-    return this.pushSubscriptionRepository.delete(resourceUserId, subscriptionId);
+    return this.pushSubscriptionRepository.delete(toUserId(resourceUserId), subscriptionId);
   }
 
   /**
@@ -113,7 +114,7 @@ export class PushSubscriptionService {
    * Scoped by `userId` in the repository, so a subscription belonging to
    * somebody else is reported as not found rather than deleted.
    */
-  async remove(userId: string, subscriptionId: string) {
+  async remove(userId: UserId, subscriptionId: string) {
     const existing = await this.pushSubscriptionRepository.findById(
       userId,
       subscriptionId

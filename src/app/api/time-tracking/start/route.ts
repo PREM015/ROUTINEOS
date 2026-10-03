@@ -3,6 +3,7 @@ import { timeTrackingService } from '@/server/services/time-tracking.service';
 import { ConflictError } from '@/lib/errors/app-error';
 import { startTimeEntrySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/time-tracking/start
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entry = await timeTrackingService.start(session.user.id, validated.data);
+    const entry = await timeTrackingService.start(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {

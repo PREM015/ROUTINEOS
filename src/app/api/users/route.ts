@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { adminUserService } from '@/server/services/admin-user.service';
 import { AuthorizationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/users
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     );
     const offset = Math.max(Number(searchParams.get('offset')) || 0, 0);
 
-    const { users, total } = await adminUserService.listForAdmin(session.user.id, {
+    const { users, total } = await adminUserService.listForAdmin(userIdFromSession(session), {
       limit,
       offset,
       search,

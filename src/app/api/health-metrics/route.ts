@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { healthMetricService } from '@/server/services/health-metric.service';
 import { healthMetricSchema, healthMetricQuerySchema } from '@/schemas/health-metric.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Health Metric Route
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const metrics = await healthMetricService.listForUser(session.user.id, {
+    const metrics = await healthMetricService.listForUser(userIdFromSession(session), {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       metricType: validated.data.metricType,
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const metric = await healthMetricService.create(session.user.id, validated.data);
+    const metric = await healthMetricService.create(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: metric }, { status: 201 });
   } catch (error) {

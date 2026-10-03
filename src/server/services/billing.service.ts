@@ -1,6 +1,7 @@
 import { subscriptionRepository } from '@/server/repositories/subscription.repository';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import type { SubscriptionPlan, SubscriptionStatus } from '@/generated/prisma';
+import { toUserId } from '@/types/ids';
 
 /**
  * Billing Service
@@ -109,7 +110,7 @@ export class BillingService {
       throw new NotFoundError('Subscription owner');
     }
 
-    await subscriptionRepository.upsertByUserId(targetUserId, {
+    await subscriptionRepository.upsertByUserId(toUserId(targetUserId), {
       plan: BillingService.mapPlan(planName),
       status,
       currentPeriodStart: new Date(startSec * 1000),

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { celebrateAchievementSchema } from '@/schemas/achievement.schema';
 import { AchievementService } from '@/server/services/achievement.service';
+import { userIdFromSession } from '@/types/ids';
 
 const achievementService = new AchievementService();
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (milestoneId) {
       const result = await achievementService.celebrateMilestone(
-        session.user.id,
+        userIdFromSession(session),
         milestoneId
       );
       return NextResponse.json({ success: true, data: result });
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // The schema's refine() guarantees at least one id is present.
     const result = await achievementService.celebrateAchievement(
-      session.user.id,
+      userIdFromSession(session),
       achievementId as string
     );
     return NextResponse.json({ success: true, data: result });

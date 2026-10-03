@@ -1,5 +1,6 @@
 import type { Achievement, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Achievement Repository
@@ -10,7 +11,7 @@ export class AchievementRepository extends BaseRepository {
   /**
    * Find all achievements for a user
    */
-  async findByUserId(userId: string): Promise<Achievement[]> {
+  async findByUserId(userId: UserId): Promise<Achievement[]> {
     try {
       return await this.prisma.achievement.findMany({
         where: { userId },
@@ -24,7 +25,7 @@ export class AchievementRepository extends BaseRepository {
   /**
    * Find all unlocked achievements for a user
    */
-  async findUnlocked(userId: string): Promise<Achievement[]> {
+  async findUnlocked(userId: UserId): Promise<Achievement[]> {
     try {
       return await this.prisma.achievement.findMany({
         where: { userId },
@@ -39,7 +40,7 @@ export class AchievementRepository extends BaseRepository {
    * Find achievement by ID with ownership check
    */
   async findById(
-    userId: string,
+    userId: UserId,
     achievementId: string
   ): Promise<Achievement | null> {
     try {
@@ -55,7 +56,7 @@ export class AchievementRepository extends BaseRepository {
    * Create a single achievement linked to a user
    */
   async create(
-    userId: string,
+    userId: UserId,
     data: Omit<Prisma.AchievementCreateInput, 'user'>
   ): Promise<Achievement> {
     try {
@@ -87,7 +88,7 @@ export class AchievementRepository extends BaseRepository {
    * the service uses to suppress the duplicate notification and audit entry.
    */
   async createForDefinition(
-    userId: string,
+    userId: UserId,
     definitionId: string | null,
     data: Omit<Prisma.AchievementUncheckedCreateInput, 'userId'>
   ): Promise<{ achievement: Achievement; created: boolean }> {
@@ -136,7 +137,7 @@ export class AchievementRepository extends BaseRepository {
    * @returns the updated row, or `null` when the id is not this user's.
    */
   async markCelebrated(
-    userId: string,
+    userId: UserId,
     achievementId: string
   ): Promise<Achievement | null> {
     try {
@@ -163,7 +164,7 @@ export class AchievementRepository extends BaseRepository {
    * show the user exactly what would be merged.
    */
   async findDuplicateDefinitionGroups(
-    userId: string
+    userId: UserId
   ): Promise<{ definitionId: string; ids: string[] }[]> {
     try {
       const rows = await this.prisma.achievement.findMany({
@@ -190,7 +191,7 @@ export class AchievementRepository extends BaseRepository {
    * Bulk create achievements for a user
    */
   async createMany(
-    userId: string,
+    userId: UserId,
     achievements: Array<Omit<Prisma.AchievementCreateManyInput, 'userId'>>
   ): Promise<number> {
     try {
@@ -211,7 +212,7 @@ export class AchievementRepository extends BaseRepository {
    * Check whether a user has unlocked an achievement
    */
   async isUnlocked(
-    userId: string,
+    userId: UserId,
     achievementId: string
   ): Promise<boolean> {
     try {
@@ -228,7 +229,7 @@ export class AchievementRepository extends BaseRepository {
    * Get recently unlocked achievements for a user
    */
   async recentUnlocked(
-    userId: string,
+    userId: UserId,
     limit?: number
   ): Promise<Achievement[]> {
     try {

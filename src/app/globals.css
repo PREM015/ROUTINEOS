@@ -597,6 +597,36 @@ body {
 }
 
 /*
+  Minimum touch target: 44x44 CSS px, per WCAG 2.2 target-size.
+
+  Applied to controls whose *visual* box is smaller than 44px — a 36px pill in a
+  mode switch or a rating row. The element itself is not enlarged, because making
+  every control 44px tall turns a compact instrument panel into a set of slabs and
+  looks worse on the desktop layout that is the primary case. Instead an invisible
+  pseudo-element extends the hit area outward from the centre.
+
+  `pointer-events: none` on the pseudo-element is not cosmetic: without it the
+  expanded box sits *above* neighbouring controls and steals their clicks, which is
+  the failure mode a naive negative-margin fix produces.
+
+  Requires `position: relative` on the element, which this sets for the caller.
+*/
+.tap-target {
+  position: relative;
+}
+
+.tap-target::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/*
    The Achievements rail: a vertical scroller in a narrow dashboard column.
 
    - A thin scrollbar, because the default track on a dark surface is wide
@@ -2043,4 +2073,89 @@ body {
 .compact-mode main {
   padding-top: 1.5rem;
   padding-bottom: 1.5rem;
+}
+
+/* ==========================================================================
+   Forced colors (Windows High Contrast / `forced-colors: active`)
+
+   High Contrast Mode replaces authored colors with a fixed system palette and
+   drops several effects outright. Three things in this app break specifically
+   because of that, and none of them are visible without turning the mode on:
+
+   1. **Focus rings.** Tailwind's `ring-*` is a `box-shadow`, and HCM removes
+      box-shadows, so `focus-visible:ring-2` renders as *no visible focus at all*
+      - the worst possible failure, because keyboard users lose the ability to
+      see where they are. Every interactive element gets a real `outline` instead.
+
+   2. **The focus timer dial.** Its track and progress arcs are SVG `stroke`s
+      painted from CSS custom properties. In HCM both resolve to the same system
+      foreground colour, so a 3/4-complete arc and an empty one look identical.
+      The progress arc opts out with `forced-color-adjust: none` and names system
+      colours explicitly, so the two arcs stay distinguishable.
+
+   3. **Alpha-based state.** The paused dial dims with `opacity-40`, and HCM
+      flattens alpha against an unknown backdrop. Paused is signalled by stroke
+      *dasharray* as well, so it survives.
+
+   `forced-color-adjust: none` is used sparingly and only where authored colour is
+   load-bearing. Using it globally would opt the whole app out of the user's chosen
+   palette, which is the opposite of what the setting is for.
+   ========================================================================== */
+@media (forced-colors: active) {
+  /* 1. Restore focus visibility. `outline` is not stripped, unlike box-shadow. */
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* Buttons and inputs that relied on a ring to show focus. */
+  button:focus-visible,
+  [role='button']:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* 2. The timer dial. Named system colours so the arcs cannot collapse together. */
+  [data-focus-dial-track] {
+    forced-color-adjust: none;
+    stroke: CanvasText;
+  }
+
+  [data-focus-dial-progress] {
+    forced-color-adjust: none;
+    stroke: Highlight;
+  }
+
+  /* 3. Paused state. Dasharray reads without colour, so opacity is not load-bearing. */
+  [data-focus-dial-progress][data-status='paused'] {
+    stroke: GrayText;
+    stroke-dasharray: 4 6;
+  }
+
+  /* The week strip's bars carry a border so an empty day is still a visible slot
+     rather than blank space, which matters when the fill colour is overridden. */
+  [data-focus-week-bar] {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+  }
+
+  [data-focus-week-bar][data-met='false'] {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  [data-focus-week-bar][data-met='true'] {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  /* Selection and accent surfaces that would otherwise flatten together. */
+  [data-slot='card'],
+  .glass-panel {
+    border: 1px solid CanvasText;
+  }
 }

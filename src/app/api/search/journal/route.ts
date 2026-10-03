@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/search/journal
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
     }
 
     const results = await journalService.search(
-      session.user.id,
+      userIdFromSession(session),
       term,
       validated.data.limit ?? 20
     );

@@ -1,6 +1,7 @@
 import type { User, UserSettings, Prisma, DeviceType } from '@/generated/prisma';
 import { createLogger } from '@/lib/monitoring/logger';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * User Repository
@@ -13,7 +14,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Find user by ID
    */
-  async findById(userId: string): Promise<User | null> {
+  async findById(userId: UserId): Promise<User | null> {
     try {
       return await this.prisma.user.findUnique({
         where: { id: userId },
@@ -40,7 +41,7 @@ export class UserRepository extends BaseRepository {
    * Find user with settings
    */
   async findWithSettings(
-    userId: string
+    userId: UserId
   ): Promise<(User & { settings: UserSettings | null }) | null> {
     try {
       return await this.prisma.user.findUnique({
@@ -71,7 +72,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Update user
    */
-  async update(userId: string, data: Prisma.UserUpdateInput): Promise<User> {
+  async update(userId: UserId, data: Prisma.UserUpdateInput): Promise<User> {
     try {
       return await this.prisma.user.update({
         where: { id: userId },
@@ -85,7 +86,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Update password
    */
-  async updatePassword(userId: string, passwordHash: string): Promise<User> {
+  async updatePassword(userId: UserId, passwordHash: string): Promise<User> {
     try {
       return await this.prisma.user.update({
         where: { id: userId },
@@ -99,7 +100,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Update last login
    */
-  async updateLastLogin(userId: string): Promise<void> {
+  async updateLastLogin(userId: UserId): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
@@ -118,7 +119,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Increment failed login attempts
    */
-  async incrementFailedLogin(userId: string): Promise<number> {
+  async incrementFailedLogin(userId: UserId): Promise<number> {
     try {
       const user = await this.prisma.user.update({
         where: { id: userId },
@@ -147,7 +148,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Mark email as verified
    */
-  async verifyEmail(userId: string): Promise<User> {
+  async verifyEmail(userId: UserId): Promise<User> {
     try {
       return await this.prisma.user.update({
         where: { id: userId },
@@ -161,7 +162,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Mark onboarding as completed
    */
-  async completeOnboarding(userId: string): Promise<User> {
+  async completeOnboarding(userId: UserId): Promise<User> {
     try {
       return await this.prisma.user.update({
         where: { id: userId },
@@ -175,7 +176,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Soft delete user
    */
-  async softDelete(userId: string, reason?: string): Promise<User> {
+  async softDelete(userId: UserId, reason?: string): Promise<User> {
     try {
       return await this.prisma.user.update({
         where: { id: userId },
@@ -208,7 +209,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Get user settings
    */
-  async getSettings(userId: string): Promise<UserSettings | null> {
+  async getSettings(userId: UserId): Promise<UserSettings | null> {
     try {
       return await this.prisma.userSettings.findUnique({
         where: { userId },
@@ -245,7 +246,7 @@ export class UserRepository extends BaseRepository {
    * Create user settings
    */
   async createSettings(
-    userId: string,
+    userId: UserId,
     data?: Partial<Prisma.UserSettingsUncheckedCreateInput>
   ): Promise<UserSettings> {
     try {
@@ -264,7 +265,7 @@ export class UserRepository extends BaseRepository {
    * Update user settings
    */
   async updateSettings(
-    userId: string,
+    userId: UserId,
     data: Prisma.UserSettingsUpdateInput
   ): Promise<UserSettings> {
     try {
@@ -280,7 +281,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Update last activity
    */
-  async updateLastActivity(userId: string): Promise<void> {
+  async updateLastActivity(userId: UserId): Promise<void> {
     try {
       await this.prisma.user.update({
         where: { id: userId },
@@ -398,7 +399,7 @@ export class UserRepository extends BaseRepository {
   /**
    * A user's device sessions, most recently active first.
    */
-  async listDeviceSessions(userId: string) {
+  async listDeviceSessions(userId: UserId) {
     try {
       return await this.prisma.deviceSession.findMany({
         where: { userId },
@@ -432,7 +433,7 @@ export class UserRepository extends BaseRepository {
    * `(userId, deviceId)` so a returning device refreshes rather than duplicates.
    */
   async upsertDeviceSession(
-    userId: string,
+    userId: UserId,
     data: {
       deviceId: string;
       deviceName?: string | null;
@@ -466,7 +467,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Find a device session by its per-user device id.
    */
-  async findDeviceSessionByDeviceId(userId: string, deviceId: string) {
+  async findDeviceSessionByDeviceId(userId: UserId, deviceId: string) {
     try {
       return await this.prisma.deviceSession.findUnique({
         where: { userId_deviceId: { userId, deviceId } },
@@ -490,7 +491,7 @@ export class UserRepository extends BaseRepository {
   /**
    * Revoke every device session for a user. Returns how many were removed.
    */
-  async deleteAllDeviceSessions(userId: string): Promise<number> {
+  async deleteAllDeviceSessions(userId: UserId): Promise<number> {
     try {
       const result = await this.prisma.deviceSession.deleteMany({ where: { userId } });
       return result.count;
@@ -508,7 +509,7 @@ export class UserRepository extends BaseRepository {
    * `DeviceSession` rows — the stateless JWTs those devices were holding stayed
    * valid until their 6-hour absolute expiry.
    */
-  async bumpSessionVersion(userId: string): Promise<number> {
+  async bumpSessionVersion(userId: UserId): Promise<number> {
     try {
       const user = await this.prisma.user.update({
         where: { id: userId },

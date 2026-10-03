@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { feedbackService } from '@/server/services/feedback.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { updateFeedbackSchema } from '@/schemas/feedback.schema';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid feedback id' }, { status: 400 });
     }
 
-    const feedback = await feedbackService.getOwn(session.user.id, id);
+    const feedback = await feedbackService.getOwn(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: feedback });
   } catch (error) {
@@ -71,7 +72,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const updated = await feedbackService.updateOwn(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data
     );

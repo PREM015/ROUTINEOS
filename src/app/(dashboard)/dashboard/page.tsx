@@ -30,6 +30,7 @@ import {
   Timer,
   Trophy,
 } from 'lucide-react';
+import { userIdFromSession } from '@/types/ids';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
   ];
 
   const userTimezone =
-    (await new UserRepository().getSettings(session.user.id))?.timezone || DEFAULT_TZ;
+    (await new UserRepository().getSettings(userIdFromSession(session)))?.timezone || DEFAULT_TZ;
   const today = getTodayString(userTimezone);
 
   /**
@@ -68,7 +69,7 @@ export default async function DashboardPage() {
   const resolvedDayTypeName = await (async () => {
     try {
       const { resolveDayTypeForDate } = await import('@/lib/scheduling/resolve-routine');
-      const resolved = await resolveDayTypeForDate(session.user.id, today);
+      const resolved = await resolveDayTypeForDate(userIdFromSession(session), today);
       return resolved.dayTypeName ?? null;
     } catch {
       return null;

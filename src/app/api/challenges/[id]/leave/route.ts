@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { challengeService } from '@/server/services/challenge.service';
 import { NotFoundError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -26,7 +27,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid challenge id' }, { status: 400 });
     }
 
-    const left = await challengeService.leave(id, session.user.id);
+    const left = await challengeService.leave(id, userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: { left } });
   } catch (error) {

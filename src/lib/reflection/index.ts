@@ -1,6 +1,7 @@
 import type { DailyReflection } from '@/generated/prisma';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
 import { reflectionSchema, type ReflectionInput } from '@/schemas/reflection.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Daily reflection operations.
@@ -20,7 +21,7 @@ export interface ReflectionAverages {
  * stored as a JSON array string, matching the journal entry convention.
  */
 export async function upsertReflection(
-  userId: string,
+  userId: UserId,
   input: ReflectionInput
 ): Promise<DailyReflection> {
   const data = reflectionSchema.parse(input);
@@ -53,7 +54,7 @@ export async function upsertReflection(
  * Fetch a reflection for a specific date, or `null` when none exists.
  */
 export async function getReflection(
-  userId: string,
+  userId: UserId,
   date: string
 ): Promise<DailyReflection | null> {
   return reflectionRepository.findByDate(userId, date);
@@ -63,7 +64,7 @@ export async function getReflection(
  * Fetch reflections within a date range (inclusive, newest first).
  */
 export async function getReflectionsForRange(
-  userId: string,
+  userId: UserId,
   startDate: string,
   endDate: string
 ): Promise<DailyReflection[]> {
@@ -74,7 +75,7 @@ export async function getReflectionsForRange(
  * Average energy, mood, and stress across a date range (0 when no data).
  */
 export async function getReflectionAverages(
-  userId: string,
+  userId: UserId,
   startDate: string,
   endDate: string
 ): Promise<ReflectionAverages> {
@@ -90,7 +91,7 @@ export async function getReflectionAverages(
  * Count reflections that carry at least one meaningful data point.
  */
 export async function countReflectionsWithData(
-  userId: string,
+  userId: UserId,
   startDate: string,
   endDate: string
 ): Promise<number> {

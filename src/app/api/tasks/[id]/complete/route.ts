@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -23,7 +24,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     }
 
     const taskService = new TaskService();
-    const task = await taskService.completeTask(session.user.id, id);
+    const task = await taskService.completeTask(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: task });
   } catch (error) {

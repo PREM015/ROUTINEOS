@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ErrorReporter } from '@/lib/monitoring/error-reporter';
 import { useSession } from 'next-auth/react';
 import { AlertCircle, Home, RefreshCw } from 'lucide-react';
+import { toUserIdOptional } from '@/types/ids';
 
 export default function DashboardError({
   error,
@@ -18,7 +19,7 @@ export default function DashboardError({
 
   useEffect(() => {
     // Report error to monitoring service
-    ErrorReporter.reportClientError(error, session?.user?.id, {
+    ErrorReporter.reportClientError(error, toUserIdOptional(session?.user?.id), {
       digest: error.digest,
       type: 'dashboard-error',
       page: typeof window !== 'undefined' ? window.location.pathname : undefined,

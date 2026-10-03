@@ -3,6 +3,7 @@ import { authorizeCron } from '@/lib/cron-auth';
 import prisma from '@/lib/prisma';
 import { DEFAULT_TZ } from '@/lib/dates';
 import { runTimeReachedAutomations } from '@/server/services/automation.service';
+import { toUserId } from '@/types/ids';
 
 /**
  * GET /api/cron/run-automations
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest, _context: RouteContext) {
     for (const user of users) {
       const timezone = user.settings?.timezone ?? DEFAULT_TZ;
       try {
-        const result = await runTimeReachedAutomations(user.id, timezone);
+        const result = await runTimeReachedAutomations(toUserId(user.id), timezone);
         fired += result.fired;
         matched += result.matched;
       } catch (error) {

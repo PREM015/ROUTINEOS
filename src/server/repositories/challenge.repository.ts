@@ -1,5 +1,6 @@
 import type { Challenge, ChallengeParticipant } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Challenge Repository
@@ -61,7 +62,7 @@ export class ChallengeRepository extends BaseRepository {
     }
   }
 
-  async listByUser(userId: string): Promise<Challenge[]> {
+  async listByUser(userId: UserId): Promise<Challenge[]> {
     try {
       return await this.prisma.challenge.findMany({
         where: { members: { some: { userId } } },
@@ -84,7 +85,7 @@ export class ChallengeRepository extends BaseRepository {
     }
   }
 
-  async create(userId: string, data: CreateChallengeData): Promise<Challenge> {
+  async create(userId: UserId, data: CreateChallengeData): Promise<Challenge> {
     try {
       return await this.prisma.challenge.create({
         data: {
@@ -104,7 +105,7 @@ export class ChallengeRepository extends BaseRepository {
     }
   }
 
-  async isMember(challengeId: string, userId: string): Promise<boolean> {
+  async isMember(challengeId: string, userId: UserId): Promise<boolean> {
     try {
       const count = await this.prisma.challengeParticipant.count({
         where: { challengeId, userId },
@@ -115,7 +116,7 @@ export class ChallengeRepository extends BaseRepository {
     }
   }
 
-  async join(challengeId: string, userId: string): Promise<JoinResult> {
+  async join(challengeId: string, userId: UserId): Promise<JoinResult> {
     try {
       const challenge = await this.prisma.challenge.findUnique({
         where: { id: challengeId },
@@ -151,7 +152,7 @@ export class ChallengeRepository extends BaseRepository {
     }
   }
 
-  async leave(challengeId: string, userId: string): Promise<boolean> {
+  async leave(challengeId: string, userId: UserId): Promise<boolean> {
     try {
       const result = await this.prisma.challengeParticipant.deleteMany({
         where: { challengeId, userId },
@@ -176,7 +177,7 @@ export class ChallengeRepository extends BaseRepository {
 
   async incrementProgress(
     challengeId: string,
-    userId: string,
+    userId: UserId,
     amount = 10
   ): Promise<ProgressResult | null> {
     try {
@@ -200,7 +201,7 @@ export class ChallengeRepository extends BaseRepository {
 
   async setProgress(
     challengeId: string,
-    userId: string,
+    userId: UserId,
     progress: number
   ): Promise<ProgressResult | null> {
     try {

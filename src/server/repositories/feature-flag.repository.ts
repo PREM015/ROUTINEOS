@@ -1,5 +1,6 @@
 import type { FeatureFlag } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Feature Flag Repository
@@ -107,7 +108,7 @@ export class FeatureFlagRepository extends BaseRepository {
     }
   }
 
-  async setForUser(key: string, userId: string, enabled: boolean): Promise<FeatureFlag> {
+  async setForUser(key: string, userId: UserId, enabled: boolean): Promise<FeatureFlag> {
     try {
       const flag = await this.prisma.featureFlag.findUnique({ where: { key } });
       if (!flag) {

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { ScoringService } from '@/server/services/scoring.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const scoringService = new ScoringService();
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await scoringService.calculateDailyScore(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.date,
       {
         isMinimumDay: validated.data.isMinimumDay,

@@ -3,6 +3,7 @@ import { focusService } from '@/server/services/focus.service';
 import { focusEventInputSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -19,7 +20,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     }
 
     const { id } = await params;
-    const events = await focusService.listEvents(session.user.id, id);
+    const events = await focusService.listEvents(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: events });
   } catch (error) {
     if (error instanceof NotFoundError) {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    await focusService.logEvent(session.user.id, id, parsed.data);
+    await focusService.logEvent(userIdFromSession(session), id, parsed.data);
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
     if (error instanceof NotFoundError) {

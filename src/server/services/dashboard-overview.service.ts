@@ -24,6 +24,7 @@ import type {
   DashboardRadar,
   DashboardRadarAxis,
 } from '@/types/dashboard';
+import type { UserId } from '@/types/ids';
 
 /**
  * One read for every trend-shaped widget on `/dashboard`.
@@ -112,7 +113,7 @@ export class DashboardOverviewService {
   private reflectionRepository = new ReflectionRepository();
 
   async getOverview(
-    userId: string,
+    userId: UserId,
     windowDays = DEFAULT_WINDOW_DAYS
   ): Promise<DashboardOverview> {
     const settings = await this.userRepository.getSettings(userId);

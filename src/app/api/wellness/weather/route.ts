@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { weatherService } from '@/server/services/weather.service';
 import { weatherLogSchema, weatherQuerySchema } from '@/schemas/wellness.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Wellness: Weather Route
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const logs = await weatherService.listForUser(session.user.id, {
+    const logs = await weatherService.listForUser(userIdFromSession(session), {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       limit: validated.data.limit,
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const log = await weatherService.log(session.user.id, validated.data);
+    const log = await weatherService.log(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: log });
   } catch (error) {

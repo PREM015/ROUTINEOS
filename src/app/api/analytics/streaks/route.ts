@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const streakRangeSchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     const analytics = await analyticsService.getStreaks(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.from,
       validated.data.to
     );

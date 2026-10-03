@@ -2,6 +2,7 @@ import { NotificationStatus, NotificationType } from '@/generated/prisma';
 import { TaskRepository } from '@/server/repositories/task.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Task reminder producer.
@@ -66,7 +67,7 @@ export class TaskReminderService {
     for (const task of candidates) {
       result.considered += 1;
 
-      const settings = await this.userRepository.getSettings(task.userId);
+      const settings = await this.userRepository.getSettings(toUserId(task.userId));
       // `habitReminders` is the user's general "reminders" toggle; task
       // reminders have no dedicated column in the schema, so the habit flag is
       // the closest existing switch and is what the settings UI exposes.
@@ -84,7 +85,7 @@ export class TaskReminderService {
       // Idempotency: one reminder per (task, kind). The notification row stores
       // `relatedEntityId`, so checking for an existing one is a single indexed
       // lookup and this stays cheap at 12 cron ticks an hour.
-      const already = await this.hasReminder(task.userId, type, task.id);
+      const already = await this.hasReminder(toUserId(task.userId), type, task.id);
       if (already) continue;
 
       const when = new Date(now);
@@ -132,11 +133,11 @@ export class TaskReminderService {
     const { NotificationService } = await import(
       '@/server/services/notification.service'
     );
-    await new NotificationService().createNotification(input.userId, input);
+    await new NotificationService().createNotification(toUserId(input.userId), input);
   }
 
   private async hasReminder(
-    userId: string,
+    userId: UserId,
     type: NotificationType,
     relatedEntityId: string
   ): Promise<boolean> {
@@ -155,7 +156,7 @@ export class TaskReminderService {
    * The user's "today", so a reminder scheduled near midnight is judged against
    * their own calendar day rather than UTC.
    */
-  async todayFor(userId: string): Promise<string> {
+  async todayFor(userId: UserId): Promise<string> {
     const timezone =
       (await this.userRepository.getSettings(userId).catch(() => null))?.timezone ??
       DEFAULT_TZ;

@@ -3,6 +3,7 @@ import { focusService } from '@/server/services/focus.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const paused = await focusService.pauseSession(session.user.id, id, parsed.data.reason);
+    const paused = await focusService.pauseSession(userIdFromSession(session), id, parsed.data.reason);
     return NextResponse.json({ success: true, data: paused });
   } catch (error) {
     if (error instanceof NotFoundError) {

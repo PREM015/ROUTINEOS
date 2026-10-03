@@ -1,5 +1,6 @@
 import type { Integration, IntegrationProvider } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Integration Repository
@@ -16,7 +17,7 @@ export class IntegrationRepository extends BaseRepository {
   /**
    * Find all integrations for a user
    */
-  async findAll(userId: string): Promise<Integration[]> {
+  async findAll(userId: UserId): Promise<Integration[]> {
     try {
       return await this.prisma.integration.findMany({
         where: { userId },
@@ -31,7 +32,7 @@ export class IntegrationRepository extends BaseRepository {
    * Find an integration by provider for a user
    */
   async findByProvider(
-    userId: string,
+    userId: UserId,
     provider: IntegrationProvider
   ): Promise<Integration | null> {
     try {
@@ -47,7 +48,7 @@ export class IntegrationRepository extends BaseRepository {
    * Find an integration by ID with ownership check
    */
   async findById(
-    userId: string,
+    userId: UserId,
     integrationId: string
   ): Promise<Integration | null> {
     try {
@@ -63,7 +64,7 @@ export class IntegrationRepository extends BaseRepository {
    * Connect a provider for a user, creating or updating the integration
    */
   async connect(
-    userId: string,
+    userId: UserId,
     provider: IntegrationProvider,
     tokens: IntegrationTokens
   ): Promise<Integration> {
@@ -97,7 +98,7 @@ export class IntegrationRepository extends BaseRepository {
    * Update access tokens for an integration
    */
   async updateTokens(
-    userId: string,
+    userId: UserId,
     integrationId: string,
     tokens: Partial<IntegrationTokens>
   ): Promise<Integration> {
@@ -118,7 +119,7 @@ export class IntegrationRepository extends BaseRepository {
   /**
    * Deactivate an integration for a user
    */
-  async disconnect(userId: string, integrationId: string): Promise<Integration> {
+  async disconnect(userId: UserId, integrationId: string): Promise<Integration> {
     try {
       return await this.prisma.integration.update({
         where: { id: integrationId, userId },
@@ -133,7 +134,7 @@ export class IntegrationRepository extends BaseRepository {
    * Update the active status of an integration
    */
   async updateStatus(
-    userId: string,
+    userId: UserId,
     integrationId: string,
     status: boolean
   ): Promise<Integration> {

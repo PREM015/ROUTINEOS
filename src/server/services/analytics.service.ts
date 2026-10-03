@@ -8,6 +8,11 @@ import { yearlySummary, type YearlySummary } from '@/server/analytics/yearly';
 import { streakAnalytics, streakProjections } from '@/server/analytics/streaks';
 import { loadPeriodHabits } from '@/server/analytics/period-habits';
 import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
+import {
+  buildFreshness,
+  buildScoreAverage,
+  type ScoreAverage,
+} from '@/lib/analytics/score-average';
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { EnergyRepository } from '@/server/repositories/energy.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
@@ -28,7 +33,12 @@ import { TaskRepository } from '@/server/repositories/task.repository';
 import { TimeEntryRepository } from '@/server/repositories/time-entry.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { getGradeFromPercentage } from '@/types/score';
-import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
+import {
+  DEFAULT_TZ,
+  getTodayString,
+  isCalendarDate,
+  shiftCalendarDay,
+} from '@/lib/dates';
 import { getPeriodRange, type Period } from '@/lib/period-range';
 import type {
   AnalyticsChartData,
@@ -46,6 +56,7 @@ import type {
   AnalyticsTimeAllocationEntry,
   StreakAnalytics,
 } from '@/types/analytics';
+import type { UserId } from '@/types/ids';
 
 /**
  * Analytics Service
@@ -70,12 +81,33 @@ import type {
 /** Cap for mood-pulse series so multi-month periods stay readable. */
 const MOOD_PULSE_LIMIT = 300;
 
-function isValidDate(value: string | undefined): value is string {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+/**
+ * Resolve the requested period, or refuse it.
+ *
+ * The route already rejects an unknown period with a 400, but a service is a
+ * public entry point too: `getReport`, `getMonthly` and `getYearly` are called
+ * directly, and a future caller would get `monthlySummary`'s answer to a
+ * question about a fortnight. Defaulting to `day` turned a caller bug into a
+ * plausible-looking dashboard for the wrong day, which is the worst possible
+ * failure for a reporting surface — nothing signals that it happened.
+ */
+function assertPeriod(value: string): Period {
+  if (value === 'day' || value === 'week' || value === 'month' || value === 'year') {
+    return value;
+  }
+  throw new ValidationError(`Invalid period "${value}": expected day, week, month or year`);
 }
 
-function isPeriod(value: string | undefined): value is Period {
-  return value === 'day' || value === 'week' || value === 'month' || value === 'year';
+/**
+ * Resolve the requested anchor day, or refuse it.
+ *
+ * Shape is not validity: `2026-13-45` is well-formed and is not a date. It used
+ * to pass every check on the way in, become an Invalid Date in `fromZonedTime`,
+ * and surface as `NaN` in every average computed from it.
+ */
+function assertDate(value: string): string {
+  if (isCalendarDate(value)) return value;
+  throw new ValidationError(`Invalid date "${value}": expected a real YYYY-MM-DD calendar date`);
 }
 
 export type DashboardQuery = {
@@ -103,7 +135,7 @@ export class AnalyticsService {
    * cannot delete another user's insight; the id is validated here so a
    * malformed value returns 400 rather than reaching the database.
    */
-  async dismissInsight(userId: string, insightId: string): Promise<void> {
+  async dismissInsight(userId: UserId, insightId: string): Promise<void> {
     const trimmed = insightId?.trim();
     if (!trimmed) {
       throw new ValidationError('Invalid insight id');
@@ -147,12 +179,12 @@ export class AnalyticsService {
    * against the selected period range so browsing any week / month shows that
    * period's real data.
    */
-  async getDashboard(userId: string, query: DashboardQuery = {}): Promise<AnalyticsDashboard> {
+  async getDashboard(userId: UserId, query: DashboardQuery = {}): Promise<AnalyticsDashboard> {
     const settings = await this.userRepository.getSettings(userId);
     const timezone = settings?.timezone || DEFAULT_TZ;
     const userToday = getTodayString(timezone);
-    const today = isValidDate(query.date) ? query.date : userToday;
-    const period = isPeriod(query.period) ? query.period : 'day';
+    const today = query.date === undefined ? userToday : assertDate(query.date);
+    const period = query.period === undefined ? 'day' : assertPeriod(query.period);
     const range = getPeriodRange(period, today, timezone);
 
     const rangeStart = fromZonedTime(`${range.start}T00:00:00`, timezone);
@@ -195,6 +227,7 @@ export class AnalyticsService {
       healthMetrics,
       journalEntries,
       recentAchievements,
+      latestScoredDate,
     ] = await Promise.all([
       periodHabitsPromise,
       this.previousRange(period, today, timezone),
@@ -216,15 +249,26 @@ export class AnalyticsService {
       this.healthMetricRepository.findAll(userId, { startDate: range.start, endDate: range.end }),
       this.journalRepository.findAll(userId, { from: range.start, to: range.end, limit: 5 }),
       this.achievementRepository.recentUnlocked(userId, 8),
+      this.scoreRepository.findLatestDate(userId),
     ]);
 
-    // The immediately preceding period of equal length, for the comparison strip.
-    const comparisonPromise =
-      period === 'day' || period === 'week'
-        ? this.scoreRepository.findByRange(userId, previousRange.start, previousRange.end)
-        : Promise.resolve([]);
+    /*
+      Two score reads, doing two different jobs.
 
-    const [day, week, month, yearSummary, previousScores] = await Promise.all([
+      `periodScores` covers the selected range and is the single source for the
+      hero's score, its core / growth / bonus breakdown and the scored-day count —
+      on all four tabs, derived one way. `previousScores` covers the equivalent
+      earlier range and exists only for a day or a week; see `buildComparison` for
+      why a month and a year are left without one.
+    */
+    const [
+      day,
+      week,
+      month,
+      yearSummary,
+      periodScores,
+      previousScores,
+    ] = await Promise.all([
       period === 'day'
         ? dailyBreakdown(userId, range.start, timezone, userToday, periodHabits)
         : Promise.resolve(null),
@@ -237,7 +281,10 @@ export class AnalyticsService {
       period === 'year'
         ? yearlySummary(userId, year, timezone, userToday, periodHabits)
         : Promise.resolve(null),
-      comparisonPromise,
+      this.scoreRepository.findByRange(userId, range.start, range.end),
+      period === 'day' || period === 'week'
+        ? this.scoreRepository.findByRange(userId, previousRange.start, previousRange.end)
+        : Promise.resolve([]),
     ]);
 
     const tierMix = periodHabits.activeTierMix;
@@ -246,7 +293,7 @@ export class AnalyticsService {
     const sleep = buildSleepSnapshot(sleepLogs);
     const focusedMinutes = focusStats.totalFocusMinutes;
     const routine = buildRoutineDetail(routineLogs);
-    const scoreAverage = buildScoreAverage(period, day, week, month, yearSummary);
+    const scoreAverage = buildScoreAverage(periodScores);
 
     return {
       period,
@@ -259,6 +306,7 @@ export class AnalyticsService {
       },
       today: userToday,
       comparison: buildComparison(period, previousRange, previousScores, scoreAverage.average),
+      freshness: buildFreshness(range, userToday, latestScoredDate, scoreAverage.daysScored),
       hero: buildHero(scoreAverage, periodHabits),
       tiles: {
         routine: buildRoutineTile(period, day, routineLogs),
@@ -347,7 +395,7 @@ export class AnalyticsService {
   }
 
   /** GET /api/analytics/streaks — thin delegation to the streak aggregation core. */
-  async getStreaks(userId: string, from: string, to: string): Promise<StreakAnalytics> {
+  async getStreaks(userId: UserId, from: string, to: string): Promise<StreakAnalytics> {
     return streakAnalytics(userId, { startDate: from, endDate: to });
   }
 
@@ -359,7 +407,7 @@ export class AnalyticsService {
  * silently get UTC bucketing — the exact bug this service fixes elsewhere.
  */
   async getReport(
-    userId: string,
+    userId: UserId,
     type: 'weekly' | 'monthly',
     date: string,
   ): Promise<WeeklySummary | MonthlySummary> {
@@ -370,20 +418,20 @@ export class AnalyticsService {
   }
 
   /** GET /api/analytics/monthly — month summary delegating to the core. */
-  async getMonthly(userId: string, month: string): Promise<MonthlySummary> {
+  async getMonthly(userId: UserId, month: string): Promise<MonthlySummary> {
     const { timezone, today } = await this.resolvePeriodContext(userId);
     return monthlySummary(userId, month, timezone, today);
   }
 
   /** GET /api/analytics/yearly — year summary delegating to the core. */
-  async getYearly(userId: string, year: number): Promise<YearlySummary> {
+  async getYearly(userId: UserId, year: number): Promise<YearlySummary> {
     const { timezone, today } = await this.resolvePeriodContext(userId);
     return yearlySummary(userId, year, timezone, today);
   }
 
   /** GET /api/analytics/daily — day breakdown delegating to the core. */
   async getDaily(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<Awaited<ReturnType<typeof dailyBreakdown>>> {
     const { timezone, today } = await this.resolvePeriodContext(userId);
@@ -391,7 +439,7 @@ export class AnalyticsService {
   }
 
   private async resolvePeriodContext(
-    userId: string
+    userId: UserId
   ): Promise<{ timezone: string; today: string }> {
     const settings = await this.userRepository.getSettings(userId);
     const timezone = settings?.timezone || DEFAULT_TZ;
@@ -435,71 +483,6 @@ function buildStreakSnapshot(
 
 /* ───────────────────────────── score hero ──────────────────────────────── */
 
-interface ScoreAverage {
-  average: number | null;
-  core: number | null;
-  growth: number | null;
-  bonus: number | null;
-  /** Scored days in the period, for "out of N days" phrasing. */
-  daysScored: number;
-}
-
-/**
- * The headline score for any period, from one place.
- *
- * Core / growth / bonus used to be populated for a day and a week and left `null`
- * for a month and a year, so the hero showed three dashes on exactly the two tabs
- * where the user most wants a breakdown. `monthlySummary` and `yearlySummary`
- * already load the period's `DailyScore` rows, so averaging the same columns is
- * free — the values were missing because nobody asked for them, not because the
- * data was absent.
- */
-function buildScoreAverage(
-  period: Period,
-  day: Awaited<ReturnType<typeof dailyBreakdown>> | null,
-  week: WeeklySummary | null,
-  month: MonthlySummary | null,
-  year: YearlySummary | null
-): ScoreAverage {
-  if (period === 'day' && day) {
-    return {
-      average: day.score.total,
-      core: day.score.core,
-      growth: day.score.growth,
-      bonus: day.score.bonus,
-      daysScored: day.score.total != null ? 1 : 0,
-    };
-  }
-  if (period === 'week' && week) {
-    return {
-      average: week.scores.average,
-      core: week.scores.averageCore,
-      growth: week.scores.averageGrowth,
-      bonus: week.scores.averageBonus,
-      daysScored: week.scores.average > 0 ? 7 : 0,
-    };
-  }
-  if (period === 'month' && month) {
-    return {
-      average: month.scores.average,
-      core: null,
-      growth: null,
-      bonus: null,
-      daysScored: month.scores.average > 0 ? 1 : 0,
-    };
-  }
-  if (period === 'year' && year) {
-    return {
-      average: year.averageScore,
-      core: null,
-      growth: null,
-      bonus: null,
-      daysScored: year.totalDaysScored,
-    };
-  }
-  return { average: null, core: null, growth: null, bonus: null, daysScored: 0 };
-}
-
 function buildHero(score: ScoreAverage, habits: PeriodHabitModel): AnalyticsDashboard['hero'] {
   return {
     total: score.average,
@@ -507,6 +490,8 @@ function buildHero(score: ScoreAverage, habits: PeriodHabitModel): AnalyticsDash
     core: score.core,
     growth: score.growth,
     bonus: score.bonus,
+    /** Real scored-day count, so "average" can say what it averaged over. */
+    daysScored: score.daysScored,
     /*
       One value, straight from the shared period model, for every tab.
 
@@ -518,6 +503,13 @@ function buildHero(score: ScoreAverage, habits: PeriodHabitModel): AnalyticsDash
     habitReliability: habits.totals.rate,
   };
 }
+
+/**
+ * How far behind the scores are, so the page can say so.
+ *
+ * Lives in `lib/analytics/score-average` with the rest of the hero arithmetic, so
+ * it can be tested without a database. See that module for why.
+ */
 
 interface RoutineLogCountLike {
   status: string;

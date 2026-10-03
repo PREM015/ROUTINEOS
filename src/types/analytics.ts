@@ -289,12 +289,29 @@ export interface AnalyticsDashboard {
   };
   /** `null` when no honest comparison exists for this period. */
   comparison: AnalyticsComparison | null;
+  /**
+   * How complete the period's scores are.
+   *
+   * Scores come from a bounded nightly job, so a period can hold days nobody has
+   * computed yet. The page says so rather than presenting a partial average as
+   * the period's result.
+   */
+  freshness: {
+    /** Newest day this user has a score for, anywhere in their history. */
+    latestScoredDate: string | null;
+    /** Days in the range that have already happened. */
+    elapsedDays: number;
+    /** Elapsed days in the range carrying no score. */
+    unscoredDays: number;
+  };
   hero: {
     total: number | null;
     grade: string | null;
     core: number | null;
     growth: number | null;
     bonus: number | null;
+    /** Real scored-day count; the average is over these days and no others. */
+    daysScored: number;
     /** The one habit completion rate, identical in definition on every tab. */
     habitReliability: number | null;
   };

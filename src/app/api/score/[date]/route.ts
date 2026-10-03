@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { ScoringService } from '@/server/services/scoring.service';
 import { UserService } from '@/server/services/user.service';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { userIdFromSession } from '@/types/ids';
 
 const scoringService = new ScoringService();
 
@@ -35,14 +36,14 @@ export async function GET(
      * only a read.
      */
     const timezone = await new UserService()
-      .getTimezone(session.user.id)
+      .getTimezone(userIdFromSession(session))
       .catch(() => DEFAULT_TZ);
     const isToday = date === getTodayString(timezone);
 
     const score = isToday
-      ? await scoringService.recalculateDate(session.user.id, date)
-      : ((await scoringService.getDailyScore(session.user.id, date)) ??
-        (await scoringService.calculateDailyScore(session.user.id, date)));
+      ? await scoringService.recalculateDate(userIdFromSession(session), date)
+      : ((await scoringService.getDailyScore(userIdFromSession(session), date)) ??
+        (await scoringService.calculateDailyScore(userIdFromSession(session), date)));
 
     // Enveloped per the project-wide contract (`FILE.MD`):
     //   success -> { success: true, data }, error -> { error }

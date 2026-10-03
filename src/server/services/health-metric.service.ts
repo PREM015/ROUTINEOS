@@ -6,6 +6,7 @@ import type {
   UpdateHealthMetricInput,
 } from '@/schemas/health-metric.schema';
 import type { HealthMetric } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Health Metric Service
@@ -29,17 +30,17 @@ export class HealthMetricService {
   }
 
   /** Metrics for the user, filtered by the given query. */
-  async listForUser(userId: string, query: HealthMetricQueryParams) {
+  async listForUser(userId: UserId, query: HealthMetricQueryParams) {
     return this.healthMetricRepository.findAll(userId, query);
   }
 
   /** Record a metric. */
-  async create(userId: string, input: HealthMetricInput): Promise<HealthMetric> {
+  async create(userId: UserId, input: HealthMetricInput): Promise<HealthMetric> {
     return this.healthMetricRepository.create(userId, input);
   }
 
   /** One metric, or `NotFoundError`. */
-  async getForUser(userId: string, metricId: string): Promise<HealthMetric> {
+  async getForUser(userId: UserId, metricId: string): Promise<HealthMetric> {
     const metric = await this.healthMetricRepository.findById(userId, metricId);
     if (!metric) {
       throw new NotFoundError('Health metric');
@@ -55,7 +56,7 @@ export class HealthMetricService {
    * making a mistake worth a database write and an updatedAt bump.
    */
   async update(
-    userId: string,
+    userId: UserId,
     metricId: string,
     input: UpdateHealthMetricInput
   ): Promise<HealthMetric> {
@@ -69,7 +70,7 @@ export class HealthMetricService {
   }
 
   /** Delete a metric. */
-  async delete(userId: string, metricId: string): Promise<void> {
+  async delete(userId: UserId, metricId: string): Promise<void> {
     await this.getForUser(userId, metricId);
     await this.healthMetricRepository.delete(userId, metricId);
   }

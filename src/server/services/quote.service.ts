@@ -1,5 +1,6 @@
 import { QuoteRepository } from '@/server/repositories/quote.repository';
 import type { Quote } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Quote Service
@@ -57,7 +58,7 @@ export class QuoteService {
   /**
    * Quotes visible to the user, falling back to the built-in set when empty.
    */
-  async listQuotes(userId: string): Promise<Array<Quote | (typeof DEFAULT_QUOTES)[number] & { id: string; userId: string }>> {
+  async listQuotes(userId: UserId): Promise<Array<Quote | (typeof DEFAULT_QUOTES)[number] & { id: string; userId: string }>> {
     const quotes = await this.quoteRepository.findVisible(userId);
     if (quotes.length > 0) return quotes;
 
@@ -71,7 +72,7 @@ export class QuoteService {
   /**
    * Create a quote and return it alongside the refreshed visible list.
    */
-  async createQuote(userId: string, input: QuoteInput) {
+  async createQuote(userId: UserId, input: QuoteInput) {
     const quote = await this.quoteRepository.create({
       user: { connect: { id: userId } },
       text: input.text,
@@ -85,7 +86,7 @@ export class QuoteService {
   /**
    * Edit a quote. Throws unless the caller owns it.
    */
-  async updateQuote(userId: string, quoteId: string, input: QuoteInput) {
+  async updateQuote(userId: UserId, quoteId: string, input: QuoteInput) {
     const existing = await this.quoteRepository.findById(quoteId);
     if (!existing || existing.userId !== userId) {
       throw new Error('You can only edit your own quotes.');
@@ -103,7 +104,7 @@ export class QuoteService {
   /**
    * Delete a quote. Throws unless the caller owns it.
    */
-  async deleteQuote(userId: string, quoteId: string) {
+  async deleteQuote(userId: UserId, quoteId: string) {
     const existing = await this.quoteRepository.findById(quoteId);
     if (!existing || existing.userId !== userId) {
       throw new Error('You can only delete your own quotes.');
@@ -120,7 +121,7 @@ export class QuoteService {
    * to other users are never returned.
    */
   async getRandomQuote(
-    userId: string,
+    userId: UserId,
     options: { exclude?: string; scope?: 'all' | 'mine' } = {}
   ) {
     const { exclude, scope = 'all' } = options;

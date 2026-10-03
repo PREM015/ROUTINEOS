@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { pushSubscriptionService } from '@/server/services/push-subscription.service';
 import { createSubscriptionSchema } from '@/schemas/push-subscription.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Push Subscription Route
@@ -23,7 +24,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const subscriptions = await pushSubscriptionService.listForUser(session.user.id);
+    const subscriptions = await pushSubscriptionService.listForUser(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: subscriptions });
   } catch (error) {
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     const subscription = await pushSubscriptionService.register(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 

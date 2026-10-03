@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { importHabits, importGoals } from '@/server/data/importer';
 import type { z } from 'zod';
 import type { importPayloadSchema } from '@/lib/validation/import.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Import Service
@@ -35,7 +36,7 @@ export class ImportService {
    * fabricated.
    */
   async importUserData(
-    userId: string,
+    userId: UserId,
     payload: ImportPayload
   ): Promise<{ imported: number; skipped: number }> {
     let imported = 0;

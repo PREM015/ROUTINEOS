@@ -15,6 +15,7 @@ import { buildEligibilityContext } from '@/server/analytics/eligibility-context'
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * The habit contribution year, in six queries.
@@ -47,7 +48,7 @@ export class HabitContributionService {
   private routineRepository = new RoutineRepository();
   private userRepository = new UserRepository();
 
-  async getYear(userId: string, year: number): Promise<ContributionYear> {
+  async getYear(userId: UserId, year: number): Promise<ContributionYear> {
     const settings = await this.userRepository.getSettings(userId);
     const timezone = settings?.timezone || DEFAULT_TZ;
     const today = getTodayString(timezone);

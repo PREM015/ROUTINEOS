@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { insightGenerationService } from '@/server/services/insight.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const generateInsightSchema = z.object({
   period: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']),
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await insightGenerationService.generate(session.user.id, {
+    const result = await insightGenerationService.generate(userIdFromSession(session), {
       period: validated.data.period,
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,

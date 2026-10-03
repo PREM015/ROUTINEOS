@@ -1,5 +1,6 @@
 import type { Attachment, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Attachment Repository
@@ -18,7 +19,7 @@ export class AttachmentRepository extends BaseRepository {
    * List attachments for a user with optional entity filters
    */
   async findAllByUser(
-    userId: string,
+    userId: UserId,
     opts: AttachmentQueryOptions = {}
   ): Promise<Attachment[]> {
     try {
@@ -39,7 +40,7 @@ export class AttachmentRepository extends BaseRepository {
   /**
    * Count attachments for a user
    */
-  async countByUser(userId: string, opts: AttachmentQueryOptions = {}): Promise<number> {
+  async countByUser(userId: UserId, opts: AttachmentQueryOptions = {}): Promise<number> {
     try {
       const where: Record<string, unknown> = { userId };
       if (opts.entityType) where.entityType = opts.entityType;
@@ -56,7 +57,7 @@ export class AttachmentRepository extends BaseRepository {
    * Returns the number of deleted records.
    */
   async deleteAllByUser(
-    userId: string,
+    userId: UserId,
     opts: AttachmentQueryOptions = {}
   ): Promise<number> {
     try {

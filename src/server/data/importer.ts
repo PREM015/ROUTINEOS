@@ -4,6 +4,7 @@ import type {
   ImportHabitInput,
 } from '@/lib/validation/import.schema';
 import { createLogger } from '@/lib/monitoring/logger';
+import type { UserId } from '@/types/ids';
 
 /**
  * Data Importer
@@ -61,7 +62,7 @@ function warnDropped(
  * Build a habit insert from a payload row. Optional keys the caller did not
  * supply are omitted entirely so Prisma applies column defaults.
  */
-function toHabitData(userId: string, habit: ImportHabitInput): Prisma.HabitUncheckedCreateInput {
+function toHabitData(userId: UserId, habit: ImportHabitInput): Prisma.HabitUncheckedCreateInput {
   const data: Prisma.HabitUncheckedCreateInput = {
     userId,
     name: habit.name,
@@ -86,7 +87,7 @@ function toHabitData(userId: string, habit: ImportHabitInput): Prisma.HabitUnche
 }
 
 /** Build a goal insert from a payload row, for the same reasons as habits. */
-function toGoalData(userId: string, goal: ImportGoalInput): Prisma.GoalUncheckedCreateInput {
+function toGoalData(userId: UserId, goal: ImportGoalInput): Prisma.GoalUncheckedCreateInput {
   const data: Prisma.GoalUncheckedCreateInput = {
     userId,
     title: goal.title,
@@ -111,7 +112,7 @@ function toGoalData(userId: string, goal: ImportGoalInput): Prisma.GoalUnchecked
  * Create habits from an import payload. Returns the number written.
  */
 export async function importHabits(
-  userId: string,
+  userId: UserId,
   habits: ReadonlyArray<ImportHabitInput>,
   db: PrismaClient
 ): Promise<number> {
@@ -134,7 +135,7 @@ export async function importHabits(
  * Create goals from an import payload. Returns the number written.
  */
 export async function importGoals(
-  userId: string,
+  userId: UserId,
   goals: ReadonlyArray<ImportGoalInput>,
   db: PrismaClient
 ): Promise<number> {

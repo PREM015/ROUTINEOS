@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { Attachment } from '@/generated/prisma';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { AttachmentRepository } from '@/server/repositories/attachment.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Upload Service
@@ -118,11 +119,11 @@ export class UploadService {
     }
   }
 
-  private uploadsDirFor(userId: string): string {
+  private uploadsDirFor(userId: UserId): string {
     return path.join(process.cwd(), 'public', 'uploads', userId);
   }
 
-  private publicUrlFor(userId: string, fileName: string): string {
+  private publicUrlFor(userId: UserId, fileName: string): string {
     return `/uploads/${userId}/${fileName}`;
   }
 
@@ -131,7 +132,7 @@ export class UploadService {
    * Falls back to an in-memory reference if writing fails.
    */
   async storeFile(
-    userId: string,
+    userId: UserId,
     attachmentId: string,
     file: UploadFileInput
   ): Promise<{ storageKey: string | null; publicUrl: string }> {
@@ -154,7 +155,7 @@ export class UploadService {
    * Validate, store the file and create the Attachment row
    */
   async createAttachment(
-    userId: string,
+    userId: UserId,
     file: UploadFileInput,
     input: CreateAttachmentInput = {}
   ): Promise<Attachment> {
@@ -191,7 +192,7 @@ export class UploadService {
   /**
    * Fetch an attachment with an ownership check
    */
-  async getAttachment(userId: string, attachmentId: string): Promise<Attachment> {
+  async getAttachment(userId: UserId, attachmentId: string): Promise<Attachment> {
     const attachment = await this.attachmentRepository.findById(attachmentId);
     if (!attachment || attachment.userId !== userId) {
       throw new Error('Attachment not found');
@@ -203,7 +204,7 @@ export class UploadService {
    * Delete an attachment row and its backing file
    */
   async deleteAttachment(
-    userId: string,
+    userId: UserId,
     attachmentId: string
   ): Promise<{ success: boolean }> {
     const attachment = await this.getAttachment(userId, attachmentId);

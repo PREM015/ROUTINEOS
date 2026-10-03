@@ -1,6 +1,7 @@
 import type { Template, RoutineTemplate, Prisma, TemplateType } from '@/generated/prisma';
 import { DayType } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Template Repository
@@ -186,7 +187,7 @@ export class TemplateRepository extends BaseRepository {
    * Update a template owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     templateId: string,
     data: Prisma.TemplateUpdateInput
   ): Promise<Template> {
@@ -203,7 +204,7 @@ export class TemplateRepository extends BaseRepository {
   /**
    * Delete a template owned by the user
    */
-  async delete(userId: string, templateId: string): Promise<Template> {
+  async delete(userId: UserId, templateId: string): Promise<Template> {
     try {
       return await this.prisma.template.delete({
         where: { id: templateId, userId },
@@ -217,7 +218,7 @@ export class TemplateRepository extends BaseRepository {
    * Create a routine from a template's content
    */
   async createRoutineFromTemplate(
-    userId: string,
+    userId: UserId,
     templateId: string,
     data: CreateRoutineData
   ): Promise<RoutineTemplate> {

@@ -2010,8 +2010,425 @@ On `/end`, the server's timestamp-derived duration is the authority and the clie
 | `npx eslint` (focus + break files) | **0 errors**, 2 pre-existing warnings in `api/focus/route.ts` |
 | `npm test` | No focus failures. 52 failures in `tests/domain/routine-service.test.ts`, from the concurrent routine refactor. |
 
-**Not yet done:** Phase 2 (the client runtime — store rebuild, `FocusRuntime`, heartbeat sender, cross-tab ownership, offline outbox, recovery UI, notifications), and Phases 3–8.
+## 37. Phase 2 — the client runtime
+
+### 37.1 The database push
+
+The schema had **already been pushed** by the concurrent session while this work was
+in progress. Discovered when `000_pre_backfill.sql` failed with *"invalid input
+value for enum BreakType: short"* — a statement that can only fail if the column is
+already enum-typed.
+
+Verified state before touching anything: **0 focus sessions, 0 breaks, 1 user.** The
+database is effectively empty, so every backfill is a no-op, the enum conversion had
+nothing to convert, and the `abortedAt` recovery had no rows to recover. The
+migration carried no data-loss risk at all — worth establishing before pushing
+rather than assuming.
+
+Applied what `db push` cannot:
+
+| Item | Status |
+| --- | --- |
+| 4 new tables, 6 enums, 38 `FocusSession` columns, all indexes | already present from the concurrent push |
+| `one_active_session_per_user` partial unique index | **applied** (raw SQL) |
+| Backfills 1–7 | applied; all no-ops on an empty table |
+
+Verified against the live database, not just the schema file:
+
+```
+created: cmusjsjg | type= FOCUS | pausedTotal= 0 | source= TIMER
+active lookup: cmusjsjg
+second active row REJECTED: by one_active_session_per_user
+```
+
+That last line is the one that matters: the constraint genuinely fires.
+
+### 37.2 Two real bugs the live database caught
+
+**A `CASE` over text literals cannot be assigned to an enum column.** `SET "type" =
+CASE "title" … END` failed with *"column type is of type FocusSessionType but
+expression is of type text"*. Postgres will not implicitly coerce text to an enum;
+the whole expression needs `::"FocusSessionType"`. This was invisible to
+`prisma validate` and to every static check, because it is a database-side type
+rule rather than a TypeScript one.
+
+**A `btrim()` guard broke the parse.** `btrim("breakType")` inside a
+function-argument position is ambiguous with the new `BreakType` *type*, and
+Postgres resolved it as a cast and errored. The statement was also redundant — the
+preceding `NOT IN (…)` already maps `''` and `'   '` to `CUSTOM` — so it was deleted
+rather than fixed.
+
+Both are now recorded in the SQL with the reason, because they will recur the next
+time somebody writes a backfill.
+
+### 37.3 The runtime
+
+`components/focus/FocusRuntime.tsx`, mounted in `(dashboard)/layout.tsx`. It returns
+`null`; everything visible is derived from the store.
+
+| Concern | Approach |
+| --- | --- |
+| Deadline | One `setTimeout` armed against `endsAt`, not an interval. Re-armed on change, disarmed otherwise. |
+| Long timeboxes | Capped at `2^31-1` ms. An overflowed `setTimeout` fires *immediately*, which is the classic symptom of not clamping. |
+| Heartbeat | Every 60 s, only while `document.visibilityState === 'visible'`. |
+| Persistence | User-scoped key `routineos:focus:v2:<userId>`, so a shared browser cannot leak a running timer to the next sign-in. |
+| Cross-tab | `storage` event plus a `CustomEvent`. |
+| Retry queue | In-memory, replayed on `online` and on refocus. Deliberately **not** persisted — replaying a stale `pause` on the next login would pause a session nobody paused. |
+| Completion | Chime → notification (only when hidden) → title → `runAchievementCheck()` → auto-start. |
+| Sleep | Auto-pauses through the existing poller, with a toast and a Resume action. |
+
+### 37.4 What was deleted
+
+`FocusTimer.tsx` (**1,506 lines**) and `FlipClock.tsx` (188 lines). Neither had a
+single remaining reference. That is 1,694 lines removed against roughly 900 added
+across five focused modules — the point being the split, not the line count.
+
+### 37.5 A note on the 13-subscription problem
+
+The old floating bar took **13** `useFocusStore` selectors. It now takes 9, none of
+which re-render on a value it does not display, and the clock subscription is
+conditional on a session being live.
+
+`FocusRuntime` deliberately uses per-field selectors rather than
+`useFocusStore()` wholesale. Subscribing to the whole object means every callback
+closes over the whole store, so every one of them re-creates on every change —
+including `error` and `collapsed`, which have nothing to do with the timer. The
+whole-store subscription *is* the bug the old thirteen selectors were symptoms of.
+
+## 38. Status after Phase 2
+
+| Check | Result |
+| --- | --- |
+| `prisma validate` | valid |
+| `npm run type-check` | **0 errors** in any focus file |
+| `npx eslint` (all focus files) | **0 errors** |
+| `npm test` | No focus failures. 2 failing files — `tests/tmp-verify-orphan.test.ts` and `tests/domain/routine-service.test.ts` — both from the concurrent session. |
+
+## 39. Phase 1.6 — the metrics glossary
+
+`lib/focus/metrics.ts`. The audit's most consequential finding was that **four**
+definitions of "focus minutes" coexisted, each with a different denominator and a
+different timezone assumption. Four definitions is not a bug to fix one at a time;
+it is a missing shared module.
+
+| Term | Definition |
+| --- | --- |
+| Focus session | `FOCUS` or `STOPWATCH`. Breaks never count. |
+| Completed session | `endReason === 'COMPLETED'`. **Only** this one. |
+| Partial session | Ended early, with at least `minimumCountedMinutes` (5). |
+| Focus minutes | Completed minutes + qualifying partials. |
+| Completion rate | Completed ÷ started, over sessions long enough to judge. |
+| Focus day | A day reaching `streakDayMinutes` (25). Drives the streak. |
+
+### 39.1 Three judgement calls, stated
+
+**`isCompletedSession` keys on `endReason`, never on `completedAt != null`.** Three
+cases set `completedAt` and mean different things: a `MANUAL` entry, a
+`RECOVERED` session, and the `abortedAt` backfill's replayed rows. Testing on the
+timestamp would make completion rate permanently 100% — the break-contamination
+defect, one level up.
+
+**Partials count above a floor, and the floor is 5 minutes.** Hiding 22 minutes
+because a session was incomplete makes the headline number wrong in the direction
+that flatters. But no floor at all means a streak can be manufactured by starting
+and stopping twenty times. Sub-floor partials stay in *history*.
+
+**Completion rate returns `null`, not `0`, when there is nothing to judge.**
+"You have not completed anything yet" and "you completed nothing" are different
+facts; rendering them identically shows a new user a 0% rate before they have done
+anything wrong.
+
+### 39.2 A known, documented divergence
+
+`FocusRepository.getStats` cannot apply the partial floor: `_sum` over a `where`
+clause has no way to apply a per-row predicate that depends on `endReason`. So the
+aggregate returns the **completed-only** figure and reads lower than
+`GET /api/focus/stats`, which applies the full glossary in JS.
+
+This is recorded on the method rather than left as an undocumented discrepancy. It
+errs low, and erring low is the safe direction for a number that unlocks
+achievements. The six consumers (`achievement.service`, `analytics.service`,
+`dashboard-overview.service`, `analytics/monthly`, `analytics/yearly`) all route
+through this one method, so they are consistent *with each other* — which is the
+property that matters most — and the remaining gap is tracked as the Phase 1.6
+follow-up.
+
+## 40. Phase 1.5 — backup coverage
+
+`src/lib/db/backup.ts` was missing all four new models **and** `Break` entirely.
+
+`Break` is the one that mattered. A backup/restore cycle that omits a table does
+not fail loudly — the rows simply come back absent, and every break annotation's
+`focusSessionId` is lost with no error anywhere. Both lists are now 35 entries,
+verified consistent with no duplicates and nothing missing from either.
+
+The unscoped read is now documented rather than incidental:
+
+```ts
+delegate.findMany({ take: SNAPSHOT_LIMIT })   // no `where`
+```
+
+That has always read every row of every user's data, truncated rather than paged,
+from an admin-triggered path. Adding four more tables extends the exposure. The
+real fix is an explicit `userId` parameter or pagination; neither is in scope here,
+but the hazard is now written down where the next person will read it.
+
+## 41. Test coverage
+
+**124 focus tests across 5 files**, all passing. The focus domain had **zero**.
+
+| File | Tests | Pins |
+| --- | --- | --- |
+| `focus-metrics.test.ts` | 30 | Every glossary definition, including the null-vs-zero rate and the midnight split summing back exactly |
+| `focus-recovery.test.ts` | 27 | Every row of the recovery matrix, and the never-generous-by-default property |
+| `focus-timer-machine.test.ts` | 40 | Purity, pause accounting, idempotent finish, the guards against silent recording |
+| `focus-day-split.test.ts` | 13 | Zone-correct attribution, DST-safe, bounded on corrupt input |
+| `focus-type-backfill.test.ts` | 14 | The title ⇄ type mapping round-trips in both directions |
+
+### 41.1 Two bugs the tests caught in my own code
+
+**`noHeartbeatPolicy: 'conservative'` credited the full timebox.** The constant was
+named and documented as conservative; the branch it guarded returned
+`min(now, deadline)` — full credit with no evidence at all. That is exactly the
+invention of work the recovery module exists to prevent. Now returns `0`. Caught by
+`evidenceMs > 'is zero with no evidence at all'`.
+
+**`remainingMs` returned `0` for an idle timer.** The `endsAt === null` guard fired
+before the idle branch, so a fresh dial read `00:00` instead of `25:00` — telling
+someone who has not started yet that they have no time. Reordered so a stopwatch
+checks the plan first and idle reports the plan.
+
+A third test failure was my test being wrong rather than the code: 14:50→15:10 UTC
+*does* cross Tokyo midnight. The test was corrected to assert the real behaviour
+(and a second case added for a window that does not cross it), because "my
+expectation was wrong" is worth recording separately from "the code was wrong".
+
+## 42. Status
+
+| Check | Result |
+| --- | --- |
+| `prisma validate` | valid |
+| `npm run type-check` | **0 errors** in any focus file |
+| `npx eslint` (all focus + backup files) | **0 errors** |
+| `npm test` | **124 focus tests passing**, 5 files |
+
+Repo-wide the concurrent session's routine/journal/offline work accounts for ~85
+type errors and 2 failing test files; none are in focus.
+
+## 43. Phase 5 - history, detail and reflection
+
+### 43.1 `useFocusSessions` - one fetcher
+
+The audit found **three** `GET /api/focus` fetches (two on the page, one on retry, two
+of them with no `AbortController`). This hook is the only one now.
+
+Two details worth recording:
+
+**The row count lives in a ref, not in the dependency array.** `load-more` needs the
+current length to compute an offset, but making the callback depend on
+`state.rows.length` re-creates it after every append, which re-runs the mount effect and
+refetches from page one - "load more" would load page one again. The ref reads the same
+value at call time with no identity change. This was written with an `eslint-disable`
+first; the ref is the actual fix.
+
+**Invalidation is event-driven, never time-based.** Anything that could have ended a
+session dispatches an event, so an open drawer cannot show a session that has since
+finished. A cache that expires on a timer and hopes is the version that eventually shows
+a stale row.
+
+### 43.2 `SessionDetailSheet` - the part the audit called out
+
+> `/focus/session` had **no edit, no delete, no pagination, no filter**
+
+`PATCH` and `DELETE` existed and had **zero callers anywhere in `src/`**. They are now
+wired, and two decisions are deliberate:
+
+**Delete is delayed, not optimistic.** The request fires after a 6-second undo window.
+The alternative - delete now, recreate on undo - would need a restore endpoint and would
+leave a row *looking* deleted if the toast was dismissed by a reload. A row that appears
+deleted and is not is worse than one briefly still there.
+
+**The form is seeded on mount, keyed on `session.id`.** Not reset in an effect. The
+drawer refetches whenever a session ends, so an effect would wipe a note someone was
+mid-way through typing. A `key` makes the remount the reset mechanism, which also
+removes a `setState`-in-effect render pass on every transition.
+
+The event timeline is the first and only consumer of the `FocusSessionEvent` table. It
+turns "I paused twice" from a claim into something checkable.
+
+### 43.3 Dead code removed - and one thing restored
+
+Deleted, after grep-confirming zero importers: `lib/focus/analytics.ts`,
+`lib/focus/pomodoro.ts`, `lib/focus/session-manager.ts`, `PomodoroSettings.tsx`,
+`BreakNotification.tsx`, `FocusStats.tsx`, `api/focus/[id]/complete`, and the
+`listBreaks`/`createBreak` service methods.
+
+**Restored `/api/breaks`.** I deleted it as dead - zero client consumers, and the plan
+lists it for removal - but it is the *breaks* domain's API surface, not this page's.
+Overreach, corrected. `break-scheduler.ts` was reinstated to serve it, with a note that
+its hard-coded Pomodoro defaults are wrong for the `nextScheduledBreak` hint if that
+hint is ever shown, since it would contradict the timer the user is looking at.
+
+`/focus/session` is now a redirect, which keeps the URL working for bookmarks while the
+content lives in the drawer.
+
+### 43.4 Keyboard layer
+
+The audit's finding was that the focus timer had **no keyboard control at all** - not a
+poor implementation, none, while `useKeyboard` sat unused in the repo.
+
+The rule that matters: **shortcuts are disabled while the user is typing.** `Space` is
+the primary action here and also the key that types a space; without the guard, typing a
+word into the intent field would pause and resume the timer on every keystroke.
+`isTypingTarget` is the single place that decides, so no shortcut re-implements it and
+gets it wrong. Browser and AT combinations (`Cmd/Ctrl+...`) are left alone.
+
+The shortcut table is **data**, rendered by `ShortcutsDialog` from the same array the
+handler dispatches on - a hand-written cheat sheet is correct for exactly one release.
+Unavailable shortcuts show greyed rather than hidden, because someone pressing `L` and
+seeing nothing happen needs to know the key exists and why it did nothing.
+
+### 43.5 Two design errors I made and fixed
+
+**`SessionDetailSheet` had a module-level `pendingDeleteRef`.** Two mounted sheets would
+share one timer, so opening a row in two places could cancel the other's pending delete -
+and the unmount cleanup could never cancel it, because it only saw its own instance's
+ref. Now a proper `useRef`.
+
+**`useFocusSessions` shipped with an `eslint-disable`** to silence a deps warning.
+Suppressing the warning hid the actual bug (the load-more loop). Fixed with the ref; the
+suppression is gone.
+
+## 44. Final state
+
+| Check | Result |
+| --- | --- |
+| `prisma validate` | valid |
+| `npm run type-check` | **0 errors** in any focus file |
+| `npx eslint` (focus domain, ~20 files) | **0 errors, 0 warnings** |
+| `npm test` | **124 focus tests passing**, 5 files |
+
+Repo-wide the concurrent session's routine/journal/offline work accounts for the
+remaining type errors and 2 failing test files. None are in focus.
+
+### 44.1 Follow-ups I did not do, and why
+
+| Item | Why |
+| --- | --- |
+| Branded `UserId` type | The real fix for the swapped-`sessionId`/`userId` class of bug. Two same-typed identifiers in the same position is the one parameter-order mistake TypeScript is structurally blind to, and a brand would make it a compile error. Not applied - it touches every repository. |
+| `getStats` behind the glossary | The aggregate cannot express the partial floor. Documented on both sides rather than half-fixed; the divergence errs low, which is safe for achievements. |
+| Export/import/validator/seed scripts | Only `backup.ts` was updated. The other data paths were not traced. |
+| Server push at `endsAt` | Out of scope per the original brief. |
+| `DailyScore` / `TimeEntry` / `ProductivityPattern` | Explicitly not to be touched. |
+| Context rail, task/goal/habit links | Phase 4. The schema supports them; nothing renders them yet. |
 
 ---
 
-*End of `/focus` audit. Part I is the pre-change baseline; Part II the verification and first data-layer pass; Part III the focus-lifecycle build.*
+*End of `/focus` audit. Part I is the pre-change baseline; Part II the verification
+and first data-layer pass; Part III the lifecycle build, the runtime, the metrics
+glossary, and the history/reflection/keyboard layer.*
+## 45. Closing pass
+
+### 45.1 `getStats` divergence — closed, not documented
+
+The follow-up from 44.1 is **done**, and the reason it could be done is that the
+earlier claim was wrong.
+
+I had written that the counting rule "cannot be expressed in a `where` clause,
+because it keys on `endReason`". It can:
+
+```
+OR [
+  { completedAt: notNull, actualDuration: gt 0 },    // completed
+  { abortedAt:   notNull, actualDuration: gte min },  // partial, above the floor
+]
+```
+
+`endReason` is a *derived convenience* over those same two timestamp columns.
+`getFocusSessionStatus` reads them as a pair, and so does the
+`one_active_session_per_user` partial index — so testing the timestamps directly is
+not a second definition, it is the same definition expressed at the layer that can
+actually filter.
+
+The result is **one predicate, one aggregate, six consumers**, and no divergence.
+The service's `getStats` docstring was corrected, because it still claimed the two
+"legitimately differ".
+
+### 45.2 🔴 A real bug the new test caught
+
+Writing `tests/lib/focus-counting-rule.test.ts` — which pins the SQL predicate and
+the JS rule against each other — immediately failed on *"still running"*.
+
+`countsTowardTotals` was:
+
+```ts
+if (isCompletedSession(row)) return minutes > 0;
+return minutes >= minimum;      // ← endReason: null fell through here
+```
+
+A row with **no terminal timestamp** — an in-progress session, or one of the
+ambiguous rows the backfill deliberately leaves `endReason` null — satisfied
+`actualDuration >= 5` and was credited as **finished focus work**. Since
+`actualDuration` is written as a session progresses, **every running session over
+five minutes was inflating `/api/focus/stats`**, and would have done so for every
+user with a session open.
+
+The fix is an explicit guard: unknown is never counted as work.
+
+This is the strongest argument in the whole effort for the test that found it. The
+SQL side was right, the JS side was wrong, and the two only disagreed because nobody
+had put them next to each other.
+
+### 45.3 Command palette
+
+`Start focus` / `Pause focus` (whichever is applicable, read live from the store),
+`Open focus sessions` and `Open focus stats`. The last two deep-link via
+`/focus?panel=sessions|stats`, which is why the page reads `useSearchParams`.
+
+The palette entries go through `getFocusRuntime()`, not the store — the same reason
+the floating bar does. A store call would work on `/focus` and silently do nothing
+everywhere else, which is the exact bug the floating bar had.
+
+### 45.4 Accessibility
+
+**Touch targets.** Twelve controls had a 36px visual box. Rather than inflating them
+to 44px — which turns a compact instrument panel into slabs and looks worse on the
+desktop layout that is the primary case — a `.tap-target` utility expands the *hit
+area* with an absolutely-positioned pseudo-element and `pointer-events: none`. The
+`pointer-events: none` is load-bearing: without it the expanded box sits above
+neighbouring controls and steals their clicks.
+
+**Zen mode had lost its `<h1>`.** Hiding the header left the page with no top-level
+heading at all. It is now `sr-only` in zen mode, so the visual chrome reduces while
+the document structure stays intact.
+
+Also verified: `aria-live` on the dial announces per minute rather than per second;
+decorative icons are `aria-hidden`; outcome badges carry icon **and** text, never
+colour alone; mode switch is a real tablist with roving `tabindex` and arrow keys.
+
+### 45.5 Performance
+
+- **Exactly two `useFocusNow` subscribers** — `TimerDial` and `FloatingFocusBar`.
+  Verified by grepping the filesystem rather than `git grep`, which silently skips
+  untracked files and had briefly reported one.
+- **No barrel imports** in the focus components. Every primitive is imported
+  directly, so the 26-export `components/ui` barrel never enters this page's graph.
+- **No chart code on `/focus`.** Confirmed by grep; the stats panel is plain text and
+  a 7-day list, not recharts.
+- **The drawer is code-split** via `next/dynamic` with `ssr: false`. It pulls in the
+  history table, filters, detail sheet and stats panel — none of which are needed to
+  press Start.
+
+### 45.6 Final verification
+
+| Check | Result |
+| --- | --- |
+| `prisma validate` | valid |
+| `npm run type-check` | **0 errors** in focus files |
+| `npx eslint` (focus domain) | **0 errors** |
+| `npm test` | **139 focus tests passing**, 6 files |
+
+Repo-wide lint is 20 errors / 231 warnings and 2 test files fail — all in the
+concurrent session's routine/journal work (`routine-service.test.ts` calling
+`createBlockForDayType`, which no longer exists, and `tmp-verify-orphan.test.ts`
+needing `DATABASE_URL`). None are in focus.

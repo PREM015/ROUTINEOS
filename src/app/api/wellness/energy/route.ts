@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { wellnessService } from '@/server/services/wellness.service';
 import { energyLogSchema, energyQuerySchema } from '@/schemas/wellness.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Wellness: Energy Route
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await wellnessService.getEnergyLogs(session.user.id, {
+    const result = await wellnessService.getEnergyLogs(userIdFromSession(session), {
       from: validated.data.from,
       to: validated.data.to,
       analyze: validated.data.analyze,
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const log = await wellnessService.logEnergy(session.user.id, validated.data);
+    const log = await wellnessService.logEnergy(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: log }, { status: 201 });
   } catch (error) {

@@ -6,6 +6,7 @@ import { DAY_TYPE_CONFIG } from '@/constants/routine';
 import type { DayOverride } from '@/types/routine';
 import type { DayType } from '@/generated/prisma';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const routineService = new RoutineService();
 
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const records = await routineService.listExceptions(session.user.id, requested ?? undefined);
+  const records = await routineService.listExceptions(userIdFromSession(session), requested ?? undefined);
 
   const data: DayOverride[] = records.map((row) => ({
     date: row.date,
@@ -80,7 +81,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const data = await routineService.upsertException(session.user.id, {
+    const data = await routineService.upsertException(userIdFromSession(session), {
       date: validated.data.date,
       dayType: validated.data.dayType,
       templateId: validated.data.templateId ?? null,

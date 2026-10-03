@@ -3,6 +3,7 @@ import { focusService } from '@/server/services/focus.service';
 import { focusRecoveryChoiceSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const result = await focusService.recoverSession(
-      session.user.id,
+      userIdFromSession(session),
       id,
       parsed.data.choice
     );

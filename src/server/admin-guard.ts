@@ -1,5 +1,6 @@
 import { UserRepository } from '@/server/repositories/user.repository';
 import { AuthorizationError } from '@/lib/errors/app-error';
+import type { UserId } from '@/types/ids';
 
 /**
  * Shared administrator gate.
@@ -16,7 +17,7 @@ import { AuthorizationError } from '@/lib/errors/app-error';
  * `AuthorizationError` maps to 403, deliberately distinct from a 401: the caller
  * is authenticated, they simply may not perform this operation.
  */
-export async function assertAdmin(userId: string): Promise<void> {
+export async function assertAdmin(userId: UserId): Promise<void> {
   const user = await new UserRepository().findById(userId);
   if (user?.role !== 'ADMIN') {
     throw new AuthorizationError('Forbidden');

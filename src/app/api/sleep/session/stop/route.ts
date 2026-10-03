@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/sleep/session/stop – stop the active sleep session and persist
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       actual = result.data;
     }
 
-    const data = await sleepSessionService.stopSleep(session.user.id, new Date(), actual);
+    const data = await sleepSessionService.stopSleep(userIdFromSession(session), new Date(), actual);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     if (error instanceof Error && error.message === 'No active sleep session') {

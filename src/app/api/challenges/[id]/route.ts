@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { challengeService } from '@/server/services/challenge.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { updateChallengeProgressSchema } from '@/schemas/challenge.schema';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -35,7 +36,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid challenge id' }, { status: 400 });
     }
 
-    const data = await challengeService.getForUser(id, session.user.id);
+    const data = await challengeService.getForUser(id, userIdFromSession(session));
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -81,7 +82,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const result = await challengeService.setProgress(
       id,
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 
@@ -118,7 +119,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid challenge id' }, { status: 400 });
     }
 
-    await challengeService.delete(id, session.user.id);
+    await challengeService.delete(id, userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: { deleted: true } });
   } catch (error) {

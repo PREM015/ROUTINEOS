@@ -8,6 +8,7 @@ import type {
   HabitTier,
 } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * `sortBy` values the query schema accepts, mapped to real `Habit` columns.
@@ -61,7 +62,7 @@ export class HabitRepository extends BaseRepository {
    */
   async findById(
     habitId: string,
-    userId: string,
+    userId: UserId,
     options?: { includeDayTypeAssignments?: boolean }
   ): Promise<Habit | null> {
     try {
@@ -79,7 +80,7 @@ export class HabitRepository extends BaseRepository {
   /**
    * Find habit with all relations
    */
-  async findWithRelations(habitId: string, userId: string) {
+  async findWithRelations(habitId: string, userId: UserId) {
     try {
       return await this.prisma.habit.findFirst({
         where: { id: habitId, userId },
@@ -106,7 +107,7 @@ export class HabitRepository extends BaseRepository {
    * Find all habits for user
    */
   async findAll(
-    userId: string,
+    userId: UserId,
     options?: HabitFindAllOptions
   ) {
     try {
@@ -147,7 +148,7 @@ export class HabitRepository extends BaseRepository {
    * symptom is a "have I loaded everything?" check that is quietly wrong instead
    * of one that visibly fails.
    */
-  async countAll(userId: string, options?: HabitFindAllOptions) {
+  async countAll(userId: UserId, options?: HabitFindAllOptions) {
     try {
       return await this.prisma.habit.count({
         where: this.buildWhere(userId, options),
@@ -164,7 +165,7 @@ export class HabitRepository extends BaseRepository {
    * the filters below are the ones the API advertises on `habitQuerySchema`.
    */
   private buildWhere(
-    userId: string,
+    userId: UserId,
     options?: HabitFindAllOptions
   ): Prisma.HabitWhereInput {
     const where: Prisma.HabitWhereInput = { userId };
@@ -243,7 +244,7 @@ export class HabitRepository extends BaseRepository {
    */
   async update(
     habitId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.HabitUpdateInput
   ): Promise<Habit> {
     try {
@@ -259,7 +260,7 @@ export class HabitRepository extends BaseRepository {
   /**
    * Delete habit
    */
-  async delete(habitId: string, userId: string): Promise<Habit> {
+  async delete(habitId: string, userId: UserId): Promise<Habit> {
     try {
       return await this.prisma.habit.delete({
         where: { id: habitId, userId },
@@ -272,7 +273,7 @@ export class HabitRepository extends BaseRepository {
   /**
    * Archive habit
    */
-  async archive(habitId: string, userId: string): Promise<Habit> {
+  async archive(habitId: string, userId: UserId): Promise<Habit> {
     try {
       return await this.prisma.habit.update({
         where: { id: habitId, userId },
@@ -291,7 +292,7 @@ export class HabitRepository extends BaseRepository {
    */
   async updateStatus(
     habitId: string,
-    userId: string,
+    userId: UserId,
     status: HabitStatus
   ): Promise<Habit> {
     try {
@@ -309,7 +310,7 @@ export class HabitRepository extends BaseRepository {
    */
   async updateStreak(
     habitId: string,
-    userId: string,
+    userId: UserId,
     streakData: {
       streakCount: number;
       longestStreak?: number;
@@ -347,7 +348,7 @@ export class HabitRepository extends BaseRepository {
    */
   async findLog(
     habitId: string,
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<HabitLog | null> {
     try {
@@ -368,7 +369,7 @@ export class HabitRepository extends BaseRepository {
   /**
    * Find logs for date
    */
-  async findLogsByDate(userId: string, date: string): Promise<HabitLog[]> {
+  async findLogsByDate(userId: UserId, date: string): Promise<HabitLog[]> {
     try {
       return await this.prisma.habitLog.findMany({
         where: { userId, date },
@@ -394,7 +395,7 @@ export class HabitRepository extends BaseRepository {
    */
   async findLogsByRange(
     habitId: string,
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<HabitLog[]> {
@@ -420,7 +421,7 @@ export class HabitRepository extends BaseRepository {
    * Distinct from findLogsByRange — that one is scoped to a single habit.
    */
   async findLogsByUserRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<HabitLog[]> {
@@ -456,7 +457,7 @@ export class HabitRepository extends BaseRepository {
    */
   async upsertLog(
     habitId: string,
-    userId: string,
+    userId: UserId,
     date: string,
     data: Prisma.HabitLogCreateInput
   ): Promise<HabitLog> {
@@ -488,7 +489,7 @@ export class HabitRepository extends BaseRepository {
    */
   async setLogNote(
     habitId: string,
-    userId: string,
+    userId: UserId,
     date: string,
     note: string | null
   ): Promise<HabitLog> {
@@ -514,7 +515,7 @@ export class HabitRepository extends BaseRepository {
   /**
    * Delete habit log
    */
-  async deleteLog(habitId: string, userId: string, date: string): Promise<void> {
+  async deleteLog(habitId: string, userId: UserId, date: string): Promise<void> {
     try {
       await this.prisma.habitLog.delete({
         where: {
@@ -535,7 +536,7 @@ export class HabitRepository extends BaseRepository {
    */
   async countCompletedLogs(
     habitId: string,
-    userId: string,
+    userId: UserId,
     startDate?: string,
     endDate?: string
   ): Promise<number> {
@@ -563,7 +564,7 @@ export class HabitRepository extends BaseRepository {
    * level. Resolved in a single query rather than one lookup per habit, which
    * is what the habit filter used to do.
    */
-  async findIdsWithLogEnergy(userId: string, energyLevel: number): Promise<string[]> {
+  async findIdsWithLogEnergy(userId: UserId, energyLevel: number): Promise<string[]> {
     try {
       const rows = await this.prisma.habitLog.findMany({
         where: { userId, energyLevel },
@@ -580,7 +581,7 @@ export class HabitRepository extends BaseRepository {
    * Count every completed habit log for a user across all of their habits.
    */
   async countAllCompletedLogs(
-    userId: string,
+    userId: UserId,
     startDate?: string,
     endDate?: string
   ): Promise<number> {
@@ -608,7 +609,7 @@ export class HabitRepository extends BaseRepository {
    */
   async findActiveOverrides(
     habitId: string,
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<HabitOverride[]> {
     try {
@@ -638,7 +639,7 @@ export class HabitRepository extends BaseRepository {
    * required rather than just a `lte` on start.
    */
   async findOverridesByUserRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<HabitOverride[]> {
@@ -672,7 +673,7 @@ export class HabitRepository extends BaseRepository {
   /**
    * Delete habit override
    */
-  async deleteOverride(overrideId: string, userId: string): Promise<void> {
+  async deleteOverride(overrideId: string, userId: UserId): Promise<void> {
     try {
       await this.prisma.habitOverride.delete({
         where: { id: overrideId, userId },
@@ -796,7 +797,7 @@ export class HabitRepository extends BaseRepository {
     }
   }
 
-  async countByStatus(userId: string): Promise<Record<HabitStatus, number>> {
+  async countByStatus(userId: UserId): Promise<Record<HabitStatus, number>> {
     try {
       const counts = await this.prisma.habit.groupBy({
         by: ['status'],

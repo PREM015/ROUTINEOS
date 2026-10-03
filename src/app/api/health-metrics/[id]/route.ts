@@ -3,6 +3,7 @@ import { healthMetricService } from '@/server/services/health-metric.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { updateHealthMetricSchema } from '@/schemas/health-metric.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Health Metric by ID Route
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const metric = await healthMetricService.getForUser(session.user.id, paramId);
+    const metric = await healthMetricService.getForUser(userIdFromSession(session), paramId);
 
     return NextResponse.json({ success: true, data: metric });
   } catch (error) {
@@ -61,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const metric = await healthMetricService.update(
-      session.user.id,
+      userIdFromSession(session),
       paramId,
       validated.data
     );
@@ -90,7 +91,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await healthMetricService.delete(session.user.id, paramId);
+    await healthMetricService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting health metric:', error);

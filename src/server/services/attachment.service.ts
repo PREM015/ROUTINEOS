@@ -4,6 +4,7 @@ import {
   type AttachmentQueryOptions,
 } from '@/server/repositories/attachment.repository';
 import type { Attachment } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Attachment Service
@@ -39,7 +40,7 @@ export class AttachmentService {
   }
 
   async list(
-    userId: string,
+    userId: UserId,
     input: Partial<ListAttachmentsInput> = {},
   ): Promise<AttachmentListResult> {
     const parsed = listSchema.safeParse(input);

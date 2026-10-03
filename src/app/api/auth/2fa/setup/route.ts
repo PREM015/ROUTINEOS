@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAuthRateLimit, rateLimited } from '@/lib/security/auth-rate-limit';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/auth/2fa/setup
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     const authService = new AuthService();
-    const result = await authService.setupTwoFactor(session.user.id);
+    const result = await authService.setupTwoFactor(userIdFromSession(session));
 
     return NextResponse.json({
       success: true,

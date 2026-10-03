@@ -1,6 +1,7 @@
 import type { Project, Milestone, Prisma, GoalPriority } from '@/generated/prisma';
 import { ProjectStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Project Repository
@@ -39,7 +40,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Create a project with optional goal connections
    */
-  async create(userId: string, data: CreateProjectData): Promise<Project> {
+  async create(userId: UserId, data: CreateProjectData): Promise<Project> {
     try {
       const goalIds = data.goalIds ?? [];
 
@@ -71,7 +72,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Find all projects for a user with optional filters
    */
-  async findAll(userId: string, query: ProjectQueryParams = {}) {
+  async findAll(userId: UserId, query: ProjectQueryParams = {}) {
     try {
       const where: Prisma.ProjectWhereInput = { userId };
 
@@ -127,7 +128,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Find a project with goals and milestones
    */
-  async findById(userId: string, projectId: string) {
+  async findById(userId: UserId, projectId: string) {
     try {
       return await this.prisma.project.findFirst({
         where: { id: projectId, userId },
@@ -160,7 +161,7 @@ export class ProjectRepository extends BaseRepository {
    * Update a project owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     projectId: string,
     data: Prisma.ProjectUpdateInput
   ): Promise<Project> {
@@ -177,7 +178,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Delete a project owned by the user
    */
-  async delete(userId: string, projectId: string): Promise<Project> {
+  async delete(userId: UserId, projectId: string): Promise<Project> {
     try {
       return await this.prisma.project.delete({
         where: { id: projectId, userId },
@@ -190,7 +191,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Soft-archive a project
    */
-  async archive(userId: string, projectId: string): Promise<Project> {
+  async archive(userId: UserId, projectId: string): Promise<Project> {
     try {
       return await this.prisma.project.update({
         where: { id: projectId, userId },
@@ -208,7 +209,7 @@ export class ProjectRepository extends BaseRepository {
    * Update a project's status, setting timestamps where relevant
    */
   async updateStatus(
-    userId: string,
+    userId: UserId,
     projectId: string,
     status: ProjectStatus
   ): Promise<Project> {
@@ -235,7 +236,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Get milestones for a project's goals
    */
-  async getMilestones(userId: string, projectId: string) {
+  async getMilestones(userId: UserId, projectId: string) {
     try {
       return await this.prisma.milestone.findMany({
         where: {
@@ -264,7 +265,7 @@ export class ProjectRepository extends BaseRepository {
    * Add a milestone to a goal in the user's project
    */
   async addMilestone(
-    userId: string,
+    userId: UserId,
     projectId: string,
     data: CreateMilestoneData
   ): Promise<Milestone> {
@@ -301,7 +302,7 @@ export class ProjectRepository extends BaseRepository {
    */
   async updateMilestone(
     milestoneId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.MilestoneUpdateInput
   ): Promise<Milestone> {
     try {
@@ -330,7 +331,7 @@ export class ProjectRepository extends BaseRepository {
    */
   async deleteMilestone(
     milestoneId: string,
-    userId: string
+    userId: UserId
   ): Promise<number> {
     try {
       const result = await this.prisma.milestone.deleteMany({
@@ -345,7 +346,7 @@ export class ProjectRepository extends BaseRepository {
   /**
    * Get goals belonging to a project
    */
-  async getGoals(userId: string, projectId: string) {
+  async getGoals(userId: UserId, projectId: string) {
     try {
       return await this.prisma.goal.findMany({
         where: { userId, projectId },

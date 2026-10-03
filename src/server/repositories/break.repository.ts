@@ -1,5 +1,6 @@
 import type { Break, BreakType, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Break Repository
@@ -58,7 +59,7 @@ export class BreakRepository extends BaseRepository {
   /**
    * Create a break for a user, optionally linked to one of their focus sessions
    */
-  async create(userId: string, data: CreateBreakData): Promise<Break> {
+  async create(userId: UserId, data: CreateBreakData): Promise<Break> {
     try {
       if (data.focusSessionId) {
         const owner = await this.prisma.focusSession.findFirst({
@@ -107,7 +108,7 @@ export class BreakRepository extends BaseRepository {
   /**
    * Find a break by ID with an ownership check
    */
-  async findById(userId: string, breakId: string): Promise<Break | null> {
+  async findById(userId: UserId, breakId: string): Promise<Break | null> {
     try {
       return await this.prisma.break.findFirst({
         where: { id: breakId, userId },
@@ -120,7 +121,7 @@ export class BreakRepository extends BaseRepository {
   /**
    * List breaks for a user with optional filters
    */
-  async list(userId: string, query: BreakQueryParams = {}): Promise<Break[]> {
+  async list(userId: UserId, query: BreakQueryParams = {}): Promise<Break[]> {
     try {
       const where: Prisma.BreakWhereInput = { userId };
 
@@ -141,7 +142,7 @@ export class BreakRepository extends BaseRepository {
   /**
    * Count breaks for a user with optional filters
    */
-  async count(userId: string, query: BreakQueryParams = {}): Promise<number> {
+  async count(userId: UserId, query: BreakQueryParams = {}): Promise<number> {
     try {
       const where: Prisma.BreakWhereInput = { userId };
 

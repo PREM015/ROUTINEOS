@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { integrationService } from '@/server/services/integration.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { integrationUpdateSchema } from '@/schemas/integration.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Integration by Provider Route
@@ -31,7 +32,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const provider = integrationService.providerFromSlug(paramProvider);
-    const data = await integrationService.getForUser(session.user.id, provider);
+    const data = await integrationService.getForUser(userIdFromSession(session), provider);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -70,7 +71,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     }
 
     const data = await integrationService.update(
-      session.user.id,
+      userIdFromSession(session),
       provider,
       validated.data
     );

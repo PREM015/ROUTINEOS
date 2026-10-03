@@ -3,6 +3,7 @@ import { pushSubscriptionService } from '@/server/services/push-subscription.ser
 import { AuthorizationError, ValidationError } from '@/lib/errors/app-error';
 import type { RegisterDeviceInput } from '@/schemas/push-subscription.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -25,7 +26,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
 
     const subscriptions = await pushSubscriptionService.listForOwner(
-      session.user.id,
+      userIdFromSession(session),
       id
     );
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const body = (await request.json()) as RegisterDeviceInput;
 
     const subscription = await pushSubscriptionService.registerForOwner(
-      session.user.id,
+      userIdFromSession(session),
       id,
       body
     );
@@ -111,7 +112,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     await pushSubscriptionService.removeForOwner(
-      session.user.id,
+      userIdFromSession(session),
       id,
       subscriptionId
     );

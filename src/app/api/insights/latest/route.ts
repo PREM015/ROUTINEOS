@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { insightReadService } from '@/server/services/insight.service';
 import type { InsightPeriod } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
       | null;
 
     const insight = await insightReadService.getLatestInsight(
-      session.user.id,
+      userIdFromSession(session),
       period ?? undefined
     );
 

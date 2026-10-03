@@ -139,12 +139,21 @@ export function evidenceMs(input: RecoveryInput, now: number): number {
   const hasDeadline = input.plannedMs > 0;
 
   if (input.lastHeartbeatAt === null) {
-    // No heartbeat ever recorded. `noHeartbeatPolicy` decides whether that means
-    // "trust the deadline" or "trust nothing beyond the start".
-    if (hasDeadline && RECOVERY_DEFAULTS.noHeartbeatPolicy === 'conservative') {
-      return Math.max(0, Math.min(now, deadline) - input.startedAt - input.pausedTotalMs);
-    }
-    return 0;
+    // No heartbeat ever recorded — every session written before heartbeats existed,
+    // or a client that never sent one.
+    //
+    // Zero, not the timebox. An earlier version of this branch returned
+    // `min(now, deadline)`, i.e. full credit, while the constant guarding it was
+    // named `noHeartbeatPolicy: 'conservative'` and documented as conservative.
+    // The implementation contradicted its own name, and crediting the whole box
+    // with no evidence at all is precisely the invention of work this module exists
+    // to prevent.
+    //
+    // Cost of being wrong in this direction is one lost session for a legacy row.
+    // Cost of being wrong in the other direction is a statistic that can be inflated
+    // by starting and abandoning.
+    if (RECOVERY_DEFAULTS.noHeartbeatPolicy === 'conservative') return 0;
+    return Math.max(0, Math.min(now, deadline) - input.startedAt - input.pausedTotalMs);
   }
 
   const boundary = hasDeadline ? Math.min(input.lastHeartbeatAt, deadline) : input.lastHeartbeatAt;

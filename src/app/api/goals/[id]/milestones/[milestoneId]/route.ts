@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const patchSchema = z.object({
   completed: z.boolean(),
@@ -47,7 +48,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const milestone = await new GoalService().setMilestoneComplete(
-      session.user.id,
+      userIdFromSession(session),
       id,
       milestoneId,
       validated.data.completed
@@ -78,7 +79,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid goal id' }, { status: 400 });
     }
 
-    await new GoalService().deleteMilestone(session.user.id, id, milestoneId);
+    await new GoalService().deleteMilestone(userIdFromSession(session), id, milestoneId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

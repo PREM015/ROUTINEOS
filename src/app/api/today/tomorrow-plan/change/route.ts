@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { dayTypePlanningService } from '@/server/services/day-type-planning.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const changeSchema = z.object({
   dayTypeId: z.string().min(1),
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await dayTypePlanningService.changeTomorrowPlan(
-      session.user.id,
+      userIdFromSession(session),
       parsed.data
     );
 

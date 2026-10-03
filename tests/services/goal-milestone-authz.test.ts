@@ -33,8 +33,9 @@ vi.mock('@/lib/prisma', () => ({ default: {} }));
 
 import { GoalService } from '@/server/services/goal.service';
 import { NotFoundError } from '@/lib/errors/app-error';
+import { toUserId } from '@/types/ids';
 
-const USER = 'user_1';
+const USER = toUserId('user_1');
 const GOAL = 'goal_a';
 const MILESTONE = 'ms_1';
 

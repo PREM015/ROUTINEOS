@@ -1,5 +1,6 @@
 import type { PushSubscription, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Push Subscription Repository
@@ -20,7 +21,7 @@ export class PushSubscriptionRepository extends BaseRepository {
    * so re-subscribing the same device updates its keys instead of failing.
    */
   async create(
-    userId: string,
+    userId: UserId,
     data: CreatePushSubscriptionData
   ): Promise<PushSubscription> {
     try {
@@ -53,7 +54,7 @@ export class PushSubscriptionRepository extends BaseRepository {
   /**
    * List push subscriptions for a user
    */
-  async findAll(userId: string): Promise<PushSubscription[]> {
+  async findAll(userId: UserId): Promise<PushSubscription[]> {
     try {
       return await this.prisma.pushSubscription.findMany({
         where: { userId },
@@ -67,7 +68,7 @@ export class PushSubscriptionRepository extends BaseRepository {
   /**
    * Find a push subscription owned by the user
    */
-  async findById(userId: string, subscriptionId: string): Promise<PushSubscription | null> {
+  async findById(userId: UserId, subscriptionId: string): Promise<PushSubscription | null> {
     try {
       return await this.prisma.pushSubscription.findFirst({
         where: { id: subscriptionId, userId },
@@ -80,7 +81,7 @@ export class PushSubscriptionRepository extends BaseRepository {
   /**
    * Delete a push subscription owned by the user
    */
-  async delete(userId: string, subscriptionId: string): Promise<PushSubscription> {
+  async delete(userId: UserId, subscriptionId: string): Promise<PushSubscription> {
     try {
       return await this.prisma.pushSubscription.delete({
         where: { id: subscriptionId, userId },

@@ -1,5 +1,6 @@
 import type { HealthMetric, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Health Metric Repository
@@ -31,7 +32,7 @@ export class HealthMetricRepository extends BaseRepository {
   /**
    * Create a health metric entry
    */
-  async create(userId: string, data: CreateHealthMetricData): Promise<HealthMetric> {
+  async create(userId: UserId, data: CreateHealthMetricData): Promise<HealthMetric> {
     try {
       return await this.prisma.healthMetric.create({
         data: {
@@ -54,7 +55,7 @@ export class HealthMetricRepository extends BaseRepository {
   /**
    * Find health metrics for a user with optional filters
    */
-  async findAll(userId: string, query: HealthMetricQueryParams = {}): Promise<HealthMetric[]> {
+  async findAll(userId: UserId, query: HealthMetricQueryParams = {}): Promise<HealthMetric[]> {
     try {
       const where: Prisma.HealthMetricWhereInput = { userId };
 
@@ -81,7 +82,7 @@ export class HealthMetricRepository extends BaseRepository {
   /**
    * Find a single health metric owned by the user
    */
-  async findById(userId: string, metricId: string): Promise<HealthMetric | null> {
+  async findById(userId: UserId, metricId: string): Promise<HealthMetric | null> {
     try {
       return await this.prisma.healthMetric.findFirst({
         where: { id: metricId, userId },
@@ -95,7 +96,7 @@ export class HealthMetricRepository extends BaseRepository {
    * Update a health metric owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     metricId: string,
     data: Partial<CreateHealthMetricData>
   ): Promise<HealthMetric> {
@@ -121,7 +122,7 @@ export class HealthMetricRepository extends BaseRepository {
   /**
    * Delete a health metric owned by the user
    */
-  async delete(userId: string, metricId: string): Promise<HealthMetric> {
+  async delete(userId: UserId, metricId: string): Promise<HealthMetric> {
     try {
       return await this.prisma.healthMetric.delete({
         where: { id: metricId, userId },

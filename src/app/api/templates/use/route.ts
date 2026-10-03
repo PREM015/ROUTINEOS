@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { templateService } from '@/server/services/template.service';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 const templateApplySchema = z.object({
   templateId: z.string().min(1, 'templateId is required'),
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await templateService.applyTemplate(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.templateId
     );
 

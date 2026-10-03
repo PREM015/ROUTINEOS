@@ -1,6 +1,7 @@
 import type { NotificationLog, Prisma, NotificationType } from '@/generated/prisma';
 import { NotificationStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Notification Repository
@@ -71,7 +72,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Create a notification for a user
    */
-  async create(userId: string, data: CreateNotificationData): Promise<NotificationLog> {
+  async create(userId: UserId, data: CreateNotificationData): Promise<NotificationLog> {
     try {
       return await this.prisma.notificationLog.create({
         data: {
@@ -101,7 +102,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Find notifications for a user with optional filters
    */
-  async findAll(userId: string, query: NotificationQueryParams = {}): Promise<NotificationLog[]> {
+  async findAll(userId: UserId, query: NotificationQueryParams = {}): Promise<NotificationLog[]> {
     try {
       return await this.prisma.notificationLog.findMany({
         where: {
@@ -117,9 +118,33 @@ export class NotificationRepository extends BaseRepository {
   }
 
   /**
+   * Notifications created at or after `since`.
+   *
+   * Kept separate from `findAll` rather than folded into it: `findAll`'s query is
+   * a plain user listing, and widening its parameter object to carry an optional
+   * date bound would make every existing caller reason about a filter only the
+   * history feed sets.
+   */
+  async findAllSince(
+    userId: UserId,
+    since: Date,
+    query: { limit?: number; offset?: number } = {},
+  ): Promise<NotificationLog[]> {
+    try {
+      return await this.prisma.notificationLog.findMany({
+        where: { userId, createdAt: { gte: since } },
+        orderBy: { createdAt: 'desc' },
+        ...this.buildPaginationQuery(query.limit, query.offset),
+      });
+    } catch (error) {
+      this.handleError(error, 'findAllSince');
+    }
+  }
+
+  /**
    * Find a notification by ID with ownership check
    */
-  async findById(userId: string, notificationId: string): Promise<NotificationLog | null> {
+  async findById(userId: UserId, notificationId: string): Promise<NotificationLog | null> {
     try {
       return await this.prisma.notificationLog.findFirst({
         where: { id: notificationId, userId },
@@ -132,7 +157,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Mark a notification as read
    */
-  async markRead(userId: string, notificationId: string): Promise<NotificationLog> {
+  async markRead(userId: UserId, notificationId: string): Promise<NotificationLog> {
     try {
       return await this.prisma.notificationLog.update({
         where: { id: notificationId, userId },
@@ -149,7 +174,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Mark all unread notifications as read
    */
-  async markAllRead(userId: string): Promise<number> {
+  async markAllRead(userId: UserId): Promise<number> {
     try {
       const result = await this.prisma.notificationLog.updateMany({
         where: { userId, readAt: null },
@@ -167,7 +192,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Delete a notification owned by the user
    */
-  async delete(userId: string, notificationId: string): Promise<NotificationLog> {
+  async delete(userId: UserId, notificationId: string): Promise<NotificationLog> {
     try {
       return await this.prisma.notificationLog.delete({
         where: { id: notificationId, userId },
@@ -180,7 +205,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Count unread notifications for a user
    */
-  async unreadCount(userId: string): Promise<number> {
+  async unreadCount(userId: UserId): Promise<number> {
     try {
       return await this.prisma.notificationLog.count({
         where: { userId, readAt: null, dismissedAt: null },
@@ -210,7 +235,7 @@ export class NotificationRepository extends BaseRepository {
    * (used to dedupe per-day reminders).
    */
   async countByTypeAndRelatedId(
-    userId: string,
+    userId: UserId,
     type: NotificationType,
     relatedEntityId: string,
   ): Promise<number> {
@@ -226,7 +251,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Find pending (scheduled, not yet sent) notifications of given types.
    */
-  async findPendingByType(userId: string, types: NotificationType[]): Promise<NotificationLog[]> {
+  async findPendingByType(userId: UserId, types: NotificationType[]): Promise<NotificationLog[]> {
     try {
       return await this.prisma.notificationLog.findMany({
         where: {
@@ -244,7 +269,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Mark all pending notifications of a type as sent.
    */
-  async markPendingByTypeSent(userId: string, type: NotificationType): Promise<number> {
+  async markPendingByTypeSent(userId: UserId, type: NotificationType): Promise<number> {
     try {
       const result = await this.prisma.notificationLog.updateMany({
         where: { userId, type, status: NotificationStatus.PENDING },
@@ -272,7 +297,7 @@ export class NotificationRepository extends BaseRepository {
    * @returns the number of rows changed (0 when it was not claimable).
    */
   async snooze(
-    userId: string,
+    userId: UserId,
     notificationId: string,
     scheduledFor: Date,
   ): Promise<number> {
@@ -296,7 +321,7 @@ export class NotificationRepository extends BaseRepository {
   }
 
   async markSent(
-    userId: string,
+    userId: UserId,
     notificationId: string,
     channels?: Partial<DeliveryChannels>,
   ): Promise<number> {
@@ -352,7 +377,7 @@ export class NotificationRepository extends BaseRepository {
      * in-app catch-up in `GET /api/notifications` passes the signed-in user so
      * one person's page load cannot trigger a system-wide dispatch.
      */
-    userId?: string,
+    userId?: UserId,
     /** Rows in FAILED status below this retry count are re-selected. */
     maxRetries?: number,
   ): Promise<DispatchCandidate[]> {
@@ -432,7 +457,7 @@ export class NotificationRepository extends BaseRepository {
    * accumulate retry attempts forever.
    */
   async markFailed(
-    userId: string,
+    userId: UserId,
     notificationId: string,
     errorMessage: string,
     maxRetries = 3,
@@ -461,7 +486,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Dismiss a single pending notification (idempotent no-op if not pending).
    */
-  async markDismissed(userId: string, notificationId: string): Promise<number> {
+  async markDismissed(userId: UserId, notificationId: string): Promise<number> {
     try {
       const result = await this.prisma.notificationLog.updateMany({
         where: { id: notificationId, userId },
@@ -476,7 +501,7 @@ export class NotificationRepository extends BaseRepository {
   /**
    * Dismiss all pending notifications of a type.
    */
-  async dismissPendingByType(userId: string, type: NotificationType): Promise<number> {
+  async dismissPendingByType(userId: UserId, type: NotificationType): Promise<number> {
     try {
       const result = await this.prisma.notificationLog.updateMany({
         where: { userId, type, status: NotificationStatus.PENDING },

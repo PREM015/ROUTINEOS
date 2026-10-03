@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { backupService } from '@/server/services/backup.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -22,7 +23,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid export id' }, { status: 400 });
     }
 
-    const exportRow = await backupService.getExport(session.user.id, id);
+    const exportRow = await backupService.getExport(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: exportRow });
   } catch (error) {

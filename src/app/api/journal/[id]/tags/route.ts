@@ -4,6 +4,7 @@ import { ForeignTagError } from '@/server/repositories/journal.repository';
 import { journalService } from '@/server/services/journal.service';
 import { setJournalTagsSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal/[id]/tags
@@ -20,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const entry = await journalService.getOrThrow(session.user.id, id);
+    const entry = await journalService.getOrThrow(userIdFromSession(session), id);
     const tags = (entry.tags ?? []).map((relation) => relation.tag);
 
     return NextResponse.json({ success: true, data: tags });
@@ -66,8 +67,8 @@ export async function PUT(
       );
     }
 
-    const count = await journalService.setTags(session.user.id, id, validated.data.tagIds);
-    const updated = await journalService.getOrThrow(session.user.id, id);
+    const count = await journalService.setTags(userIdFromSession(session), id, validated.data.tagIds);
+    const updated = await journalService.getOrThrow(userIdFromSession(session), id);
 
     return NextResponse.json({
       success: true,

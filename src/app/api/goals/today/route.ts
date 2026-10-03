@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { UserService } from '@/server/services/user.service';
 import { getTodayString } from '@/lib/dates';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 /**
  * GET /api/goals/today?date=YYYY-MM-DD
@@ -26,12 +27,12 @@ export async function GET(request: NextRequest) {
     const date =
       dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
         ? dateParam
-        : getTodayString(await new UserService().getTimezone(userId));
+        : getTodayString(await new UserService().getTimezone(toUserId(userId)));
 
     const goalService = new GoalService();
     const [{ goals, resolved }, progressLogs] = await Promise.all([
-      goalService.getVisibleGoalsForDate(userId, date),
-      goalService.getProgressLogsForDate(userId, date),
+      goalService.getVisibleGoalsForDate(toUserId(userId), date),
+      goalService.getProgressLogsForDate(toUserId(userId), date),
     ]);
 
     const latestProgressByGoal = new Map<string, number>();

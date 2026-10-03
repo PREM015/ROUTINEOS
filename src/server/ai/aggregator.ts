@@ -4,6 +4,7 @@ import { GoalRepository } from '@/server/repositories/goal.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * AI Data Aggregator
@@ -11,7 +12,7 @@ import { StreakRepository } from '@/server/repositories/streak.repository';
  */
 
 export async function aggregateUserDataForAI(
-  userId: string,
+  userId: UserId,
   startDate: string,
   endDate: string
 ) {

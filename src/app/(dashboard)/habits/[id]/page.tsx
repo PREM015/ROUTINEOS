@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { Metadata } from 'next';
 import HabitDetailClient from './HabitDetailClient';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * `params` is a Promise in Next 15+ (synchronous access was removed in 16).
@@ -25,7 +26,7 @@ export async function generateMetadata(
   try {
     const { id } = await params;
     const repo = new HabitRepository();
-    const habit = await repo.findWithRelations(id, session.user.id);
+    const habit = await repo.findWithRelations(id, userIdFromSession(session));
     return {
       title: habit ? `${habit.name} — RoutineOS` : 'Habit — RoutineOS',
       description: habit?.description ?? undefined,
@@ -42,7 +43,7 @@ export default async function HabitDetailPage({ params }: HabitDetailPageProps) 
 
   const { id } = await params;
   const repo = new HabitRepository();
-  const habit = await repo.findWithRelations(id, session.user.id);
+  const habit = await repo.findWithRelations(id, userIdFromSession(session));
 
   if (!habit) notFound();
 

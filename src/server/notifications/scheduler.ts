@@ -5,6 +5,7 @@ import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
 import { resolveDayTypeFromException } from '@/lib/scheduling/resolve-routine';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
+import type { UserId } from '@/types/ids';
 
 /** Shared with the rest of the app so reminders cannot disagree with /routine. */
 const routineRepository = new RoutineRepository();
@@ -20,7 +21,7 @@ const routineRepository = new RoutineRepository();
 const SNOOZE_MINUTES = 10;
 
 export async function scheduleNotification(
-  userId: string,
+  userId: UserId,
   type: NotificationType,
   scheduledFor: Date,
   data: {
@@ -125,7 +126,7 @@ export async function markNotificationFailed(
  * to prevent duplicates
  */
 async function existsPendingNotification(
-  userId: string,
+  userId: UserId,
   routineBlockId: string,
   type: NotificationType
 ): Promise<boolean> {
@@ -163,7 +164,7 @@ interface NotificationPreferences {
 /**
  * Get the user's timezone from their settings
  */
-async function getUserTimezone(userId: string): Promise<string> {
+async function getUserTimezone(userId: UserId): Promise<string> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { settings: true },
@@ -182,7 +183,7 @@ async function getUserTimezone(userId: string): Promise<string> {
  * falls back to the permissive defaults.
  */
 async function getNotificationPreferences(
-  userId: string
+  userId: UserId
 ): Promise<NotificationPreferences | null> {
   return prisma.userSettings.findUnique({
     where: { userId },
@@ -344,7 +345,7 @@ export function getEndOccurrence(
  * For each active recurring routine block, calculate the next occurrence
  * and create a pending notification if within the notification window.
  */
-export async function scheduleRoutineBlockNotifications(userId: string) {
+export async function scheduleRoutineBlockNotifications(userId: UserId) {
   try {
     // Honour the master switch and the per-category routine toggles before
     // doing any work. A user who turned routine notifications off should not
@@ -665,7 +666,7 @@ export async function scheduleRoutineBlockNotifications(userId: string) {
  *
  * @returns the number of notifications created (0 or 1).
  */
-export async function scheduleDailyReminder(userId: string): Promise<number> {
+export async function scheduleDailyReminder(userId: UserId): Promise<number> {
   const preferences = await getNotificationPreferences(userId);
   if (!preferences) return 0;
   if (preferences.notificationsEnabled === false) return 0;
@@ -757,7 +758,7 @@ export async function scheduleDailyReminder(userId: string): Promise<number> {
 /**
  * Get notifications that should be sent now (scheduledFor <= now)
  */
-export async function getNotificationsToSend(userId: string, beforeDate: Date = new Date()) {
+export async function getNotificationsToSend(userId: UserId, beforeDate: Date = new Date()) {
   return await prisma.notificationLog.findMany({
     where: {
       userId,

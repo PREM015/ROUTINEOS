@@ -10,6 +10,8 @@
 
 import type { FeatureFlag, Role } from '@/generated/prisma';
 import prisma from '@/lib/prisma';
+import type { UserId } from '@/types/ids';
+import { toUserIdOptional } from '@/types/ids';
 
 export interface FlagResult {
   key: string;
@@ -75,7 +77,7 @@ function isRoleListed(row: FlagAccess, role?: Role): boolean {
   return parseStringArray(row.enabledForRoles).includes(role);
 }
 
-function isUserListed(row: FlagAccess, userId?: string): boolean {
+function isUserListed(row: FlagAccess, userId?: UserId): boolean {
   if (!userId) return false;
   return parseStringArray(row.enabledForUsers).includes(userId);
 }
@@ -103,7 +105,7 @@ export function evaluateFlag(row: FeatureFlag, context: FlagContext = {}): FlagR
   if (isRoleListed(row, context.role)) {
     return { key: row.key, isEnabled: true, reason: 'role' };
   }
-  if (isUserListed(row, context.userId)) {
+  if (isUserListed(row, toUserIdOptional(context.userId))) {
     return { key: row.key, isEnabled: true, reason: 'allowlist' };
   }
 
@@ -193,5 +195,5 @@ export function hasFlagAccess(
   row: FlagAccess,
   context: FlagContext = {}
 ): boolean {
-  return isRoleListed(row, context.role) || isUserListed(row, context.userId);
+  return isRoleListed(row, context.role) || isUserListed(row, toUserIdOptional(context.userId));
 }

@@ -9,6 +9,7 @@ import {
   type MilestoneInput,
 } from '@/schemas/project.schema';
 import type { ProjectWithRelations, MilestoneWithGoal } from '@/types/projects';
+import type { UserId } from '@/types/ids';
 
 /**
  * Project CRUD operations.
@@ -21,7 +22,7 @@ const projectRepository = new ProjectRepository();
  * Create a project owned by the user.
  */
 export async function createProject(
-  userId: string,
+  userId: UserId,
   input: CreateProjectInput
 ): Promise<ProjectWithRelations> {
   const data = createProjectSchema.parse(input);
@@ -43,7 +44,7 @@ export async function createProject(
  * Update a project owned by the user.
  */
 export async function updateProject(
-  userId: string,
+  userId: UserId,
   projectId: string,
   input: UpdateProjectInput
 ): Promise<ProjectWithRelations> {
@@ -80,7 +81,7 @@ export interface ListProjectsFilters {
  * List projects matching the given filters.
  */
 export async function listProjects(
-  userId: string,
+  userId: UserId,
   filters: ListProjectsFilters = {}
 ): Promise<ProjectWithRelations[]> {
   const projects = (await projectRepository.findAll(userId, {
@@ -98,7 +99,7 @@ export async function listProjects(
  * Fetch a single project owned by the user, or `null` when not found.
  */
 export async function getProject(
-  userId: string,
+  userId: UserId,
   projectId: string
 ): Promise<ProjectWithRelations | null> {
   return (await projectRepository.findById(userId, projectId)) as ProjectWithRelations | null;
@@ -107,14 +108,14 @@ export async function getProject(
 /**
  * Delete a project owned by the user.
  */
-export async function deleteProject(userId: string, projectId: string): Promise<void> {
+export async function deleteProject(userId: UserId, projectId: string): Promise<void> {
   await projectRepository.delete(userId, projectId);
 }
 
 /**
  * Soft-archive a project.
  */
-export async function archiveProject(userId: string, projectId: string): Promise<void> {
+export async function archiveProject(userId: UserId, projectId: string): Promise<void> {
   await projectRepository.archive(userId, projectId);
 }
 
@@ -122,7 +123,7 @@ export async function archiveProject(userId: string, projectId: string): Promise
  * Set a project's status, applying completion/archive timestamps as needed.
  */
 export async function setProjectStatus(
-  userId: string,
+  userId: UserId,
   projectId: string,
   status: ProjectStatus
 ): Promise<ProjectWithRelations> {
@@ -134,7 +135,7 @@ export async function setProjectStatus(
  * Set a project's progress override (0-100).
  */
 export async function updateProjectProgress(
-  userId: string,
+  userId: UserId,
   projectId: string,
   progress: number
 ): Promise<void> {
@@ -148,7 +149,7 @@ export async function updateProjectProgress(
  * Add a milestone to one of the project's goals.
  */
 export async function addProjectMilestone(
-  userId: string,
+  userId: UserId,
   projectId: string,
   goalId: string,
   input: MilestoneInput
@@ -166,7 +167,7 @@ export async function addProjectMilestone(
  * List the milestones across a project's goals.
  */
 export async function getProjectMilestones(
-  userId: string,
+  userId: UserId,
   projectId: string
 ): Promise<MilestoneWithGoal[]> {
   return (await projectRepository.getMilestones(userId, projectId)) as MilestoneWithGoal[];

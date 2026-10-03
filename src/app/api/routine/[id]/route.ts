@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/routine/[id]              one template with its blocks
@@ -47,7 +48,7 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const template = await routineService.getTemplate(session.user.id, id);
+    const template = await routineService.getTemplate(userIdFromSession(session), id);
     if (!template) {
       return NextResponse.json({ error: 'Not Found' }, { status: 404 });
     }
@@ -75,7 +76,7 @@ export async function PUT(
 
     // `updateTemplateForUser` re-checks ownership and preserves the
     // one-default-per-day-type invariant.
-    const template = await routineService.updateTemplateForUser(session.user.id, id, data);
+    const template = await routineService.updateTemplateForUser(userIdFromSession(session), id, data);
     return NextResponse.json({ success: true, data: template });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -111,7 +112,11 @@ export async function DELETE(
     // Routes through the service so the block-vs-template disambiguation and the
     // ownership check are the same ones `DELETE /api/routine` uses. Deleting a
     // *block* through this path therefore cannot silently delete a template.
-    const deleted = await routineService.deleteById(session.user.id, id);
+    //
+    // `only: 'template'` is what makes that guard real: the service reports a
+    // block id without deleting it, instead of deleting it and only then telling
+    // us it was the wrong kind of id.
+    const deleted = await routineService.deleteById(userIdFromSession(session), id, null, 'template');
     if (deleted !== 'template') {
       return NextResponse.json(
         { error: 'That id is a block, not a template. Use DELETE /api/routine.' },

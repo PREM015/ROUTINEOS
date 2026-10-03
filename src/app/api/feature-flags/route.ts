@@ -4,6 +4,7 @@ import { featureFlagService } from '@/server/services/feature-flag.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { toggleUserFlagSchema } from '@/schemas/feature-flag.schema';
 import type { Role } from '@/generated/prisma';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/feature-flags
@@ -20,7 +21,7 @@ export async function GET(_request: NextRequest) {
     }
 
     const results = await featureFlagService.listForUser(
-      session.user.id,
+      userIdFromSession(session),
       (session.user as { role?: string }).role as Role | undefined
     );
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const flag = await featureFlagService.setForUser(
       validated.data.key,
-      session.user.id,
+      userIdFromSession(session),
       validated.data.enabled
     );
 

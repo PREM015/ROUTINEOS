@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { pushSubscriptionService } from '@/server/services/push-subscription.service';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Push Subscription by ID Route
@@ -24,7 +25,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await pushSubscriptionService.remove(session.user.id, paramId);
+    await pushSubscriptionService.remove(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
     console.error('Error deleting push subscription:', error);

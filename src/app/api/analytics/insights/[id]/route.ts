@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { analyticsService } from '@/server/services/analytics.service';
 import { ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Insight by ID Route
@@ -18,7 +19,7 @@ export async function DELETE(_request: NextRequest, context: { params: Promise<{
     }
 
     const { id } = await context.params;
-    await analyticsService.dismissInsight(session.user.id, id);
+    await analyticsService.dismissInsight(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: { id } });
   } catch (error) {

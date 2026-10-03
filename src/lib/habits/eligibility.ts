@@ -27,10 +27,11 @@ export {
   type DayTypeRestrictedHabit,
   type ResolvedDayTypeLike,
 } from './day-type-match';
+import type { UserId } from '@/types/ids';
 
 export async function calculateHabitEligibility(
   habitId: string,
-  userId: string,
+  userId: UserId,
   date: string,
   /**
    * Optional pre-resolved timezone.
@@ -211,7 +212,7 @@ export async function calculateHabitEligibility(
 
 export async function checkHabitEligibility(
   habitId: string,
-  userId: string,
+  userId: UserId,
   date: string
 ): Promise<boolean> {
   const eligibility = await calculateHabitEligibility(habitId, userId, date);

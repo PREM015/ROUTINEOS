@@ -38,6 +38,16 @@ export const SNAPSHOT_TABLES = [
   'dailyReflection',
   'journalEntry',
   'focusSession',
+  'focusSessionEvent',
+  'focusSettings',
+  'focusPreset',
+  'focusDayTypeTarget',
+  // `Break` is here, immediately after its parent session, because it was missing
+  // entirely before. A backup/restore cycle that omits a table does not fail
+  // loudly: the rows simply come back absent, and the `focusSessionId` on any
+  // break annotation is lost with no error anywhere. Restoring children before
+  // parents would break the foreign key.
+  'break',
   'streak',
   'weeklyReview',
   'aIInsight',
@@ -75,6 +85,11 @@ const RESTORE_ORDER: readonly SnapshotTable[] = [
   'dailyReflection',
   'journalEntry',
   'focusSession',
+  'focusSessionEvent',
+  'focusSettings',
+  'focusPreset',
+  'focusDayTypeTarget',
+  'break',
   'weeklyReview',
   'aIInsight',
   'notificationLog',
@@ -130,6 +145,18 @@ export async function createDatabaseBackup(): Promise<BackupResult> {
       if (!delegate) {
         return [table, [] as readonly Record<string, unknown>[]] as const;
       }
+      /*
+       * ⚠ No `where` clause, so this reads EVERY row of EVERY user's data, capped
+       * at SNAPSHOT_LIMIT. That was already true before the focus tables were added,
+       * but adding four more tables extends it, and an admin-triggered backup that
+       * silently contains other people's rows — and silently *omits* most of them,
+       * because the cap truncates rather than pages — is a cross-tenant exposure.
+       *
+       * This is an admin-scoped path, so the honest fix is either an explicit
+       * `userId` parameter or pagination. Neither is in scope here; what is in
+       * scope is that it is now *documented* rather than incidental, so nobody
+       * builds on the assumption that this is a per-user backup.
+       */
       const rows = await delegate.findMany({ take: SNAPSHOT_LIMIT });
       return [table, rows] as const;
     })

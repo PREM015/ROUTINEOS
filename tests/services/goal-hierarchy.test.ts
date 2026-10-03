@@ -44,6 +44,7 @@ vi.mock('@/lib/prisma', () => ({ default: {} }));
 
 import { GoalService } from '@/server/services/goal.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { toUserId } from '@/types/ids';
 
 const repositoryMock = {
   findById: vi.fn(),
@@ -52,7 +53,7 @@ const repositoryMock = {
   findWithRelations: vi.fn().mockResolvedValue({}),
 };
 
-const USER = 'user_1';
+const USER = toUserId('user_1');
 const GOAL = 'goal_a';
 const PARENT = 'goal_p';
 

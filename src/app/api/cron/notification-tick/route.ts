@@ -6,6 +6,7 @@ import { notificationService } from '@/server/services/notification.service';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
 import { dayTypePlanningService } from '@/server/services/day-type-planning.service';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { toUserId } from '@/types/ids';
 
 /**
  * GET /api/cron/notification-tick
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
     
     for (const userId of activeUsers) {
       try {
-        const result = await dayTypePlanningService.applyFallbackIfNeeded(userId);
+        const result = await dayTypePlanningService.applyFallbackIfNeeded(toUserId(userId));
         if (result) fallbacksApplied++;
       } catch (err) {
         errors.push(`fallback for user ${userId}: ${message(err)}`);

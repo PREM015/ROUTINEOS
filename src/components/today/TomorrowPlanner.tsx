@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Calendar, ChevronDown, CheckCircle2, Clock, AlertCircle, Loader2, HelpCircle } from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, AlertCircle, Loader2, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select';
+import { Select } from '@/components/ui/Select';
 import { GlassPanel } from '@/components/today/ui';
 import { format } from 'date-fns';
 
@@ -158,17 +158,23 @@ export function TomorrowPlanner({ date }: TomorrowPlannerProps) {
       <GlassPanel accent="planning" className="p-4 sm:p-5" aria-busy="true" aria-label="Loading tomorrow's plan">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading tomorrow's plan...</span>
+          <span>Loading tomorrow&rsquo;s plan...</span>
         </div>
       </GlassPanel>
     );
   }
 
-  const tomorrow = plan?.date ? new Date(plan.date) : new Date(Date.now() + 86400000);
+  // Falls back to the `date` prop (the day this planner was mounted on) rather
+// than to `Date.now()`, so the heading names the day the parent asked about
+// instead of a clock reading.
+  const tomorrow = plan?.date ? new Date(plan.date) : new Date(date);
   const formattedDate = format(tomorrow, 'EEEE, MMMM d');
   const status = plan?.status || 'PENDING';
 
-  const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  const statusConfig: Record<
+    TomorrowPlan['status'],
+    { label: string; color: string; icon: React.ReactNode }
+  > = {
     PENDING: { label: 'Pending selection', color: 'text-amber-600 bg-amber-500/10', icon: <Clock className="h-4 w-4" /> },
     SELECTED: { label: 'Selected - awaiting confirmation', color: 'text-blue-600 bg-blue-500/10', icon: <CheckCircle2 className="h-4 w-4" /> },
     CONFIRMED: { label: 'Confirmed & scheduled', color: 'text-emerald-600 bg-emerald-500/10', icon: <CheckCircle2 className="h-4 w-4" /> },
@@ -195,7 +201,7 @@ export function TomorrowPlanner({ date }: TomorrowPlannerProps) {
       <div className="mb-4 p-3 rounded-lg bg-muted/50">
         <p className="text-sm font-medium text-foreground">{formattedDate}</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Select and confirm tomorrow's DayType to generate routine blocks, sleep schedule, and notifications in advance.
+          Select and confirm tomorrow&rsquo;s DayType to generate routine blocks, sleep schedule, and notifications in advance.
         </p>
       </div>
 
@@ -212,32 +218,22 @@ export function TomorrowPlanner({ date }: TomorrowPlannerProps) {
       )}
 
       <div className="space-y-4">
-        <div>
-          <label htmlFor="day-type-select" className="mb-1.5 block text-sm font-medium text-foreground">
-            Tomorrow's DayType
-          </label>
+<div>
           <Select
+            id="day-type-select"
+            label="Tomorrow's DayType"
             value={selectedDayTypeId}
-            onValueChange={setSelectedDayTypeId}
+            onChange={(event) => setSelectedDayTypeId(event.target.value)}
             disabled={status === 'CONFIRMED' || status === 'SYNCED' || actionLoading !== null}
-          >
-            <SelectTrigger id="day-type-select" className="w-full">
-              <SelectValue placeholder="Select a DayType" />
-            </SelectTrigger>
-            <SelectContent>
-              {dayTypes.map((dt) => (
-                <SelectItem key={dt.id} value={dt.id}>
-                  <div className="flex items-center gap-2">
-                    {dt.color && (
-                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: dt.color }} />
-                    )}
-                    <span>{dt.name}</span>
-                    {dt.isDefault && <span className="text-xs text-muted-foreground">(default)</span>}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Select a DayType"
+            options={dayTypes.map((dt) => ({
+              value: dt.id,
+              // The "(default)" hint lived inside the compound `SelectItem`
+              // children. A native `<select>` renders text only, so it has to be
+              // part of the option label or the hint is lost.
+              label: dt.isDefault ? `${dt.name} (default)` : dt.name,
+            }))}
+          />
           {selectedDayType && (
             <p className="mt-1 text-xs text-muted-foreground">
               {selectedDayType.slug === 'work-day' ? 'Typical work/school day schedule' :
@@ -320,7 +316,7 @@ export function TomorrowPlanner({ date }: TomorrowPlannerProps) {
 
         {(status === 'CONFIRMED' || status === 'SYNCED') && plan?.dayTypeId && (
           <div className="pt-4 border-t border-border">
-            <h4 className="text-sm font-medium text-foreground mb-2">What's Ready for Tomorrow</h4>
+            <h4 className="text-sm font-medium text-foreground mb-2">What&rsquo;s Ready for Tomorrow</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -351,8 +347,8 @@ export function TomorrowPlanner({ date }: TomorrowPlannerProps) {
         <div className="flex items-start gap-2">
           <HelpCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
           <div className="text-xs text-muted-foreground space-y-1">
-            <p><strong>How it works:</strong> Select tomorrow's DayType today. Once confirmed, your routine blocks, sleep schedule, habit reminders, and goal notifications will be generated and scheduled automatically.</p>
-            <p>You can change your selection before tomorrow begins. If you don't select by midnight, a fallback DayType will be applied based on the weekday.</p>
+            <p><strong>How it works:</strong> Select tomorrow&rsquo;s DayType today. Once confirmed, your routine blocks, sleep schedule, habit reminders, and goal notifications will be generated and scheduled automatically.</p>
+            <p>You can change your selection before tomorrow begins. If you don&rsquo;t select by midnight, a fallback DayType will be applied based on the weekday.</p>
           </div>
         </div>
       </div>

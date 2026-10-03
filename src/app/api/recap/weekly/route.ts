@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { generateWeeklyRecap } from '@/server/recap/weekly';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       weekEnd = sunday.toISOString().slice(0, 10);
     }
 
-    const recap = await generateWeeklyRecap(session.user.id, weekStart, weekEnd);
+    const recap = await generateWeeklyRecap(userIdFromSession(session), weekStart, weekEnd);
 
     return NextResponse.json({
       success: true,

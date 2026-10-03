@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { updateTaskSchema } from '@/schemas/task.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
 
     const taskService = new TaskService();
-    const task = await taskService.getTask(session.user.id, id);
+    const task = await taskService.getTask(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true, data: task });
   } catch (error) {
@@ -65,7 +66,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const taskService = new TaskService();
-    const task = await taskService.updateTask(session.user.id, id, validated.data);
+    const task = await taskService.updateTask(userIdFromSession(session), id, validated.data);
 
     return NextResponse.json({ success: true, data: task });
   } catch (error) {
@@ -97,7 +98,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }
 
     const taskService = new TaskService();
-    await taskService.deleteTask(session.user.id, id);
+    await taskService.deleteTask(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -2,6 +2,7 @@
 import type { Goal, GoalProgress, Milestone, Prisma, GoalType, GoalPriority } from '@/generated/prisma';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Goal Repository
@@ -32,7 +33,7 @@ export class GoalRepository extends BaseRepository {
   /**
    * Find goal by ID with ownership check
    */
-  async findById(goalId: string, userId: string): Promise<Goal | null> {
+  async findById(goalId: string, userId: UserId): Promise<Goal | null> {
     try {
       return await this.prisma.goal.findFirst({
         where: { id: goalId, userId },
@@ -56,7 +57,7 @@ export class GoalRepository extends BaseRepository {
    * the cap is the backstop for the case where that guard is ever bypassed by a
    * direct repository call.
    */
-  async findDescendantIds(goalId: string, userId: string): Promise<string[]> {
+  async findDescendantIds(goalId: string, userId: UserId): Promise<string[]> {
     const MAX_DEPTH = 25;
     const seen = new Set<string>();
     let frontier = [goalId];
@@ -79,7 +80,7 @@ export class GoalRepository extends BaseRepository {
   /**
    * Find goal with all relations
    */
-  async findWithRelations(goalId: string, userId: string) {
+  async findWithRelations(goalId: string, userId: UserId) {
     try {
       return await this.prisma.goal.findFirst({
         where: { id: goalId, userId },
@@ -119,7 +120,7 @@ export class GoalRepository extends BaseRepository {
    * overwriting `status` there was no single place that knew both the filter and
    * the count depended on it.
    */
-  private buildWhere(userId: string, options: GoalListOptions = {}): Prisma.GoalWhereInput {
+  private buildWhere(userId: UserId, options: GoalListOptions = {}): Prisma.GoalWhereInput {
     const where: Prisma.GoalWhereInput = { userId };
 
     if (options.status) {
@@ -169,7 +170,7 @@ export class GoalRepository extends BaseRepository {
   /**
    * Find all goals for user
    */
-  async findAll(userId: string, options?: GoalListOptions) {
+  async findAll(userId: UserId, options?: GoalListOptions) {
     try {
       const where = this.buildWhere(userId, options);
 
@@ -261,7 +262,7 @@ export class GoalRepository extends BaseRepository {
    */
   async update(
     goalId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.GoalUpdateInput
   ): Promise<Goal> {
     try {
@@ -287,7 +288,7 @@ export class GoalRepository extends BaseRepository {
    * state them before the user commits, rather than surfacing an opaque database
    * error after they have already agreed to something destructive.
    */
-async getDeleteImpact(goalId: string, userId: string): Promise<{
+async getDeleteImpact(goalId: string, userId: UserId): Promise<{
     tasks: number;
     timeEntries: number;
     progressLogs: number;
@@ -334,7 +335,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * Ownership is re-checked inside the transaction, so the delete cannot be
    * steered onto another user's goal by a raced id.
    */
-  async deleteDetaching(goalId: string, userId: string): Promise<void> {
+  async deleteDetaching(goalId: string, userId: UserId): Promise<void> {
     try {
       await this.transaction(async (tx) => {
         const owned = await tx.goal.findFirst({
@@ -364,7 +365,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
   /**
    * Delete goal
    */
-  async delete(goalId: string, userId: string): Promise<Goal> {
+  async delete(goalId: string, userId: UserId): Promise<Goal> {
     try {
       return await this.prisma.goal.delete({
         where: { id: goalId, userId },
@@ -379,7 +380,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    */
   async updateProgress(
     goalId: string,
-    userId: string,
+    userId: UserId,
     currentValue: number
   ): Promise<Goal> {
     try {
@@ -395,7 +396,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
   /**
    * Complete goal
    */
-  async complete(goalId: string, userId: string): Promise<Goal> {
+  async complete(goalId: string, userId: UserId): Promise<Goal> {
     try {
       return await this.prisma.goal.update({
         where: { id: goalId, userId },
@@ -465,7 +466,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * check-ins land in the week for any user not on UTC.
    */
   async findProgressByUserRange(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date
   ): Promise<GoalProgress[]> {
@@ -522,7 +523,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * `from` is inclusive, `to` exclusive, both as UTC midnights.
    */
   async findProgressLogsInRange(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date
   ): Promise<Array<Pick<GoalProgress, 'goalId' | 'value' | 'date' | 'note'>>> {
@@ -549,7 +550,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * tell "that was the last page" from "there are more", so `/goals` rendered
    * whatever the first 50 rows held and silently dropped the rest.
    */
-  async countAll(userId: string, options: Parameters<GoalRepository['findAll']>[1] = {}) {
+  async countAll(userId: UserId, options: Parameters<GoalRepository['findAll']>[1] = {}) {
     try {
       return await this.prisma.goal.count({ where: this.buildWhere(userId, options) });
     } catch (error) {
@@ -569,7 +570,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * first row to genuinely be the most recent one.
    */
   async findProgressLogsByDate(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<GoalProgress[]> {
     try {
@@ -651,7 +652,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    */
   async addDayTypeAssignments(
     goalId: string,
-    userId: string,
+    userId: UserId,
     dayTypeIds: string[]
   ): Promise<void> {
     if (dayTypeIds.length === 0) return;
@@ -707,7 +708,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * decision is testable without a database and is not duplicated per caller.
    */
   async findActiveInDateWindow(
-    userId: string,
+    userId: UserId,
     start: Date,
     end: Date
   ): Promise<Goal[]> {
@@ -730,7 +731,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * Active goals assigned to a specific day-type definition.
    */
   async findActiveByDayTypeId(
-    userId: string,
+    userId: UserId,
     dayTypeId: string
   ): Promise<Goal[]> {
     try {
@@ -862,7 +863,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
    * Milestones completed inside [from, to] for the user's goals.
    */
   async findCompletedMilestones(
-    userId: string,
+    userId: UserId,
     from: Date,
     to: Date
   ): Promise<
@@ -907,7 +908,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
   /**
    * Count goals by status
    */
-  async countByStatus(userId: string): Promise<Record<GoalStatus, number>> {
+  async countByStatus(userId: UserId): Promise<Record<GoalStatus, number>> {
     try {
       const counts = await this.prisma.goal.groupBy({
         by: ['status'],
@@ -929,7 +930,7 @@ async getDeleteImpact(goalId: string, userId: string): Promise<{
   /**
    * Get goals ending soon
    */
-  async getEndingSoon(userId: string, days: number = 7): Promise<Goal[]> {
+  async getEndingSoon(userId: UserId, days: number = 7): Promise<Goal[]> {
     try {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + days);

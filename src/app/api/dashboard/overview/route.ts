@@ -3,6 +3,7 @@ import { DEFAULT_WINDOW_DAYS } from '@/constants/dashboard';
 import { dashboardOverviewService } from '@/server/services/dashboard-overview.service';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const querySchema = z.object({
   days: z.coerce.number().int().min(7).max(90).catch(DEFAULT_WINDOW_DAYS),
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
     const parsed = querySchema.safeParse({ days: searchParams.get('days') });
 
     const data = await dashboardOverviewService.getOverview(
-      session.user.id,
+      userIdFromSession(session),
       parsed.success ? parsed.data.days : DEFAULT_WINDOW_DAYS
     );
 

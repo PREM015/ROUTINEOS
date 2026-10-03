@@ -1,5 +1,6 @@
 import type { Category, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Category Repository
@@ -10,7 +11,7 @@ export class CategoryRepository extends BaseRepository {
   /**
    * Find category by ID
    */
-  async findById(categoryId: string, userId: string): Promise<Category | null> {
+  async findById(categoryId: string, userId: UserId): Promise<Category | null> {
     try {
       return await this.prisma.category.findFirst({
         where: { id: categoryId, userId },
@@ -23,7 +24,7 @@ export class CategoryRepository extends BaseRepository {
   /**
    * Find all categories for user
    */
-  async findAll(userId: string, includeArchived = false): Promise<Category[]> {
+  async findAll(userId: UserId, includeArchived = false): Promise<Category[]> {
     try {
       return await this.prisma.category.findMany({
         where: {
@@ -40,7 +41,7 @@ export class CategoryRepository extends BaseRepository {
   /**
    * Find by name
    */
-  async findByName(userId: string, name: string): Promise<Category | null> {
+  async findByName(userId: UserId, name: string): Promise<Category | null> {
     try {
       return await this.prisma.category.findFirst({
         where: {
@@ -69,7 +70,7 @@ export class CategoryRepository extends BaseRepository {
    */
   async update(
     categoryId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.CategoryUpdateInput
   ): Promise<Category> {
     try {
@@ -85,7 +86,7 @@ export class CategoryRepository extends BaseRepository {
   /**
    * Delete category
    */
-  async delete(categoryId: string, userId: string): Promise<void> {
+  async delete(categoryId: string, userId: UserId): Promise<void> {
     try {
       await this.prisma.category.delete({
         where: { id: categoryId, userId },
@@ -98,7 +99,7 @@ export class CategoryRepository extends BaseRepository {
   /**
    * Archive category
    */
-  async archive(categoryId: string, userId: string): Promise<Category> {
+  async archive(categoryId: string, userId: UserId): Promise<Category> {
     try {
       return await this.prisma.category.update({
         where: { id: categoryId, userId },
@@ -113,7 +114,7 @@ export class CategoryRepository extends BaseRepository {
    * Reorder categories
    */
   async reorder(
-    userId: string,
+    userId: UserId,
     ordering: Array<{ id: string; sortOrder: number }>
   ): Promise<void> {
     try {
@@ -133,7 +134,7 @@ export class CategoryRepository extends BaseRepository {
   /**
    * Count categories
    */
-  async count(userId: string): Promise<number> {
+  async count(userId: UserId): Promise<number> {
     try {
       return await this.prisma.category.count({
         where: { userId, isArchived: false },

@@ -1,6 +1,7 @@
 import type { Task, TaskDependency, Prisma, TaskPriority } from '@/generated/prisma';
 import { TaskStatus } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Task Repository
@@ -38,7 +39,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * Create a task with optional tags and dependencies
    */
-  async create(userId: string, data: CreateTaskData): Promise<Task> {
+  async create(userId: UserId, data: CreateTaskData): Promise<Task> {
     try {
       const tagIds = data.tagIds ?? [];
       const dependsOnIds = data.dependsOnIds ?? [];
@@ -84,7 +85,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * Find all tasks for a user with optional filters
    */
-  async findAll(userId: string, query: TaskQueryParams = {}) {
+  async findAll(userId: UserId, query: TaskQueryParams = {}) {
     try {
       const where: Prisma.TaskWhereInput = { userId };
 
@@ -222,7 +223,7 @@ export class TaskRepository extends BaseRepository {
   }
 
   async getThroughput(
-    userId: string,
+    userId: UserId,
     startDate: Date,
     endDate: Date
   ): Promise<{ created: number; completed: number; open: number }> {
@@ -256,7 +257,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * Find a task with full relations
    */
-  async findById(userId: string, taskId: string) {
+  async findById(userId: UserId, taskId: string) {
     try {
       return await this.prisma.task.findFirst({
         where: { id: taskId, userId },
@@ -300,7 +301,7 @@ export class TaskRepository extends BaseRepository {
    * back out, which is what makes the field trustworthy in both directions.
    */
   async update(
-    userId: string,
+    userId: UserId,
     taskId: string,
     data: Prisma.TaskUpdateInput
   ): Promise<Task> {
@@ -342,7 +343,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * Delete a task owned by the user
    */
-  async delete(userId: string, taskId: string): Promise<Task> {
+  async delete(userId: UserId, taskId: string): Promise<Task> {
     try {
       return await this.prisma.task.delete({
         where: { id: taskId, userId },
@@ -355,7 +356,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * Archive a task (marks it as cancelled)
    */
-  async archive(userId: string, taskId: string): Promise<Task> {
+  async archive(userId: UserId, taskId: string): Promise<Task> {
     try {
       return await this.prisma.task.update({
         where: { id: taskId, userId },
@@ -369,7 +370,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * Complete a task
    */
-  async complete(userId: string, taskId: string): Promise<Task> {
+  async complete(userId: UserId, taskId: string): Promise<Task> {
     try {
       return await this.prisma.task.update({
         where: { id: taskId, userId },
@@ -387,7 +388,7 @@ export class TaskRepository extends BaseRepository {
    * Bulk create tasks for a user
    */
   async bulkCreate(
-    userId: string,
+    userId: UserId,
     tasks: Array<Omit<Prisma.TaskCreateManyInput, 'userId'>>
   ): Promise<number> {
     try {
@@ -405,7 +406,7 @@ export class TaskRepository extends BaseRepository {
    * Replace the dependencies of a task
    */
   async setDependencies(
-    userId: string,
+    userId: UserId,
     taskId: string,
     dependsOnIds: string[]
   ): Promise<number> {
@@ -442,7 +443,7 @@ export class TaskRepository extends BaseRepository {
    * Get the dependencies of a task
    */
   async getDependencies(
-    userId: string,
+    userId: UserId,
     taskId: string
   ): Promise<TaskDependency[]> {
     try {
@@ -465,7 +466,7 @@ export class TaskRepository extends BaseRepository {
    * Update a task's status
    */
   async updateStatus(
-    userId: string,
+    userId: UserId,
     taskId: string,
     status: TaskStatus
   ): Promise<Task> {
@@ -488,7 +489,7 @@ export class TaskRepository extends BaseRepository {
   /**
    * List tasks belonging to a project
    */
-  async listByProject(userId: string, projectId: string) {
+  async listByProject(userId: UserId, projectId: string) {
     try {
       return await this.prisma.task.findMany({
         where: { userId, projectId },

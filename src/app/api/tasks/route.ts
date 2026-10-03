@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { createTaskSchema, taskQuerySchema } from '@/schemas/task.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/tasks
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     const taskService = new TaskService();
-    const tasks = await taskService.getTasks(session.user.id, validated.data);
+    const tasks = await taskService.getTasks(userIdFromSession(session), validated.data);
 
     return NextResponse.json({
       success: true,
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     const taskService = new TaskService();
-    const task = await taskService.createTask(session.user.id, validated.data);
+    const task = await taskService.createTask(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: task }, { status: 201 });
   } catch (error) {

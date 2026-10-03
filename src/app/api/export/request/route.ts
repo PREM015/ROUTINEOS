@@ -3,6 +3,7 @@ import { backupService } from '@/server/services/backup.service';
 import type { ExportFormat } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const exportRequestSchema = z.object({
   format: z.enum(['JSON', 'CSV', 'PDF', 'MARKDOWN']),
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await backupService.createExport(session.user.id, {
+    const result = await backupService.createExport(userIdFromSession(session), {
       format: validated.data.format as ExportFormat,
       includeAttachments: validated.data.includeArchived,
       dateFrom: validated.data.startDate,

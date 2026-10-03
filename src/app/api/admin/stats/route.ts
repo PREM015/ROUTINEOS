@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { adminService, ForbiddenError } from '@/server/services/admin.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/admin/stats
@@ -14,7 +15,7 @@ export async function GET(_request: NextRequest) {
     }
 
     try {
-      await adminService.requireAdmin(session.user.id);
+      await adminService.requireAdmin(userIdFromSession(session));
     } catch (error) {
       if (error instanceof ForbiddenError) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

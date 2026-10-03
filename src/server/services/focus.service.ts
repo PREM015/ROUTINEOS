@@ -1,29 +1,40 @@
 import { FocusRepository } from '@/server/repositories/focus.repository';
 import { FocusSessionEventRepository } from '@/server/repositories/focus-event.repository';
-import { BreakRepository } from '@/server/repositories/break.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
+import { FocusSettingsRepository } from '@/server/repositories/focus-settings.repository';
+import { BreakRepository } from '@/server/repositories/break.repository';
 import { getFocusSessionStatus } from '@/types/focus';
-import type { FocusTimerSnapshot } from '@/types/focus';
-import { nextBreakAt } from '@/lib/focus/break-scheduler';
-import { completeSession } from '@/lib/focus/session-manager';
 import { decideRecovery, applyRecoveryChoice, type RecoveryDecision, type RecoveryInput } from '@/lib/focus/recovery';
 import { focusTimerPayloadToSessionType, titleForFocusType } from '@/lib/focus/type-backfill';
+import { dayRange, statsQueryRange } from '@/lib/focus/stats';
+import { nextBreakAt } from '@/lib/focus/break-scheduler';
+import {
+  FOCUS_METRIC_DEFAULTS,
+  averageSessionMinutes,
+  bucketByDay,
+  completionRate,
+  countedMinutes,
+  streakOfFocusDays,
+  type FocusMetricRow,
+} from '@/lib/focus/metrics';
+import { defaultStatsRange } from '@/app/api/focus/stats/route';
 import type { FocusSessionEndReason } from '@/constants/prisma-enums';
 import {
   ConflictError,
   NotFoundError,
   ValidationError,
 } from '@/lib/errors/app-error';
-import { DEFAULT_TZ, dayBoundsInTimezone } from '@/lib/dates';
+import { DEFAULT_TZ, dayBoundsInTimezone, getTodayString } from '@/lib/dates';
 import type {
   createFocusSessionSchema,
   focusQuerySchema,
+  updateFocusSessionSchema,
   createBreakSchema,
   breakQuerySchema,
-  updateFocusSessionSchema,
-  completeFocusSessionSchema,
 } from '@/schemas/focus.schema';
 import type { z } from 'zod';
+import type { UserId } from '@/types/ids';
+import type { FocusSettingsPatch, FocusPresetInput } from '@/schemas/focus.schema';
 
 /**
  * Focus Service
@@ -36,22 +47,112 @@ import type { z } from 'zod';
 
 type CreateFocusSessionInput = z.infer<typeof createFocusSessionSchema>;
 type FocusQuery = z.infer<typeof focusQuerySchema>;
+type UpdateFocusSessionInput = z.infer<typeof updateFocusSessionSchema>;
 type CreateBreakInput = z.infer<typeof createBreakSchema>;
 type BreakQuery = z.infer<typeof breakQuerySchema>;
-type UpdateFocusSessionInput = z.infer<typeof updateFocusSessionSchema>;
-type CompleteFocusSessionInput = z.infer<typeof completeFocusSessionSchema>;
 
 export class FocusService {
   private focusRepository: FocusRepository;
-  private eventRepository: FocusSessionEventRepository;
   private breakRepository: BreakRepository;
+  private eventRepository: FocusSessionEventRepository;
   private userRepository: UserRepository;
+  private settingsRepository: FocusSettingsRepository;
 
   constructor() {
     this.focusRepository = new FocusRepository();
-    this.eventRepository = new FocusSessionEventRepository();
     this.breakRepository = new BreakRepository();
+    this.eventRepository = new FocusSessionEventRepository();
     this.userRepository = new UserRepository();
+    this.settingsRepository = new FocusSettingsRepository();
+  }
+
+  // ==========================================================================
+  // Settings and presets
+  //
+  // `FocusSettings` and `FocusPreset` already existed in the schema with a full
+  // repository behind them, but nothing reached them: durations were hardcoded to
+  // 25 minutes in both the runtime and the store. So these are the *only* place the
+  // server learns what the user's focus timer is supposed to look like, and
+  // `FocusRuntime` reads them rather than carrying its own defaults.
+  //
+  // Reads go through `getOrCreate`, never `get`, so a user who has never opened the
+  // settings page still gets the schema defaults instead of a null that every caller
+  // would have to special-case.
+  // ==========================================================================
+
+  /** The user's focus settings, created with schema defaults on first read. */
+  async getSettings(userId: UserId) {
+    return this.settingsRepository.getOrCreate(userId);
+  }
+
+  /**
+   * Merge a validated patch into the settings row.
+   *
+   * A patch rather than a replace on purpose: the settings page sends one section at
+   * a time, and a replace would silently reset every field the client did not send.
+   */
+  async updateSettings(userId: UserId, patch: FocusSettingsPatch) {
+    await this.settingsRepository.getOrCreate(userId);
+    return this.settingsRepository.update(userId, patch);
+  }
+
+  /** Presets for the picker, newest ordering last so the user can reorder them. */
+  async listPresets(userId: UserId, includeArchived = false) {
+    return this.settingsRepository.listPresets(userId, includeArchived);
+  }
+
+  /**
+   * Create a preset, after checking the category belongs to the caller.
+   *
+   * `FocusPreset.categoryId` is a plain `SetNull` relation, so without this a
+   * category id could be attached from another account. Validated here rather than by
+   * the schema, which only sees a string.
+   */
+  async createPreset(userId: UserId, input: FocusPresetInput) {
+    if (input.categoryId) {
+      await this.assertCategoryOwned(userId, input.categoryId);
+    }
+    return this.settingsRepository.createPreset(userId, input);
+  }
+
+  /** Ownership is checked against the preset's *own* userId, not the caller's word. */
+  async updatePreset(userId: UserId, presetId: string, patch: Partial<FocusPresetInput>) {
+    if (patch.categoryId) {
+      await this.assertCategoryOwned(userId, patch.categoryId);
+    }
+    return this.settingsRepository.updatePreset(userId, presetId, patch);
+  }
+
+  /**
+   * Archive rather than hard-delete when the preset is referenced.
+   *
+   * `FocusPreset` has an `isArchived` column precisely so a preset that appears in a
+   * session's snapshot can leave the picker without breaking history; the repository
+   * decides which path applies.
+   */
+  async deletePreset(userId: UserId, presetId: string) {
+    return this.settingsRepository.deletePreset(userId, presetId);
+  }
+
+  /** Per-day-type target overrides, keyed by `DayTypeDefinition.id`. */
+  async listDayTypeTargets(userId: UserId) {
+    return this.settingsRepository.listDayTypeTargets(userId);
+  }
+
+  /**
+   * Set (or clear) the target for one day type.
+   *
+   * `null` deletes rather than writing a zero, so "no override" stays distinct from
+   * "override to zero focus minutes" - the two mean opposite things and a zero
+   * target would silently void the day's goal.
+   */
+  async setDayTypeTarget(userId: UserId, dayTypeId: string, targetMinutes: number | null) {
+    if (targetMinutes === null) {
+      await this.settingsRepository.deleteDayTypeTarget(userId, dayTypeId);
+      return { cleared: true };
+    }
+    await this.settingsRepository.setDayTypeTarget(userId, dayTypeId, targetMinutes);
+    return { cleared: false };
   }
 
   /**
@@ -78,7 +179,7 @@ export class FocusService {
    * The lazy settle is idempotent and guarded, so a concurrent second read cannot
    * double-apply it: the write is conditional on the row still looking active.
    */
-  async getActiveSession(userId: string) {
+  async getActiveSession(userId: UserId) {
     const active = await this.focusRepository.findActiveByUserId(userId);
     if (!active) return null;
 
@@ -154,7 +255,7 @@ export class FocusService {
    *    attempt.
    */
   private async applySettlement(
-    userId: string,
+    userId: UserId,
     row: { id: string },
     decision: Extract<RecoveryDecision, { kind: 'auto-complete' | 'auto-abandon' }>
   ): Promise<void> {
@@ -182,7 +283,7 @@ export class FocusService {
   }
 
   /** The user's stored timezone, falling back to `DEFAULT_TZ` on any failure. */
-  private async timezoneFor(userId: string): Promise<string> {
+  private async timezoneFor(userId: UserId): Promise<string> {
     const settings = await this.userRepository
       .getSettings(userId)
       .catch(() => null);
@@ -196,7 +297,7 @@ export class FocusService {
    * `ACTIVE` and `IN_PROGRESS` both mean "still running", so they are treated
    * as the same filter value.
    */
-  async listSessions(userId: string, query: FocusQuery) {
+  async listSessions(userId: UserId, query: FocusQuery) {
     const sessions = await this.focusRepository.findSessions(userId, {
       from: query.from,
       to: query.to,
@@ -250,7 +351,7 @@ export class FocusService {
    * `actualSeconds` is therefore the discriminator: it is the one field only the
    * finished-payload arm carries.
    */
-  async createSession(userId: string, input: CreateFocusSessionInput) {
+  async createSession(userId: UserId, input: CreateFocusSessionInput) {
     // Arm 3: a finished run reported after the fact (the legacy create-at-end).
     if ('actualSeconds' in input) {
       // An aborted session must be closed out, not left "open".
@@ -341,9 +442,22 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * user's category, where it then appears in their "where focus time goes"
    * breakdown. The check is a single indexed primary-key read.
    */
-  private async assertCategoryOwned(userId: string, categoryId: string): Promise<void> {
+  private async assertCategoryOwned(userId: UserId, categoryId: string): Promise<void> {
     await this.focusRepository.assertCategoryOwned(userId, categoryId);
   }
+
+
+  /**
+   * A single session owned by the caller, or `NotFoundError`.
+   */
+  async getSession(userId: UserId, sessionId: string) {
+    const session = await this.focusRepository.findById(userId, sessionId);
+    if (!session) {
+      throw new NotFoundError('Focus session');
+    }
+    return session;
+  }
+
   /**
    * Breaks for a date/type range, plus the ISO timestamp of the next scheduled
    * break if a focus session is currently running.
@@ -351,7 +465,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * The scheduled-break hint is best-effort: a failure to compute it never
    * fails the listing.
    */
-  async listBreaks(userId: string, query: BreakQuery) {
+  async listBreaks(userId: UserId, query: BreakQuery) {
     const [breaks, total] = await Promise.all([
       this.breakRepository.list(userId, query),
       this.breakRepository.count(userId, query),
@@ -389,7 +503,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
   /**
    * Record a break.
    */
-  async createBreak(userId: string, input: CreateBreakInput) {
+  async createBreak(userId: UserId, input: CreateBreakInput) {
     return this.breakRepository.create(userId, {
       focusSessionId: input.focusSessionId,
       breakType: input.breakType,
@@ -399,18 +513,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
       quality: input.quality,
       notes: input.notes,
     });
-  }
-
-  /**
-   * A single session owned by the caller, or `NotFoundError`.
-   */
-  async getSession(userId: string, sessionId: string) {
-    const session = await this.focusRepository.findById(userId, sessionId);
-    if (!session) {
-      throw new NotFoundError('Focus session');
-    }
-    return session;
-  }
+  }
 
   // ==========================================================================
   // Lifecycle
@@ -437,7 +540,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * safe to flush without deduplicating client-side.
    */
   async startSession(
-    userId: string,
+    userId: UserId,
     input: {
       type: 'focus' | 'short-break' | 'long-break' | 'stopwatch';
       plannedSeconds?: number | null;
@@ -529,7 +632,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * one query rather than four.
    */
   private async assertLinkOwnership(
-    userId: string,
+    userId: UserId,
     links: { taskId?: string; goalId?: string; habitId?: string; routineBlockId?: string }
   ): Promise<void> {
     const present = Object.entries(links).filter(
@@ -539,8 +642,72 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
     await this.focusRepository.assertLinksOwned(userId, Object.fromEntries(present));
   }
 
+  /**
+   * Per-day focus statistics — the drill-down behind `GET /api/focus/stats`.
+   *
+   * Applies the same glossary as `focusRepository.getStats`, but per day and with
+   * midnight splitting, which needs the rows in JS. The repository applies the
+   * identical *counting rule* in SQL for the range totals, so the two agree: this is
+   * the same definition computed two ways, not two definitions.
+   *
+   * The only genuinely new thing here is `completionRate`, which needs a denominator
+   * (started sessions) that a range aggregate does not carry.
+   */  async getStats(userId: UserId, from?: string, to?: string) {
+    const timezone = await this.timezoneFor(userId);
+    const today = getTodayString(timezone);
+    const range = defaultStatsRange(today);
+    const fromDate = from ?? range.from;
+    const toDate = to ?? range.to;
+
+    const { gte, lte } = statsQueryRange(timezone, fromDate, toDate);
+    const rows = await this.focusRepository.findRowsForStats(userId, { gte, lte });
+
+    const metricRows: FocusMetricRow[] = rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      startedAt: row.startedAt,
+      endedAt: row.completedAt ?? row.abortedAt,
+      endReason: row.endReason,
+      actualDuration: row.actualDuration,
+      timezone: row.timezone,
+    }));
+
+    const buckets = bucketByDay({ rows: metricRows, timezone, from: fromDate, to: toDate });
+
+    const summarise = (date: string) => {
+      const bucket = buckets.get(date);
+      return {
+        date,
+        focusMinutes: Math.round(bucket?.minutes ?? 0),
+        sessions: bucket ? bucket.completedSessions + bucket.partialSessions : 0,
+        completedSessions: bucket?.completedSessions ?? 0,
+        partialSessions: bucket?.partialSessions ?? 0,
+      };
+    };
+
+    return {
+      // Dense, so the chart has a bar for every day in range. A gap reads as
+      // missing data rather than as a day off.
+      days: dayRange(fromDate, toDate).map(summarise),
+      today: summarise(today),
+      streakDays: streakOfFocusDays(
+        buckets,
+        today,
+        FOCUS_METRIC_DEFAULTS.streakDayMinutes
+      ),
+      totalFocusMinutes: Math.round(
+        metricRows.reduce((sum, row) => sum + countedMinutes(row), 0)
+      ),
+      totalSessions: metricRows.filter((row) => countedMinutes(row) > 0).length,
+      /** `null` when there is nothing to judge — see `completionRate`. */
+      completionRate: completionRate(metricRows),
+      averageSessionMinutes: averageSessionMinutes(metricRows),
+      range: { from: fromDate, to: toDate, timezone },
+    };
+  }
+
   /** A row that is still running or paused. Throws if it has already ended. */
-  private async requireActive(userId: string, sessionId: string) {
+  private async requireActive(userId: UserId, sessionId: string) {
     const session = await this.getSession(userId, sessionId);
     if (session.completedAt || session.abortedAt) {
       throw new ValidationError('Focus session has already ended');
@@ -554,7 +721,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * Idempotent: pausing an already-paused session returns it unchanged rather
    * than moving `pausedAt` forward, which would silently discard the paused span.
    */
-  async pauseSession(userId: string, sessionId: string, reason?: string) {
+  async pauseSession(userId: UserId, sessionId: string, reason?: string) {
     const session = await this.requireActive(userId, sessionId);
     if (session.pausedAt) return session;
 
@@ -582,7 +749,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * the event log on every read, so the hot read stays a single indexed row
    * fetch. The log remains authoritative and can rebuild the column.
    */
-  async resumeSession(userId: string, sessionId: string) {
+  async resumeSession(userId: UserId, sessionId: string) {
     const session = await this.requireActive(userId, sessionId);
     if (!session.pausedAt) return session;
 
@@ -612,7 +779,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * overwriting the plan would make "planned versus actual" — the estimate-accuracy
    * signal — permanently unable to detect a session the user had to extend.
    */
-  async extendSession(userId: string, sessionId: string, seconds: number) {
+  async extendSession(userId: UserId, sessionId: string, seconds: number) {
     await this.requireActive(userId, sessionId);
     const clamped = Math.min(4 * 3600, Math.max(60, Math.round(seconds)));
     const updated = await this.focusRepository.applyTransition(userId, sessionId, {
@@ -639,7 +806,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * running, and echoing the row on every minute would be a payload it has to
    * parse for no information.
    */
-  async heartbeat(userId: string, sessionId: string): Promise<void> {
+  async heartbeat(userId: UserId, sessionId: string): Promise<void> {
     const session = await this.getSession(userId, sessionId);
     if (session.completedAt || session.abortedAt) return;
     await this.focusRepository.applyTransition(userId, sessionId, {
@@ -661,7 +828,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * both would make completion rate permanently 100%.
    */
   async endSession(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     options: {
       endReason: FocusSessionEndReason;
@@ -746,7 +913,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * while the session is still running.
    */
   async logEvent(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     input: { type: 'DISTRACTION' | 'NOTE'; label?: string; note?: string }
   ) {
@@ -773,7 +940,7 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
    * the user can supply the missing evidence.
    */
   async recoverSession(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     choice: 'credit-evidence' | 'credit-full' | 'discard'
   ) {
@@ -806,14 +973,14 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
   }
 
   /** The ordered event timeline for one session. */
-  async listEvents(userId: string, sessionId: string) {
+  async listEvents(userId: UserId, sessionId: string) {
     await this.getSession(userId, sessionId);
     return this.eventRepository.listForSession(userId, sessionId);
   }
 
   /** Edit a session's descriptive fields. */
   async updateSession(
-    userId: string,
+    userId: UserId,
     sessionId: string,
     input: UpdateFocusSessionInput
   ) {
@@ -828,65 +995,12 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
   }
 
   /** Delete a session. */
-  async deleteSession(userId: string, sessionId: string) {
+  async deleteSession(userId: UserId, sessionId: string) {
     await this.getSession(userId, sessionId);
     return this.focusRepository.delete(userId, sessionId);
   }
 
-  /**
-   * Complete a session: set `completedAt` and the actual duration.
-   *
-   * The duration comes from the shared `completeSession` timer helper rather
-   * than from the route, so completing a session from any future surface (the
-   * dashboard, an offline sync) records the same figure the pomodoro timer
-   * would have shown.
-   *
-   * The snapshot is reconstructed from the stored row because the browser's
-   * timer state is not available server-side: the planned timebox is treated as
-   * having run to completion, which is what completing a session means.
-   *
-   * `Math.max(1, …)` keeps a completed session from recording 0 minutes. A
-   * session completed immediately — or one whose planned duration rounds to
-   * under 30 seconds — would otherwise look not-started in every duration total.
-   */
-  async completeSession(
-    userId: string,
-    sessionId: string,
-    input: CompleteFocusSessionInput
-  ) {
-    const focusSession = await this.getSession(userId, sessionId);
 
-    if (focusSession.completedAt) {
-      throw new ValidationError('Focus session already completed');
-    }
-
-    const plannedSeconds = focusSession.plannedDuration * 60;
-    const snapshot: FocusTimerSnapshot = {
-      sessionId: focusSession.id,
-      state: 'RUNNING',
-      startedAt: focusSession.startedAt,
-      endsAt: new Date(focusSession.startedAt.getTime() + plannedSeconds * 1000),
-      elapsedSeconds: 0,
-      remainingSeconds: plannedSeconds,
-      progressPercentage: 0,
-    };
-
-    const completion = completeSession(snapshot);
-    const actualDuration = Math.max(
-      1,
-      Math.round(completion.durationSeconds / 60)
-    );
-
-    return this.focusRepository.completeSession(userId, sessionId, {
-      actualDuration,
-      focusRating: input.focusRating,
-      productivityRating: input.productivityRating,
-      difficultyRating: input.difficultyRating,
-      energyAfter: input.energyAfter,
-      distractions: input.distractions,
-      notes: input.notes,
-    });
-  }
 }
 
 export const focusService = new FocusService();

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { lifeContextService } from '@/server/services/life-context.service';
 import { reflectionSchema } from '@/schemas/reflection.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/reflections
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await lifeContextService.getReflection(session.user.id, date);
+    const data = await lifeContextService.getReflection(userIdFromSession(session), date);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     const reflection = await lifeContextService.saveReflection(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 

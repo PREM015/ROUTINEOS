@@ -6,6 +6,7 @@ import { JournalRepository } from '@/server/repositories/journal.repository';
 import { TemplateRepository } from '@/server/repositories/template.repository';
 import { globalSearchSchema } from '@/schemas/search.schema';
 import type { GlobalSearchInput } from '@/schemas/search.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Search Service
@@ -46,7 +47,7 @@ export class SearchService {
   /**
    * Search across all supported content categories for a user
    */
-  async globalSearch(userId: string, input: GlobalSearchInput) {
+  async globalSearch(userId: UserId, input: GlobalSearchInput) {
     const { query, type, limit = 5, offset = 0 } = globalSearchSchema.parse(input);
 
     const targets: CategoryKey[] =
@@ -70,7 +71,7 @@ export class SearchService {
    * Search habits (client-side: repository has no search filter)
    */
   async searchHabits(
-    userId: string,
+    userId: UserId,
     term: string,
     limit: number,
     offset = 0
@@ -96,7 +97,7 @@ export class SearchService {
    * Search goals (client-side: repository has no search filter)
    */
   async searchGoals(
-    userId: string,
+    userId: UserId,
     term: string,
     limit: number,
     offset = 0
@@ -119,7 +120,7 @@ export class SearchService {
    * Search projects
    */
   async searchProjects(
-    userId: string,
+    userId: UserId,
     term: string,
     limit: number,
     offset = 0
@@ -135,7 +136,7 @@ export class SearchService {
    * Search tasks
    */
   async searchTasks(
-    userId: string,
+    userId: UserId,
     term: string,
     limit: number,
     offset = 0
@@ -151,7 +152,7 @@ export class SearchService {
    * Search journal entries
    */
   async searchJournal(
-    userId: string,
+    userId: UserId,
     term: string,
     limit: number,
     offset = 0
@@ -168,7 +169,7 @@ export class SearchService {
    * Search routine templates
    */
   async searchTemplates(
-    userId: string,
+    userId: UserId,
     term: string,
     limit: number,
     offset = 0
@@ -185,7 +186,7 @@ export class SearchService {
    */
   private searchFns: Record<
     CategoryKey,
-    ((userId: string, term: string, limit: number, offset: number) => Promise<unknown>) | undefined
+    ((userId: UserId, term: string, limit: number, offset: number) => Promise<unknown>) | undefined
   > = {
     habit: (userId, term, limit, offset) =>
       this.searchHabits(userId, term, limit, offset),

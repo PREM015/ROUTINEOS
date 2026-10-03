@@ -3,6 +3,7 @@ import { categoryService } from '@/server/services/category.service';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { ConflictError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Category Route
@@ -23,7 +24,7 @@ export async function GET(_request: NextRequest) {
       return errorResponse('Unauthorized', 401);
     }
 
-    const categories = await categoryService.list(session.user.id);
+    const categories = await categoryService.list(userIdFromSession(session));
     return successResponse(categories);
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const category = await categoryService.create(session.user.id, body);
+    const category = await categoryService.create(userIdFromSession(session), body);
 
     return NextResponse.json({ success: true, data: category }, { status: 201 });
   } catch (error) {

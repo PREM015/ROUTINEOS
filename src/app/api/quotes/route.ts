@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { QuoteService } from '@/server/services/quote.service';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const quoteService = new QuoteService();
 
@@ -29,7 +30,7 @@ export async function GET() {
   }
 
   try {
-    const quotes = await quoteService.listQuotes(session.user.id);
+    const quotes = await quoteService.listQuotes(userIdFromSession(session));
     return NextResponse.json({ success: true, data: quotes });
   } catch (error) {
     console.error('GET /api/quotes error:', error);
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await quoteService.createQuote(session.user.id, validated.data);
+    const result = await quoteService.createQuote(userIdFromSession(session), validated.data);
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {
     console.error('POST /api/quotes error:', error);
@@ -84,7 +85,7 @@ export async function PUT(request: Request) {
     }
 
     const { id, ...input } = validated.data;
-    const result = await quoteService.updateQuote(session.user.id, id, input);
+    const result = await quoteService.updateQuote(userIdFromSession(session), id, input);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('You can only')) {
@@ -114,7 +115,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const result = await quoteService.deleteQuote(session.user.id, validated.data.id);
+    const result = await quoteService.deleteQuote(userIdFromSession(session), validated.data.id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith('You can only')) {

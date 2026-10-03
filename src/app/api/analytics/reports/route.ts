@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { analyticsService } from '@/server/services/analytics.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const reportsQuerySchema = z.object({
   type: z.enum(['weekly', 'monthly']).default('weekly'),
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await analyticsService.getReport(session.user.id, type, date);
+    const data = await analyticsService.getReport(userIdFromSession(session), type, date);
 
     return NextResponse.json({ success: true, data });
   } catch (error) {

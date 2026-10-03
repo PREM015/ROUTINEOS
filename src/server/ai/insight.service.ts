@@ -4,9 +4,10 @@ import { aggregateUserDataForAI } from './aggregator';
 import { generateInsight } from './provider';
 import { AIInsightResponse } from './schema';
 import { validateInsightContent, sanitizeInsightText } from './safety';
+import type { UserId } from '@/types/ids';
 
 export async function generateUserInsights(
-  userId: string,
+  userId: UserId,
   db: PrismaClient
 ): Promise<{ success: boolean; insights?: AIInsightResponse['insights']; error?: string }> {
   try {

@@ -3,6 +3,7 @@ import { focusService } from '@/server/services/focus.service';
 import { startFocusSessionSchema } from '@/schemas/focus.schema';
 import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/focus/start — idempotent start of a **running** session.
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const started = await focusService.startSession(session.user.id, parsed.data);
+    const started = await focusService.startSession(userIdFromSession(session), parsed.data);
     return NextResponse.json({ success: true, data: started }, { status: 201 });
   } catch (error) {
     if (error instanceof ConflictError) {

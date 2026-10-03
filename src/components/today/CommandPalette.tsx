@@ -4,11 +4,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import {
+  BarChart3,
   BedDouble,
   CalendarDays,
   Check,
+  History,
   Moon,
   NotebookPen,
+  Pause,
+  Play,
   Search,
   Timer,
 } from 'lucide-react';
@@ -17,6 +21,7 @@ import { apiRequest } from '@/lib/api-client';
 import { toast } from 'sonner';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { enumValueForSlug } from '@/constants/day-types';
+import { getFocusRuntime, useFocusStore } from '@/store/focus.store';
 import { notifyTodayDataChanged } from '@/lib/today-sync';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +62,9 @@ export function CommandPalette() {
   const [dayTypes, setDayTypes] = useState<DayTypeOption[]>([]);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // Read live so the palette offers Pause while a session runs and Start when it does
+  // not. A stale value here would offer an action that cannot do anything.
+  const focusStatus = useFocusStore((s) => s.status);
 
   // Global shortcut. `navigator` guards the server render.
   useEffect(() => {
@@ -349,6 +357,55 @@ export function CommandPalette() {
                   <Timer className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                   <span className="flex-1">Go to focus</span>
                   <Hint>page</Hint>
+                </Command.Item>
+                {/*
+                  Focus actions.
+
+                  The timer used to have no keyboard control and no palette entry at
+                  all, so the fastest way into a session was to navigate to `/focus`
+                  and then find the button. These go through the runtime rather than
+                  the store, so they work from any page — including `/focus` itself,
+                  where the page has no Start button to fall back on.
+                */}
+                {focusStatus !== 'running' && (
+                  <Command.Item
+                    value="start focus session timer"
+                    onSelect={() => run(async () => void getFocusRuntime()?.start())}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm data-[selected=true]:bg-muted"
+                  >
+                    <Play className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    <span className="flex-1">Start focus</span>
+                    <Hint>{focusStatus === 'paused' ? 'resume' : 'now'}</Hint>
+                  </Command.Item>
+                )}
+                {focusStatus === 'running' && (
+                  <Command.Item
+                    value="pause focus session timer"
+                    onSelect={() => run(async () => void getFocusRuntime()?.pause())}
+                    className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm data-[selected=true]:bg-muted"
+                  >
+                    <Pause className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                    <span className="flex-1">Pause focus</span>
+                    <Hint>now</Hint>
+                  </Command.Item>
+                )}
+                <Command.Item
+                  value="focus session history open sessions"
+                  onSelect={() => run(async () => router.push('/focus?panel=sessions'))}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm data-[selected=true]:bg-muted"
+                >
+                  <History className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                  <span className="flex-1">Open focus sessions</span>
+                  <Hint>history</Hint>
+                </Command.Item>
+                <Command.Item
+                  value="focus stats statistics"
+                  onSelect={() => run(async () => router.push('/focus?panel=stats'))}
+                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm data-[selected=true]:bg-muted"
+                >
+                  <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                  <span className="flex-1">Open focus stats</span>
+                  <Hint>insights</Hint>
                 </Command.Item>
               </Command.Group>
             </Command.List>

@@ -83,16 +83,6 @@ const ADVANCE_OPTIONS = [
   { value: '30', label: '30 minutes before' },
 ];
 
-const CATEGORY_ROWS: ToggleRow[] = [
-  { key: 'routineStartNotifications', label: 'Routine Start', description: 'Notify when a scheduled routine block begins.' },
-  { key: 'upcomingRoutineNotifications', label: 'Upcoming Routine', description: 'Notify before a routine block starts (advance notice).' },
-  { key: 'sleepReminderNotifications', label: 'Sleep Reminder', description: "Remind you when it's time to sleep." },
-  { key: 'sleepPreWarningNotifications', label: 'Sleep Pre-Warning', description: 'Notify 1 hour before bedtime to start winding down.' },
-  { key: 'wakeConfirmationNotifications', label: 'Wake Confirmation', description: 'Ask for actual wake time at target wake time.' },
-  { key: 'habitReminderNotifications', label: 'Habit Reminder', description: 'Prompt for scheduled habits.' },
-  { key: 'goalReminderNotifications', label: 'Goal Reminder', description: 'Nudge for goal check-ins and deadlines.' },
-];
-
 /** Best-effort classification of this browser, stored with the subscription. */
 function detectDeviceType(): DeviceType {
   if (typeof navigator === 'undefined') return DeviceType.WEB;

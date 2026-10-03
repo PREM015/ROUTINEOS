@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { bulkService } from '@/server/services/bulk.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 const bulkArchiveSchema = z.object({
   type: z.enum(['habit', 'goal', 'task']),
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { type, ids } = validated.data;
-    const results = await bulkService.archive(session.user.id, type, ids);
+    const results = await bulkService.archive(userIdFromSession(session), type, ids);
     const succeeded = results.filter((r) => r.success).length;
 
     return NextResponse.json({

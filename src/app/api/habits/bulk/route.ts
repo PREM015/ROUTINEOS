@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { createHabitSchema, updateHabitSchema } from '@/schemas/habit.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 const bulkHabitsSchema = z.object({
   create: z.array(createHabitSchema).max(100).optional(),
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     const created: BulkOutput[] = [];
     for (const input of validated.data.create ?? []) {
       try {
-        const habit = await habitService.createHabit(userId, input);
+        const habit = await habitService.createHabit(toUserId(userId), input);
         created.push({ id: habit.id, success: true, data: habit });
       } catch (error) {
         created.push({
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
     const updated: BulkOutput[] = [];
     for (const { id, data } of validated.data.update ?? []) {
       try {
-        const habit = await habitService.updateHabit(userId, id, data);
+        const habit = await habitService.updateHabit(toUserId(userId), id, data);
         updated.push({ id, success: true, data: habit });
       } catch (error) {
         updated.push({
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     const deleted: BulkOutput[] = [];
     for (const id of validated.data.delete ?? []) {
       try {
-        await habitService.deleteHabit(userId, id);
+        await habitService.deleteHabit(toUserId(userId), id);
         deleted.push({ id, success: true });
       } catch (error) {
         deleted.push({

@@ -3,6 +3,7 @@ import { HabitService } from '@/server/services/habit.service';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const skipHabitSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -37,7 +38,7 @@ export async function POST(
 
     const habitService = new HabitService();
     await habitService.skipHabit(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data.date,
       validated.data.reason

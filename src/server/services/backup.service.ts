@@ -14,6 +14,7 @@ import {
   exportHabitsToCSV,
   exportToMarkdown,
 } from '@/server/data/exporter';
+import type { UserId } from '@/types/ids';
 
 /**
  * Backup Service
@@ -98,7 +99,7 @@ export class BackupService {
    * Exports are therefore written outside `public/`, so the only way to read one
    * is through the authorized API route. `.data/` is gitignored.
    */
-  private exportsDirFor(userId: string): string {
+  private exportsDirFor(userId: UserId): string {
     return path.join(process.cwd(), '.data', 'exports', userId);
   }
 
@@ -114,7 +115,7 @@ export class BackupService {
   }
 
   private async serializeExport(
-    userId: string,
+    userId: UserId,
     format: ExportFormat,
     dateFrom?: string,
     dateTo?: string,
@@ -161,7 +162,7 @@ export class BackupService {
    * Create an export, write it to disk and mark it completed
    */
   async createExport(
-    userId: string,
+    userId: UserId,
     input: CreateExportInput,
   ): Promise<{
     exportId: string;
@@ -251,14 +252,14 @@ export class BackupService {
   /**
    * List all exports for a user
    */
-  async getExports(userId: string): Promise<DataExport[]> {
+  async getExports(userId: UserId): Promise<DataExport[]> {
     return this.dataExportRepository.findAllByUser(userId);
   }
 
   /**
    * Get a single export owned by the user
    */
-  async getExport(userId: string, exportId: string): Promise<DataExport> {
+  async getExport(userId: UserId, exportId: string): Promise<DataExport> {
     const exportRow = await this.dataExportRepository.findById(exportId);
     if (!exportRow || exportRow.userId !== userId) {
       throw new Error('Export not found');
@@ -269,7 +270,7 @@ export class BackupService {
   /**
    * Delete an export row and its backing file
    */
-  async deleteExport(userId: string, exportId: string): Promise<{ success: boolean }> {
+  async deleteExport(userId: UserId, exportId: string): Promise<{ success: boolean }> {
     const exportRow = await this.getExport(userId, exportId);
 
     if (exportRow.fileUrl) {

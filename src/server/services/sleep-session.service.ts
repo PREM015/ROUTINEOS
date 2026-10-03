@@ -15,6 +15,7 @@ import { NotificationRepository } from '@/server/repositories/notification.repos
 import { notificationService } from '@/server/services/notification.service';
 import { pushService } from '@/server/services/push.service';
 import { getTodayString, formatMinutes, DEFAULT_TZ } from '@/lib/dates';
+import { toUserId, type UserId } from '@/types/ids';
 
 /**
  * Sleep Session Service v2
@@ -192,12 +193,12 @@ export class SleepSessionService {
     this.notificationRepository = new NotificationRepository();
   }
 
-  private async getTimezone(userId: string): Promise<string> {
+  private async getTimezone(userId: UserId): Promise<string> {
     const settings = await this.userRepository.getSettings(userId);
     return settings?.timezone || DEFAULT_TZ;
   }
 
-  private async getSettings(userId: string): Promise<UserSettings | null> {
+  private async getSettings(userId: UserId): Promise<UserSettings | null> {
     return this.userRepository.getSettings(userId);
   }
 
@@ -223,7 +224,7 @@ export class SleepSessionService {
    * the `sleep-prompt:<localDate>` key.
    */
   private async ensureSleepPrompt(
-    userId: string,
+    userId: UserId,
     settings: UserSettings | null,
     now: Date
   ): Promise<boolean> {
@@ -295,7 +296,7 @@ export class SleepSessionService {
    * and there is no active session or existing log. Idempotent per day via key.
    */
   private async ensurePreSleepWarning(
-    userId: string,
+    userId: UserId,
     settings: UserSettings | null,
     now: Date
   ): Promise<boolean> {
@@ -355,7 +356,7 @@ export class SleepSessionService {
    * Idempotent per day via key.
    */
   private async ensureWakePrompt(
-    userId: string,
+    userId: UserId,
     settings: UserSettings | null,
     now: Date
   ): Promise<boolean> {
@@ -421,7 +422,7 @@ export class SleepSessionService {
   }
 
   private async promptView(
-    userId: string,
+    userId: UserId,
     now: Date,
     settings: UserSettings | null
   ): Promise<SleepPromptView | null> {
@@ -450,7 +451,7 @@ export class SleepSessionService {
   }
 
   private async preWarningView(
-    userId: string,
+    userId: UserId,
     _now: Date,
     settings: UserSettings | null
   ): Promise<SleepPreWarningView | null> {
@@ -469,7 +470,7 @@ export class SleepSessionService {
   }
 
   private async wakePromptView(
-    userId: string,
+    userId: UserId,
     _now: Date,
     settings: UserSettings | null
   ): Promise<SleepWakePromptView | null> {
@@ -518,7 +519,7 @@ export class SleepSessionService {
    * when bedtime has passed. This is the single source the UI polls.
    */
   async resolveSleepState(
-    userId: string,
+    userId: UserId,
     now: Date = new Date()
   ): Promise<SleepState> {
     const settings = await this.getSettings(userId);
@@ -565,7 +566,7 @@ export class SleepSessionService {
    * one is already running. Stops any active time counter first.
    */
   async startSleep(
-    userId: string,
+    userId: UserId,
     options: { source?: SleepStartSource; promptKey?: string | null } = {}
   ): Promise<StartSleepResult> {
     const active = await this.sessionRepository.findActive(userId);
@@ -615,7 +616,7 @@ export class SleepSessionService {
    * races with the auto-start path). NOT_YET dismisses the prompt.
    */
   async respondToPrompt(
-    userId: string,
+    userId: UserId,
     promptId: string,
     answer: 'YES' | 'NOT_YET'
   ): Promise<RespondResult> {
@@ -684,7 +685,7 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
    * Actions: 'woke-at-target' | 'woke-later' | 'still-sleeping'
    */
   async respondToWakePrompt(
-    userId: string,
+    userId: UserId,
     promptId: string,
     action: 'woke-at-target' | 'woke-later' | 'still-sleeping',
     actualWakeTime?: string
@@ -738,7 +739,7 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
    * asking first (see `TodaySleep`'s wake dialog).
    */
   async stopSleep(
-    userId: string,
+    userId: UserId,
     now: Date = new Date(),
     actual: { bedtime?: string; wakeTime?: string } = {}
   ): Promise<StopSleepResult> {
@@ -856,19 +857,19 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
       const targetBedtime = settings.targetBedtime?.trim();
       if (!targetBedtime) continue;
 
-      const created = await this.ensureSleepPrompt(settings.userId, settings, now);
+      const created = await this.ensureSleepPrompt(toUserId(settings.userId), settings, now);
       if (created) promptsCreated += 1;
 
       // Create pre-warning notification (1 hour before bedtime)
-      const preWarningCreated = await this.ensurePreSleepWarning(settings.userId, settings, now);
+      const preWarningCreated = await this.ensurePreSleepWarning(toUserId(settings.userId), settings, now);
       if (preWarningCreated) preWarningsCreated += 1;
 
       // Create wake confirmation notification (at target wake time)
-      const wakeCreated = await this.ensureWakePrompt(settings.userId, settings, now);
+      const wakeCreated = await this.ensureWakePrompt(toUserId(settings.userId), settings, now);
       if (wakeCreated) wakePromptsCreated += 1;
 
       const pending = await this.notificationRepository.findPendingByType(
-        settings.userId,
+        toUserId(settings.userId),
         [NotificationType.SLEEP_PROMPT]
       );
       // "Start sleep automatically" was previously ignored here: the cron
@@ -903,7 +904,7 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
         // Never stack a second session on top of a running one. `ensureSleepPrompt`
         // refuses to create a prompt while one is active, but nothing stopped a
         // *stale* pending prompt from racing past that check.
-        if (await this.sessionRepository.findActive(settings.userId)) continue;
+        if (await this.sessionRepository.findActive(toUserId(settings.userId))) continue;
 
         // Clamp rather than trust the plan: if the tick lands inside the window
         // but slightly before the bedtime instant, back the start off to at most
@@ -913,15 +914,15 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
         );
 
         const session = await this.sessionRepository.createFromPrompt(
-          settings.userId,
+          toUserId(settings.userId),
           promptKey,
           startedAt,
           SleepStartSource.AUTO_NO_RESPONSE
         );
         if (!session) continue; // already resolved (manual yes / prior run)
 
-        await this.timeEntryRepository.stopRunning(settings.userId);
-        await this.notificationRepository.markSent(settings.userId, prompt.id);
+        await this.timeEntryRepository.stopRunning(toUserId(settings.userId));
+        await this.notificationRepository.markSent(toUserId(settings.userId), prompt.id);
         /**
          * Copy no longer asserts that the user actually went to sleep.
          *
@@ -933,7 +934,7 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
          */
         const startedBody = `Sleep tracking started for your ${targetBedtime} bedtime. You can correct the actual times later.`;
         await notificationService
-          .createNotification(settings.userId, {
+          .createNotification(toUserId(settings.userId), {
             type: NotificationType.SLEEP_TRACKING_STARTED,
             title: 'Sleep tracking started',
             body: startedBody,
@@ -943,7 +944,7 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
           })
           .catch(() => undefined);
         await pushService
-          .notify(settings.userId, {
+          .notify(toUserId(settings.userId), {
             title: 'Sleep tracking started',
             body: startedBody,
             url: '/today',

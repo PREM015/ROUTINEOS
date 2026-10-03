@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { DayTypeService } from '@/server/services/day-type.service';
 import { z } from 'zod';
+import { userIdFromSession, type UserId } from '@/types/ids';
 
 const dayTypeService = new DayTypeService();
 
@@ -17,7 +18,7 @@ const updateDayTypeSchema = z.object({
 });
 
 /** Ownership check. Returns the row, or a 404 `NextResponse`. */
-async function getDayTypeOr404(userId: string, id: string) {
+async function getDayTypeOr404(userId: UserId, id: string) {
   const dayType = await dayTypeService.getDayType(userId, id);
   if (!dayType) {
     return NextResponse.json({ error: 'Day type not found' }, { status: 404 });
@@ -33,7 +34,7 @@ export async function GET(
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const dayType = await getDayTypeOr404(session.user.id, id);
+  const dayType = await getDayTypeOr404(userIdFromSession(session), id);
 
   if (dayType instanceof NextResponse) return dayType;
 
@@ -50,7 +51,7 @@ export async function PUT(
   const { id } = await params;
 
   try {
-    const current = await getDayTypeOr404(session.user.id, id);
+    const current = await getDayTypeOr404(userIdFromSession(session), id);
     if (current instanceof NextResponse) return current;
 
     const body = await req.json();
@@ -58,7 +59,7 @@ export async function PUT(
 
     // `DayTypeService` owns slug-uniqueness and the single-default invariant,
     // so this stays a thin delegate.
-    const updated = await dayTypeService.updateDayType(session.user.id, id, data);
+    const updated = await dayTypeService.updateDayType(userIdFromSession(session), id, data);
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
@@ -94,14 +95,14 @@ export async function DELETE(
 
   try {
     if (permanent) {
-      const current = await getDayTypeOr404(session.user.id, id);
+      const current = await getDayTypeOr404(userIdFromSession(session), id);
       if (current instanceof NextResponse) return current;
 
-      const deleted = await dayTypeService.deleteDayType(session.user.id, id);
+      const deleted = await dayTypeService.deleteDayType(userIdFromSession(session), id);
       return NextResponse.json({ success: true, data: deleted, message: 'Day type permanently deleted' });
     }
 
-    const archived = await dayTypeService.archiveDayType(session.user.id, id);
+    const archived = await dayTypeService.archiveDayType(userIdFromSession(session), id);
     return NextResponse.json({
       success: true,
       data: archived,

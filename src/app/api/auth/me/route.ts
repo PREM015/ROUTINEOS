@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { AuthService } from '@/server/services/auth.service';
 import { NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/auth/me
@@ -14,7 +15,7 @@ export async function GET() {
     }
 
     const authService = new AuthService();
-    const user = await authService.getCurrentUser(session.user.id);
+    const user = await authService.getCurrentUser(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: user });
   } catch (error) {

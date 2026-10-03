@@ -7,6 +7,7 @@ import type {
   FeedbackQueryInput,
   UpdateFeedbackInput,
 } from '@/schemas/feedback.schema';
+import type { UserId } from '@/types/ids';
 
 /**
  * Feedback Service
@@ -29,7 +30,7 @@ export class FeedbackService {
   }
 
   /** The caller's own submissions, with a total. */
-  async listOwn(userId: string, query: FeedbackQueryInput) {
+  async listOwn(userId: UserId, query: FeedbackQueryInput) {
     const [items, total] = await Promise.all([
       this.feedbackRepository.findByUserId(userId, query),
       this.feedbackRepository.countByUserId(userId, query),
@@ -40,7 +41,7 @@ export class FeedbackService {
   /**
    * Every submission, for the admin triage queue. Admin only.
    */
-  async listAllForAdmin(userId: string, query: FeedbackQueryInput) {
+  async listAllForAdmin(userId: UserId, query: FeedbackQueryInput) {
     await assertAdmin(userId);
     const [items, total] = await Promise.all([
       this.feedbackRepository.findAllPaginated(query),
@@ -67,7 +68,7 @@ export class FeedbackService {
    * the caller's own submission, so confirming that someone else's feedback id
    * exists would be an enumeration oracle.
    */
-  async getOwn(userId: string, feedbackId: string): Promise<Feedback> {
+  async getOwn(userId: UserId, feedbackId: string): Promise<Feedback> {
     const feedback = await this.feedbackRepository.findById(feedbackId);
     if (!feedback || feedback.userId !== userId) {
       throw new NotFoundError('Feedback');
@@ -82,7 +83,7 @@ export class FeedbackService {
    * comes back as `null` and becomes a 404 here rather than being written to.
    */
   async updateOwn(
-    userId: string,
+    userId: UserId,
     feedbackId: string,
     input: UpdateFeedbackInput
   ): Promise<Feedback> {
@@ -101,7 +102,7 @@ export class FeedbackService {
    * Move a submission through the triage workflow. Admin only.
    */
   async updateStatus(
-    userId: string,
+    userId: UserId,
     feedbackId: string,
     status: FeedbackStatus
   ): Promise<Feedback> {

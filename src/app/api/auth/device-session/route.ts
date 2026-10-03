@@ -3,6 +3,7 @@ import { UserService } from '@/server/services/user.service';
 import { DeviceType } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const registerSchema = z.object({
   deviceId: z.string().min(8, 'deviceId must be a stable client identifier').max(64),
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userService = new UserService();
-    const record = await userService.registerDeviceSession(session.user.id, {
+    const record = await userService.registerDeviceSession(userIdFromSession(session), {
       deviceId: validated.data.deviceId,
       deviceName: validated.data.deviceName ?? null,
       deviceType: validated.data.deviceType ?? null,
@@ -99,11 +100,11 @@ export async function DELETE(request: NextRequest) {
 
     const userService = new UserService();
     const existing = await userService.getDeviceSession(
-      session.user.id,
+      userIdFromSession(session),
       validated.data.deviceId
     );
     if (existing) {
-      await userService.revokeSession(session.user.id, existing.id);
+      await userService.revokeSession(userIdFromSession(session), existing.id);
     }
 
     return NextResponse.json({ success: true, data: { revoked: Boolean(existing) } });

@@ -1,5 +1,6 @@
 import type { SleepLog, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Sleep Repository
@@ -10,7 +11,7 @@ export class SleepRepository extends BaseRepository {
   /**
    * Find sleep log by date
    */
-  async findByDate(userId: string, date: string): Promise<SleepLog | null> {
+  async findByDate(userId: UserId, date: string): Promise<SleepLog | null> {
     try {
       return await this.prisma.sleepLog.findFirst({
         where: { userId, date },
@@ -24,7 +25,7 @@ export class SleepRepository extends BaseRepository {
    * Find sleep logs for range
    */
   async findByRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<SleepLog[]> {
@@ -48,7 +49,7 @@ export class SleepRepository extends BaseRepository {
    * Create or update sleep log
    */
   async upsertLog(
-    userId: string,
+    userId: UserId,
     date: string,
     data: Omit<Prisma.SleepLogCreateInput, 'userId' | 'date'>
   ): Promise<SleepLog> {
@@ -76,7 +77,7 @@ export class SleepRepository extends BaseRepository {
    * Get average sleep duration
    */
   async getAverageDuration(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -103,7 +104,7 @@ export class SleepRepository extends BaseRepository {
    * Get average sleep quality
    */
   async getAverageQuality(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -130,7 +131,7 @@ export class SleepRepository extends BaseRepository {
    * Calculate total sleep deficit
    */
   async calculateTotalDeficit(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string,
     targetDuration: number
@@ -177,7 +178,7 @@ export class SleepRepository extends BaseRepository {
    * caller's previous in-memory filter used.
    */
   async countEarlyWakeups(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string,
     before: string
@@ -195,7 +196,7 @@ export class SleepRepository extends BaseRepository {
     }
   }
 
-  async getLatest(userId: string): Promise<SleepLog | null> {
+  async getLatest(userId: UserId): Promise<SleepLog | null> {
     try {
       return await this.prisma.sleepLog.findFirst({
         where: { userId },
@@ -210,7 +211,7 @@ export class SleepRepository extends BaseRepository {
    * Count days felt rested
    */
   async countRestedDays(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {

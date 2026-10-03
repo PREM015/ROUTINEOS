@@ -1,5 +1,6 @@
 import type { Feedback, FeedbackStatus, FeedbackType, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Feedback Repository
@@ -63,7 +64,7 @@ export class FeedbackRepository extends BaseRepository {
     }
   }
 
-  async findByUserId(userId: string, query: FeedbackQuery = {}): Promise<Feedback[]> {
+  async findByUserId(userId: UserId, query: FeedbackQuery = {}): Promise<Feedback[]> {
     try {
       return await this.prisma.feedback.findMany({
         where: {
@@ -79,7 +80,7 @@ export class FeedbackRepository extends BaseRepository {
     }
   }
 
-  async countByUserId(userId: string, query: FeedbackQuery = {}): Promise<number> {
+  async countByUserId(userId: UserId, query: FeedbackQuery = {}): Promise<number> {
     try {
       return await this.prisma.feedback.count({
         where: {
@@ -139,7 +140,7 @@ export class FeedbackRepository extends BaseRepository {
 
   async updateOwn(
     id: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.FeedbackUpdateInput
   ): Promise<Feedback | null> {
     try {

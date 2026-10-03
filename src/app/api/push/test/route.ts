@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { pushService } from '@/server/services/push.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 interface TestNotificationData {
   userId: string;
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await pushService.sendToUser(userId, {
+    const result = await pushService.sendToUser(toUserId(userId), {
       title,
       body: notificationBody,
       url,

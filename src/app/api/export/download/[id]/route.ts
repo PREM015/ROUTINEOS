@@ -4,6 +4,7 @@ import { ExportFormat, ExportStatus, type DataExport } from '@/generated/prisma'
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -44,7 +45,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     let exportRow: DataExport;
     try {
-      exportRow = await backupService.getExport(session.user.id, id);
+      exportRow = await backupService.getExport(userIdFromSession(session), id);
     } catch (error) {
       if (error instanceof Error && error.message === 'Export not found') {
         return NextResponse.json({ error: 'Export not found' }, { status: 404 });
@@ -78,7 +79,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       process.cwd(),
       '.data',
       'exports',
-      session.user.id,
+      userIdFromSession(session),
       fileName
     );
 

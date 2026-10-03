@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * The body is validated because `resumeDate` becomes a `HabitOverride.startDate`,
@@ -45,7 +46,7 @@ export async function POST(
     const { reason, resumeDate } = parsed.data;
 
     const habitService = new HabitService();
-    await habitService.pauseHabit(session.user.id, id, reason ?? undefined, resumeDate ?? undefined);
+    await habitService.pauseHabit(userIdFromSession(session), id, reason ?? undefined, resumeDate ?? undefined);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -50,6 +50,15 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
+/**
+ * Id of the reporting panel the period strip drives.
+ *
+ * A module constant so it is identical on both sides of the relationship — the
+ * strip renders before the panel exists in the tree, and a `useId()` would have to
+ * be threaded through the component boundary between them.
+ */
+const RECAP_PANEL_ID = 'recap-period-panel';
+
 function monthName(monthKey: string): string {
   return format(parseISO(`${monthKey}-15`), 'MMM');
 }
@@ -110,33 +119,47 @@ export default function RecapPage() {
         <PeriodControl
           period={period}
           onPeriodChange={(p) => setPeriod(p)}
-          label={report?.label ?? '\u2014'}
-        onPrev={() => navigate(-1)}
-        onNext={() => navigate(1)}
-        onToday={() => setAnchorDate(today)}
-        anchorDate={anchorDate}
-        maxAnchor={today}
-        timezone={timezone}
-      />
+          label={report?.label ?? '—'}
+          onPrev={() => navigate(-1)}
+          onNext={() => navigate(1)}
+          onToday={() => setAnchorDate(today)}
+          anchorDate={anchorDate}
+          maxAnchor={today}
+          timezone={timezone}
+          panelId={RECAP_PANEL_ID}
+        />
       </div>
 
-      {loading ? (
-        <SkeletonGrid />
-      ) : error ? (
-        <EmptyState
-          icon={<TrendingUp className="mx-auto h-10 w-10 opacity-50" />}
-          title="Couldn't load your recap"
-          body="Please try again in a moment."
-        />
-      ) : !report?.hasData ? (
-        <EmptyState
-          icon={<CalendarDays className="mx-auto h-10 w-10 opacity-50" />}
-          title="No recap data available for this period."
-          body="Log habits, complete your routine, and track sleep to build your recap."
-        />
-      ) : (
-        <RecapDashboard period={period} report={report} />
-      )}
+      {/*
+        The strip above is a tablist, so it has to name the panel it drives. The
+        three states below are all that panel: loading, failure and content are
+        three renderings of one region, so the role sits on the wrapper rather than
+        being repeated per branch.
+      */}
+      <div
+        id={RECAP_PANEL_ID}
+        role="tabpanel"
+        aria-labelledby={`${RECAP_PANEL_ID}-tab-${period}`}
+        tabIndex={-1}
+      >
+        {loading ? (
+          <SkeletonGrid />
+        ) : error ? (
+          <EmptyState
+            icon={<TrendingUp className="mx-auto h-10 w-10 opacity-50" />}
+            title="Couldn't load your recap"
+            body="Please try again in a moment."
+          />
+        ) : !report?.hasData ? (
+          <EmptyState
+            icon={<CalendarDays className="mx-auto h-10 w-10 opacity-50" />}
+            title="No recap data available for this period."
+            body="Log habits, complete your routine, and track sleep to build your recap."
+          />
+        ) : (
+          <RecapDashboard period={period} report={report} />
+        )}
+      </div>
     </div>
   );
 }

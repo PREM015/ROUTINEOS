@@ -3,6 +3,7 @@ import { apiKeyService } from '@/server/services/api-key.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import type { APIKey } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * API Key by ID Route
@@ -53,7 +54,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid API key id' }, { status: 400 });
     }
 
-    const key = await apiKeyService.get(session.user.id, id);
+    const key = await apiKeyService.get(userIdFromSession(session), id);
     if (!key) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 });
     }
@@ -81,7 +82,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     const body = await request.json();
-    const updated = await apiKeyService.update(session.user.id, id, body);
+    const updated = await apiKeyService.update(userIdFromSession(session), id, body);
 
     return NextResponse.json({ success: true, data: toSafeKey(updated) });
   } catch (error) {
@@ -111,7 +112,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid API key id' }, { status: 400 });
     }
 
-    const result = await apiKeyService.remove(session.user.id, id);
+    const result = await apiKeyService.remove(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('Error deleting API key:', error);

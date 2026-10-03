@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { achievementService } from '@/server/services/achievement.service';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/achievements/unlock
@@ -16,7 +17,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const unlocked = await achievementService.checkForUnlocks(session.user.id);
+    const unlocked = await achievementService.checkForUnlocks(userIdFromSession(session));
 
     return NextResponse.json({
       success: true,

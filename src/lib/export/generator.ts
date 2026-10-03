@@ -17,12 +17,13 @@ import {
   formatActivitiesAsCSV,
 } from './formatters';
 import type { ExportBundle, JsonRecord } from './formatters';
+import type { UserId } from '@/types/ids';
 
 /**
  * Collect domain data for a user: habits, goals and activity log lines.
  * Uses the repositories' own queries via Prisma directly for a light shape.
  */
-export async function getDomainExportData(userId: string) {
+export async function getDomainExportData(userId: UserId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, name: true, timezone: true, createdAt: true },
@@ -61,7 +62,7 @@ export interface FullExportResult {
  * and pretty-printed JSON. Filename embeds the export date.
  */
 export async function generateFullExport(
-  userId: string,
+  userId: UserId,
   options?: { includeArchived?: boolean; startDate?: string; endDate?: string }
 ): Promise<FullExportResult> {
   const data = (await exportUserData(userId, options)) as unknown as JsonRecord;
@@ -101,7 +102,7 @@ export interface DomainExportResult {
  * concatenated CSV (section headers included) and the raw domain JSON.
  */
 export async function generateDomainExport(
-  userId: string
+  userId: UserId
 ): Promise<DomainExportResult> {
   const { user, habits, goals, activities } = await getDomainExportData(userId);
 

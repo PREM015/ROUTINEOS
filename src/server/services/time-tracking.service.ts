@@ -7,6 +7,7 @@ import type {
   UpdateTimeEntryInput,
 } from '@/schemas/time-tracking.schema';
 import type { TimeEntry } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Time Tracking Service
@@ -28,7 +29,7 @@ export class TimeTrackingService {
   }
 
   /** A page of entries plus the total matching count, for the list route's meta. */
-  async listForUser(userId: string, query: TimeTrackingQueryParams) {
+  async listForUser(userId: UserId, query: TimeTrackingQueryParams) {
     const [entries, total] = await Promise.all([
       this.timeEntryRepository.list(userId, query),
       this.timeEntryRepository.count(userId, query),
@@ -45,7 +46,7 @@ export class TimeTrackingService {
    * which only the auto-tracking path sets — a client-supplied `isAutomatic:
    * true` would mark a hand-entered entry as machine-generated.
    */
-  async create(userId: string, input: CreateTimeEntryInput): Promise<TimeEntry> {
+  async create(userId: UserId, input: CreateTimeEntryInput): Promise<TimeEntry> {
     return this.timeEntryRepository.create(userId, {
       description: input.description,
       startTime: input.startTime,
@@ -68,7 +69,7 @@ export class TimeTrackingService {
    * closes *the* running entry — would then leave an orphan that never ends and
    * is counted in every duration total forever.
    */
-  async start(userId: string, input: StartTimeEntryInput): Promise<TimeEntry> {
+  async start(userId: UserId, input: StartTimeEntryInput): Promise<TimeEntry> {
     const running = await this.timeEntryRepository.findRunning(userId);
     if (running) {
       // The conflicting row is attached so the client can show what is already
@@ -94,7 +95,7 @@ export class TimeTrackingService {
    * `NotFoundError` when nothing is running, which is what the route returned as
    * a 404.
    */
-  async stopRunning(userId: string): Promise<TimeEntry> {
+  async stopRunning(userId: UserId): Promise<TimeEntry> {
     const entry = await this.timeEntryRepository.stopRunning(userId);
     if (!entry) {
       throw new NotFoundError('Running time entry');
@@ -103,7 +104,7 @@ export class TimeTrackingService {
   }
 
   /** One entry, or `NotFoundError`. */
-  async getForUser(userId: string, entryId: string) {
+  async getForUser(userId: UserId, entryId: string) {
     const entry = await this.timeEntryRepository.findById(userId, entryId);
     if (!entry) {
       throw new NotFoundError('Time entry');
@@ -126,7 +127,7 @@ export class TimeTrackingService {
    * `endTime - startTime`.
    */
   async update(
-    userId: string,
+    userId: UserId,
     entryId: string,
     input: UpdateTimeEntryInput
   ): Promise<TimeEntry> {
@@ -150,13 +151,13 @@ export class TimeTrackingService {
   }
 
   /** Delete an entry. Returns the deleted row so the caller can echo it back. */
-  async delete(userId: string, entryId: string): Promise<TimeEntry> {
+  async delete(userId: UserId, entryId: string): Promise<TimeEntry> {
     await this.getForUser(userId, entryId);
     return this.timeEntryRepository.delete(userId, entryId);
   }
 
   /** The user's currently running entry, or `null`. */
-  async findRunning(userId: string) {
+  async findRunning(userId: UserId) {
     return this.timeEntryRepository.findRunning(userId);
   }
 }

@@ -1,5 +1,6 @@
 import type { AutomationRule, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Automation Repository
@@ -33,7 +34,7 @@ export class AutomationRepository extends BaseRepository {
   /**
    * Create an automation rule for a user
    */
-  async create(userId: string, data: CreateAutomationData): Promise<AutomationRule> {
+  async create(userId: UserId, data: CreateAutomationData): Promise<AutomationRule> {
     try {
       return await this.prisma.automationRule.create({
         data: {
@@ -54,7 +55,7 @@ export class AutomationRepository extends BaseRepository {
   /**
    * Find automation rules for a user with optional filters
    */
-  async findByUserId(userId: string, query: AutomationQueryParams = {}): Promise<AutomationRule[]> {
+  async findByUserId(userId: UserId, query: AutomationQueryParams = {}): Promise<AutomationRule[]> {
     try {
       const where: Prisma.AutomationRuleWhereInput = { userId };
 
@@ -78,7 +79,7 @@ export class AutomationRepository extends BaseRepository {
    * The evaluator's only query: it must be cheap enough to run on hot paths
    * like logging a habit. `@@index([userId, isActive])` covers the filter.
    */
-  async findActiveByTriggerType(userId: string, triggerType: string): Promise<AutomationRule[]> {
+  async findActiveByTriggerType(userId: UserId, triggerType: string): Promise<AutomationRule[]> {
     try {
       return await this.prisma.automationRule.findMany({
         where: { userId, isActive: true, triggerType },
@@ -92,7 +93,7 @@ export class AutomationRepository extends BaseRepository {
   /**
    * Find a single automation rule owned by the user
    */
-  async findById(userId: string, ruleId: string): Promise<AutomationRule | null> {
+  async findById(userId: UserId, ruleId: string): Promise<AutomationRule | null> {
     try {
       return await this.prisma.automationRule.findFirst({
         where: { id: ruleId, userId },
@@ -106,7 +107,7 @@ export class AutomationRepository extends BaseRepository {
    * Update an automation rule owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     ruleId: string,
     data: Prisma.AutomationRuleUpdateInput,
   ): Promise<AutomationRule> {
@@ -123,7 +124,7 @@ export class AutomationRepository extends BaseRepository {
   /**
    * Delete an automation rule owned by the user
    */
-  async delete(userId: string, ruleId: string): Promise<AutomationRule> {
+  async delete(userId: UserId, ruleId: string): Promise<AutomationRule> {
     try {
       return await this.prisma.automationRule.delete({
         where: { id: ruleId, userId },
@@ -136,7 +137,7 @@ export class AutomationRepository extends BaseRepository {
   /**
    * Set whether an automation rule is active
    */
-  async setActive(userId: string, ruleId: string, isActive: boolean): Promise<AutomationRule> {
+  async setActive(userId: UserId, ruleId: string, isActive: boolean): Promise<AutomationRule> {
     try {
       return await this.prisma.automationRule.update({
         where: { id: ruleId, userId },
@@ -157,7 +158,7 @@ export class AutomationRepository extends BaseRepository {
    * combined `trigger()` handled only `CREATE_TASK` and quietly recorded a
    * "success" for every other type.
    */
-  async markTriggered(userId: string, ruleId: string): Promise<AutomationRule> {
+  async markTriggered(userId: UserId, ruleId: string): Promise<AutomationRule> {
     try {
       const rule = await this.findById(userId, ruleId);
       if (!rule) {

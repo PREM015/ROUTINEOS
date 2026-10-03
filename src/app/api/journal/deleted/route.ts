@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { journalService } from '@/server/services/journal.service';
 import { deletedJournalQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal/deleted
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await journalService.listDeleted(session.user.id, validated.data);
+    const result = await journalService.listDeleted(userIdFromSession(session), validated.data);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/users/leaderboard
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     const rows = await new UserService().getLeaderboard(
-      session.user.id,
+      userIdFromSession(session),
       limit,
       windowDays
     );

@@ -13,6 +13,7 @@ import {
   type SleepLogLike,
 } from '@/server/domain/sleep/sleep-analyzer';
 import type { DateRange } from '@/types/analytics';
+import type { UserId } from '@/types/ids';
 
 /**
  * Weekly Analytics
@@ -171,7 +172,7 @@ function groupProgressDelta(
  * signature is here to prevent.
  */
 export async function weeklySummary(
-  userId: string,
+  userId: UserId,
   monday: string,
   timezone: string,
   today?: string,

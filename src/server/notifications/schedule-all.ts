@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { scheduleRoutineBlockNotifications, scheduleDailyReminder } from '@/server/notifications/scheduler';
 import { scheduleHabitReminders } from '@/server/notifications/habit-reminder';
 import { scheduleGoalReminders } from '@/server/notifications/goal-reminder';
+import { toUserId } from '@/types/ids';
 
 export interface ScheduleAllResult {
   usersProcessed: number;
@@ -81,7 +82,7 @@ export async function scheduleAllReminders(now: Date = new Date()): Promise<Sche
 
   for (const user of routineUsers) {
     try {
-      routineNotificationsScheduled += await scheduleRoutineBlockNotifications(user.id);
+      routineNotificationsScheduled += await scheduleRoutineBlockNotifications(toUserId(user.id));
     } catch (error) {
       errors.push(
         `User ${user.id} (routine): ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -91,7 +92,7 @@ export async function scheduleAllReminders(now: Date = new Date()): Promise<Sche
 
   for (const user of dailyUsers) {
     try {
-      dailyNotificationsScheduled += await scheduleDailyReminder(user.id);
+      dailyNotificationsScheduled += await scheduleDailyReminder(toUserId(user.id));
     } catch (error) {
       errors.push(
         `User ${user.id} (daily): ${error instanceof Error ? error.message : 'Unknown error'}`

@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * POST /api/sleep/session/wake-confirm
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await sleepSessionService.respondToWakePrompt(
-      session.user.id,
+      userIdFromSession(session),
       parsed.data.promptId,
       parsed.data.action,
       parsed.data.actualWakeTime

@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { z } from 'zod';
 import type { APIKey } from '@/generated/prisma';
 import { API_KEY_PREFIX, API_KEY_ENTROPY_BYTES } from '@/constants/api';
+import type { UserId } from '@/types/ids';
 
 /**
  * API Key Service
@@ -112,7 +113,7 @@ export class ApiKeyService {
    * `keyHash` — and while that is a hash rather than the secret, it is still the
    * value `authenticate` matches on.
    */
-  async listForUser(userId: string) {
+  async listForUser(userId: UserId) {
     const keys = await this.apiKeyRepository.findAllByUser(userId);
     return keys.map(toSafeApiKey);
   }
@@ -125,7 +126,7 @@ export class ApiKeyService {
    * against, so issuing and verifying cannot drift apart; a divergence would make
    * every key unverifiable and would not fail loudly.
    */
-  async issue(userId: string, input: { name: string; description?: string }) {
+  async issue(userId: UserId, input: { name: string; description?: string }) {
     const parsed = createApiKeySchema.safeParse(input);
     if (!parsed.success) {
       // Carries the flattened Zod error as `details` so the 400 body is
@@ -157,7 +158,7 @@ export class ApiKeyService {
    * branches requires a follow-up lookup to explain the failure.
    */
   /** Update the mutable, non-secret fields of a key. */
-  async update(userId: string, keyId: string, input: unknown): Promise<APIKey> {
+  async update(userId: UserId, keyId: string, input: unknown): Promise<APIKey> {
     const parsed = updateApiKeySchema.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.errors[0]?.message ?? 'Invalid API key data');
@@ -172,12 +173,12 @@ export class ApiKeyService {
   }
 
   /** Ownership-checked read for the management UI. */
-  async get(userId: string, keyId: string): Promise<APIKey | null> {
+  async get(userId: UserId, keyId: string): Promise<APIKey | null> {
     return this.apiKeyRepository.findByIdScoped(keyId, userId);
   }
 
   /** Mark a key revoked so it can no longer authenticate. */
-  async revoke(userId: string, keyId: string): Promise<APIKey> {
+  async revoke(userId: UserId, keyId: string): Promise<APIKey> {
     const existing = await this.apiKeyRepository.findByIdScoped(keyId, userId);
     if (!existing) {
       throw new NotFoundError('API key not found');
@@ -188,7 +189,7 @@ export class ApiKeyService {
     return this.apiKeyRepository.revoke(keyId, userId);
   }
 
-  async remove(userId: string, keyId: string): Promise<{ success: boolean }> {
+  async remove(userId: UserId, keyId: string): Promise<{ success: boolean }> {
     const existing = await this.apiKeyRepository.findByIdScoped(keyId, userId);
     if (!existing) {
       throw new NotFoundError('API key not found');

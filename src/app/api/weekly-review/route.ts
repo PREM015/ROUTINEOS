@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { reviewService } from '@/server/services/review.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 const weeklyReviewSchema = z.object({
   weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await reviewService.getWeeklyReview(session.user.id, weekStart);
+    const result = await reviewService.getWeeklyReview(userIdFromSession(session), weekStart);
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     const review = await reviewService.saveWeeklyReview(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Search, UserPlus, UserMinus, Users } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { Button, Card, EmptyState, Input, Spinner } from '@/components/ui';
+import { toUserId, type UserId } from '@/types/ids';
 
 type Tab = 'following' | 'followers' | 'discover';
 
@@ -97,7 +98,7 @@ export default function SocialPage() {
     return () => clearTimeout(timer);
   }, [query, tab, search]);
 
-  const follow = async (userId: string) => {
+  const follow = async (userId: UserId) => {
     setBusyId(userId);
     setError(null);
     try {
@@ -111,7 +112,7 @@ export default function SocialPage() {
     }
   };
 
-  const unfollow = async (userId: string) => {
+  const unfollow = async (userId: UserId) => {
     setBusyId(userId);
     setError(null);
     try {
@@ -205,7 +206,7 @@ export default function SocialPage() {
                     !isFollowing ? (
                       <Button
                         size="sm"
-                        onClick={() => void follow(user.id)}
+                        onClick={() => void follow(toUserId(user.id))}
                         isLoading={busyId === user.id}
                       >
                         <UserPlus className="mr-1.5 h-4 w-4" />
@@ -225,7 +226,7 @@ export default function SocialPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => void unfollow(user.id)}
+                      onClick={() => void unfollow(toUserId(user.id))}
                       isLoading={busyId === user.id}
                     >
                       <UserMinus className="mr-1.5 h-4 w-4" />
@@ -234,7 +235,7 @@ export default function SocialPage() {
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => void follow(user.id)}
+                      onClick={() => void follow(toUserId(user.id))}
                       isLoading={busyId === user.id}
                     >
                       <UserPlus className="mr-1.5 h-4 w-4" />

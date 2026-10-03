@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { RateLimiter } from '@/lib/middleware/rate-limit';
 import { RateLimitError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { toUserId } from '@/types/ids';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     const viewerId = (await auth())?.user?.id;
 
-    const data = await userService.getPublicProfileWithStats(id, viewerId);
+    const data = await userService.getPublicProfileWithStats(toUserId(id), viewerId);
     if (!data) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }

@@ -9,6 +9,7 @@ import type {
 } from '@/generated/prisma';
 import { DEFAULT_DAY_TYPES } from '@/constants/day-types';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Routine Repository
@@ -21,7 +22,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async findTemplateById(
     templateId: string,
-    userId: string
+    userId: UserId
   ): Promise<RoutineTemplate | null> {
     try {
       return await this.prisma.routineTemplate.findFirst({
@@ -35,7 +36,7 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Find template with blocks
    */
-  async findTemplateWithBlocks(templateId: string, userId: string) {
+  async findTemplateWithBlocks(templateId: string, userId: UserId) {
     try {
       return await this.prisma.routineTemplate.findFirst({
         where: { id: templateId, userId },
@@ -65,7 +66,7 @@ export class RoutineRepository extends BaseRepository {
    * from the definition's slug; the stored `dayType` column is only a coarse
    * fallback ('CUSTOM') for templates connected to a definition.
    */
-  async findAllTemplates(userId: string, includeInactive = false) {
+  async findAllTemplates(userId: UserId, includeInactive = false) {
     try {
       return await this.prisma.routineTemplate.findMany({
         where: { userId, ...(includeInactive ? {} : { isActive: true }) },
@@ -90,7 +91,7 @@ export class RoutineRepository extends BaseRepository {
    * @deprecated Use findTemplateByDayTypeId instead
    */
   async findTemplateByDayType(
-    userId: string,
+    userId: UserId,
     dayType: DayType
   ): Promise<RoutineTemplate | null> {
     try {
@@ -112,7 +113,7 @@ export class RoutineRepository extends BaseRepository {
    * Find template by day type ID (new - uses DayTypeDefinition)
    */
   async findTemplateByDayTypeId(
-    userId: string,
+    userId: UserId,
     dayTypeId: string
   ): Promise<RoutineTemplate | null> {
     try {
@@ -134,7 +135,7 @@ export class RoutineRepository extends BaseRepository {
    * Find day type definition by slug
    */
   async findDayTypeDefinitionBySlug(
-    userId: string,
+    userId: UserId,
     slug: string
   ) {
     try {
@@ -161,7 +162,7 @@ export class RoutineRepository extends BaseRepository {
    * that need related counts (the settings page shows templates per day type)
    * must go through `listDayTypeDefinitionsWithCounts`.
    */
-  async listDayTypeDefinitions(userId: string) {
+  async listDayTypeDefinitions(userId: UserId) {
     try {
       return await this.prisma.dayTypeDefinition.findMany({
         where: { userId, isArchived: false },
@@ -181,7 +182,7 @@ export class RoutineRepository extends BaseRepository {
    * still has templates, exceptions or habit assignments attached is worth
    * warning about before it is hidden.
    */
-  async listDayTypeDefinitionsWithCounts(userId: string) {
+  async listDayTypeDefinitionsWithCounts(userId: UserId) {
     try {
       return await this.prisma.dayTypeDefinition.findMany({
         where: { userId },
@@ -205,7 +206,7 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Find a day-type definition by id, scoped to its owner.
    */
-  async findDayTypeDefinitionById(dayTypeId: string, userId: string) {
+  async findDayTypeDefinitionById(dayTypeId: string, userId: UserId) {
     try {
       return await this.prisma.dayTypeDefinition.findFirst({
         where: { id: dayTypeId, userId },
@@ -222,7 +223,7 @@ export class RoutineRepository extends BaseRepository {
    * existing account (the backfill `scripts/seed-day-types.ts` performs) is safe
    * and never duplicates a day type.
    */
-  async createDefaultDayTypes(userId: string): Promise<number> {
+  async createDefaultDayTypes(userId: UserId): Promise<number> {
     try {
       const existing = await this.prisma.dayTypeDefinition.findMany({
         where: { userId },
@@ -273,7 +274,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async updateDayTypeDefinition(
     dayTypeId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.DayTypeDefinitionUpdateInput
   ): Promise<DayTypeDefinition> {
     try {
@@ -292,7 +293,7 @@ export class RoutineRepository extends BaseRepository {
    * Kept as its own method so the "only one default" rule has exactly one
    * implementation, called by the service rather than inlined per route.
    */
-  async clearDefaultDayTypeFlags(userId: string): Promise<void> {
+  async clearDefaultDayTypeFlags(userId: UserId): Promise<void> {
     try {
       await this.prisma.dayTypeDefinition.updateMany({
         where: { userId, isDefault: true },
@@ -312,7 +313,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async archiveDayTypeDefinition(
     dayTypeId: string,
-    userId: string
+    userId: UserId
   ): Promise<DayTypeDefinition> {
     try {
       return await this.prisma.dayTypeDefinition.update({
@@ -327,7 +328,7 @@ export class RoutineRepository extends BaseRepository {
   /** Restore a soft-deleted day-type definition. */
   async unarchiveDayTypeDefinition(
     dayTypeId: string,
-    userId: string
+    userId: UserId
   ): Promise<DayTypeDefinition> {
     try {
       return await this.prisma.dayTypeDefinition.update({
@@ -347,7 +348,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async deleteDayTypeDefinition(
     dayTypeId: string,
-    userId: string
+    userId: UserId
   ): Promise<DayTypeDefinition> {
     try {
       return await this.prisma.dayTypeDefinition.delete({
@@ -379,7 +380,7 @@ export class RoutineRepository extends BaseRepository {
    * so two defaults can never coexist.
    */
   async clearDefaultTemplateFlags(
-    userId: string,
+    userId: UserId,
     dayType: DayType
   ): Promise<number> {
     try {
@@ -398,7 +399,7 @@ export class RoutineRepository extends BaseRepository {
    * when `isDefault` is set.
    */
   async createTemplateWithDefaultFlag(
-    userId: string,
+    userId: UserId,
     data: Prisma.RoutineTemplateCreateInput,
     isDefault: boolean,
     dayType: DayType
@@ -424,7 +425,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async updateTemplateWithDefaultFlag(
     templateId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.RoutineTemplateUpdateInput,
     isDefault: boolean,
     dayType: DayType
@@ -452,7 +453,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async updateTemplate(
     templateId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.RoutineTemplateUpdateInput
   ): Promise<RoutineTemplate> {
     try {
@@ -468,7 +469,7 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Remove the exception for a (user, date) pair, if any. Returns the count.
    */
-  async deleteExceptionsForDate(userId: string, date: string): Promise<number> {
+  async deleteExceptionsForDate(userId: UserId, date: string): Promise<number> {
     try {
       const result = await this.prisma.routineException.deleteMany({
         where: { userId, date },
@@ -490,8 +491,51 @@ export class RoutineRepository extends BaseRepository {
    * here, which is why `/today` and `/dashboard` had no way to show or restore
    * a custom day type.
    */
+  /**
+ * Write many exceptions for one user in a single transaction.
+ *
+ * Bulk because applying a schedule across a range is one user action: doing it
+ * date-by-date would be N round trips and, worse, could leave the range half
+ * applied if a later date failed. Transactional so the range is all-or-nothing -
+ * a partial apply is exactly what the caller reports as 207, and it must not be
+ * the *storage* layer producing one by accident.
+ */
+async upsertExceptions(
+    userId: UserId,
+    rows: {
+      date: string;
+      dayType: DayType;
+      dayTypeId?: string | null;
+      templateId: string | null;
+      note?: string | null;
+      reason?: string | null;
+    }[],
+  ): Promise<number> {
+    if (rows.length === 0) return 0;
+    try {
+      const result = await this.prisma.$transaction(
+        rows.map((row) =>
+          this.prisma.routineException.upsert({
+            where: { userId_date: { userId, date: row.date } },
+            create: { userId, ...row },
+            update: {
+              dayType: row.dayType,
+              dayTypeId: row.dayTypeId ?? null,
+              templateId: row.templateId,
+              note: row.note ?? null,
+              reason: row.reason ?? null,
+            },
+          }),
+        ),
+      );
+      return result.length;
+    } catch (error) {
+      this.handleError(error, 'upsertExceptions');
+    }
+  }
+
   async upsertException(
-    userId: string,
+    userId: UserId,
     date: string,
     data: {
       dayType: DayType;
@@ -533,7 +577,7 @@ export class RoutineRepository extends BaseRepository {
    * custom day type ("College Day") instead of the generic `CUSTOM` enum.
    */
   async listExceptions(
-    userId: string,
+    userId: UserId,
     date?: string
   ): Promise<
     Prisma.RoutineExceptionGetPayload<{
@@ -559,8 +603,26 @@ export class RoutineRepository extends BaseRepository {
    * beyond `status` is optional; Prisma ignores keys absent from `data` in the
    * update branch, so a status-only caller leaves the richer fields untouched.
    */
+  /**
+   * Remove a single day's log for a block.
+   *
+   * `status` is non-nullable on `RoutineLog`, so "cleared" cannot be expressed
+   * as a status value and has to be the absence of the row. Scoped by `userId`
+   * and `date` as well as the block, so this cannot remove another account's log
+   * even when handed a block id it does not own.
+   */
+  async deleteLog(userId: UserId, routineBlockId: string, date: string): Promise<void> {
+    try {
+      await this.prisma.routineLog.deleteMany({
+        where: { userId, routineBlockId, date },
+      });
+    } catch (error) {
+      this.handleError(error, 'deleteLog');
+    }
+  }
+
   async upsertLog(
-    userId: string,
+    userId: UserId,
     routineBlockId: string,
     date: string,
     data: {
@@ -588,7 +650,7 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Delete routine template
    */
-  async deleteTemplate(templateId: string, userId: string): Promise<void> {
+  async deleteTemplate(templateId: string, userId: UserId): Promise<void> {
     try {
       await this.prisma.routineTemplate.delete({
         where: { id: templateId, userId },
@@ -607,7 +669,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async findBlockById(
     blockId: string,
-    userId: string
+    userId: UserId
   ): Promise<RoutineBlock | null> {
     try {
       return await this.prisma.routineBlock.findFirst({
@@ -628,6 +690,25 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Find blocks for template
    */
+  /**
+ * Highest `sortOrder` currently used on a template, or `-1` when it has none.
+ *
+ * The caller writes `max + 1` rather than `count`: a count would reuse a slot
+ * left behind by a deleted block, because deleting from the middle does not
+ * renumber the survivors. `-1` makes the first block land on 0.
+ */
+async maxSortOrderForTemplate(templateId: string): Promise<number> {
+    try {
+      const aggregate = await this.prisma.routineBlock.aggregate({
+        where: { templateId },
+        _max: { sortOrder: true },
+      });
+      return aggregate._max.sortOrder ?? -1;
+    } catch (error) {
+      this.handleError(error, 'maxSortOrderForTemplate');
+    }
+  }
+
   async findBlocksByTemplate(templateId: string): Promise<RoutineBlock[]> {
     try {
       return await this.prisma.routineBlock.findMany({
@@ -674,7 +755,7 @@ export class RoutineRepository extends BaseRepository {
    * order until the page is reloaded.
    */
   async swapBlockOrder(
-    userId: string,
+    userId: UserId,
     blockId: string,
     peerId: string
   ): Promise<RoutineBlock[]> {
@@ -713,7 +794,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async updateBlock(
     blockId: string,
-    userId: string,
+    userId: UserId,
     data: Prisma.RoutineBlockUpdateInput
   ): Promise<RoutineBlock> {
     try {
@@ -729,7 +810,7 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Delete routine block
    */
-  async deleteBlock(blockId: string, userId: string): Promise<void> {
+  async deleteBlock(blockId: string, userId: UserId): Promise<void> {
     try {
       await this.prisma.routineBlock.delete({
         where: { id: blockId, userId },
@@ -747,7 +828,7 @@ export class RoutineRepository extends BaseRepository {
    * Find exception for date
    */
   async findException(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<Prisma.RoutineExceptionGetPayload<{ include: { template: true; dayTypeDef: true } }> | null> {
     try {
@@ -766,7 +847,7 @@ export class RoutineRepository extends BaseRepository {
    * Find exceptions within a date range (inclusive)
    */
   async findExceptionsByRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<Prisma.RoutineExceptionGetPayload<{ include: { template: true } }>[]> {
@@ -822,7 +903,7 @@ export class RoutineRepository extends BaseRepository {
    */
   async findLog(
     blockId: string,
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<RoutineLog | null> {
     try {
@@ -838,7 +919,7 @@ export class RoutineRepository extends BaseRepository {
    * Find logs for date
    */
   async findLogsByDate(
-    userId: string,
+    userId: UserId,
     date: string
   ): Promise<
     Prisma.RoutineLogGetPayload<{
@@ -882,7 +963,7 @@ export class RoutineRepository extends BaseRepository {
    * Find logs for a date range (inclusive) in one query
    */
   async findLogsByRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<
@@ -949,7 +1030,7 @@ export class RoutineRepository extends BaseRepository {
   /**
    * Count completed blocks for date
    */
-  async countCompletedForDate(userId: string, date: string): Promise<number> {
+  async countCompletedForDate(userId: UserId, date: string): Promise<number> {
     try {
       return await this.prisma.routineLog.count({
         where: {

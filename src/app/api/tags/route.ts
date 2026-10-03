@@ -3,6 +3,7 @@ import { tagService } from '@/server/services/tag.service';
 import { createTagSchema } from '@/schemas/tag.schema';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Tag Route
@@ -23,7 +24,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tags = await tagService.list(session.user.id);
+    const tags = await tagService.list(userIdFromSession(session));
 
     return NextResponse.json({ success: true, data: tags });
   } catch (error) {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const tag = await tagService.create(session.user.id, validated.data);
+    const tag = await tagService.create(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: tag }, { status: 201 });
   } catch (error) {

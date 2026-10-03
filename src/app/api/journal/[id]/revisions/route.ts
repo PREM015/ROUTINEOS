@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryIdSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal/[id]/revisions
@@ -32,7 +33,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const revisions = await journalService.listRevisions(session.user.id, parsedParams.data.id);
+    const revisions = await journalService.listRevisions(userIdFromSession(session), parsedParams.data.id);
 
     return NextResponse.json({ success: true, data: revisions });
   } catch (error) {

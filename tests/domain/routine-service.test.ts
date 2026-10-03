@@ -98,8 +98,9 @@ vi.mock('@/server/services/scoring.service', () => ({
 import { RoutineService } from '@/server/services/routine.service';
 import { EditWindowError } from '@/lib/routine/edit-window';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { toUserId } from '@/types/ids';
 
-const USER = 'user-1';
+const USER = toUserId('user-1');
 const TEMPLATE_ID = 'tpl-1';
 
 function storedBlock(overrides: Record<string, unknown> = {}) {
@@ -491,7 +492,7 @@ describe('updateBlockForUser: overlap is a warning, not a rejection', () => {
     );
 
     await expect(
-      new RoutineService().updateBlockForUser('someone-else-2', 'blk-1', { title: 'x' })
+      new RoutineService().updateBlockForUser(toUserId('someone-else-2'), 'blk-1', { title: 'x' })
     ).rejects.toThrow(/Routine block/);
     expect(routineRepository.updateBlock).not.toHaveBeenCalled();
   });
@@ -672,7 +673,7 @@ describe('logBlockStatus', () => {
     routineRepository.findBlockById.mockResolvedValue(null);
 
     await expect(
-      new RoutineService().logBlockStatus('someone-else', {
+      new RoutineService().logBlockStatus(toUserId('someone-else'), {
         blockId: 'blk-1',
         date: TODAY,
         status: 'COMPLETED',

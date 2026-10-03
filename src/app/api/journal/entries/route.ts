@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/journal/entries
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await journalService.list(session.user.id, validated.data);
+    const result = await journalService.list(userIdFromSession(session), validated.data);
     const entries = result.entries;
 
     const average = (values: number[]): number | null =>

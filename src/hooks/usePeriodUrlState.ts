@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { getPeriodRange, type Period } from '@/lib/period-range';
+import { isCalendarDate } from '@/lib/dates';
+import { ApiError } from '@/lib/api-client';
+import { ErrorReporter } from '@/lib/monitoring/error-reporter';
 
 /**
  * A reporting period held in the URL, with its own fetch and its own race guard.
@@ -45,8 +48,37 @@ function isPeriod(value: string | null): value is Period {
   return value === 'day' || value === 'week' || value === 'month' || value === 'year';
 }
 
+/*
+ * The shared calendar-date rule, not a local copy of it.
+
+ * A shape regex accepts `2026-13-45`, and this hook is the only thing standing
+ * between a hand-edited or stale link and a request the server would have to
+ * refuse. Sharing the predicate means the URL is cleaned up on exactly the inputs
+ * the API rejects — if the two ever disagreed, the client would keep a parameter
+ * the server 400s on and the page would show an error for a link it had just
+ * decided was fine.
+ */
 function isDate(value: string | null): value is string {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
+  return isCalendarDate(value);
+}
+
+/**
+ * Whether a failure is worth telling monitoring about.
+ *
+ * Three outcomes reach this hook's `catch` and only one of them is a fault:
+ *
+ *  - **Aborts.** Superseded requests are cancelled by design. `api-client`
+ *    rethrows `AbortError` untouched precisely so it can be told apart here.
+ *  - **401.** The answer to "are you still signed in", not an error. Reporting it
+ *    would bury real failures under the ordinary churn of an expired session.
+ *  - **429.** Reported on purpose. The dashboard limiter is generous enough that
+ *    hitting it means something is hammering the endpoint, and that is exactly
+ *    what should show up.
+ */
+function reportableFailure(err: unknown): Error | null {
+  if (err instanceof DOMException && err.name === 'AbortError') return null;
+  if (err instanceof ApiError && err.status === 401) return null;
+  return err instanceof Error ? err : null;
 }
 
 export interface PeriodUrlState<T> {
@@ -123,9 +155,19 @@ export function usePeriodUrlState<T>(
       })
       .catch((err: unknown) => {
         if (!token.current) return;
-        // The previous period's data is deliberately left in place: an error on
-        // refresh should not blank a page the user was reading, and `isStale`
-        // keeps it honest. It is cleared only when a load succeeds.
+        /*
+          The previous period's data is deliberately left in place: an error on
+          refresh should not blank a page the user was reading, and `isStale`
+          keeps it honest. It is cleared only when a load succeeds.
+        */
+        const reportable = reportableFailure(err);
+        if (reportable) {
+          ErrorReporter.reportClientError(reportable, undefined, {
+            surface: 'usePeriodUrlState',
+            period,
+            anchorDate,
+          });
+        }
         setError(err instanceof Error ? err.message : 'Failed to load analytics');
       })
       .finally(() => {

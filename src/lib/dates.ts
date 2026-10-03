@@ -60,6 +60,29 @@ export function formatDisplayDate(dateStr: string): string {
 }
 
 /**
+ * Whether `value` is a real `YYYY-MM-DD` calendar date.
+ *
+ * A shape check is not enough, and that is the whole point of this function.
+ * `/^\d{4}-\d{2}-\d{2}$/` happily accepts `2026-13-45` and `2026-02-31`, which
+ * then reach `fromZonedTime` as an Invalid Date and `parseISO` as a NaN
+ * timestamp. A NaN does not fail loudly on the way out: it propagates into every
+ * average derived from it, so a malformed anchor produced a page of plausible
+ * numbers that were all silently wrong.
+ *
+ * The parsed instant is compared back against its own text, which rejects both
+ * the impossible fields and the rolled-over ones (31 February parses as 3 March,
+ * and 29 February in a common year as 1 March) while accepting a genuine 29
+ * February in a leap year.
+ */
+export function isCalendarDate(value: string | null | undefined): value is string {
+  if (typeof value !== 'string') return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) return false;
+  return parsed.toISOString().slice(0, 10) === value;
+}
+
+/**
  * Get the start and end of a week (default: week starts Monday).
  *
  * `tz` is accepted for call-site clarity but a `YYYY-MM-DD` calendar date has

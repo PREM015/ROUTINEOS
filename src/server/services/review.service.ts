@@ -4,6 +4,7 @@ import { GoalRepository } from '@/server/repositories/goal.repository';
 import { generateWeeklyRecap } from '@/server/recap/weekly';
 import { addMonths, endOfMonth, parse } from 'date-fns';
 import type { MonthlyReset, Prisma, WeeklyReview } from '@/generated/prisma';
+import type { UserId } from '@/types/ids';
 
 /**
  * Review Service
@@ -105,7 +106,7 @@ export class ReviewService {
    * has not written one yet.
    */
   async getWeeklyReview(
-    userId: string,
+    userId: UserId,
     weekStart: string
   ): Promise<WeeklyReviewResult> {
     const review = await this.reviewRepository.findReviewByWeek(userId, weekStart);
@@ -130,7 +131,7 @@ export class ReviewService {
    * Create or update a week's review, snapshotting the recap stats alongside it.
    */
   async saveWeeklyReview(
-    userId: string,
+    userId: UserId,
     input: WeeklyReviewInput
   ): Promise<WeeklyReview> {
     const recap = await generateWeeklyRecap(
@@ -169,7 +170,7 @@ export class ReviewService {
   /**
    * Every weekly review for a user, newest first.
    */
-  async getReviewHistory(userId: string): Promise<WeeklyReview[]> {
+  async getReviewHistory(userId: UserId): Promise<WeeklyReview[]> {
     return this.reviewRepository.findReviewsByUser(userId);
   }
 
@@ -181,7 +182,7 @@ export class ReviewService {
    * Record a monthly reset, archiving the habits the user chose to drop.
    */
   async createMonthlyReset(
-    userId: string,
+    userId: UserId,
     input: MonthlyResetInput
   ): Promise<MonthlyReset> {
     // Archive habits marked for removal before recording the decision.
@@ -247,7 +248,7 @@ export class ReviewService {
    * skipping a goal is exactly the failure mode this method exists to prevent.
    */
   private async applyGoalDecisions(
-    userId: string,
+    userId: UserId,
     input: MonthlyResetInput
   ): Promise<{
     completed: string[];
@@ -354,7 +355,7 @@ export class ReviewService {
    * Fetch a monthly reset by YYYY-MM.
    */
   async getMonthlyReset(
-    userId: string,
+    userId: UserId,
     month: string
   ): Promise<MonthlyReset | null> {
     return this.reviewRepository.findMonthlyByMonth(userId, month);

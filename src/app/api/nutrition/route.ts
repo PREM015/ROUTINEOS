@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { nutritionService } from '@/server/services/nutrition.service';
 import { createNutritionSchema, nutritionQuerySchema } from '@/schemas/nutrition.schema';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Nutrition Route
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { entries, totals } = await nutritionService.listForUser(session.user.id, {
+    const { entries, totals } = await nutritionService.listForUser(userIdFromSession(session), {
       startDate: validated.data.startDate,
       endDate: validated.data.endDate,
       mealType: validated.data.mealType,
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const entries = await nutritionService.createMany(session.user.id, validated.data);
+    const entries = await nutritionService.createMany(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: entries }, { status: 201 });
   } catch (error) {

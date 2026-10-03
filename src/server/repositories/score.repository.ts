@@ -1,5 +1,6 @@
 import type { DailyScore, Prisma } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Score Repository
@@ -10,7 +11,7 @@ export class ScoreRepository extends BaseRepository {
   /**
    * Find daily score
    */
-  async findByDate(userId: string, date: string): Promise<DailyScore | null> {
+  async findByDate(userId: UserId, date: string): Promise<DailyScore | null> {
     try {
       return await this.prisma.dailyScore.findFirst({
         where: { userId, date },
@@ -24,7 +25,7 @@ export class ScoreRepository extends BaseRepository {
    * Find scores for range
    */
   async findByRange(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<DailyScore[]> {
@@ -45,12 +46,33 @@ export class ScoreRepository extends BaseRepository {
   }
 
   /**
+   * The most recent day this user has a computed score for, or `null` if none.
+   *
+   * `findFirst` rather than `findByRange(start, today)` because "what is the
+   * newest row" and "what is in this range" are different questions, and only the
+   * first one is being asked here — the freshness chip needs a single date, not
+   * every row since the account was created.
+   */
+  async findLatestDate(userId: UserId): Promise<string | null> {
+    try {
+      const row = await this.prisma.dailyScore.findFirst({
+        where: { userId },
+        orderBy: { date: 'desc' },
+        select: { date: true },
+      });
+      return row?.date ?? null;
+    } catch (error) {
+      this.handleError(error, 'findLatestDate');
+    }
+  }
+
+  /**
    * Create or update score
    * Uses the unchecked input so `userId` (scalar FK) is never mixed with a
    * `user: { connect }` relation in the same write.
    */
   async upsertScore(
-    userId: string,
+    userId: UserId,
     date: string,
     data: Omit<Prisma.DailyScoreUncheckedCreateInput, 'userId' | 'date'>
   ): Promise<DailyScore> {
@@ -73,7 +95,7 @@ export class ScoreRepository extends BaseRepository {
    * Get average score
    */
   async getAverageScore(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -107,7 +129,7 @@ export class ScoreRepository extends BaseRepository {
    * equivalent and never leaves the database.
    */
   async countActiveDays(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -135,7 +157,7 @@ export class ScoreRepository extends BaseRepository {
    * qualify.
    */
   async findPerfectDayDates(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string,
     threshold: number
@@ -166,7 +188,7 @@ export class ScoreRepository extends BaseRepository {
    * (the dashboard strip) pays for neither.
    */
   async findActiveDayDates(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<string[]> {
@@ -190,7 +212,7 @@ export class ScoreRepository extends BaseRepository {
    * Count perfect days
    */
   async countPerfectDays(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string,
     threshold: number = 95
@@ -215,7 +237,7 @@ export class ScoreRepository extends BaseRepository {
    * Get score distribution
    */
   async getDistribution(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<Record<string, number>> {
@@ -257,7 +279,7 @@ export class ScoreRepository extends BaseRepository {
    * Count minimum days
    */
   async countMinimumDays(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {
@@ -281,7 +303,7 @@ export class ScoreRepository extends BaseRepository {
    * Count rest days
    */
   async countRestDays(
-    userId: string,
+    userId: UserId,
     startDate: string,
     endDate: string
   ): Promise<number> {

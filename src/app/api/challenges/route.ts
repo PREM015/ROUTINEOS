@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { challengeService } from '@/server/services/challenge.service';
 import { createChallengeSchema } from '@/schemas/challenge.schema';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * GET /api/challenges
@@ -18,7 +19,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await challengeService.listForUser(session.user.id);
+    const data = await challengeService.listForUser(userIdFromSession(session));
 
     return NextResponse.json({
       success: true,
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const challenge = await challengeService.create(session.user.id, validated.data);
+    const challenge = await challengeService.create(userIdFromSession(session), validated.data);
 
     return NextResponse.json(
       { success: true, data: challenge },

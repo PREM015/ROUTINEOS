@@ -236,7 +236,14 @@ export const focusPresetInputSchema = z.object({
 
 export const focusDayTypeTargetSchema = z.object({
   dayTypeId: z.string().min(1),
-  targetMinutes: z.number().int().min(1).max(1440),
+  /**
+   * `null` clears the override, which is different from `0`.
+   *
+   * "No override - fall back to the daily target" and "override to zero focus minutes"
+   * are opposite instructions, so the clear operation needs its own value. Without it
+   * a client can only ever set a target, never remove one.
+   */
+  targetMinutes: z.number().int().min(1).max(1440).nullable(),
 });
 
 export const focusContextQuerySchema = z.object({

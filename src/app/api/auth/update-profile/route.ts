@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { updateProfileSchema } from '@/lib/validation/user';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Shared handler for PATCH and PUT.
@@ -35,7 +36,7 @@ async function handleUpdateProfile(request: NextRequest) {
     }
 
     const userService = new UserService();
-    const user = await userService.updateProfile(session.user.id, input);
+    const user = await userService.updateProfile(userIdFromSession(session), input);
 
     return NextResponse.json({ success: true, data: user });
   } catch (error) {

@@ -4,6 +4,7 @@ import { logSleepSchema } from '@/schemas/sleep.schema';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * Sleep Route
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { logs, total, startDate, endDate } = await sleepService.listLogs(
-      session.user.id,
+      userIdFromSession(session),
       validated.data
     );
 
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sleepLog = await sleepService.logSleep(session.user.id, validated.data);
+    const sleepLog = await sleepService.logSleep(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: sleepLog });
   } catch (error) {

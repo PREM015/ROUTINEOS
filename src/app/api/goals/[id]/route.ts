@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { updateGoalSchema } from '@/schemas/goal.schema';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 export async function GET(
   _request: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
     const { id } = await params;
     // The other three verbs in this file already went through `GoalService`; this
     // one was the remaining direct repository read.
-    const goal = await new GoalService().getGoal(session.user.id, id);
+    const goal = await new GoalService().getGoal(userIdFromSession(session), id);
 
     if (!goal) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
@@ -53,7 +54,7 @@ export async function PUT(
 
     const goalService = new GoalService();
     const goal = await goalService.updateGoal(
-      session.user.id,
+      userIdFromSession(session),
       id,
       validated.data
     );
@@ -98,11 +99,11 @@ export async function DELETE(
     const goalService = new GoalService();
 
     if (request.nextUrl.searchParams.get('impact') === 'true') {
-      const impact = await goalService.getDeleteImpact(session.user.id, id);
+      const impact = await goalService.getDeleteImpact(userIdFromSession(session), id);
       return NextResponse.json({ success: true, data: impact });
     }
 
-    await goalService.deleteGoal(session.user.id, id);
+    await goalService.deleteGoal(userIdFromSession(session), id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

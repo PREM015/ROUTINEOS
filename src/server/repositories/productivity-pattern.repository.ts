@@ -1,5 +1,6 @@
 import type { ProductivityPattern } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * ProductivityPattern Repository
@@ -15,7 +16,7 @@ export class ProductivityPatternRepository extends BaseRepository {
    * accumulating duplicates for the same window.
    */
   async upsert(
-    userId: string,
+    userId: UserId,
     pattern: {
       patternType: string;
       timeOfDay: string;
@@ -58,7 +59,7 @@ export class ProductivityPatternRepository extends BaseRepository {
    * Peak-hours patterns for a user, highest-confidence first.
    * `timeOfDay` carries the window (e.g. "09:00-11:00").
    */
-  async findPeakHours(userId: string, limit = 3): Promise<ProductivityPattern[]> {
+  async findPeakHours(userId: UserId, limit = 3): Promise<ProductivityPattern[]> {
     try {
       return await this.prisma.productivityPattern.findMany({
         where: {

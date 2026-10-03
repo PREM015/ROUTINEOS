@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@/generated/prisma';
 import prisma from '@/lib/prisma';
 import { createLogger, serializeError } from '@/lib/monitoring/logger';
+import type { UserId } from '@/types/ids';
 
 /**
  * Base Repository
@@ -42,7 +43,7 @@ export abstract class BaseRepository {
   protected async verifyOwnership(
     model: keyof PrismaClient,
     recordId: string,
-    userId: string
+    userId: UserId
   ): Promise<boolean> {
     const record = await (this.prisma[model] as any).findUnique({
       where: { id: recordId },

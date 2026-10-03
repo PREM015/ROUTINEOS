@@ -3,6 +3,7 @@ import { HabitService } from '@/server/services/habit.service';
 import { getTodayString } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
+import { userIdFromSession } from '@/types/ids';
 
 const habitService = new HabitService();
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const date =
       searchParams.get('date') ||
-      getTodayString(await new UserService().getTimezone(session.user.id));
+      getTodayString(await new UserService().getTimezone(userIdFromSession(session)));
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json(
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const logs = await habitService.getLogsForDate(session.user.id, date);
+    const logs = await habitService.getLogsForDate(userIdFromSession(session), date);
     return NextResponse.json({ success: true, data: logs });
   } catch (error) {
     console.error('Error fetching habit logs:', error);

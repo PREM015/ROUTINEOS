@@ -1,5 +1,6 @@
 import type { Prisma, TimeEntry } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
+import type { UserId } from '@/types/ids';
 
 /**
  * Time Entry Repository
@@ -66,7 +67,7 @@ export class TimeEntryRepository extends BaseRepository {
   /**
    * Create a manual or started time entry for a user
    */
-  async create(userId: string, data: CreateTimeEntryData): Promise<TimeEntry> {
+  async create(userId: UserId, data: CreateTimeEntryData): Promise<TimeEntry> {
     try {
       const startTime = data.startTime ?? new Date();
       let endTime = data.endTime;
@@ -102,7 +103,7 @@ export class TimeEntryRepository extends BaseRepository {
   /**
    * Find a time entry by ID with an ownership check
    */
-  async findById(userId: string, entryId: string) {
+  async findById(userId: UserId, entryId: string) {
     try {
       return await this.prisma.timeEntry.findFirst({
         where: { id: entryId, userId },
@@ -116,7 +117,7 @@ export class TimeEntryRepository extends BaseRepository {
   /**
    * Find the currently running (unended) time entry for a user
    */
-  async findRunning(userId: string) {
+  async findRunning(userId: UserId) {
     try {
       return await this.prisma.timeEntry.findFirst({
         where: { userId, endTime: null },
@@ -132,7 +133,7 @@ export class TimeEntryRepository extends BaseRepository {
    * Update a time entry owned by the user
    */
   async update(
-    userId: string,
+    userId: UserId,
     entryId: string,
     data: UpdateTimeEntryData
   ): Promise<TimeEntry> {
@@ -163,7 +164,7 @@ export class TimeEntryRepository extends BaseRepository {
    * Stop the running time entry, setting endTime and computed duration.
    * Returns `null` when there is nothing running.
    */
-  async stopRunning(userId: string, endTime: Date = new Date()) {
+  async stopRunning(userId: UserId, endTime: Date = new Date()) {
     try {
       const running = await this.findRunning(userId);
       if (!running || !running.startTime) return null;
@@ -182,7 +183,7 @@ export class TimeEntryRepository extends BaseRepository {
   /**
    * Delete a time entry owned by the user
    */
-  async delete(userId: string, entryId: string): Promise<TimeEntry> {
+  async delete(userId: UserId, entryId: string): Promise<TimeEntry> {
     try {
       return await this.prisma.timeEntry.delete({
         where: { id: entryId, userId },
@@ -195,7 +196,7 @@ export class TimeEntryRepository extends BaseRepository {
   /**
    * List time entries for a user with optional filters
    */
-  async list(userId: string, query: TimeEntryQueryParams = {}) {
+  async list(userId: UserId, query: TimeEntryQueryParams = {}) {
     try {
       const where: Prisma.TimeEntryWhereInput = { userId };
 
@@ -229,7 +230,7 @@ export class TimeEntryRepository extends BaseRepository {
   /**
    * Count time entries for a user with the same filters as `list`
    */
-  async count(userId: string, query: TimeEntryQueryParams = {}): Promise<number> {
+  async count(userId: UserId, query: TimeEntryQueryParams = {}): Promise<number> {
     try {
       const where: Prisma.TimeEntryWhereInput = { userId };
 

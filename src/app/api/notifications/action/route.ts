@@ -7,6 +7,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '@/lib/errors/app-error';
+import { toUserId } from '@/types/ids';
 
 const bodySchema = z.object({
   notificationId: z.string().min(1),
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await notificationService.applyAction(
-      userId,
+      toUserId(userId),
       parsed.data.notificationId,
       parsed.data.action,
       SNOOZE_MINUTES
