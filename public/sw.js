@@ -93,10 +93,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const requestUrl = new URL(event.request.url);
+
   // Never cache API responses. They are per-user, frequently changing, and a
   // stale hit is worse than an error: the user would be shown yesterday's score
   // or a habit list that no longer matches what the server has.
-  if (new URL(event.request.url).origin === self.location.origin && new URL(event.request.url).pathname.startsWith('/api/')) {
+  if (requestUrl.origin === self.location.origin && requestUrl.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // Never cache Next.js App Router flight payloads.
+  //
+  // A client-side navigation is a same-path GET carrying `?_rsc=<cache-buster>`,
+  // and `event.request` includes that query string — so these were written to the
+  // runtime cache and then replayed from it when the network failed. The result
+  // is a fully-rendered page of stale data (yesterday's habits, an old score)
+  // presented as current, with only the offline banner as a cue. Bailing out
+  // leaves the navigation to fail honestly instead.
+  if (requestUrl.searchParams.has('_rsc') || requestUrl.searchParams.has('_rsc')) {
     return;
   }
 
@@ -372,9 +386,21 @@ self.addEventListener('message', (event) => {
     return;
   }
 
+  if (msg.type === 'ARM_SYNC') {
+    // The page already persisted the action; we only need to be woken to replay
+    // it. This exists so a queued action is not stored twice: the page's write
+    // assigns an `autoIncrement` `localId`, and re-`put`ting the same record
+    // here (the old `OUTBOX_PUSH` path) allocated a *second* key, so one action
+    // became two rows and was sent twice.
+    event.waitUntil(Promise.resolve(registerSync(DEFAULT_SYNC_TAG)));
+    reply({ ok: true });
+    return;
+  }
+
   if (msg.type === 'OUTBOX_PUSH') {
+    const incoming = Array.isArray(msg.items) ? msg.items : [msg.item];
     event.waitUntil(
-      putAll(STORE_OUTBOX, Array.isArray(msg.items) ? msg.items : [msg.item])
+      putAll(STORE_OUTBOX, incoming)
         .then((count) => {
           registerSync(DEFAULT_SYNC_TAG);
           reply({ ok: true, stored: count });
@@ -487,24 +513,6 @@ self.addEventListener('sync', (event) => {
 //     `{"promptId": undefined}`, `JSON.stringify` dropped the key, and
 //     `/api/sleep/session/respond` rejected it with a 400.
 // Unwrapping the nested object is what makes the action buttons work at all.
-const nested =
-  data && typeof data.data === 'object' && data.data !== null ? data.data : {};
-
-const notificationId =
-  typeof nested.notificationId === 'string' ? nested.notificationId : null;
-const promptId = typeof nested.promptId === 'string' ? nested.promptId : null;
-
-// `tag` decides whether a repeat REPLACES the earlier toast or stacks beside it.
-// The server never sends a top-level `tag`, so this used to fall through to the
-// single literal 'routineos' — which collapsed *every* notification in the app
-// into one, so a habit reminder and a goal reminder overwrote each other.
-// Keying the fallback on the notification id gives the intended behaviour:
-// repeats of the same reminder still collapse, distinct ones no longer collide.
-const tag =
-  (typeof nested.tag === 'string' && nested.tag) ||
-  (typeof data.tag === 'string' && data.tag) ||
-  (notificationId ? `routineos-${notificationId}` : 'routineos');
-
 self.addEventListener('push', (event) => {
   let data = null;
   try {
@@ -512,6 +520,30 @@ self.addEventListener('push', (event) => {
   } catch {
     // keep going with defaults
   }
+
+  // These three must stay INSIDE this handler. `data` is the parsed push payload
+  // and does not exist until the line above; hoisting them to module scope throws
+  // `ReferenceError: data is not defined` while the worker is still being
+  // evaluated, which fails the whole registration — so offline caching, push,
+  // notification actions and background sync all silently stop working.
+  const nested =
+    data && typeof data.data === 'object' && data.data !== null ? data.data : {};
+
+  const notificationId =
+    typeof nested.notificationId === 'string' ? nested.notificationId : null;
+  const promptId = typeof nested.promptId === 'string' ? nested.promptId : null;
+
+  // `tag` decides whether a repeat REPLACES the earlier toast or stacks beside it.
+  // The server never sends a top-level `tag`, so this used to fall through to the
+  // single literal 'routineos' — which collapsed *every* notification in the app
+  // into one, so a habit reminder and a goal reminder overwrote each other.
+  // Keying the fallback on the notification id gives the intended behaviour:
+  // repeats of the same reminder still collapse, distinct ones no longer collide.
+  // `data` may be null when the payload is absent or unparseable.
+  const tag =
+    (typeof nested.tag === 'string' && nested.tag) ||
+    (data && typeof data.tag === 'string' && data.tag) ||
+    (notificationId ? `routineos-${notificationId}` : 'routineos');
 
   const title = data && typeof data.title === 'string' ? data.title : 'RoutineOS';
   const actions = Array.isArray(data && data.actions) ? data.actions : [];

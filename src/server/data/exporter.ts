@@ -52,20 +52,73 @@ export async function exportUserData(
       return d.toISOString().slice(0, 10);
     })();
 
-  const [habits, goals, templates, scores, sleepLogs, reflections, settings, categories, tags] =
-    await Promise.all([
-      habitRepository.findAll(userId, {
-        includeArchived: options?.includeArchived,
-      }),
-      goalRepository.findAll(userId, {}),
-      routineRepository.findAllTemplates(userId),
-      scoreRepository.findByRange(userId, startDate, endDate),
-      sleepRepository.findByRange(userId, startDate, endDate),
-      reflectionRepository.findByRange(userId, startDate, endDate),
-      prisma.userSettings.findUnique({ where: { userId } }),
-      prisma.category.findMany({ where: { userId } }),
-      prisma.tag.findMany({ where: { userId } }),
-    ]);
+  const [
+    habits,
+    goals,
+    templates,
+    scores,
+    sleepLogs,
+    reflections,
+    settings,
+    categories,
+    tags,
+    focusSessions,
+    focusEvents,
+    focusSettings,
+    focusPresets,
+    focusDayTypeTargets,
+    breaks,
+  ] = await Promise.all([
+    habitRepository.findAll(userId, {
+      includeArchived: options?.includeArchived,
+    }),
+    goalRepository.findAll(userId, {}),
+    routineRepository.findAllTemplates(userId),
+    scoreRepository.findByRange(userId, startDate, endDate),
+    sleepRepository.findByRange(userId, startDate, endDate),
+    reflectionRepository.findByRange(userId, startDate, endDate),
+    prisma.userSettings.findUnique({ where: { userId } }),
+    prisma.category.findMany({ where: { userId } }),
+    prisma.tag.findMany({ where: { userId } }),
+    /*
+     * Focus data, added because "Download my data" that silently omits every focus
+     * session is not a complete export - and focus is where a real user spends a large
+     * part of their day, so the omission was not a corner case.
+     *
+     * Range-filtered on `startedAt` like every other time series here, so an export
+     * requested for "this month" does not carry a year of sessions. The two *settings*
+     * tables are not range-filtered: they are configuration, not history, and a
+     * partial export that dropped the user's preset list would misrepresent how they
+     * actually work.
+     */
+    prisma.focusSession.findMany({
+      where: { userId, startedAt: { gte: new Date(startDate), lte: new Date(endDate) } },
+      orderBy: { startedAt: 'asc' },
+    }),
+    /*
+     * `FocusSessionEvent` carries its own `userId`, so filtering directly avoids a join
+     * through `focusSession`. It is scoped by the session's range via `focusSessionId`
+     * rather than by its own `occurredAt`, because the range the caller asked for is
+     * about sessions - an event belonging to a session inside the window is part of
+     * that session's story even if the event itself landed a moment outside it.
+     */
+    prisma.focusSessionEvent.findMany({
+      where: {
+        userId,
+        focusSession: {
+          startedAt: { gte: new Date(startDate), lte: new Date(endDate) },
+        },
+      },
+      orderBy: { occurredAt: 'asc' },
+    }),
+    prisma.focusSettings.findUnique({ where: { userId } }),
+    prisma.focusPreset.findMany({ where: { userId }, orderBy: { sortOrder: 'asc' } }),
+    prisma.focusDayTypeTarget.findMany({ where: { userId } }),
+    prisma.break.findMany({
+      where: { userId, startedAt: { gte: new Date(startDate), lte: new Date(endDate) } },
+      orderBy: { startedAt: 'asc' },
+    }),
+  ]);
 
   // Get habit logs for each habit
   const habitsWithLogs = await Promise.all(
@@ -98,6 +151,19 @@ export async function exportUserData(
     scores,
     sleep: sleepLogs,
     reflections,
+    /*
+     * Keyed as a single `focus` object rather than five top-level keys so the export
+     * grows with the domain instead of reshaping: a consumer written against v1.0 can
+     * read `focus` without every table appearing at the root.
+     */
+    focus: {
+      sessions: focusSessions,
+      events: focusEvents,
+      settings: focusSettings,
+      presets: focusPresets,
+      dayTypeTargets: focusDayTypeTargets,
+      breaks,
+    },
   };
 
   return exportData;

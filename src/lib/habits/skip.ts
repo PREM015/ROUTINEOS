@@ -6,12 +6,15 @@ export function createSkipOverride(
   userId: UserId,
   date: string,
   reason: string
-): Pick<HabitOverride, 'habitId' | 'userId' | 'type' | 'startDate' | 'reason'> {
+): Pick<HabitOverride, 'habitId' | 'userId' | 'type' | 'startDate' | 'endDate' | 'reason'> {
   return {
     habitId,
     userId,
     type: 'SKIP_TODAY',
     startDate: date,
+    // Inclusive single day. Readers treat `endDate: null` as open-ended, so
+    // omitting this made a one-day skip permanent.
+    endDate: date,
     reason,
   };
 }

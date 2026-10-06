@@ -14,7 +14,31 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useFocusStore } from '@/store/focus.store';
 
-const PRESETS = [15, 25, 45, 60] as const;
+/**
+ * Duration shortcuts, anchored on the user's configured block length.
+ *
+ * These used to be a fixed `[15, 25, 45, 60]`, so for anyone who had set a 50-minute
+ * block the chips offered four numbers and *not* the one they had configured - the
+ * current length showed as unselected, and 25 appeared even though 25 meant nothing to
+ * them.
+ *
+ * Now the configured length is always offered, with round alternatives around it and
+ * the set trimmed to four. Duplicates are removed, so a 60-minute block does not render
+ * two identical 60 chips.
+ */
+function durationPresets(configuredMinutes: number): number[] {
+  const round = [15, 25, 45, 60, 90];
+  const candidates = [configuredMinutes, ...round];
+  const seen = new Set<number>();
+  const ordered: number[] = [];
+  for (const value of candidates) {
+    if (value < MIN_MINUTES || value > MAX_MINUTES) continue;
+    if (seen.has(value)) continue;
+    seen.add(value);
+    ordered.push(value);
+  }
+  return ordered.slice(0, 4);
+}
 const MIN_MINUTES = 1;
 const MAX_MINUTES = 180;
 
@@ -71,7 +95,7 @@ export function IntentRow({ className }: { className?: string }) {
 
       {!isStopwatch && (
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {PRESETS.map((preset) => (
+          {durationPresets(minutes).map((preset) => (
             <button
               key={preset}
               type="button"

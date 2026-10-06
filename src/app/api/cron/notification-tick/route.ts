@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron-auth';
 import { scheduleAllReminders } from '@/server/notifications/schedule-all';
 import { taskReminderService } from '@/server/notifications/task-reminder';
+import { focusReminderService } from '@/server/notifications/focus-reminder';
 import { notificationService } from '@/server/services/notification.service';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
 import { dayTypePlanningService } from '@/server/services/day-type-planning.service';
@@ -75,6 +76,15 @@ export async function GET(request: NextRequest) {
     stages.taskReminders = await taskReminderService.scheduleTaskReminders();
   } catch (error) {
     errors.push(`task reminders: ${message(error)}`);
+  }
+
+  // 2c. Focus session-end and break reminders. These can only come from the server:
+  // a client timer cannot notify a user whose tab is closed, which is exactly when a
+  // 25-minute block ending matters.
+  try {
+    stages.focusReminders = await focusReminderService.scheduleFocusReminders();
+  } catch (error) {
+    errors.push(`focus reminders: ${message(error)}`);
   }
 
   // 3. Dispatch everything due.

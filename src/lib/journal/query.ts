@@ -147,13 +147,31 @@ export function journalBrowseStateToQuery(state: Partial<JournalBrowseState>): s
 }
 
 /**
+ * The boolean filters a view implies.
+ *
+ * Exists because two call sites need this and had each grown their own copy: the
+ * list request and the export query string. They disagreed — the list excluded
+ * archived entries from the default view and the export did not — so "download
+ * the filtered entries" produced a file containing entries the list was hiding.
+ *
+ * `active` is a real filter rather than the absence of one: it has to send
+ * `isArchived=false`, because omitting the parameter means "no opinion" and the
+ * repository would then return archived entries too.
+ */
+export function journalViewFilter(
+  state: Pick<JournalBrowseState, 'view'>
+): { isFavorite?: boolean; isArchived?: boolean } {
+  if (state.view === 'favorites') return { isFavorite: true };
+  if (state.view === 'archived') return { isArchived: true };
+  return { isArchived: false };
+}
+
+/**
  * API query parameters for the current browse state.
  *
- * `view` is translated rather than forwarded: `active` means *not* archived, so
- * it needs `isArchived=false`, whereas omitting the parameter would let
- * archived entries back into the default view. Booleans are kept as booleans
- * because `z.coerce.boolean()` in the query schema is what turns them back into
- * a real filter — stringifying here would make `isArchived="false"` truthy.
+ * Booleans stay booleans: `z.coerce.boolean()` is `Boolean(value)` and
+ * `Boolean('false')` is `true`, so stringifying here would invert the archived
+ * filter.
  */
 export function journalBrowseStateToApiQuery(
   state: JournalBrowseState
@@ -166,8 +184,7 @@ export function journalBrowseStateToApiQuery(
     month: state.month || undefined,
     tagId: state.tagId || undefined,
     mood: state.mood ?? undefined,
-    isFavorite: state.view === 'favorites' ? true : undefined,
-    isArchived: state.view === 'active' ? false : state.view === 'archived' ? true : undefined,
+    ...journalViewFilter(state),
     sortBy: state.sortBy,
     sortOrder: state.sortOrder,
     limit: state.pageSize,

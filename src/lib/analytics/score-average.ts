@@ -31,10 +31,13 @@ export interface ScoreAverage {
 
 /** The `DailyScore` columns this module reads. Structural, so tests need no Prisma row. */
 export interface DailyScoreRowLike {
+  date: string;
   totalScore: number | null;
   coreScore: number | null;
   growthScore: number | null;
   bonusScore: number | null;
+  isRestDay: boolean;
+  isMinimumDay: boolean;
 }
 
 export interface ScoreFreshness {

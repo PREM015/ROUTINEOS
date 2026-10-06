@@ -688,6 +688,7 @@ export const NotificationType: {
   HABIT_STREAK_AT_RISK: 'HABIT_STREAK_AT_RISK',
   GOAL_AT_RISK: 'GOAL_AT_RISK',
   GOAL_COMPLETED: 'GOAL_COMPLETED',
+  GOAL_CHECKIN: 'GOAL_CHECKIN',
   ROUTINE_START: 'ROUTINE_START',
   ROUTINE_COMPLETED: 'ROUTINE_COMPLETED',
   ROUTINE_MISSED: 'ROUTINE_MISSED',
@@ -707,6 +708,8 @@ export const NotificationType: {
   ROUTINE_PRE_START: 'ROUTINE_PRE_START',
   ROUTINE_COMPLETION: 'ROUTINE_COMPLETION',
   ROUTINE_END_REMINDER: 'ROUTINE_END_REMINDER',
+  HABIT_PRE_START: 'HABIT_PRE_START',
+  HABIT_COMPLETION: 'HABIT_COMPLETION',
   MOTIVATIONAL: 'MOTIVATIONAL',
   PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
   SYSTEM_UPDATE: 'SYSTEM_UPDATE'
@@ -14982,6 +14985,7 @@ export namespace Prisma {
     weightGrowth: number | null
     weightBonus: number | null
     advanceNotificationMinutes: number | null
+    notificationMaxRetries: number | null
     retroactiveEditDays: number | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
@@ -14996,6 +15000,7 @@ export namespace Prisma {
     weightGrowth: number | null
     weightBonus: number | null
     advanceNotificationMinutes: number | null
+    notificationMaxRetries: number | null
     retroactiveEditDays: number | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
@@ -15053,6 +15058,9 @@ export namespace Prisma {
     monthlyResetReminder: boolean | null
     focusReminders: boolean | null
     breakReminders: boolean | null
+    notificationRetryEnabled: boolean | null
+    notificationRetryIntervals: string | null
+    notificationMaxRetries: number | null
     retroactiveEditDays: number | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
@@ -15116,6 +15124,9 @@ export namespace Prisma {
     monthlyResetReminder: boolean | null
     focusReminders: boolean | null
     breakReminders: boolean | null
+    notificationRetryEnabled: boolean | null
+    notificationRetryIntervals: string | null
+    notificationMaxRetries: number | null
     retroactiveEditDays: number | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
@@ -15179,6 +15190,9 @@ export namespace Prisma {
     monthlyResetReminder: number
     focusReminders: number
     breakReminders: number
+    notificationRetryEnabled: number
+    notificationRetryIntervals: number
+    notificationMaxRetries: number
     retroactiveEditDays: number
     autoArchiveCompletedDays: number
     dataRetentionDays: number
@@ -15201,6 +15215,7 @@ export namespace Prisma {
     weightGrowth?: true
     weightBonus?: true
     advanceNotificationMinutes?: true
+    notificationMaxRetries?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -15215,6 +15230,7 @@ export namespace Prisma {
     weightGrowth?: true
     weightBonus?: true
     advanceNotificationMinutes?: true
+    notificationMaxRetries?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -15272,6 +15288,9 @@ export namespace Prisma {
     monthlyResetReminder?: true
     focusReminders?: true
     breakReminders?: true
+    notificationRetryEnabled?: true
+    notificationRetryIntervals?: true
+    notificationMaxRetries?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -15335,6 +15354,9 @@ export namespace Prisma {
     monthlyResetReminder?: true
     focusReminders?: true
     breakReminders?: true
+    notificationRetryEnabled?: true
+    notificationRetryIntervals?: true
+    notificationMaxRetries?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -15398,6 +15420,9 @@ export namespace Prisma {
     monthlyResetReminder?: true
     focusReminders?: true
     breakReminders?: true
+    notificationRetryEnabled?: true
+    notificationRetryIntervals?: true
+    notificationMaxRetries?: true
     retroactiveEditDays?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
@@ -15548,6 +15573,9 @@ export namespace Prisma {
     monthlyResetReminder: boolean
     focusReminders: boolean
     breakReminders: boolean
+    notificationRetryEnabled: boolean
+    notificationRetryIntervals: string | null
+    notificationMaxRetries: number
     retroactiveEditDays: number
     autoArchiveCompletedDays: number
     dataRetentionDays: number
@@ -15630,6 +15658,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: boolean
+    notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
@@ -15694,6 +15725,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: boolean
+    notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
@@ -15758,6 +15792,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: boolean
+    notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
@@ -15822,6 +15859,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: boolean
+    notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
@@ -15833,7 +15873,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "sleepPreWarningEnabled" | "sleepPreWarningTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "wakeConfirmationEnabled" | "wakeConfirmationTime" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "routineStartNotifications" | "upcomingRoutineNotifications" | "sleepReminderNotifications" | "sleepPreWarningNotifications" | "wakeConfirmationNotifications" | "habitReminderNotifications" | "goalReminderNotifications" | "advanceNotificationMinutes" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
+  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "sleepPreWarningEnabled" | "sleepPreWarningTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "wakeConfirmationEnabled" | "wakeConfirmationTime" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "routineStartNotifications" | "upcomingRoutineNotifications" | "sleepReminderNotifications" | "sleepPreWarningNotifications" | "wakeConfirmationNotifications" | "habitReminderNotifications" | "goalReminderNotifications" | "advanceNotificationMinutes" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "notificationRetryEnabled" | "notificationRetryIntervals" | "notificationMaxRetries" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
   export type UserSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -15901,6 +15941,9 @@ export namespace Prisma {
       monthlyResetReminder: boolean
       focusReminders: boolean
       breakReminders: boolean
+      notificationRetryEnabled: boolean
+      notificationRetryIntervals: string | null
+      notificationMaxRetries: number
       retroactiveEditDays: number
       autoArchiveCompletedDays: number
       dataRetentionDays: number
@@ -16385,6 +16428,9 @@ export namespace Prisma {
     readonly monthlyResetReminder: FieldRef<"UserSettings", 'Boolean'>
     readonly focusReminders: FieldRef<"UserSettings", 'Boolean'>
     readonly breakReminders: FieldRef<"UserSettings", 'Boolean'>
+    readonly notificationRetryEnabled: FieldRef<"UserSettings", 'Boolean'>
+    readonly notificationRetryIntervals: FieldRef<"UserSettings", 'String'>
+    readonly notificationMaxRetries: FieldRef<"UserSettings", 'Int'>
     readonly retroactiveEditDays: FieldRef<"UserSettings", 'Int'>
     readonly autoArchiveCompletedDays: FieldRef<"UserSettings", 'Int'>
     readonly dataRetentionDays: FieldRef<"UserSettings", 'Int'>
@@ -101735,6 +101781,9 @@ export namespace Prisma {
     monthlyResetReminder: 'monthlyResetReminder',
     focusReminders: 'focusReminders',
     breakReminders: 'breakReminders',
+    notificationRetryEnabled: 'notificationRetryEnabled',
+    notificationRetryIntervals: 'notificationRetryIntervals',
+    notificationMaxRetries: 'notificationMaxRetries',
     retroactiveEditDays: 'retroactiveEditDays',
     autoArchiveCompletedDays: 'autoArchiveCompletedDays',
     dataRetentionDays: 'dataRetentionDays',
@@ -104219,6 +104268,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFilter<"UserSettings"> | boolean
     focusReminders?: BoolFilter<"UserSettings"> | boolean
     breakReminders?: BoolFilter<"UserSettings"> | boolean
+    notificationRetryEnabled?: BoolFilter<"UserSettings"> | boolean
+    notificationRetryIntervals?: StringNullableFilter<"UserSettings"> | string | null
+    notificationMaxRetries?: IntFilter<"UserSettings"> | number
     retroactiveEditDays?: IntFilter<"UserSettings"> | number
     autoArchiveCompletedDays?: IntFilter<"UserSettings"> | number
     dataRetentionDays?: IntFilter<"UserSettings"> | number
@@ -104283,6 +104335,9 @@ export namespace Prisma {
     monthlyResetReminder?: SortOrder
     focusReminders?: SortOrder
     breakReminders?: SortOrder
+    notificationRetryEnabled?: SortOrder
+    notificationRetryIntervals?: SortOrderInput | SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -104350,6 +104405,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFilter<"UserSettings"> | boolean
     focusReminders?: BoolFilter<"UserSettings"> | boolean
     breakReminders?: BoolFilter<"UserSettings"> | boolean
+    notificationRetryEnabled?: BoolFilter<"UserSettings"> | boolean
+    notificationRetryIntervals?: StringNullableFilter<"UserSettings"> | string | null
+    notificationMaxRetries?: IntFilter<"UserSettings"> | number
     retroactiveEditDays?: IntFilter<"UserSettings"> | number
     autoArchiveCompletedDays?: IntFilter<"UserSettings"> | number
     dataRetentionDays?: IntFilter<"UserSettings"> | number
@@ -104414,6 +104472,9 @@ export namespace Prisma {
     monthlyResetReminder?: SortOrder
     focusReminders?: SortOrder
     breakReminders?: SortOrder
+    notificationRetryEnabled?: SortOrder
+    notificationRetryIntervals?: SortOrderInput | SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -104485,6 +104546,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolWithAggregatesFilter<"UserSettings"> | boolean
     focusReminders?: BoolWithAggregatesFilter<"UserSettings"> | boolean
     breakReminders?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    notificationRetryEnabled?: BoolWithAggregatesFilter<"UserSettings"> | boolean
+    notificationRetryIntervals?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
+    notificationMaxRetries?: IntWithAggregatesFilter<"UserSettings"> | number
     retroactiveEditDays?: IntWithAggregatesFilter<"UserSettings"> | number
     autoArchiveCompletedDays?: IntWithAggregatesFilter<"UserSettings"> | number
     dataRetentionDays?: IntWithAggregatesFilter<"UserSettings"> | number
@@ -111840,6 +111904,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: string | null
+    notificationMaxRetries?: number
     retroactiveEditDays?: number
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
@@ -111904,6 +111971,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: string | null
+    notificationMaxRetries?: number
     retroactiveEditDays?: number
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
@@ -111966,6 +112036,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFieldUpdateOperationsInput | boolean
     focusReminders?: BoolFieldUpdateOperationsInput | boolean
     breakReminders?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryEnabled?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
+    notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
@@ -112030,6 +112103,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFieldUpdateOperationsInput | boolean
     focusReminders?: BoolFieldUpdateOperationsInput | boolean
     breakReminders?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryEnabled?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
+    notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
@@ -112093,6 +112169,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: string | null
+    notificationMaxRetries?: number
     retroactiveEditDays?: number
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
@@ -112155,6 +112234,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFieldUpdateOperationsInput | boolean
     focusReminders?: BoolFieldUpdateOperationsInput | boolean
     breakReminders?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryEnabled?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
+    notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
@@ -112218,6 +112300,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFieldUpdateOperationsInput | boolean
     focusReminders?: BoolFieldUpdateOperationsInput | boolean
     breakReminders?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryEnabled?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
+    notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
@@ -120693,6 +120778,9 @@ export namespace Prisma {
     monthlyResetReminder?: SortOrder
     focusReminders?: SortOrder
     breakReminders?: SortOrder
+    notificationRetryEnabled?: SortOrder
+    notificationRetryIntervals?: SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -120713,6 +120801,7 @@ export namespace Prisma {
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
     advanceNotificationMinutes?: SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -120770,6 +120859,9 @@ export namespace Prisma {
     monthlyResetReminder?: SortOrder
     focusReminders?: SortOrder
     breakReminders?: SortOrder
+    notificationRetryEnabled?: SortOrder
+    notificationRetryIntervals?: SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -120833,6 +120925,9 @@ export namespace Prisma {
     monthlyResetReminder?: SortOrder
     focusReminders?: SortOrder
     breakReminders?: SortOrder
+    notificationRetryEnabled?: SortOrder
+    notificationRetryIntervals?: SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -120853,6 +120948,7 @@ export namespace Prisma {
     weightGrowth?: SortOrder
     weightBonus?: SortOrder
     advanceNotificationMinutes?: SortOrder
+    notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
@@ -132989,6 +133085,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: string | null
+    notificationMaxRetries?: number
     retroactiveEditDays?: number
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
@@ -133051,6 +133150,9 @@ export namespace Prisma {
     monthlyResetReminder?: boolean
     focusReminders?: boolean
     breakReminders?: boolean
+    notificationRetryEnabled?: boolean
+    notificationRetryIntervals?: string | null
+    notificationMaxRetries?: number
     retroactiveEditDays?: number
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
@@ -135708,6 +135810,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFieldUpdateOperationsInput | boolean
     focusReminders?: BoolFieldUpdateOperationsInput | boolean
     breakReminders?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryEnabled?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
+    notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
@@ -135770,6 +135875,9 @@ export namespace Prisma {
     monthlyResetReminder?: BoolFieldUpdateOperationsInput | boolean
     focusReminders?: BoolFieldUpdateOperationsInput | boolean
     breakReminders?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryEnabled?: BoolFieldUpdateOperationsInput | boolean
+    notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
+    notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number

@@ -1,16 +1,33 @@
 'use client';
 
 /**
- * ProgressBar — reusable horizontal progress bar.
+ * ProgressBar — a horizontal bar whose track and fill both follow the theme.
  *
- * Displays a value relative to a maximum with an optional label, percentage
- * readout and a custom accent color (Tailwind color name or hex). Unlike the
- * animated ui/Progress primitive, this bar is fully color-customisable and
- * deterministic (no external animation), which makes it stable inside
- * achievement cards and tight layouts.
+ * ## The light-only track
+ *
+ * This bar hardcoded `bg-gray-200` for the track and `text-gray-600` /
+ * `text-gray-400` for its labels. On the dark card it is used from, that put a
+ * near-white track behind a coloured fill, so an unlocked achievement drew the
+ * loudest element on the tile — the empty part of the bar, which carries no
+ * information. The track is `bg-muted` now, so it recedes in both themes and the
+ * fill is the only thing that draws the eye.
+ *
+ * ## Why the Tailwind-class colour path is gone
+ *
+ * The old signature accepted either a hex string *or* a Tailwind class
+ * (`bg-green-500`), choosing between them by testing the string against a
+ * hardcoded `COLOR_CLASSES` set. That set was a closed list: any class not
+ * enumerated in this file silently fell back to `bg-blue-600`, so a caller passing
+ * a perfectly valid `bg-amber-500` got a blue bar and no error. Tailwind cannot
+ * see a class built at runtime anyway, so the dynamic half of that path never
+ * worked reliably.
+ *
+ * `color` is now always a real CSS colour applied via `style`, defaulting to the
+ * habits accent. Every call site already passed a hex string or `undefined`, so
+ * this is a narrowing, not a break.
  *
  * Usage:
- *   <ProgressBar value={3} max={7} color="#3b82f6" label="Streak" showPct />
+ *   <ProgressBar value={3} max={7} color="#22c55e" label="Streak" showPct />
  */
 
 import { cn } from '@/lib/utils';
@@ -20,7 +37,10 @@ export interface ProgressBarProps {
   value?: number;
   /** Maximum value the bar is measured against. */
   max?: number;
-  /** Accent color: a hex string or Tailwind color class (e.g. "#22c55e" or "bg-green-500"). */
+  /**
+   * Any CSS colour for the fill - a hex string, a `var(--token)` reference, or a
+   * `color-mix(...)` expression. Defaults to the habits accent.
+   */
   color?: string;
   /** Optional text rendered above the track. */
   label?: string;
@@ -29,26 +49,13 @@ export interface ProgressBarProps {
   className?: string;
   /** Classes applied to the filled portion of the track. */
   barClassName?: string;
+  /** Classes applied to the empty track behind the fill. */
+  trackClassName?: string;
   /** Accessible name for the progress region. */
   ariaLabel?: string;
 }
 
-const COLOR_CLASSES = new Set([
-  'bg-blue-600',
-  'bg-green-500',
-  'bg-green-600',
-  'bg-red-500',
-  'bg-red-600',
-  'bg-yellow-500',
-  'bg-amber-500',
-  'bg-purple-500',
-  'bg-indigo-500',
-  'bg-pink-500',
-  'bg-cyan-500',
-  'bg-teal-500',
-  'bg-gray-500',
-  'bg-gray-700',
-]);
+const DEFAULT_FILL = 'var(--accent-habits)';
 
 export function ProgressBar({
   value = 0,
@@ -58,39 +65,44 @@ export function ProgressBar({
   showPct = false,
   className,
   barClassName,
+  trackClassName,
   ariaLabel,
 }: ProgressBarProps) {
   const safeMax = max > 0 ? max : 1;
   const clamped = Math.min(Math.max(value, 0), safeMax);
   const percentage = Math.round((clamped / safeMax) * 100);
-
-  const isHexColor = typeof color === 'string' && color.startsWith('#');
-  const usesClassColor =
-    typeof color === 'string' && !color.startsWith('#') && COLOR_CLASSES.has(color);
+  const name = ariaLabel ?? label;
 
   return (
     <div className={cn('w-full', className)}>
       {(label || showPct) && (
-        <div className="mb-1 flex items-center justify-between text-xs">
-          {label && <span className="font-medium text-gray-600">{label}</span>}
-          {showPct && <span className="tabular-nums text-gray-400">{percentage}%</span>}
+        <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+          {label && (
+            <span className="truncate font-medium text-muted-foreground">{label}</span>
+          )}
+          {showPct && (
+            <span className="shrink-0 tabular-nums text-muted-foreground">{percentage}%</span>
+          )}
         </div>
       )}
       <div
-        className="h-2 w-full overflow-hidden rounded-full bg-gray-200"
+        className={cn('h-2 w-full overflow-hidden rounded-full bg-muted', trackClassName)}
         role="progressbar"
-        aria-label={ariaLabel ?? label}
+        aria-label={name}
         aria-valuenow={clamped}
         aria-valuemin={0}
         aria-valuemax={safeMax}
+        // A bar with no accessible name is a decorative rectangle to a screen
+        // reader. `name` is always resolvable here because every call site passes
+        // a label or an explicit ariaLabel, but the fallback keeps that honest.
+        aria-valuetext={`${clamped} of ${safeMax}`}
       >
         <div
           className={cn(
-            'h-full rounded-full transition-[width] duration-300',
-            barClassName,
-            usesClassColor ? color : 'bg-blue-600'
+            'h-full rounded-full transition-[width] duration-300 ease-out motion-reduce:transition-none',
+            barClassName
           )}
-          style={isHexColor ? { backgroundColor: color, width: `${percentage}%` } : { width: `${percentage}%` }}
+          style={{ backgroundColor: color ?? DEFAULT_FILL, width: `${percentage}%` }}
         />
       </div>
     </div>

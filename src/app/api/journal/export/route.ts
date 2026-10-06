@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { AppError } from '@/lib/errors/app-error';
-import { ForeignTagError } from '@/server/repositories/journal.repository';
+import { ForeignTagError } from '@/lib/journal/policy';
 import { journalService } from '@/server/services/journal.service';
 import { journalExportQuerySchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -48,14 +48,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { format, ...filters } = validated.data;
-    // A single-day filter arrives as `date`; the list route expands it, and the
-    // export has to narrow the same way or "export today" returns everything.
-    if (filters.date) {
-      filters.startDate = filters.date;
-      filters.endDate = filters.date;
-      delete filters.date;
-    }
-
+    // `date`, `month` and an explicit range all narrow through the service, so
+    // this route does not expand them itself. That duplication is how the list
+    // and the export came to disagree about which day was being exported.
     const result = await journalService.exportEntries(userIdFromSession(session), format, filters);
 
     // Surfaced as a header so the browser download can report it: the file is

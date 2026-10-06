@@ -66,7 +66,7 @@ export function calendarDaysBetween(fromLocal: string, toLocal: string): number 
 }
 
 /** The `YYYY-MM-DD` that `instant` falls on in `timezone`. */
-function toLocalDateString(instant: Date, timezone: string): string {
+export function toLocalDateString(instant: Date, timezone: string): string {
   try {
     // en-CA formats as YYYY-MM-DD.
     return new Intl.DateTimeFormat('en-CA', {

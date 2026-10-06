@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { categoryService } from '@/server/services/category.service';
 import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
 import { NextRequest, NextResponse } from 'next/server';
-import { toUserId, userIdFromSession } from '@/types/ids';
+import { userIdFromSession } from '@/types/ids';
 
 /**
  * DELETE /api/categories/[id]
@@ -22,13 +22,26 @@ export async function DELETE(
       return NextResponse.json(errorResponse('Unauthorized'), { status: 401 });
     }
 
-    const category = await categoryService.get(toUserId(id), userIdFromSession(session));
+    const sessionUserId = userIdFromSession(session);
+
+    // Argument order was `(toUserId(id), sessionUserId)`, i.e. the **category**
+    // id was passed as the **user** id. `CategoryService.get(userId, categoryId)`
+    // resolves to `findById(categoryId, userId)` -> `where: { id: categoryId,
+    // userId }`, so the predicate became "category whose id equals the caller's
+    // own user id AND whose userId equals the category id" — a condition no row
+    // can satisfy. Every DELETE therefore returned 404, including the caller's
+    // own categories, so the endpoint was completely non-functional.
+    //
+    // It was not an IDOR (both columns are cuids, so the mismatched predicate
+    // cannot match a foreign row), but `toUserId()` laundered a plain string
+    // past the `UserId` brand that exists precisely to catch this mistake.
+    const category = await categoryService.get(sessionUserId, id);
 
     if (!category) {
       return NextResponse.json(notFoundResponse('Category'), { status: 404 });
     }
 
-    await categoryService.delete(toUserId(id), userIdFromSession(session));
+    await categoryService.delete(sessionUserId, id);
 
     return NextResponse.json(successResponse({ deleted: true }));
   } catch (error) {

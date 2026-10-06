@@ -3,6 +3,7 @@ import { GoalService } from '@/server/services/goal.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
+import { handleError } from '@/lib/errors/error-handler';
 
 const carryOverSchema = z.object({
   newEndDate: z.coerce.date(),
@@ -41,14 +42,11 @@ export async function POST(
     return NextResponse.json({ success: true, data: newGoal });
   } catch (error) {
     console.error('Error carrying over goal:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to carry over goal' },
-      { status: 500 }
-    );
+    // `handleError` maps `NotFoundError` → 404 and `ValidationError` → 400.
+    // The previous catch answered **400 for every Error**, so carrying over a
+    // goal the caller does not own reported "Goal not found" with a status that
+    // tells the client its request was malformed. Same fix as the sibling
+    // `goals/[id]/route.ts`.
+    return handleError(error);
   }
 }

@@ -25,9 +25,16 @@ import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
  * needed**. This reads those two columns and schedules a notification at the
  * habit's own time, in the user's own timezone.
  *
+ * ## 3-Stage Workflow
+ *
+ * Each habit with reminders enabled now generates 3 notifications:
+ * 1. **Pre-habit** (5 min before): "Your habit starts soon. Get ready!"
+ * 2. **Habit time** (at scheduled time): "Time for your habit: X"
+ * 3. **Post-habit** (at end time): "Your habit session ended. Did you complete it?"
+ *
  * Duplicate prevention keys on `(userId, type, relatedEntityId)` where
- * `relatedEntityId` is `habit:<id>:<localDate>`, so a habit produces at most one
- * reminder per day no matter how often the scheduler runs.
+ * `relatedEntityId` is `habit:<id>:<localDate>:<phase>`, so a habit produces at most
+ * one reminder per phase per day no matter how often the scheduler runs.
  */
 
 export interface HabitReminderResult {
@@ -36,9 +43,17 @@ export interface HabitReminderResult {
   skippedBySettings: number;
 }
 
+/** Default minutes before habit start for pre-habit reminder. */
+const PRE_HABIT_MINUTES = 5;
+
 /**
- * Queue a reminder for every habit that has `reminderEnabled` set and a
+ * Queue reminders for every habit that has `reminderEnabled` set and a
  * `reminderTime` that has already passed today.
+ *
+ * Creates 3 notifications per habit:
+ * 1. Pre-habit (PRE_HABIT_MINUTES before)
+ * 2. Habit time (at scheduled time)
+ * 3. Post-habit (at scheduled end time = start + estimatedDuration)
  *
  * @param now Injectable for testing.
  */
@@ -53,6 +68,7 @@ export async function scheduleHabitReminders(
       id: true,
       name: true,
       reminderTime: true,
+      estimatedDuration: true,
       userId: true,
       user: {
         select: {
@@ -82,34 +98,92 @@ export async function scheduleHabitReminders(
     }
 
     const timezone = settings?.timezone ?? DEFAULT_TZ;
-    const scheduledFor = reminderInstantFor(habit.reminderTime, timezone, now);
+    const startInstant = reminderInstantFor(habit.reminderTime, timezone, now);
     // `null` means the habit's time has not arrived yet today.
-    if (!scheduledFor) continue;
+    if (!startInstant) continue;
 
-    const relatedEntityId = `habit:${habit.id}:${getTodayString(timezone)}`;
+    const durationMinutes = habit.estimatedDuration ?? 30; // Default 30 min if not set
+    const endInstant = new Date(startInstant.getTime() + durationMinutes * 60 * 1000);
+    const preInstant = new Date(startInstant.getTime() - PRE_HABIT_MINUTES * 60 * 1000);
 
-    const existing = await prisma.notificationLog.count({
-      where: { userId: habit.userId, type: NotificationType.HABIT_REMINDER, relatedEntityId },
+    const localDate = getTodayString(timezone);
+    const baseRelatedEntityId = `habit:${habit.id}:${localDate}`;
+
+    // 1. Pre-habit notification (5 min before)
+    if (preInstant.getTime() <= now.getTime()) {
+      const preRelatedEntityId = `${baseRelatedEntityId}:pre`;
+      const existing = await prisma.notificationLog.count({
+        where: { userId: habit.userId, type: NotificationType.HABIT_PRE_START, relatedEntityId: preRelatedEntityId },
+      });
+      if (existing === 0) {
+        await prisma.notificationLog.create({
+          data: {
+            userId: habit.userId,
+            type: NotificationType.HABIT_PRE_START,
+            title: `${habit.name} starting soon`,
+            body: `Your habit "${habit.name}" starts in ${PRE_HABIT_MINUTES} minutes. Get ready!`,
+            actionUrl: '/today',
+            relatedEntityId: preRelatedEntityId,
+            scheduledFor: preInstant,
+            status: NotificationStatus.PENDING,
+          },
+        });
+        result.created += 1;
+      }
+    }
+
+    // 2. Habit start notification (at scheduled time)
+    const startRelatedEntityId = `${baseRelatedEntityId}:start`;
+    const existingStart = await prisma.notificationLog.count({
+      where: { userId: habit.userId, type: NotificationType.HABIT_REMINDER, relatedEntityId: startRelatedEntityId },
     });
-    if (existing > 0) continue;
+    if (existingStart === 0) {
+      await prisma.notificationLog.create({
+        data: {
+          userId: habit.userId,
+          type: NotificationType.HABIT_REMINDER,
+          title: `Time for: ${habit.name}`,
+          body: `Time for your habit: ${habit.name}`,
+          actionUrl: '/today',
+          relatedEntityId: startRelatedEntityId,
+          scheduledFor: startInstant,
+          status: NotificationStatus.PENDING,
+        },
+      });
+      result.created += 1;
+    }
 
-    await prisma.notificationLog.create({
-      data: {
-        userId: habit.userId,
-        type: NotificationType.HABIT_REMINDER,
-        title: habit.name,
-        body: 'Time for your habit: ' + habit.name,
-        actionUrl: '/today',
-        relatedEntityId,
-        scheduledFor,
-        status: NotificationStatus.PENDING,
-      },
-    });
-
-    result.created += 1;
+    // 3. Post-habit completion notification (at end time)
+    if (endInstant.getTime() <= now.getTime()) {
+      const endRelatedEntityId = `${baseRelatedEntityId}:post`;
+      const existingEnd = await prisma.notificationLog.count({
+        where: { userId: habit.userId, type: NotificationType.HABIT_COMPLETION, relatedEntityId: endRelatedEntityId },
+      });
+      if (existingEnd === 0) {
+        await prisma.notificationLog.create({
+          data: {
+            userId: habit.userId,
+            type: NotificationType.HABIT_COMPLETION,
+            title: `${habit.name} session ended`,
+            body: `Your habit session for "${habit.name}" has ended. Did you complete it?`,
+            actionUrl: '/today',
+            relatedEntityId: endRelatedEntityId,
+            scheduledFor: endInstant,
+            status: NotificationStatus.PENDING,
+          },
+        });
+        result.created += 1;
+      }
+    }
   }
 
   return result;
+}
+
+export interface HabitReminderResult {
+  created: number;
+  considered: number;
+  skippedBySettings: number;
 }
 
 /**

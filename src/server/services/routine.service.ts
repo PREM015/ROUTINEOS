@@ -18,12 +18,13 @@ import type {
   RoutineProgressDay,
   RoutineAnalytics,
 } from '@/types/routine';
-import { resolveDayTypeFromException } from '@/lib/scheduling/resolve-routine';
+import { resolveDayTypeFromException, getDayTypeSlug } from '@/lib/scheduling/resolve-routine';
 import { slugToDayType } from '@/constants/routine';
 import { isOvernightBlock, calculateBlockDuration } from '@/lib/routine/duration';
 import { overlapMinutes } from '@/lib/routine/conflicts';
-import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
-import { getPeriodRange } from '@/lib/period-range';
+import { getTodayString, DEFAULT_TZ, isCalendarDate } from '@/lib/dates';
+import { formatInTimeZone } from 'date-fns-tz';
+import { getPeriodRange, resolveWeekStartsOn } from '@/lib/period-range';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { CategoryRepository } from '@/server/repositories/category.repository';
 import {
@@ -34,6 +35,7 @@ import {
 } from '@/lib/routine/edit-window';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { ScoringService } from '@/server/services/scoring.service';
+import { notificationService } from '@/server/services/notification.service';
 import { toUserId, type UserId } from '@/types/ids';
 
   /**
@@ -205,7 +207,26 @@ export class RoutineService {
    * Get routine for specific date
    */
   async getRoutineForDate(userId: UserId, date: Date | string): Promise<DayRoutine> {
-    const dateStr = typeof date === 'string' ? date : date.toISOString().slice(0, 10);
+    // A `Date` is an *instant*, not a calendar day, so rendering it needs a
+    // timezone — and the right one is the user's `settings.timezone`, which is a
+    // database read. The previous `date.toISOString().slice(0, 10)` picked UTC
+    // implicitly, so a local-midnight `Date` east of UTC resolved to the
+    // *previous* day and the user saw yesterday's routine.
+    //
+    // There is no caller passing a `Date` today (the routes pass a validated
+    // `YYYY-MM-DD`), so rather than guess a zone this overload resolves the
+    // user's own and says so if it cannot.
+    const dateStr =
+      typeof date === 'string'
+        ? date
+        : formatInTimeZone(
+            date,
+            (await new UserRepository().getSettings(userId).then((s) => s?.timezone)) ?? DEFAULT_TZ,
+            'yyyy-MM-dd'
+          );
+    if (!isCalendarDate(dateStr)) {
+      throw new ValidationError(`Invalid routine date: ${String(dateStr)}`);
+    }
 
     // Check for exception
     const exception = await this.routineRepository.findException(userId, dateStr);
@@ -220,10 +241,19 @@ export class RoutineService {
      * cannot find its template; worse, it can return a *different* template that
      * happens to share the enum value. An exception's explicit `dayTypeId` is
      * used directly, which is also why the slug lookup is skipped in that case.
+     *
+     * The lookup is by SLUG, not by the enum: `findDayTypeDefinitionBySlug`
+     * queries the `userId_slug` unique index, and every stored slug is
+     * kebab-case (`work-day`), so passing the raw enum `'WORKDAY'` matched
+     * nothing. Because a natural (non-exception) date always has
+     * `resolved.dayTypeId === null`, that made the slug lookup unreachable on
+     * exactly the common path, and every template linked through `dayTypeId`
+     * was invisible to `/routine`. `getDayTypeSlug` is the shared mapping used
+     * by `resolveDayTypeForDate` for the same lookup.
      */
     const definition = resolved.dayTypeId
       ? { id: resolved.dayTypeId, name: resolved.dayTypeName ?? '' }
-      : await this.routineRepository.findDayTypeDefinitionBySlug(userId, dayType);
+      : await this.routineRepository.findDayTypeDefinitionBySlug(userId, getDayTypeSlug(dayType));
     const dayTypeId = definition?.id ?? resolved.dayTypeId ?? null;
     const dayTypeName = definition?.name ?? resolved.dayTypeName ?? null;
 
@@ -394,7 +424,7 @@ category: block.category
     const timezone = settings?.timezone || DEFAULT_TZ;
     const anchor =
       anchorDate && /^\d{4}-\d{2}-\d{2}$/.test(anchorDate) ? anchorDate : getTodayString(timezone);
-    const range = getPeriodRange(period, anchor, timezone);
+    const range = getPeriodRange(period, anchor, timezone, resolveWeekStartsOn(settings?.weekStartsOn));
     const startDate = range.start;
     const endDate = range.end;
     const label = range.label;
@@ -1071,6 +1101,10 @@ category: block.category
     if (block.templateId !== templateId) {
       throw new Error('Block belongs to a different template');
     }
+
+    // Cancel any pending notifications for this block
+    await notificationService.cancelBlockNotifications(userId, blockId);
+
     return this.routineRepository.deleteBlock(blockId, userId);
   }
 
@@ -1396,6 +1430,9 @@ async deleteById(
   ) {
     const { date, ...fields } = input;
     await this.assertDateWritable(userId, date);
+
+    // Cancel any pending notifications for this block since the schedule is changing
+    await notificationService.cancelBlockNotifications(userId, blockId);
 
     // The template id is read off the block rather than taken from the caller, so
     // the same-template and ownership checks inside `updateBlock` cannot be

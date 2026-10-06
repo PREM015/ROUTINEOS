@@ -4,7 +4,9 @@ import {
   NotificationRepository,
   type DeliveryChannels,
 } from '@/server/repositories/notification.repository';
+import { UserRepository } from '@/server/repositories/user.repository';
 import { sendEmail } from '@/lib/email/sender';
+import { ACHIEVEMENTS_PATH, achievementDeepLink } from '@/lib/achievements/links';
 import { renderSimpleHtml } from '@/lib/email/html';
 import { pushService } from '@/server/services/push.service';
 import { toUserIdOptional, toUserId, type UserId  } from '@/types/ids';
@@ -128,9 +130,11 @@ function parseActionData(raw: string | null | undefined): {
 
 export class NotificationService {
   private notificationRepository: NotificationRepository;
+  private userRepository: UserRepository;
 
   constructor() {
     this.notificationRepository = new NotificationRepository();
+    this.userRepository = new UserRepository();
   }
 
   /**
@@ -368,19 +372,26 @@ export class NotificationService {
   }
 
   /**
-   * Notify the user that an achievement was unlocked
+   * Notify the user that an achievement was unlocked.
+   *
+   * `actionUrl` used to be `/achievements/${achievement.id}`, which is a 404: the
+   * page is one route at `/achievements` with no `[id]` segment. It is now built
+   * by `achievementDeepLink` from the **definition** id, which is what the page's
+   * `?highlight=` reads. `id` stays in the signature because it is also recorded as
+   * `relatedEntityId`, which is the row and genuinely is the row.
    */
   async notifyAchievement(
     userId: UserId,
-    achievement: { id: string; title: string },
+    achievement: { id: string; title: string; definitionId?: string | null },
     scheduledFor: Date = new Date(),
   ): Promise<NotificationLog> {
+    const definitionId = achievement.definitionId ?? null;
     return this.createNotification(userId, {
       type: NotificationType.ACHIEVEMENT_UNLOCKED,
       title: `Achievement unlocked: ${achievement.title}`,
       body: `You unlocked the "${achievement.title}" achievement. Keep it up!`,
       relatedEntityId: achievement.id,
-      actionUrl: `/achievements/${achievement.id}`,
+      actionUrl: definitionId === null ? ACHIEVEMENTS_PATH : achievementDeepLink(definitionId),
       scheduledFor,
     });
   }
@@ -549,6 +560,116 @@ export class NotificationService {
     }
 
     return result;
+  }
+
+  /**
+   * Cancel all pending notifications for a specific routine block.
+   * Called when a block is updated or deleted to prevent stale notifications.
+   */
+  async cancelBlockNotifications(
+    userId: UserId,
+    blockId: string
+  ): Promise<number> {
+    const typesToCancel = [
+      NotificationType.ROUTINE_PRE_START,
+      NotificationType.ROUTINE_START,
+      NotificationType.ROUTINE_COMPLETION,
+      NotificationType.ROUTINE_END_REMINDER,
+    ];
+
+    let cancelled = 0;
+    for (const type of typesToCancel) {
+      const pending = await this.notificationRepository.findPendingByType(userId, [type]);
+      for (const notification of pending) {
+        if (notification.relatedEntityId === blockId) {
+          await this.notificationRepository.markDismissed(userId, notification.id);
+          cancelled++;
+        }
+      }
+    }
+    return cancelled;
+  }
+
+  /**
+   * Retry unanswered notifications based on user's retry policy.
+   * Finds notifications that have been pending for longer than the retry intervals
+   * and creates follow-up notifications.
+   */
+  async retryUnansweredNotifications(
+    userId: UserId,
+    now: Date = new Date()
+  ): Promise<number> {
+    const settings = await this.userRepository.getSettings(userId);
+    if (!settings?.notificationRetryEnabled) return 0;
+    if (settings.notificationsEnabled === false) return 0;
+
+    const retryIntervals = this.parseRetryIntervals(settings.notificationRetryIntervals);
+    const maxRetries = settings.notificationMaxRetries ?? 3;
+
+    let retried = 0;
+
+    // Find all pending notifications for this user
+    const pending = await this.notificationRepository.findPendingByType(userId, [
+      NotificationType.ROUTINE_PRE_START,
+      NotificationType.ROUTINE_START,
+      NotificationType.ROUTINE_COMPLETION,
+      NotificationType.ROUTINE_END_REMINDER,
+      NotificationType.HABIT_REMINDER,
+      NotificationType.GOAL_DEADLINE,
+    ]);
+
+    for (const notification of pending) {
+      // Check if this notification has a retry count in actionData
+      const actionData = notification.actionData ? JSON.parse(notification.actionData) : {};
+      const retryCount = actionData.retryCount ?? 0;
+      const scheduledFor = new Date(notification.scheduledFor);
+      const elapsedMinutes = (now.getTime() - scheduledFor.getTime()) / 60000;
+
+      // Check if we should retry based on intervals
+      const nextInterval = retryIntervals[retryCount];
+      if (nextInterval === undefined || retryCount >= maxRetries) continue;
+      if (elapsedMinutes < nextInterval) continue;
+
+      // Create a follow-up notification
+      await this.createRetryNotification(userId, notification, retryCount + 1);
+      retried++;
+    }
+
+    return retried;
+  }
+
+  private parseRetryIntervals(intervalsJson: string | null | undefined): number[] {
+    if (!intervalsJson) return [5, 15, 30]; // Default: 5min, 15min, 30min
+    try {
+      const parsed = JSON.parse(intervalsJson);
+      if (Array.isArray(parsed) && parsed.every(n => typeof n === 'number' && n > 0)) {
+        return parsed;
+      }
+    } catch {
+      // Invalid JSON, use defaults
+    }
+    return [5, 15, 30];
+  }
+
+  private async createRetryNotification(
+    userId: UserId,
+    originalNotification: any,
+    retryCount: number
+  ): Promise<void> {
+    await this.notificationRepository.create(userId, {
+      type: originalNotification.type,
+      title: originalNotification.title,
+      body: `Follow-up: ${originalNotification.body ?? ''}`,
+      actionUrl: originalNotification.actionUrl,
+      relatedEntityId: originalNotification.relatedEntityId,
+      actionData: JSON.stringify({
+        ...JSON.parse(originalNotification.actionData ?? '{}'),
+        retryCount,
+        originalNotificationId: originalNotification.id,
+      }),
+      scheduledFor: new Date(),
+      status: NotificationStatus.PENDING,
+    });
   }
 }
 

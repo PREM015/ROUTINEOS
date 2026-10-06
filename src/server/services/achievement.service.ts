@@ -186,10 +186,24 @@ async function buildWorldState(
         perfectDayThreshold
       ),
       new ScoreRepository().countActiveDays(userId, historyStart_, today),
-      new SleepRepository().countEarlyWakeups(userId, historyStart_, today, '06:00'),
+      /**
+       * F33 - Early Riser declares `timeframe: 'ALL_TIME'` and is described as a
+       * lifetime claim, but it was answered with the same 730-day window as the
+       * other aggregates. A user with more than two years of history was credited
+       * only the recent part, so `earlyWakeups` could sit permanently below 10
+       * for someone who had long since earned it. `undefined` here means "no lower
+       * bound", which is what `ALL_TIME` means; the criterion's own window
+       * resolution is unchanged, so the number only grows.
+       */
+      new SleepRepository().countEarlyWakeups(userId, undefined, today, '06:00'),
       new ScoreRepository().findByDate(userId, today),
       // Night Owl is a *local clock hour* test, so the instants have to reach
       // this function; see `isLateEvening`.
+      //
+      // F35 INTERIM NOT APPLIED: this read is still unbounded. The fix needs an
+      // optional lower bound on `FocusRepository.findCompletedSessionStarts`,
+      // and `focus.repository.ts` is off-limits for this work (another agent owns
+      // it). See the Phase 1 report for the exact change required.
       new FocusRepository().findCompletedSessionStarts(userId),
     ]);
 
@@ -235,7 +249,25 @@ async function buildWorldState(
   return {
     worldState: {
       totals: {
-        streak: streak?.currentStreak ?? 0,
+        /**
+         * F8 - the larger of the current and the longest streak, not the current
+         * one alone.
+         *
+         * `Streak.currentStreak` is a live value: it drops the moment a day is
+         * missed. Evaluating `habit-streak-7` against it means the badge can only
+         * unlock if a check happens to land while the streak is at its peak - and
+         * checks fire on user actions, so a user who built a 30-day run and then
+         * took a week off would find "Month of Mastery" permanently unearned
+         * despite having done the thing. `longestStreak` is the record, and it is
+         * monotonic, which is the same property that makes a run-shaped criterion
+         * safe to unlock against at all.
+         *
+         * Read as a max rather than a swap so a genuinely current streak still
+         * counts, and so an inconsistent pair (a longest below the current, which
+         * `streak-recompute.service.ts` can leave behind) resolves to the current
+         * value instead of going backwards.
+         */
+        streak: Math.max(streak?.currentStreak ?? 0, streak?.longestStreak ?? 0),
         goalsCompleted: goals.filter((goal) => goal.status === 'COMPLETED').length,
         dailyScore: todayScore?.totalScore ?? undefined,
         earlyWakeups,
@@ -254,10 +286,26 @@ async function buildWorldState(
       streaks: {},
       dates: {
         activeDates: includeActiveDates ? activeDates : [],
-        // Dated series backing the windowed criteria. Present on both the
-        // evaluation and the read path: a locked tile that says "5 of 7 days this
-        // week" needs the same data the unlock check does.
-        perfectDayDates,
+        /**
+         * Dated series backing the windowed criteria. Present on both the
+         * evaluation and the read path: a locked tile that says "5 of 7 days this
+         * week" needs the same data the unlock check does.
+         *
+         * The **key** is `perfectDaysDates`, plural "Days", because
+         * `resolveCriterionValue` looks a field's series up as `${field}Dates` and
+         * the field is `perfectDays`. This key used to be `perfectDayDates`
+         * (singular), so the lookup missed and every criterion naming a
+         * `perfectDays` series silently fell through to the lifetime
+         * `totals.perfectDays` instead - which is correct only by accident,
+         * because every such criterion is `ALL_TIME`. The moment one of them
+         * gains a window it would unlock on the wrong evidence, with nothing to
+         * indicate why.
+         *
+         * Nothing reads this key by name today; the run totals above are computed
+         * from the local `perfectDayDates` variable. Renaming it therefore cannot
+         * break a caller, and it is what makes the dated path reachable.
+         */
+        perfectDaysDates: perfectDayDates,
       },
       counts: {},
     },
@@ -555,12 +603,16 @@ export class AchievementService {
 
       if (!created) continue;
 
-      const event = buildUnlockEvent(definition, achievement.unlockedAt);
+      const event = buildUnlockEvent(definition, achievement.unlockedAt, achievement.id);
       unlockedEvents.push(event);
 
       await notificationService.notifyAchievement(userId, {
         id: achievement.id,
         title: achievement.title,
+        // The catalogue id, not the row id: the notification's link is built from
+        // this, and the page's `?highlight=` matches on it. Passing `achievement.id`
+        // (a cuid) produced a link that resolved to nothing.
+        definitionId: definition.id,
       });
       await auditRepository.createActivity({
         userId,

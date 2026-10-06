@@ -7,14 +7,21 @@
  * pair, so consuming forms must sanitize the output server-side.
  *
  * NOTE: relies on `document.execCommand`, which is deprecated but still
- * supported in all evergreen browsers. Rendering stored HTML carries XSS
- * risk — always sanitize before persisting or displaying.
+ * supported in all evergreen browsers.
+ *
+ * Security: the editor writes `value` into `innerHTML`, so `value` is run
+ * through `sanitizeRichText` before it lands there. That is not redundant with
+ * server-side sanitization on write — it protects content stored *before* that
+ * sanitization existed, and any row that reached the database by another path.
+ * Without it, opening an entry whose stored content contained markup like
+ * `<img src=x onerror=...>` executed it, because this assignment is the sink.
  *
  * Usage:
  *   <RichTextEditor value={html} onChange={setHtml} placeholder="Write…" />
  */
 import * as React from 'react';
 import { Bold, Italic, List, ListOrdered, Underline } from 'lucide-react';
+import { sanitizeRichText } from '@/lib/security/html-sanitizer';
 import { cn } from '@/lib/utils';
 
 type CommandName = 'bold' | 'italic' | 'underline' | 'insertOrderedList' | 'insertUnorderedList';
@@ -59,11 +66,18 @@ export function RichTextEditor({
   const editorRef = React.useRef<HTMLDivElement>(null);
   const [active, setActive] = React.useState<ActiveState>(INITIAL_ACTIVE);
 
+  // Sanitized, not merely cleaned: this is the assignment that turns a stored
+  // string into live DOM. Comparing against the sanitized form rather than the
+  // raw prop is what keeps the caret from being reset on every keystroke —
+  // the parent's `value` still updates with unsanitized text while typing.
+  const safeValue = React.useMemo(() => sanitizeRichText(value), [value]);
+
   React.useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value;
+    const node = editorRef.current;
+    if (node && node.innerHTML !== safeValue) {
+      node.innerHTML = safeValue;
     }
-  }, [value]);
+  }, [safeValue]);
 
   const refreshActive = React.useCallback(() => {
     const query = (command: string): boolean => {

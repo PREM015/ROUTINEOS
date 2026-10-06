@@ -99,6 +99,19 @@ export function canCelebrate(
  */
 export interface UnlockEvent {
   achievementId: string;
+  /**
+   * The `Achievement` row id, when the caller has it.
+   *
+   * `POST /api/achievements/celebrate` updates by **row** id, while everything a
+   * client holds - the showcase payload, the URL, this event's `achievementId` - is
+   * the catalogue **definition** id. Without the row id on the wire, marking a
+   * badge celebrated needed a lookup the client could not do without a second
+   * request. The service builds the event next to the row it just inserted, so
+   * carrying it costs nothing.
+   *
+   * `null` for a definition-only event (a synthetic or dry-run unlock).
+   */
+  recordId?: string | null;
   type: AchievementType;
   title: string;
   description: string;
@@ -120,10 +133,12 @@ export interface UnlockEvent {
  */
 export function buildUnlockEvent(
   definition: AchievementDefinitionConfig,
-  unlockedAt: Date = new Date()
+  unlockedAt: Date = new Date(),
+  recordId: string | null = null
 ): UnlockEvent {
   return {
     achievementId: definition.id,
+    recordId,
     type: definition.type,
     title: definition.name,
     description: definition.description,

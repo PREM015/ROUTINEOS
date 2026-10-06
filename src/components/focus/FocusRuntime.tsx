@@ -43,6 +43,7 @@ import {
   type FocusSnapshot,
   type ReflectionInput,
 } from '@/store/focus.store';
+import { notifyFocusDataChanged } from '@/lib/app-events';
 import { adoptFromServerRow } from '@/lib/focus/timer-machine';
 import type { FocusSessionType } from '@/constants/prisma-enums';
 import { useSleepSession } from '@/hooks/useSleepSession';
@@ -524,7 +525,7 @@ export function FocusRuntime() {
     }
   }, []);
 
-  const start = useCallback(async () => {
+const start = useCallback(async () => {
     const store = useFocusStore.getState();
     store.setBusy(true);
     try {
@@ -557,6 +558,7 @@ export function FocusRuntime() {
       });
       store.setError(null);
       requestNotificationPermission();
+      notifyFocusDataChanged();
     } catch (error) {
       const message = error instanceof ApiError ? error.message : 'Could not start the session.';
       store.setError(message);
@@ -566,7 +568,7 @@ export function FocusRuntime() {
     }
   }, []);
 
-  const pause = useCallback(
+const pause = useCallback(
     async (reason?: string) => {
       const store = useFocusStore.getState();
       if (store.status !== 'running') return;
@@ -578,11 +580,12 @@ export function FocusRuntime() {
           body: { type: 'NOTE', label: reason },
         }).catch(() => undefined);
       }
+      notifyFocusDataChanged();
     },
     [transition]
   );
 
-  const resume = useCallback(async () => {
+const resume = useCallback(async () => {
     const store = useFocusStore.getState();
     if (store.status !== 'paused') return;
     const now = Date.now();
@@ -596,19 +599,22 @@ export function FocusRuntime() {
       endsAt: store.plannedMs > 0 ? (store.endsAt ?? now) + span : null,
     });
     await transition('resume');
+    notifyFocusDataChanged();
   }, [transition]);
 
-  const stop = useCallback(
+const stop = useCallback(
     async (endReason: 'STOPPED' | 'SKIPPED' | 'MODE_SWITCHED') => {
       const store = useFocusStore.getState();
       if (store.sessionId) await transition('end', { endReason });
       store.reset();
+      notifyFocusDataChanged();
     },
     [transition]
   );
 
-  const reset = useCallback(async () => {
+const reset = useCallback(async () => {
     await stop('STOPPED');
+    notifyFocusDataChanged();
   }, [stop]);
 
   const extend = useCallback(
@@ -622,6 +628,7 @@ export function FocusRuntime() {
       store.adopt({
         endsAt: store.plannedMs > 0 ? (store.endsAt ?? now) + seconds * 1000 : null,
       });
+      notifyFocusDataChanged();
     },
     []
   );
@@ -680,8 +687,9 @@ export function FocusRuntime() {
       .then((m) => m.runAchievementCheck())
       .catch(() => undefined);
 
-    const cycles = finishedMode === 'focus' ? store.cycles + 1 : store.cycles;
+const cycles = finishedMode === 'focus' ? store.cycles + 1 : store.cycles;
     store.adopt({ status: 'finished', startedAt: null, endsAt: null, pausedAt: null, cycles });
+    notifyFocusDataChanged();
   }, []);
 
   // ---------------------------------------------------------------------------

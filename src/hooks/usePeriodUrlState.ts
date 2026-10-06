@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { getPeriodRange, type Period } from '@/lib/period-range';
+import { getPeriodRange, resolveWeekStartsOn, type Period } from '@/lib/period-range';
 import { isCalendarDate } from '@/lib/dates';
 import { ApiError } from '@/lib/api-client';
 import { ErrorReporter } from '@/lib/monitoring/error-reporter';
@@ -100,9 +100,36 @@ export interface PeriodUrlState<T> {
   retry: () => void;
 }
 
+/**
+ * The weekday the client should resolve weeks against.
+ *
+ * Prefers the value the **server** resolved, because that is the authoritative one
+ * and it is present in the very first successful response. Falling back to the
+ * caller's default covers the window before that first load settles, which is the
+ * only time this can be wrong — and stepping to a slightly wrong anchor is benign
+ * next to disagreeing with the range the server is about to render.
+ */
+export interface PeriodUrlDefaults<T> {
+  period: Period;
+  today: string;
+  timezone: string;
+  /** Used until the first response reports its own; see `readWeekStartsOn`. */
+  weekStartsOn?: number;
+  /**
+   * How to read the resolved weekday back out of a loaded payload.
+   *
+   * A function rather than a value, and that is the whole point: the hook owns
+   * `data`, so the caller cannot hand it a value derived from `data` without
+   * creating a cycle in its own initialiser. Passing a reader keeps the hook
+   * generic over `T` while letting the authoritative server value win as soon as
+   * it exists.
+   */
+  readWeekStartsOn?: (data: T) => number | null | undefined;
+}
+
 export function usePeriodUrlState<T>(
   fetcher: (period: Period, anchorDate: string) => Promise<T>,
-  defaults: { period: Period; today: string; timezone: string }
+  defaults: PeriodUrlDefaults<T>
 ): PeriodUrlState<T> {
   const router = useRouter();
   const pathname = usePathname();
@@ -203,6 +230,18 @@ export function usePeriodUrlState<T>(
     [pathname, router, searchParams]
   );
 
+  /*
+    The weekday every client-side range calculation uses.
+
+    Read from the loaded response when it exposes one, otherwise from the caller's
+    setting. Both go through `resolveWeekStartsOn`, so a malformed value from
+    either source degrades to Monday instead of producing an empty or eight-day
+    week locally.
+  */
+  const weekStartsOn = resolveWeekStartsOn(
+    data === null ? defaults.weekStartsOn : defaults.readWeekStartsOn?.(data)
+  );
+
   const setPeriod = useCallback(
     (next: Period) => {
       /*
@@ -212,17 +251,17 @@ export function usePeriodUrlState<T>(
         drop the user on a date they never asked about. Re-deriving from the new
         period keeps the visible date honest about where it sits.
       */
-      commit(next, getPeriodRange(next, anchorDate, defaults.timezone).start);
+      commit(next, getPeriodRange(next, anchorDate, defaults.timezone, weekStartsOn).start);
     },
-    [anchorDate, commit, defaults.timezone]
+    [anchorDate, commit, defaults.timezone, weekStartsOn]
   );
 
   const step = useCallback(
     (delta: number) => {
-      const range = getPeriodRange(period, anchorDate, defaults.timezone);
+      const range = getPeriodRange(period, anchorDate, defaults.timezone, weekStartsOn);
       commit(period, delta < 0 ? range.prev : range.next);
     },
-    [anchorDate, commit, defaults.timezone, period]
+    [anchorDate, commit, defaults.timezone, period, weekStartsOn]
   );
 
   const reset = useCallback(() => {
@@ -231,8 +270,8 @@ export function usePeriodUrlState<T>(
 
   const label = useMemo(() => {
     if (data === null) return null;
-    return getPeriodRange(period, anchorDate, defaults.timezone).label;
-  }, [anchorDate, data, defaults.timezone, period]);
+    return getPeriodRange(period, anchorDate, defaults.timezone, weekStartsOn).label;
+  }, [anchorDate, data, defaults.timezone, period, weekStartsOn]);
 
   return {
     period,

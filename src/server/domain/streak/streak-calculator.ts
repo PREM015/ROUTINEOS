@@ -150,23 +150,43 @@ export function calculateLongestStreak(
   if (active.length === 0) return 0;
 
   const activeSet = new Set(active);
-  const isActive = (d: string): boolean =>
-    activeSet.has(d) || (restCountsInStreak && restDates.has(d));
+  const isActive = (d: string): boolean => activeSet.has(d);
+
+  /**
+   * Walk the calendar from `active[0]` to the final active day, so a rest day
+   * sitting between two active days is actually visited.
+   *
+   * The previous version iterated `active` only, so a rest date was never seen:
+   * `isActive(d) || restDates.has(d)` was always just `isActive(d)`, and any gap
+   * that consisted of nothing but rest days reset `run` to 1. With
+   * `['2026-09-01','2026-09-03']` and a rest day on the 2nd, the current streak
+   * correctly read 3 while the longest read 1, from the same inputs.
+   *
+   * A rest day bridges the gap but does not inflate the run, which is what the
+   * "rest dates do not extend numeric reach" rule means: 01 + rest + 03 is a
+   * 2-day run that survived, not a 3-day one.
+   */
+  const first = active[0];
+  const last = active[active.length - 1];
+  // `active.length === 0` returned above, so both ends exist.
+  if (first === undefined || last === undefined) return 0;
 
   let longest = 0;
   let run = 0;
-  let prev = active[0];
+  let cursor = first;
 
-  for (const d of active) {
-    if (prev && d === nextDayAfter(prev)) {
+  while (true) {
+    if (isActive(cursor)) {
       run += 1;
-    } else {
-      run = 1;
+      if (run > longest) longest = run;
+    } else if (!restCountsInStreak || !restDates.has(cursor)) {
+      // A genuine gap: the run ended here.
+      run = 0;
     }
-    // Rest dates do not extend numeric reach of a run; they only preserve it.
-    const stretches = isActive(d) || (restCountsInStreak && restDates.has(d));
-    if (stretches && run > longest) longest = run;
-    prev = d;
+    // else: a rest day with `restCountsInStreak` — preserved, not counted.
+
+    if (cursor === last) break;
+    cursor = nextDayAfter(cursor);
   }
 
   return longest;

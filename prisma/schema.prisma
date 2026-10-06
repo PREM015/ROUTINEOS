@@ -257,6 +257,7 @@ enum NotificationType {
 
   GOAL_AT_RISK
   GOAL_COMPLETED
+  GOAL_CHECKIN
 
   ROUTINE_START
   ROUTINE_COMPLETED
@@ -286,6 +287,10 @@ enum NotificationType {
   ROUTINE_PRE_START
   ROUTINE_COMPLETION
   ROUTINE_END_REMINDER
+
+  // Enhanced habit notifications
+  HABIT_PRE_START
+  HABIT_COMPLETION
 
   MOTIVATIONAL
   PRODUCTIVITY_INSIGHT
@@ -683,6 +688,11 @@ model UserSettings {
   monthlyResetReminder Boolean @default(true)
   focusReminders       Boolean @default(true)
   breakReminders       Boolean @default(true)
+
+  // Retry/re-prompt policy for unanswered notifications
+  notificationRetryEnabled     Boolean @default(true)
+  notificationRetryIntervals   String?  // JSON array of minutes, e.g., "[5,15,30]"
+  notificationMaxRetries       Int @default(3)
 
   // Data
   retroactiveEditDays      Int @default(3)

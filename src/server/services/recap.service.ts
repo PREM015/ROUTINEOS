@@ -7,7 +7,6 @@ import { YearlySummary, yearlySummary } from '@/server/analytics/yearly';
 import { streakAnalytics } from '@/server/analytics/streaks';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
-import { HabitRepository } from '@/server/repositories/habit.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
 import { ReflectionRepository } from '@/server/repositories/reflection.repository';
 import { FocusRepository } from '@/server/repositories/focus.repository';
@@ -24,9 +23,19 @@ import { EnergyRepository } from '@/server/repositories/energy.repository';
 import { DEFAULT_TZ, getTodayString } from '@/lib/dates';
 import {
   getPeriodRange,
+  resolveWeekStartsOn,
   type Period as PeriodKey,
   type PeriodRange,
+  type WeekStartsOn,
 } from '@/lib/period-range';
+import { loadPeriodHabits } from '@/server/analytics/period-habits';
+import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
+import {
+  extrasHaveActivity,
+  heatmapFromModel,
+  periodHasActivity,
+  type RecapHeatmapDay,
+} from '@/lib/recap/derive';
 import type { RecapExtras } from '@/types/recap';
 import type { UserId } from '@/types/ids';
 
@@ -41,6 +50,39 @@ import type { UserId } from '@/types/ids';
  */
 
 export type RecapPeriod = PeriodKey;
+
+/**
+ * Everything a period module needs, resolved once per request.
+ *
+ * Grouped into one object because passing six positional arguments to four
+ * methods is how `today` and `weekStartsOn` came to be omitted in the first
+ * place. Adding a dimension to the period context is now a change to this type
+ * and to `getReport`, not a hunt through call sites.
+ */
+interface PeriodContext {
+  userId: UserId;
+  range: PeriodRange;
+  timezone: string;
+  /** The user's real today, in their zone. Clips live windows. */
+  today: string;
+  weekStartsOn: WeekStartsOn;
+  /** Loaded once, shared by the period module and the heatmap. */
+  habitModel: PeriodHabitModel;
+}
+
+/**
+ * What a period builder hands back.
+ *
+ * `probe` is deliberately *not* the final `hasData`. It answers only "can the
+ * period data alone prove this window is empty", and it runs before the sixteen
+ * extras reads. `getReport` combines it with what `extras` found.
+ */
+interface PeriodBuild<TSummary> {
+  probe: boolean;
+  points: RecapScorePoint[];
+  habitModel: PeriodHabitModel;
+  summary: TSummary;
+}
 
 export interface RecapScorePoint {
   /** YYYY-MM-DD day; for the year period a YYYY-MM month key. */
@@ -58,8 +100,30 @@ export interface RecapReport {
   endDate: string;
   label: string;
   isCurrent: boolean;
+  /**
+   * The weekday this report's range was resolved against.
+   *
+   * Reported so the client can navigate by the same week the server used.
+   * Without it the URL hook falls back to Monday, and for a user who set "week
+   * starts on Sunday" the label and the arrows would describe a different week
+   * from the data on screen — the same two-answers failure `AnalyticsService`
+   * already solves by reporting `range.weekStartsOn`.
+   */
+  weekStartsOn: WeekStartsOn;
   hasData: boolean;
   points: RecapScorePoint[];
+  habitCoverage: {
+    dueDays: number;
+    totalDays: number;
+    completionRate: number | null;
+  };
+  /**
+   * Absent — not empty — when the period has no activity at all.
+   *
+   * `buildExtras` issues sixteen reads, so it is skipped entirely for a window
+   * the cheap probe can already prove is empty, and this is genuinely
+   * `undefined` in that case rather than an object full of empty arrays.
+   */
   extras?: RecapExtras;
   day?: DailyBreakdown;
   week?: WeeklySummary;
@@ -126,7 +190,6 @@ const REFLECTION_FIELDS: ReadonlyArray<readonly [ReflectionField, string]> = [
 export class RecapService {
   private scoreRepository: ScoreRepository;
   private userRepository: UserRepository;
-  private habitRepository: HabitRepository;
   private sleepRepository: SleepRepository;
   private reflectionRepository: ReflectionRepository;
   private focusRepository: FocusRepository;
@@ -144,7 +207,6 @@ export class RecapService {
   constructor() {
     this.scoreRepository = new ScoreRepository();
     this.userRepository = new UserRepository();
-    this.habitRepository = new HabitRepository();
     this.sleepRepository = new SleepRepository();
     this.reflectionRepository = new ReflectionRepository();
     this.focusRepository = new FocusRepository();
@@ -160,6 +222,35 @@ export class RecapService {
     this.energyRepository = new EnergyRepository();
   }
 
+  /**
+   * Resolve the reporting window and build the whole report.
+   *
+   * ## Period context is resolved once, completely
+   *
+   * `timezone`, `today` and `weekStartsOn` all come from the same settings row
+   * `AnalyticsService` uses, and all three are passed to the period modules.
+   * This service used to pass only `timezone`, which meant:
+   *
+   *  - `loadPeriodHabits` fell back to `today = range.endDate`, so the window
+   *    was clipped to the *end of the period* rather than to now. The live week
+   *    was scored against the Sunday that had not happened yet and the live
+   *    year against December — the exact failure
+   *    `lib/analytics/period-habits.ts` documents as fixed.
+   *  - `getPeriodRange` fell back to `DEFAULT_WEEK_STARTS_ON`, so a user who set
+   *    "week starts on Sunday" saw a Monday-bounded week here and the correct
+   *    one on `/analytics`.
+   *
+   * Two surfaces, two answers, from one account. The fix is not to pass the
+   * right argument at each of the six call sites below; it is to resolve the
+   * context once and thread it.
+   *
+   * ## Order of operations
+   *
+   * The period is built first, then a cheap activity probe decides whether the
+   * sixteen `extras` reads are worth running at all. `extras` can only ever add
+   * activity, never remove it, so the final `hasData` is the probe OR what
+   * `extras` found.
+   */
   async getReport(
     userId: UserId,
     period: RecapPeriod,
@@ -167,8 +258,10 @@ export class RecapService {
   ): Promise<RecapReport> {
     const settings = await this.userRepository.getSettings(userId);
     const timezone = settings?.timezone || DEFAULT_TZ;
-    const anchor = isValidDate(anchorDate) ? (anchorDate as string) : getTodayString(timezone);
-    const range = getPeriodRange(period, anchor, timezone);
+    const today = getTodayString(timezone);
+    const weekStartsOn = resolveWeekStartsOn(settings?.weekStartsOn);
+    const anchor = isValidDate(anchorDate) ? (anchorDate as string) : today;
+    const range = getPeriodRange(period, anchor, timezone, weekStartsOn);
 
     const base = {
       period,
@@ -177,43 +270,74 @@ export class RecapService {
       endDate: range.end,
       label: range.label,
       isCurrent: range.isCurrent,
+      weekStartsOn,
     };
 
-    const extras = await this.buildExtras(userId, period, range, timezone);
+    /*
+      One habit model for the whole request.
 
-    if (period === 'day') {
-      const result = await this.buildDay(userId, range, timezone);
-      return { ...base, extras, ...result };
+      Every period module would otherwise load its own, and `buildExtras` loaded
+      a third overlapping copy with `findLogsByUserRange` just to rebuild the
+      heatmap denominator by hand. Loading it here and handing it to both is what
+      let the heatmap drop its private rule — see `heatmapFromModel`.
+    */
+    const habitModel = await loadPeriodHabits(userId, range.start, range.end, today);
+
+    const context: PeriodContext = { userId, range, timezone, today, weekStartsOn, habitModel };
+
+    const built =
+      period === 'day'
+        ? await this.buildDay(context)
+        : period === 'week'
+          ? await this.buildWeek(context)
+          : period === 'month'
+            ? await this.buildMonth(context)
+            : await this.buildYear(context);
+
+    const coverage = {
+      dueDays: built.habitModel.days.filter((day) => day.scheduled > 0).length,
+      totalDays: built.habitModel.days.length,
+      completionRate: built.habitModel.totals.rate,
+    };
+
+    if (!built.probe) {
+      // Provably empty. Thirteen of ~21 queries never ran.
+      return {
+        ...base,
+        hasData: false,
+        points: built.points,
+        habitCoverage: coverage,
+        ...built.summary,
+      };
     }
-    if (period === 'week') {
-      const result = await this.buildWeek(userId, range, timezone);
-      return { ...base, extras, ...result };
-    }
-    if (period === 'month') {
-      const result = await this.buildMonth(userId, range, timezone);
-      return { ...base, extras, ...result };
-    }
-    const result = await this.buildYear(userId, range, timezone);
-    return { ...base, extras, ...result };
+
+    const extras = await this.buildExtras(context);
+
+    return {
+      ...base,
+      hasData: built.probe || extrasHaveActivity(extras),
+      points: built.points,
+      habitCoverage: coverage,
+      extras,
+      ...built.summary,
+    };
   }
 
   /**
    * Assemble the `extras` enrichment block. Every dataset runs in parallel
    * (one query per repo — no N+1). Sections with no rows for the period return
    * empty arrays or null so each client card decides its own empty state.
+   *
+   * Runs only when the cheap probe says the period has activity, so the sixteen
+   * reads below are never paid for a window that has none.
    */
-  private async buildExtras(
-    userId: UserId,
-    period: RecapPeriod,
-    range: PeriodRange,
-    timezone: string
-  ): Promise<RecapExtras> {
+  private async buildExtras(context: PeriodContext): Promise<RecapExtras> {
+    const { userId, range, timezone } = context;
     const { start, end } = range;
     const rangeStart = fromZonedTime(`${start}T00:00:00`, timezone);
     const rangeEnd = fromZonedTime(`${end}T23:59:59.999`, timezone);
 
     const [
-      habitLogs,
       sleepLogs,
       reflectionRows,
       focusSessions,
@@ -230,7 +354,6 @@ export class RecapService {
       energyLogs,
       completedMilestones,
     ] = await Promise.all([
-      this.habitRepository.findLogsByUserRange(userId, start, end),
       this.sleepRepository.findByRange(userId, start, end),
       this.reflectionRepository.findByRange(userId, start, end),
       this.focusRepository.findSessions(userId, { from: start, to: end }),
@@ -244,7 +367,7 @@ export class RecapService {
       this.healthMetricRepository.findAll(userId, { startDate: start, endDate: end }),
       streakAnalytics(userId, { startDate: ACCOUNT_EPOCH, endDate: end }),
       this.achievementRepository.findUnlocked(userId),
-      this.linkedReviewFor(userId, period, range),
+      this.linkedReviewFor(userId, range.period, range),
       this.journalRepository.findAll(userId, { from: start, to: end, limit: 6 }),
       this.routineRepository.findExceptionsByRange(userId, start, end),
       this.moodRepository.getMoodRange(userId, rangeStart, rangeEnd),
@@ -252,25 +375,20 @@ export class RecapService {
       this.goalRepository.findCompletedMilestones(userId, rangeStart, rangeEnd),
     ]);
 
-    // Heatmap: per-day habit completion (status-aware scheduled denominator).
-    const dayMap = new Map<string, { completed: number; scheduled: number }>();
-    for (const log of habitLogs) {
-      const bucket = dayMap.get(log.date) ?? { completed: 0, scheduled: 0 };
-      if (log.status === 'COMPLETED') bucket.completed++;
-      if (log.status !== 'SKIPPED' && log.status !== 'NOT_APPLICABLE') {
-        bucket.scheduled++;
-      }
-      dayMap.set(log.date, bucket);
-    }
-    const habitHeatmap = Array.from(dayMap.entries()).map(([date, value]) => ({
-      date,
-      completed: value.completed,
-      scheduled: value.scheduled,
-    }));
+    /*
+      Heatmap, from the shared period model rather than from raw logs.
+
+      This used to rebuild `{completed, scheduled}` from `HabitLog` rows, counting
+      every row that was not SKIPPED or NOT_APPLICABLE. That made it a *fourth*
+      definition of "scheduled" in a codebase that had already fought over the
+      word twice, and it had no way to express "due but never recorded". The
+      model is already loaded for this request and already answers both questions.
+    */
+    const habitHeatmap: RecapHeatmapDay[] = heatmapFromModel(context.habitModel);
 
     const sleepTrend = sleepLogs.map((log) => ({
       date: log.date,
-      durationMinutes: log.actualDurationMinutes,
+      durationMinutes: log.actualDurationMinutes ?? null,
     }));
 
     // Mood & energy: prefer live MoodLog / EnergyLog readings (latest per day),
@@ -515,10 +633,13 @@ export class RecapService {
     return null;
   }
 
-private async buildDay(userId: UserId, range: PeriodRange, timezone: string) {
+private async buildDay(context: PeriodContext): Promise<PeriodBuild<{ day: DailyBreakdown }>> {
+    const { userId, range, timezone, today, habitModel } = context;
     const anchor = range.anchorDate;
-    const breakdown = await dailyBreakdown(userId, anchor, timezone);
-    const score = await this.scoreRepository.findByDate(userId, anchor);
+    const [breakdown, score] = await Promise.all([
+      dailyBreakdown(userId, anchor, timezone, today, habitModel),
+      this.scoreRepository.findByDate(userId, anchor),
+    ]);
 
     const points = score && score.totalScore !== null
       ? [{
@@ -530,52 +651,97 @@ private async buildDay(userId: UserId, range: PeriodRange, timezone: string) {
         }]
       : [];
 
-    const hasData =
-      score?.totalScore !== null ||
-      breakdown.tiers.some((tier) => tier.total > 0) ||
-      breakdown.habits.some((habit) => habit.status !== 'NOT_LOGGED') ||
-      breakdown.routine.total > 0 ||
-      breakdown.sleep.logged;
+    /*
+      `hasScore` is a boolean, not a comparison against `null`.
 
-    return { hasData, points, day: breakdown };
+      The previous expression was `score?.totalScore !== null`, which is
+      `undefined !== null` when the row is absent — always `true`. The day period
+      therefore reported that it had data for a user who had none, and the
+      "No recap data available" state could never render.
+    */
+    const hasScore = score !== null && score.totalScore !== null;
+
+    return {
+      probe: periodHasActivity('day', {
+        hasScore,
+        habits: habitModel,
+        points,
+        day: breakdown,
+      }),
+      points,
+      habitModel,
+      summary: { day: breakdown },
+    };
   }
 
-private async buildWeek(userId: UserId, range: PeriodRange, timezone: string) {
-    const summary = await weeklySummary(userId, range.start, timezone);
+  private async buildWeek(context: PeriodContext): Promise<PeriodBuild<{ week: WeeklySummary }>> {
+    const { userId, range, timezone, today, weekStartsOn, habitModel } = context;
+
+    /*
+      Scores are fetched once here and handed to `weeklySummary`, which used to
+      read the identical range itself. The caller needed the rows for `points`
+      and the summary needed them for its averages, so one of the two had to
+      accept them from the other; the summary is the better owner of the shape,
+      so it takes the rows.
+    */
     const scores = await this.scoreRepository.findByRange(userId, range.start, range.end);
+    const summary = await weeklySummary(
+      userId,
+      range.start,
+      timezone,
+      weekStartsOn,
+      today,
+      habitModel,
+      scores
+    );
     const points = toPoints(scores);
 
-    const hasData =
-      points.length > 0 ||
-      summary.scores.average > 0 ||
-      summary.scores.perfectDays > 0 ||
-      summary.scores.excellentDays > 0 ||
-      summary.habits.perHabit.some((habit) => habit.scheduled > 0) ||
-      summary.sleep.loggedDays > 0;
-
-    return { hasData, points, week: summary };
+    return {
+      probe: periodHasActivity('week', {
+        hasScore: points.length > 0,
+        habits: habitModel,
+        points,
+        week: summary,
+      }),
+      points,
+      habitModel,
+      summary: { week: summary },
+    };
   }
 
-private async buildMonth(userId: UserId, range: PeriodRange, timezone: string) {
+  private async buildMonth(context: PeriodContext): Promise<PeriodBuild<{ month: MonthlySummary }>> {
+    const { userId, range, timezone, today, weekStartsOn, habitModel } = context;
     const month = range.anchorDate.slice(0, 7);
-    const summary = await monthlySummary(userId, month, timezone);
+
     const scores = await this.scoreRepository.findByRange(userId, range.start, range.end);
+    const summary = await monthlySummary(
+      userId,
+      month,
+      timezone,
+      weekStartsOn,
+      today,
+      habitModel,
+      scores
+    );
     const points = toPoints(scores);
 
-    const hasData =
-      points.length > 0 ||
-      summary.scores.average > 0 ||
-      summary.habits.totalCompleted > 0 ||
-      summary.habits.totalMissed > 0 ||
-      summary.sleep.averageDuration > 0 ||
-      summary.focus.totalSessions > 0;
-
-    return { hasData, points, month: summary };
+    return {
+      probe: periodHasActivity('month', {
+        hasScore: points.length > 0,
+        habits: habitModel,
+        points,
+        month: summary,
+      }),
+      points,
+      habitModel,
+      summary: { month: summary },
+    };
   }
 
-private async buildYear(userId: UserId, range: PeriodRange, timezone: string) {
+  private async buildYear(context: PeriodContext): Promise<PeriodBuild<{ year: YearlySummary }>> {
+    const { userId, range, timezone, today, habitModel } = context;
     const year = Number(range.anchorDate.slice(0, 4));
-    const summary = await yearlySummary(userId, year, timezone);
+    const summary = await yearlySummary(userId, year, timezone, today, habitModel);
 
     // A month with no scored day is not a zero. Keeping the gap means the recap's
     // trend line breaks rather than diving to the floor for months the user had
@@ -590,15 +756,17 @@ private async buildYear(userId: UserId, range: PeriodRange, timezone: string) {
         bonus: 0,
       }));
 
-    const hasData =
-      summary.totalDaysScored > 0 ||
-      summary.habits.totalCompleted > 0 ||
-      summary.habits.totalMissed > 0 ||
-      summary.sleep.averageDuration > 0 ||
-      summary.focus.totalSessions > 0 ||
-      summary.journal.entryCount > 0;
-
-    return { hasData, points, year: summary };
+    return {
+      probe: periodHasActivity('year', {
+        hasScore: summary.totalDaysScored > 0,
+        habits: habitModel,
+        points,
+        year: summary,
+      }),
+      points,
+      habitModel,
+      summary: { year: summary },
+    };
   }
 }
 

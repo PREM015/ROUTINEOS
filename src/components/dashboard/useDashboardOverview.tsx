@@ -37,6 +37,7 @@ import {
 import { apiRequest } from '@/lib/api-client';
 import { DEFAULT_WINDOW_DAYS } from '@/constants/dashboard';
 import type { DashboardOverview } from '@/types/dashboard';
+import { onAppEvent } from '@/lib/app-events';
 
 export interface DashboardOverviewState {
   data: DashboardOverview | null;
@@ -109,6 +110,27 @@ export function DashboardOverviewProvider({ children }: { children: ReactNode })
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
+  // Cross-page synchronization: refetch when relevant data changes on other pages
+  useEffect(() => {
+    const cleanupRoutine = onAppEvent('routine-data-changed', () => setNonce((n) => n + 1));
+    const cleanupToday = onAppEvent('today-data-changed', () => setNonce((n) => n + 1));
+    const cleanupDayMode = onAppEvent('day-mode-changed', () => setNonce((n) => n + 1));
+    const cleanupGoals = onAppEvent('goals-data-changed', () => setNonce((n) => n + 1));
+    const cleanupHabits = onAppEvent('habits-data-changed', () => setNonce((n) => n + 1));
+    const cleanupSleep = onAppEvent('sleep-data-changed', () => setNonce((n) => n + 1));
+    const cleanupFocus = onAppEvent('focus-data-changed', () => setNonce((n) => n + 1));
+
+    return () => {
+      cleanupRoutine();
+      cleanupToday();
+      cleanupDayMode();
+      cleanupGoals();
+      cleanupHabits();
+      cleanupSleep();
+      cleanupFocus();
+    };
   }, []);
 
   const value = useMemo<DashboardOverviewState>(

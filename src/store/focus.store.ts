@@ -102,7 +102,7 @@ export const EMPTY_SNAPSHOT: FocusSnapshot = {
    * `DEFAULT_FOCUS_DURATIONS` the settings page defaults to rather than a second
    * literal - one number, one definition.
    */
-  plannedMs: (DEFAULT_FOCUS_DURATIONS.focusMinutes ?? 25) * 60_000,
+  plannedMs: DEFAULT_FOCUS_DURATIONS.focusMinutes * 60_000,
   cycles: 0,
   intent: '',
   categoryId: null,

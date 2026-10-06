@@ -391,6 +391,38 @@ export class HabitRepository extends BaseRepository {
   }
 
   /**
+   * Completion dates per habit, for deriving `Habit.streakCount`.
+   *
+   * Bulk (one query for every habit) because the streak is a display concern
+   * read on list pages, and doing it per habit is an N+1. Only `COMPLETED` is
+   * returned: a streak is consecutive *completions*, so `MISSED`/`SKIPPED`/
+   * `PARTIAL` rows must not extend it — they are what breaks it.
+   */
+  async findCompletionDatesByHabit(
+    userId: UserId,
+    startDate: string,
+    endDate: string
+  ): Promise<Map<string, string[]>> {
+    const logs = await this.prisma.habitLog.findMany({
+      where: {
+        userId,
+        status: 'COMPLETED',
+        date: { gte: startDate, lte: endDate },
+      },
+      select: { habitId: true, date: true },
+      orderBy: { date: 'asc' },
+    });
+
+    const byHabit = new Map<string, string[]>();
+    for (const log of logs) {
+      const list = byHabit.get(log.habitId);
+      if (list) list.push(log.date);
+      else byHabit.set(log.habitId, [log.date]);
+    }
+    return byHabit;
+  }
+
+  /**
    * Find logs for habit in date range
    */
   async findLogsByRange(

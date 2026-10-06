@@ -174,7 +174,11 @@ function overnightMinutes(bedtime: string, wakeTime: string): number | null {
   const wake = hhmmToMinutes(wakeTime);
   if (bed === null || wake === null) return null;
   let diff = wake - bed;
-  if (diff <= 0) diff += 24 * 60;
+  // Strictly `< 0`, not `<= 0`. Equal clock times resolved to a full 1440-minute
+  // session here, which was then written as `actualDurationMinutes` and scored:
+  // `deficitMinutes` became 0 and `calculateSleepScore` awarded the whole
+  // duration share, so a mistaken or empty entry registered as a perfect night.
+  if (diff < 0) diff += 24 * 60;
   return diff;
 }
 
@@ -577,11 +581,22 @@ export class SleepSessionService {
     await this.timeEntryRepository.stopRunning(userId);
 
     const startedAt = new Date();
-    const session = await this.sessionRepository.create(userId, {
+    // Atomic insert-if-none-active. The `findActive` above is only a fast path:
+    // on its own it is a check-then-act race, and two concurrent starts (a
+    // double-clicked button, or a push "start sleep" landing beside a manual
+    // start) both saw "none" and both inserted. Two ACTIVE rows then break
+    // everything downstream: `stopSleep` ends only one, `ensureSleepPrompt`
+    // suppresses every future bedtime prompt, and the cron auto-start skips.
+    const { session, created } = await this.sessionRepository.createIfNoneActive(userId, {
       startedAt,
       source: options.source ?? SleepStartSource.MANUAL,
       promptKey: options.promptKey ?? null,
     });
+
+    if (!created) {
+      // Another request won the insert; adopt its session.
+      return { session, alreadyActive: true };
+    }
 
     if (options.promptKey) {
       const pending = await this.notificationRepository.findPendingByType(
@@ -796,24 +811,33 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
     const wakeDate = getTodayString(timezone);
 
     const settings = await this.getSettings(userId);
+    const minSleepMinutes = settings?.minSleepDuration ?? 480;
+    const deficitMinutes = Math.max(0, minSleepMinutes - durationMinutes);
 
     /**
      * Snapshot the target window onto the log. An auto-tracked session has no
      * client-supplied times, so without this `targetBedtime`/`targetWakeTime`
      * were never written on this path at all — which left the sleep card's
      * "Target" cell blank and `SleepQualityMeter` permanently unmeasurable.
+     *
+     * `deficitMinutes` belongs here too. It was computed just below and used
+     * only for the notification body and the return value, never written, so
+     * every session-tracked night stored `null` while the manual path
+     * (`SleepService.logSleep`) stored a real number. Consumers then read it as
+     * zero: `getSleepStats.totalDeficit` summed `l.deficitMinutes || 0` across
+     * valid logs and analytics reported `deficitMinutes: latest.deficitMinutes`
+     * — i.e. sleep debt was invisible for exactly the nights that were tracked
+     * automatically.
      */
     const log = await this.sleepRepository.upsertLog(userId, wakeDate, {
       user: { connect: { id: userId } },
       actualBedtime: bedtime,
       actualWakeTime: wakeTime,
       actualDurationMinutes: durationMinutes,
+      deficitMinutes,
       ...(settings?.targetBedtime?.trim() ? { targetBedtime: settings.targetBedtime.trim() } : {}),
       ...(settings?.targetWakeTime?.trim() ? { targetWakeTime: settings.targetWakeTime.trim() } : {}),
     });
-
-    const minSleepMinutes = settings?.minSleepDuration ?? 480;
-    const deficitMinutes = Math.max(0, minSleepMinutes - durationMinutes);
 
     await notificationService
       .createNotification(userId, {
@@ -857,19 +881,39 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
       const targetBedtime = settings.targetBedtime?.trim();
       if (!targetBedtime) continue;
 
-      const created = await this.ensureSleepPrompt(toUserId(settings.userId), settings, now);
+      const userId = toUserId(settings.userId);
+
+      // Clear a stranded session before anything consults it.
+      //
+      // The self-heal in `resolveSleepState` runs only when a client polls, and
+      // that poll is itself gated on `document.visibilityState === 'visible'`.
+      // A session orphaned by a missed cron tick or a closed laptop therefore
+      // survived indefinitely and suppressed every later bedtime prompt
+      // (`ensureSleepPrompt` returns early while any session is active) and the
+      // cron auto-start below. The cron is the one thing guaranteed to run for
+      // a user who never opens the app, so the cleanup belongs here.
+      //
+      // Only the stale row is cancelled, not every ACTIVE one: `cancelAllActive`
+      // is an `updateMany`, so a single stale sibling would discard a
+      // legitimately-running session too.
+      const activeNow = await this.sessionRepository.findActive(userId);
+      if (activeNow && this.isSessionStale(activeNow, now)) {
+        await this.sessionRepository.cancelSession(activeNow.id, userId);
+      }
+
+      const created = await this.ensureSleepPrompt(userId, settings, now);
       if (created) promptsCreated += 1;
 
       // Create pre-warning notification (1 hour before bedtime)
-      const preWarningCreated = await this.ensurePreSleepWarning(toUserId(settings.userId), settings, now);
+      const preWarningCreated = await this.ensurePreSleepWarning(userId, settings, now);
       if (preWarningCreated) preWarningsCreated += 1;
 
       // Create wake confirmation notification (at target wake time)
-      const wakeCreated = await this.ensureWakePrompt(toUserId(settings.userId), settings, now);
+      const wakeCreated = await this.ensureWakePrompt(userId, settings, now);
       if (wakeCreated) wakePromptsCreated += 1;
 
       const pending = await this.notificationRepository.findPendingByType(
-        toUserId(settings.userId),
+        userId,
         [NotificationType.SLEEP_PROMPT]
       );
       // "Start sleep automatically" was previously ignored here: the cron

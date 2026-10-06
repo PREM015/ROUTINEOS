@@ -1,6 +1,20 @@
 import type { JournalEntry, JournalRevision, Prisma } from '@/generated/prisma';
+import {
+  EXPORT_MAX_ENTRIES,
+  ForeignTagError,
+  MAX_REVISIONS_PER_ENTRY,
+} from '@/lib/journal/policy';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { BaseRepository } from './base.repository';
+
+// Re-exported so callers that already hold a repository handle can reach the
+// policy without a second import path; the definitions live in `lib/journal`
+// so they are importable without Prisma.
+export {
+  EXPORT_MAX_ENTRIES,
+  ForeignTagError,
+  MAX_REVISIONS_PER_ENTRY,
+} from '@/lib/journal/policy';
 import type { UserId } from '@/types/ids';
 
 /**
@@ -54,89 +68,39 @@ export interface JournalMonthCell {
 }
 
 /**
- * Ceiling on a single export.
- *
- * `findAllForExport` is the only unbounded read in this repository, so it needs
- * a floor under it: a decade of daily entries is already a multi-megabyte
- * Markdown document, and without a cap the request either exhausts memory or
- * streams a response too large to finish.
+ * Which column a sort field maps to, and what nulls mean for it, lives in
+ * `@/lib/journal/sort` — it is a pure rule and importing Prisma to express it
+ * made it untestable.
  */
-export const EXPORT_MAX_ENTRIES = 2000;
-
-/**
- * Newest revisions returned for one entry.
- *
- * The history dialog shows the most recent slice; older revisions remain in the
- * database and the oldest are the least interesting, since the current content
- * is one of them.
- */
-export const MAX_REVISIONS_PER_ENTRY = 50;
-
-/**
- * Raised when a tag batch names ids the caller does not own.
- *
- * A dedicated type rather than a generic `Error` because the service has to map
- * this to a 403, while every other repository failure maps to 500 or 400. The
- * repository stays free of HTTP concerns; it names the condition and the
- * service decides what it means.
- */
-export class ForeignTagError extends Error {
-  readonly tagIds: readonly string[];
-
-  constructor(tagIds: readonly string[]) {
-    super('One or more tags do not belong to this user');
-    this.name = 'ForeignTagError';
-    this.tagIds = tagIds;
-  }
-}
+import { journalOrderBy, type JournalSortColumn } from '@/lib/journal/sort';
 
 const ENTRY_WITH_TAGS = {
   tags: { include: { tag: true } },
 } satisfies Prisma.JournalEntryInclude;
 
 /**
- * Which column a sort field maps to, and what nulls mean for it.
+ * Build Prisma's `orderBy` from the pure sort plan.
  *
- * `title` and `mood` are nullable, so a plain `orderBy` leaves their ordering
- * up to the database: Postgres puts nulls last for `asc` and *first* for
- * `desc`, which meant "title A–Z" listed untitled entries above the titled ones.
- * Explicit `nulls` pins that down so both directions put unnamed entries last,
- * where an unnamed entry belongs.
- *
- * Annotated directly rather than via a bare `satisfies`, which still infers
- * `sort: string` and rejects at the point of use; `as const` is not an option
- * either, because it makes the properties `readonly` and Prisma's own
- * `SortOrderInput` refuses that. Annotating the record contextually types the
- * plain directions, and the per-entry `satisfies` does the same for the two
- * object shapes - in both cases `'desc'` is checked as a `SortOrder` instead of
- * being widened and compared later.
- *
- * `date` and `createdAt` carry no `nulls`: both columns are non-nullable, and
- * Prisma types them as a bare `SortOrder` rather than `SortOrderInput`, so an
- * object there is a compile error. Only the two genuinely nullable columns below
- * can - and need - to pin null placement.
+ * The cast is confined here: `journalOrderBy` describes the ordering without
+ * importing Prisma so it can be unit-tested, and this is the one place that has
+ * to speak Prisma's vocabulary. `date` and `createdAt` are non-nullable and take
+ * a bare direction; `title` and `mood` are nullable and take the object form.
  */
-const SORT_FIELDS: Record<JournalSortField, Prisma.JournalEntryOrderByWithRelationInput> = {
-  date: { date: 'desc' },
-  createdAt: { createdAt: 'desc' },
-  title: { title: { sort: 'asc', nulls: 'last' } satisfies Prisma.SortOrderInput },
-  mood: { mood: { sort: 'desc', nulls: 'last' } satisfies Prisma.SortOrderInput },
-};
-
 function buildOrderBy(
   sortBy: JournalSortField | undefined,
   sortOrder: JournalSortOrder | undefined
 ): Prisma.JournalEntryOrderByWithRelationInput[] {
-  const field = SORT_FIELDS[sortBy ?? 'date'] ?? SORT_FIELDS.date;
-  const order = sortOrder ?? 'desc';
+  const column = (sortBy ?? 'date') as JournalSortColumn;
 
-  return [
-    // `date` is unique per user, so it is also the tiebreaker: without it, two
-    // entries written in the same millisecond could swap places between pages
-    // and one of them would never be reachable at any page size.
-    { date: order === 'asc' ? 'asc' : 'desc' },
-    { ...field },
-  ];
+  return journalOrderBy(sortBy, sortOrder).map((entry) => {
+    const base: Prisma.JournalEntryOrderByWithRelationInput = {};
+    if (entry.direction !== undefined) {
+      Object.assign(base, { [column]: entry.direction });
+    } else if (entry.nullable !== undefined) {
+      Object.assign(base, { [column]: entry.nullable });
+    }
+    return base;
+  });
 }
 
 export class JournalRepository extends BaseRepository {

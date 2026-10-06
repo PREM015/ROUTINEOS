@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback, useState, type CSSProperties, type ReactNode } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
-  AlertTriangle,
   BarChart3,
   BookOpen,
   CalendarRange,
   Flame,
-  Loader2,
+  GitCompareArrows,
   Moon,
   Target,
   TrendingUp,
@@ -15,11 +16,29 @@ import {
 import { apiRequest } from '@/lib/api-client';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { usePeriodUrlState } from '@/hooks/usePeriodUrlState';
-import { PeriodControl } from '@/components/shared/PeriodControl';
+import { parseCompareAnchor, useComparePeriod } from '@/hooks/useComparePeriod';
 import type { AnalyticsDashboard } from '@/types/analytics';
 import type { Period } from '@/lib/period-range';
-import { Spinner } from '@/components/ui';
 import { deltaText, percentText } from '@/lib/analytics/format';
+import { shiftCalendarDay } from '@/lib/dates';
+import { AnalyticsSkeleton } from '@/components/analytics/AnalyticsSkeleton';
+import { PeriodBar } from '@/components/analytics/PeriodBar';
+import { HighlightChips } from '@/components/analytics/HighlightChips';
+import { HabitLab } from '@/components/analytics/HabitLab';
+import { PeriodControl } from '@/components/shared/PeriodControl';
+import { DomainRoom } from '@/components/analytics/DomainRoom';
+import { DayContextNote } from '@/components/analytics/DayContextNote';
+import { CompareStudio } from '@/components/analytics/CompareStudio';
+import { TargetsPanel } from '@/components/analytics/TargetsPanel';
+import { ReviewMode } from '@/components/analytics/ReviewMode';
+import { ViewsToolbar, useHiddenRooms } from '@/components/analytics/ViewsToolbar';
+import { TrendStrip } from '@/components/analytics/TrendStrip';
+import { ReportView, ZenView, buildReportModel } from '@/components/analytics/ReportView';
+import type { TrendMetric } from '@/lib/analytics/trend';
+import { canReview } from '@/lib/analytics/review';
+
+/** The three arrangements of the same data. Anything else in `?view=` falls back. */
+type ViewMode = 'standard' | 'zen' | 'report';
 import PeriodChart from '@/components/analytics/PeriodChart';
 import StreakPanel from '@/components/analytics/StreakPanel';
 import TierMixBar from '@/components/analytics/TierMixBar';
@@ -122,16 +141,98 @@ export default function AnalyticsPage() {
       period: 'day',
       today: userToday,
       timezone,
+      /*
+       * `readWeekStartsOn`, not a value: the hook needs the resolved weekday read back
+       * *out* of each loaded payload. Passing `data?.range.weekStartsOn` instead
+       * referred to `data` inside the initialiser that produces it, which is a
+       * self-reference - `tsc` reports it as an implicit-any cycle, and at runtime the
+       * binding would be in its temporal dead zone on first render.
+       *
+       * There is deliberately no `weekStartsOn` setting here any more: the server
+       * resolves the weekday and reports it, so a client-side guess would only be a
+       * second answer to the same question.
+       */
+      readWeekStartsOn: (loaded) => loaded?.range.weekStartsOn,
     });
 
   const [dismissedInsightId, setDismissedInsightId] = useState<string | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [trendMetric, setTrendMetric] = useState<TrendMetric>('score');
+
+  /*
+    The year tab carries monthly score averages only, so a habit trend cannot be shown there.
+    Derived rather than reset, so choosing "Habits" on a week tab and stepping to a month
+    keeps that choice, and stepping to the year and back does not silently discard it. The
+    strip disables the Habits button there rather than showing score numbers under a habit
+    caption.
+  */
+  const effectiveTrendMetric: TrendMetric = period === 'year' ? 'score' : trendMetric;
+  const [hiddenRooms, setHiddenRooms] = useHiddenRooms();
+
+  /*
+    `cmp` lives in the URL rather than in component state, for the same reason `period`
+    does: a comparison is a result the user arrived at and may want to link to or return
+    to with the back button. Validated on read — a hand-edited value that is not a real
+    calendar date, or is in the future, is dropped rather than sent.
+  */
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const compareAnchor = parseCompareAnchor(searchParams.get('cmp'), userToday);
+
+  const setCompareAnchor = useCallback(
+    (next: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === null) params.delete('cmp');
+      else params.set('cmp', next);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  const compare = useComparePeriod(period, anchorDate, compareAnchor);
+
+  // Strip an invalid `cmp` so the address bar always describes what is rendered.
+  useEffect(() => {
+    const raw = searchParams.get('cmp');
+    if (raw !== null && raw !== compareAnchor) setCompareAnchor(null);
+  }, [compareAnchor, searchParams, setCompareAnchor]);
 
   /*
     Hard failure with nothing to show: the retry is the only useful thing on the
     page, so it takes the whole screen rather than being buried under an empty
     dashboard whose zeros look like data.
   */
+  /*
+    `view` is in the URL for the same reason `period` is: a report someone meant to read
+    or print is a result, and it should survive a reload and be linkable. An unrecognised
+    value falls back to standard rather than erroring — a bad query parameter should not
+    be able to leave the page in a state with no way back.
+  */
+  const viewParam = searchParams.get('view');
+  const view: ViewMode =
+    viewParam === 'zen' || viewParam === 'report' ? viewParam : 'standard';
+
+  const setView = useCallback(
+    (next: ViewMode) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === 'standard') params.delete('view');
+      else params.set('view', next);
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  /*
+    `null` while there is no payload, so this memo can sit above the early returns — hooks
+    after a conditional return is the one mistake in this file that would crash rather than
+    merely read badly. The null is resolved by the `reportModel === null` guard below,
+    which also narrows it for TypeScript.
+  */
+  const reportModel = useMemo(() => (data === null ? null : buildReportModel(data)), [data]);
+
   if (error && data === null) {
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -148,12 +249,12 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!data) {
-    return (
-      <div className="flex justify-center py-24">
-        <Spinner className="h-6 w-6" />
-      </div>
-    );
+  /*
+    `reportModel` is null exactly when `data` is null, so checking both narrows both for
+    TypeScript without an assertion.
+  */
+  if (data === null || reportModel === null) {
+    return <AnalyticsSkeleton />;
   }
 
   const { hero, tiles, habits, range } = data;
@@ -161,66 +262,63 @@ export default function AnalyticsPage() {
   const habitChart = habitChartCopy(period, range.label);
   const tierChart = tierChartCopy(period, range.label);
 
-  return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-3 text-3xl font-bold">
-            <span className="inline-flex rounded-2xl bg-primary/10 p-2 text-primary">
-              <BarChart3 className="h-7 w-7" />
-            </span>
-            <span className="animated-gradient-text">Analytics</span>
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            {period === 'day' ? 'Your day' : 'Your'} report for{' '}
-            <span className="font-semibold text-foreground">{range.label}</span>
-            {range.isCurrent ? ' (so far)' : ''}.
-          </p>
-        </div>
+  const periodControl = (
+    <PeriodControl
+      period={period}
+      onPeriodChange={setPeriod}
+      label={range.label}
+      onPrev={() => step(-1)}
+      onNext={() => step(1)}
+      onToday={reset}
+      anchorDate={anchorDate}
+      maxAnchor={userToday}
+      timezone={timezone}
+      panelId={PERIOD_PANEL_ID}
+    />
+  );
 
-        <div className="flex flex-col items-end gap-2">
-          <PeriodControl
-            period={period}
-            onPeriodChange={setPeriod}
-            label={range.label}
-            onPrev={() => step(-1)}
-            onNext={() => step(1)}
-            onToday={reset}
-            anchorDate={anchorDate}
-            maxAnchor={userToday}
-            timezone={timezone}
-            panelId={PERIOD_PANEL_ID}
-          />
-          {/*
-            The strip is a real tablist, so it has to name the panel it drives —
-            and that panel is this whole reporting surface, which lives in the
-            caller. See `PeriodControl.panelId`.
-          */}
-          <FreshnessChip freshness={data.freshness} />
-          {/*
-            Status region rather than a full-screen spinner. The previous numbers
-            stay readable underneath, but the page never claims they are current
-            while they are not — which is how a user ends up reading last week's
-            average as today's.
-          */}
-          <p
-            role="status"
-            aria-live="polite"
-            className="flex min-h-4 items-center gap-1.5 text-xs text-muted-foreground"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                Updating…
-              </>
-            ) : error ? (
-              <span className="text-destructive">{error} — showing the last loaded period.</span>
-            ) : isStale ? (
-              'Updating…'
-            ) : null}
-          </p>
+  /*
+    The standard arrangement, built once and shared.
+
+    Zen and Report are *views of this data*, not forks of it. Extracting it to a variable
+    rather than a component means there is one `<HabitLab>`, one `<CompareStudio>` and one
+    set of figures — so a report and the dashboard cannot show different numbers, which
+    would be the most damaging possible bug on a page whose whole claim is honesty.
+  */
+  const standardBody = (
+    <div className="container mx-auto max-w-7xl px-4 py-8">
+      <PeriodBar
+        period={period}
+        onPeriodChange={setPeriod}
+        label={range.label}
+        onPrev={() => step(-1)}
+        onNext={() => step(1)}
+        onToday={reset}
+        anchorDate={anchorDate}
+        maxAnchor={userToday}
+        timezone={timezone}
+        panelId={PERIOD_PANEL_ID}
+        freshness={data.freshness}
+        isLoading={isLoading}
+        error={error}
+        onRetry={retry}
+      >
+        <div className="flex flex-col gap-2 pt-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="flex items-center gap-3 text-3xl font-bold">
+              <span className="inline-flex rounded-2xl bg-primary/10 p-2 text-primary">
+                <BarChart3 className="h-7 w-7" />
+              </span>
+              <span className="animated-gradient-text">Analytics</span>
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              {period === 'day' ? 'Your day' : 'Your'} report for{' '}
+              <span className="font-semibold text-foreground">{range.label}</span>
+              {range.isCurrent ? ' (so far)' : ''}.
+            </p>
+          </div>
         </div>
-      </div>
+      </PeriodBar>
 
       <div
         id={PERIOD_PANEL_ID}
@@ -232,6 +330,14 @@ export default function AnalyticsPage() {
         }`}
         aria-busy={isLoading}
       >
+        {/*
+          What changed, above the fold and below the hero. Sits here rather than in the
+          collapsed detail section because it is the answer to "how did this period go",
+          not a domain breakdown — and because a page that makes the user expand
+          something to find out what happened has already lost them.
+        */}
+        <HighlightChips insights={data.insights} />
+
         {/* ── Overview: the answer first ─────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <section className="glass-panel glow-primary relative overflow-hidden rounded-2xl p-6 shadow-soft lg:col-span-2">
@@ -314,26 +420,31 @@ export default function AnalyticsPage() {
                 </p>
 
                 {/*
-                  Only compare like with like. A part-lived week against a whole one
-                  is not a comparison, so the service sends `null` and nothing is
-                  claimed — rather than a flattering delta.
+                  Every period has a comparison now, including the two longest —
+                  a part-lived month is compared with the same number of days of the
+                  month before, rather than with a whole one that would flatter it.
+
+                  `basis` is not decoration. It is the sentence that makes the delta
+                  above it mean anything, and it is generated from the same window the
+                  arithmetic read, so it cannot describe a comparison that did not
+                  happen. When there is no delta it carries the reason instead.
                 */}
-                {data.comparison?.delta != null ? (
-                  <p className="flex items-center gap-1.5 text-sm">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                    <span className="tabular-nums text-foreground">
-                      {deltaText(data.comparison.delta)}
-                    </span>
-                    <span className="text-muted-foreground">
-                      vs {data.comparison.start} – {data.comparison.end}
-                    </span>
-                  </p>
-                ) : data.comparison ? (
-                  <p className="text-sm text-muted-foreground">
-                    No score recorded in {data.comparison.start} – {data.comparison.end} to
-                    compare against.
-                  </p>
-                ) : null}
+                {data.comparison.delta != null ? (
+                  <div className="space-y-0.5">
+                    <p className="flex items-center gap-1.5 text-sm">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      <span className="tabular-nums text-foreground">
+                        {deltaText(data.comparison.delta)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        vs {data.comparison.start} – {data.comparison.end}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{data.comparison.basis}</p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{data.comparison.basis}</p>
+                )}
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
@@ -367,6 +478,14 @@ export default function AnalyticsPage() {
             </div>
 
             <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {/*
+                Every tile links to the page that owns its number. A figure with no
+                route out of it is a dead end, and "where did 62% come from" is the
+                first question anyone asks of a report.
+
+                Each link carries the period's own date, so following one lands on the
+                day or week being looked at rather than on today.
+              */}
               <Tile
                 label="Routine"
                 value={tiles.routine != null ? `${Math.round(tiles.routine.completionRate)}%` : '—'}
@@ -375,6 +494,7 @@ export default function AnalyticsPage() {
                     ? `${tiles.routine.completed} of ${tiles.routine.total} blocks`
                     : 'Nothing tracked'
                 }
+                href={`/routine?date=${anchorDate}`}
               />
               <Tile
                 label="Habits"
@@ -384,6 +504,7 @@ export default function AnalyticsPage() {
                     ? `${habits.completed} of ${habits.scheduled} due`
                     : 'Nothing was due'
                 }
+                href="/habits"
               />
               <Tile
                 label="Sleep"
@@ -398,11 +519,13 @@ export default function AnalyticsPage() {
                     ? `${data.sleep.periodStats.loggedDays} nights logged`
                     : 'Not logged'
                 }
+                href="/wellness/sleep"
               />
               <Tile
                 label="Mood"
                 value={tiles.mood != null ? `${tiles.mood}/5` : '—'}
                 hint={tiles.mood != null ? 'Average of logged days' : 'Not logged'}
+                href="/wellness/mood"
               />
             </dl>
           </section>
@@ -478,41 +601,142 @@ export default function AnalyticsPage() {
         </div>
 
         {/* ── Detail, on request ─────────────────────────────────────────── */}
-        <section className="mt-6">
-          <button
-            type="button"
-            onClick={() => setDetailOpen((open) => !open)}
-            aria-expanded={detailOpen}
-            className="flex w-full items-center justify-between rounded-2xl border border-border/60 bg-card/50 px-5 py-4 text-left transition-colors hover:bg-card/70"
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
-              Explore every domain
-              <span className="font-normal text-muted-foreground">
-                — habits, routine, wellbeing, focus, goals
-              </span>
-            </span>
-            <span className="text-sm font-medium text-primary">
-              {detailOpen ? 'Hide' : 'Show'}
-            </span>
-          </button>
+        {/*
+          Planned rest and reduced-load days. Text, not chart markers — neither chart
+          plots a per-day series, so there is no bar these could annotate. See
+          `DayContextNote` for why that is not a gap in the data.
+        */}
+        <DayContextNote annotations={data.annotations} periodLabel={range.label} />
 
-          {detailOpen && (
-            <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-              <StreakPanel streaks={data.streaks} />
-              <TierMixBar tierMix={data.tierMix} />
-              <FocusSummaryCard focus={data.focus} periodLabel={range.label} />
-              <TimeAllocationCard allocation={data.timeAllocation} />
-              <RoutineDetailCard routine={data.routine} />
-              <TaskQuadrantCard tasks={data.tasks} />
-              <ProjectProgressList projects={data.projects} />
-              <MilestoneHitsCard milestones={data.milestones} title="Milestones" accent="emerald" />
-              <SleepSnapshotCard sleep={data.sleep} />
-              <NutritionHealthCard nutrition={data.nutrition} health={data.health} />
-              <JournalCard journal={data.journal} />
-              <AchievementsStrip achievements={data.achievements} />
-            </div>
-          )}
+        {/*
+          Trend. Sits above the charts because it answers "which way" in one line, and a
+          reader who wants the shape of it can stop there — the two charts below are the
+          detailed version of the same question.
+        */}
+        <div className="mt-6">
+          <TrendStrip
+            payload={data}
+            period={period}
+            anchorDate={anchorDate}
+            metric={effectiveTrendMetric}
+            onMetricChange={setTrendMetric}
+          />
+        </div>
+
+        {/*
+          Compare, targets and export. Grouped above the charts because they are controls
+          on the whole view rather than findings about it, and because Compare Studio's
+          basis statement has to be read before its numbers.
+        */}
+        <div className="mt-6 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {compareAnchor === null ? (
+              <button
+                type="button"
+                onClick={() => setCompareAnchor(previousComparableAnchor(anchorDate, data.today))}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <GitCompareArrows className="h-3.5 w-3.5" aria-hidden="true" />
+                Compare with the previous period
+              </button>
+            ) : (
+              <CompareStudio
+                primary={data}
+                comparison={compare.data}
+                period={period}
+                isLoading={compare.isLoading}
+                error={compare.error}
+                isStale={compare.isStale}
+                onRetry={compare.retry}
+                onClose={() => setCompareAnchor(null)}
+              />
+            )}
+          </div>
+
+          <TargetsPanel payload={data} />
+
+          <ViewsToolbar
+            payload={data}
+            hiddenRooms={hiddenRooms}
+            onHiddenRoomsChange={setHiddenRooms}
+            onOpenReview={() => setReviewOpen(true)}
+          />
+        </div>
+
+        {/*
+          Where the habit rate is won or lost. Sits directly under the charts because
+          it is the answer to "what happened", while the rooms below are the answer to
+          "tell me more".
+        */}
+        <div className="mt-6">
+          <HabitLab panel={data.habits} periodLabel={range.label} />
+        </div>
+
+        {/* ── Detail, on request ─────────────────────────────────────────── */}
+        <section className="mt-6 space-y-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
+            Every domain
+            <span className="font-normal text-muted-foreground">
+              — grouped, and each group says what it holds
+            </span>
+          </h2>
+
+          {/*
+            Four rooms rather than one flat list of twelve equal cards.
+
+            Grouping is **display-only**: every dataset below was already fetched by the
+            single dashboard request, and closing a room changes nothing the server
+            computed. The panel that used to sit here said only "Show", which made a
+            collapsed page unnavigable; each room now names its contents, so the reader
+            can see that Wellbeing holds sleep before deciding to open it.
+
+            Unmount-when-closed is a rendering decision, not a data one — see
+            `DomainRoom`.
+          */}
+          <DomainRoom
+            title="Routine & Habits"
+            summary={`Streaks, tier mix and ${data.routine.blocks.length} routine ${
+              data.routine.blocks.length === 1 ? 'block' : 'blocks'
+            } tracked`}
+            hidden={hiddenRooms.includes('routine-habits')}
+          >
+            <StreakPanel streaks={data.streaks} />
+            <TierMixBar tierMix={data.tierMix} />
+            <RoutineDetailCard routine={data.routine} />
+          </DomainRoom>
+
+          <DomainRoom
+            title="Wellbeing"
+            summary="Sleep, nutrition and health metrics, and the mood pulse"
+            hidden={hiddenRooms.includes('wellbeing')}
+          >
+            <SleepSnapshotCard sleep={data.sleep} />
+            <NutritionHealthCard nutrition={data.nutrition} health={data.health} />
+          </DomainRoom>
+
+          <DomainRoom
+            title="Work"
+            summary={`${data.focus.period.sessions} focus sessions, time allocation, ${data.tasks.open} open tasks and ${data.projects.length} projects`}
+            hidden={hiddenRooms.includes('work')}
+          >
+            <FocusSummaryCard focus={data.focus} periodLabel={range.label} />
+            <TimeAllocationCard allocation={data.timeAllocation} />
+            <TaskQuadrantCard tasks={data.tasks} />
+            <ProjectProgressList projects={data.projects} />
+          </DomainRoom>
+
+          <DomainRoom
+            title="Growth"
+            summary={`${data.milestones.length} milestones, ${data.journal.length} journal ${
+              data.journal.length === 1 ? 'entry' : 'entries'
+            }, ${data.achievements.length} achievements`}
+            hidden={hiddenRooms.includes('growth')}
+          >
+            <MilestoneHitsCard milestones={data.milestones} title="Milestones" accent="emerald" />
+            <JournalCard journal={data.journal} />
+            <AchievementsStrip achievements={data.achievements} />
+          </DomainRoom>
         </section>
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -531,46 +755,118 @@ export default function AnalyticsPage() {
           ) : null}
         </div>
       </div>
+
+      {/*
+        Mounted last so it sits above everything and is reached last in the tab order,
+        which is what a modal overlay should do. `ReviewMode` returns null when there is
+        not enough data to fill a screen honestly, so the trigger is hidden too.
+      */}
+      {canReview(data) && (
+        <ReviewMode payload={data} open={reviewOpen} onClose={() => setReviewOpen(false)} />
+      )}
+    </div>
+  );
+
+  if (view === 'report') {
+    return <ReportView model={reportModel} onExit={() => setView('standard')} />;
+  }
+
+  if (view === 'zen') {
+    return (
+      <ZenView
+        model={reportModel}
+        periodControl={periodControl}
+        onExit={() => setView('standard')}
+      />
+    );
+  }
+
+  return (
+    <>
+      {standardBody}
+      {/*
+        The view switcher sits outside the standard body so it is reachable from every
+        arrangement — a mode you cannot leave because the control to leave was inside the
+        mode is a trap.
+      */}
+      <ViewSwitcher view={view} onChange={setView} />
+    </>
+  );
+}
+
+/**
+ * Standard / Zen / Report.
+ *
+ * Rendered for Zen and Report as well, not just standard, because the way out of a mode
+ * has to be visible from inside it. In Report it is hidden at print time along with
+ * everything else that cannot exist on paper.
+ */
+function ViewSwitcher({
+  view,
+  onChange,
+}: {
+  view: ViewMode;
+  onChange: (next: ViewMode) => void;
+}) {
+  const options: Array<{ id: ViewMode; label: string }> = [
+    { id: 'standard', label: 'Standard' },
+    { id: 'zen', label: 'Zen' },
+    { id: 'report', label: 'Report' },
+  ];
+
+  return (
+    <div
+      data-print-hide
+      className="fixed bottom-4 right-4 z-40 flex items-center gap-0.5 rounded-xl border border-border/60 bg-card/90 p-1 shadow-soft backdrop-blur-md"
+    >
+      <div role="group" aria-label="View" className="flex">
+        {options.map((option) => {
+          const active = option.id === view;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(option.id)}
+              className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                active
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 /**
- * Says so when the scores behind this period are incomplete.
+ * One summary figure.
  *
- * Scores are computed by a bounded nightly job, so a period can hold days nobody
- * has got to. The alternative was a page that quietly averaged whatever existed
- * and called it the period — which reads as a decline when the truth is that four
- * days are missing. A chip that appears only when something is missing keeps the
- * common case quiet.
+ * Renders as a link when it has a destination. `<dl>` requires each term to be
+ * wrapped in a `<div>` when the description is a link rather than plain text — putting
+ * `<a>` directly inside `<dd>` breaks the description-list structure — so the `<div>`
+ * wrapper is load-bearing rather than a layout convenience.
  *
- * `title` carries the explanation for anyone who cannot see the chip's short
- * text, and `aria-live` is deliberately absent: it does not change on its own, and
- * a live region that fires on every period change is noise.
+ * The anchor keeps the real destination in the accessibility tree with its own
+ * accessible name, so a screen reader announces "Routine, 62%, 5 of 8 blocks, link"
+ * rather than three disconnected fragments.
  */
-function FreshnessChip({ freshness }: { freshness: AnalyticsDashboard['freshness'] }) {
-  if (freshness.unscoredDays === 0) return null;
-
-  const explanation =
-    `Scores are computed by a nightly job. ${freshness.unscoredDays} of the ` +
-    `${freshness.elapsedDays} elapsed ${freshness.elapsedDays === 1 ? 'day has' : 'days have'} ` +
-    'no score yet, so the average above covers fewer days than the period.' +
-    (freshness.latestScoredDate ? ` Newest score: ${freshness.latestScoredDate}.` : '') +
-    ' Days still unscored can be computed on demand from Today.';
-
-  return (
-    <p
-      title={explanation}
-      className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400"
-    >
-      <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />
-      <span>
-        {freshness.unscoredDays} of {freshness.elapsedDays} elapsed{' '}
-        {freshness.elapsedDays === 1 ? 'day' : 'days'} not scored yet
-      </span>
-      <span className="sr-only">. {explanation}</span>
-    </p>
-  );
+/**
+ * The anchor to compare against when the user turns Compare on.
+ *
+ * The previous *day*, seven days back for a week, and so on — the same step the
+ * `PeriodControl` arrows use, so "compare with the previous period" means what the arrows
+ * mean. Returns `null` when there is no earlier day to compare with, which is the case for
+ * a brand-new account; the hook then issues nothing rather than fetching a date the server
+ * would accept but that describes nothing.
+ */
+function previousComparableAnchor(anchorDate: string, today: string): string | null {
+  const previous = shiftCalendarDay(anchorDate, -1);
+  return previous > today ? null : previous;
 }
 
 function Tile({
@@ -578,14 +874,16 @@ function Tile({
   value,
   hint,
   icon,
+  href,
 }: {
   label: string;
   value: string;
   hint: string;
   icon?: ReactNode;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-xl border border-border/60 bg-card/60 p-3">
+  const body = (
+    <>
       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-1 font-semibold tabular-nums text-foreground">
         <span className="flex items-center gap-1">
@@ -594,6 +892,22 @@ function Tile({
         </span>
       </dd>
       <dd className="mt-0.5 text-[11px] text-muted-foreground">{hint}</dd>
+    </>
+  );
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/60 p-3 transition-colors hover:border-primary/40 hover:bg-card/80 motion-reduce:transition-none">
+      {href ? (
+        <Link
+          href={href}
+          className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {body}
+          <span className="sr-only"> — open {label}</span>
+        </Link>
+      ) : (
+        body
+      )}
     </div>
   );
 }

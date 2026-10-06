@@ -125,7 +125,15 @@ export function isEligibleOn(
     (o) => o.startDate <= date && (o.endDate === null || o.endDate >= date)
   );
 
-  if (active.some((o) => o.type === 'SKIP_TODAY' || o.type === 'SKIP_RANGE')) {
+  if (
+    active.some(
+      (o) =>
+        (o.type === 'SKIP_TODAY' || o.type === 'SKIP_RANGE') &&
+        // Same single-day rule as `calculateHabitEligibility`: a `SKIP_TODAY`
+        // whose `endDate` was never written must not swallow every later date.
+        (o.type === 'SKIP_TODAY' ? o.startDate === date : true)
+    )
+  ) {
     return { eligible: false, reason: 'SKIPPED', manual: false };
   }
   if (active.some((o) => o.type === 'PAUSE')) {

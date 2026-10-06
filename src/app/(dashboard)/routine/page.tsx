@@ -62,6 +62,7 @@ import { minutesToTime, timeToMinutesExact } from '@/lib/routine/conflicts';
 import { apiRequest, ApiError, apiErrorMessage } from '@/lib/api-client';
 import type { ResolvedRoutineBlock, DayTypeDefinition } from '@/types/routine';
 import type { DayType } from '@/generated/prisma';
+import { notifyRoutineDataChanged, notifyDayModeChanged, onAppEvent } from '@/lib/app-events';
 
 /**
  * `/routine` — the time-and-schedule command centre.
@@ -85,7 +86,7 @@ export default function RoutinePage() {
   const { timezone } = useUserTimezone();
   const { settings } = useSettings();
   const online = useOnlineStatus();
-  const dayTypes = useDayTypes();
+const dayTypes = useDayTypes();
   const now = useNowMinutes(timezone);
   const reduceMotion = useReducedMotion();
 
@@ -112,35 +113,73 @@ export default function RoutinePage() {
   const [applyRangeOpen, setApplyRangeOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<ResolvedRoutineBlock | null>(null);
 
+  // Block counts for all day types (fetched on mount and when day types change)
+  const [blockCounts, setBlockCounts] = useState<Map<string, number>>(new Map());
+
   const blocks = useMemo(() => data?.blocks ?? [], [data?.blocks]);
   const summary = useMemo(() => summarizeDay(blocks), [blocks]);
 
   /** Clock minutes, only on today's date. `null` elsewhere, by design. */
   const nowMinutes = isToday ? now.minutes : null;
 
+  // Fetch block counts for all active day types when they load
+  useEffect(() => {
+    if (dayTypes.isLoading || dayTypes.active.length === 0) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const counts = new Map<string, number>();
+        for (const dt of dayTypes.active) {
+          if (cancelled) return;
+          try {
+            const list = await apiRequest<{ blocks: ResolvedRoutineBlock[]; blockCount: number; dayTypeId: string }[]>(
+              `/api/routine/templates?dayTypeId=${encodeURIComponent(dt.id)}`
+            );
+            if (cancelled) return;
+            const template = list?.[0];
+            counts.set(dt.id, template?.blockCount ?? 0);
+          } catch {
+            if (cancelled) return;
+            counts.set(dt.id, 0);
+          }
+        }
+        if (!cancelled) setBlockCounts(counts);
+      } catch {
+        // Ignore errors - tabs will show no count rather than misleading 0
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dayTypes.active]);
+
   // ── Derived day-type identity ─────────────────────────────────────────────
   const resolvedDayTypeId = data?.dayTypeId ?? null;
 
-  /**
- * Block counts per day type.
- *
- * Only **one** day's blocks are ever loaded — that is the whole point of the
- * single-request design — so the only count that can be known for certain is the
- * resolved day type's, for the selected date. Every other tab's count is
- * `undefined`, and the tab renders no number.
- *
- * Showing `0` for them would be a lie with real consequences: a user with twelve
- * blocks on "Weekend" would see "Weekend 0" and conclude the day type was empty.
- * The alternative — fetching every template just to fill in tab labels — is the
- * all-templates request this page deliberately removed.
- */
-const blockCountsByDayType = useMemo(() => {
-  const counts = new Map<string, number>();
-  if (resolvedDayTypeId) {
-    counts.set(resolvedDayTypeId, blocks.length);
-  }
-  return counts;
-}, [resolvedDayTypeId, blocks.length]);
+/**
+  * Block counts per day type.
+  *
+  * We now fetch block counts for all active day types on mount (one request per
+  * day type). This avoids the "all-templates" request while still showing accurate
+  * counts in the tab strip. The resolved day type's count comes from the loaded
+  * blocks; others come from the background fetch.
+  */
+  const blockCountsByDayType = useMemo(() => {
+    const counts = new Map<string, number>();
+    // Resolved day type: use actual loaded blocks
+    if (resolvedDayTypeId) {
+      counts.set(resolvedDayTypeId, blocks.length);
+    }
+    // Other day types: use pre-fetched counts
+    blockCounts.forEach((count, dayTypeId) => {
+      if (dayTypeId !== resolvedDayTypeId) {
+        counts.set(dayTypeId, count);
+      }
+    });
+    return counts;
+  }, [resolvedDayTypeId, blocks.length, blockCounts]);
 
   const tabs = useMemo(
     () => buildDayTypeTabs(dayTypes.active, blockCountsByDayType, resolvedDayTypeId),
@@ -208,13 +247,11 @@ const blockCountsByDayType = useMemo(() => {
 
     void (async () => {
       try {
-        const list = await apiRequest<unknown[]>(
+        const list = await apiRequest<{ blocks: ResolvedRoutineBlock[]; blockCount: number; dayTypeId: string }[]>(
           `/api/routine/templates?dayTypeId=${encodeURIComponent(previewKey)}`
         );
         if (cancelled) return;
-        const template = list?.[0] as
-          | { blocks?: ResolvedRoutineBlock[]; dayTypeId?: string | null }
-          | undefined;
+        const template = list?.[0];
         const templateBlocks = Array.isArray(template?.blocks) ? template.blocks : [];
         // Only paint if this is still the tab we asked for.
         if (cancelled) return;
@@ -319,6 +356,11 @@ const blockCountsByDayType = useMemo(() => {
   // ── Block actions ─────────────────────────────────────────────────────────
   const notify = useCallback((message: string) => toast.success(message), []);
 
+  const notifyRoutineChanged = useCallback(() => {
+    notifyRoutineDataChanged();
+    notifyDayModeChanged();
+  }, []);
+
   const toggleDone = useCallback(
     async (block: ResolvedRoutineBlock) => {
       const wasDone = block.log?.status === 'COMPLETED';
@@ -331,6 +373,8 @@ const blockCountsByDayType = useMemo(() => {
         toast.error('Not saved — check your connection.');
         return;
       }
+
+      notifyRoutineChanged();
 
       if (wasDone) {
         toast.success(`Un-ticked ${block.title}`);
@@ -346,7 +390,7 @@ const blockCountsByDayType = useMemo(() => {
         },
       });
     },
-    [setLog]
+    [setLog, notifyRoutineChanged]
   );
 
   const startBlock = useCallback(
@@ -356,9 +400,10 @@ const blockCountsByDayType = useMemo(() => {
         toast.error('Not saved — check your connection.');
         return;
       }
+      notifyRoutineChanged();
       toast.success(`${block.title} started`);
     },
-    [setLog]
+    [setLog, notifyRoutineChanged]
   );
 
   const nudge = useCallback(
@@ -378,13 +423,14 @@ const blockCountsByDayType = useMemo(() => {
         });
 
         await refetch();
+        notifyRoutineChanged();
         const warning = result?.warnings?.[0]?.message;
         toast.success(warning ? `Moved. ${warning}` : `Moved ${block.title} ${deltaMinutes > 0 ? 'later' : 'earlier'}`);
       } catch {
         toast.error('Could not move this block');
       }
     },
-    [refetch]
+    [refetch, notifyRoutineChanged]
   );
 
   // Hoisted so it is a plain identifier: an optional-chained expression in a
@@ -427,6 +473,7 @@ const blockCountsByDayType = useMemo(() => {
         });
 
         await refetch();
+        notifyRoutineChanged();
         toast.success('Block duplicated');
       } catch {
         toast.error('Could not duplicate this block');
@@ -443,7 +490,7 @@ const blockCountsByDayType = useMemo(() => {
       have been locked. `confirmDelete` right below already listed it; this one
       did not, and the two callbacks disagreed about the same value.
     */
-    [targetDayTypeId, refetch, date]
+    [targetDayTypeId, refetch, date, notifyRoutineChanged]
   );
 
   const confirmDelete = useCallback(async () => {
@@ -458,6 +505,7 @@ const blockCountsByDayType = useMemo(() => {
         body: { id: pendingDelete.id, date },
       });
       await refetch();
+      notifyRoutineChanged();
       toast.success(`Deleted ${title}`);
     } catch (error) {
       // A closed edit window answers 403, and that is a different problem from a
@@ -468,7 +516,7 @@ const blockCountsByDayType = useMemo(() => {
           : 'Could not delete this block'
       );
     }
-  }, [pendingDelete, refetch, date]);
+  }, [pendingDelete, refetch, date, notifyRoutineChanged]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
@@ -509,6 +557,16 @@ const blockCountsByDayType = useMemo(() => {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [readOnly, writeUrl, today, activeTab, selectDate, date]);
+
+  // Cross-page synchronization: refetch when day type changes on /today or elsewhere
+  useEffect(() => {
+    const cleanupDayMode = onAppEvent('day-mode-changed', () => void refetch());
+    const cleanupTodayData = onAppEvent('today-data-changed', () => void refetch());
+    return () => {
+      cleanupDayMode();
+      cleanupTodayData();
+    };
+  }, [refetch]);
 
   const trackedBlocks = useMemo(() => blocks.filter((block) => block.trackCompletion), [blocks]);
 
@@ -1090,7 +1148,10 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
         initialEnd={editor?.mode === 'create' ? editor.end : undefined}
         date={date}
         onClose={() => setEditor(null)}
-        onSaved={notify}
+        onSaved={(message) => {
+          notify(message);
+          notifyRoutineChanged();
+        }}
       />
 
       <CompletionSheet
@@ -1098,7 +1159,10 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
         block={completionBlock}
         date={date}
         onClose={() => setCompletionBlock(null)}
-        onSaved={notify}
+        onSaved={(message) => {
+          notify(message);
+          notifyRoutineChanged();
+        }}
       />
 
       <DayTypeEditor
@@ -1109,6 +1173,7 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
         onSaved={(message) => {
           notify(message);
           void dayTypes.refetch();
+          notifyRoutineChanged();
         }}
       />
 
@@ -1128,6 +1193,7 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
         onApplied={() => {
           void refetch();
           void overrides.refetch();
+          notifyRoutineChanged();
         }}
       />
 
@@ -1141,6 +1207,7 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
           notify(message);
           setDayModeOpen(false);
           void refetch();
+          notifyRoutineChanged();
         }}
       />
 

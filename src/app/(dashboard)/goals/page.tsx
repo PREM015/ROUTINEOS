@@ -18,6 +18,7 @@ import { GoalFormModal } from '@/components/goals/GoalFormModal';
 import { DeleteGoalDialog } from '@/components/goals/DeleteGoalDialog';
 import { GoalCardSkeleton } from '@/components/goals/GoalCardSkeleton';
 import type { Goal } from '@/context/AppContext';
+import { notifyGoalsDataChanged } from '@/lib/app-events';
 
 /**
  * ## `/goals` — "Trajectory"
@@ -247,6 +248,7 @@ export default function GoalsPage() {
           body: { date: today, completed: next },
         });
         view.refreshLog();
+        notifyGoalsDataChanged();
         if (next) void runAchievementCheck();
         toast.success(next ? 'Checked in' : 'Check-in undone', {
           description: goalTitle(goalId),
@@ -259,6 +261,7 @@ export default function GoalsPage() {
               })
                 .then(() => {
                   view.refreshLog();
+                  notifyGoalsDataChanged();
                   toast('Reverted');
                 })
                 .catch(() => toast.error('Could not undo that'));
@@ -285,6 +288,7 @@ export default function GoalsPage() {
       // dashboard stale until the next full reload.
       await updateGoalProgress(goal.id, value, note ?? undefined);
       view.refreshLog();
+      notifyGoalsDataChanged();
       if (value >= goal.targetValue) void runAchievementCheck();
     },
     [updateGoalProgress, view]
@@ -531,7 +535,7 @@ export default function GoalsPage() {
         }}
         onSubmit={async (values) => {
           if (editing) {
-            await updateGoal(editing.id, values);
+            await updateGoal(editing.id, values as any);
             toast.success('Goal updated');
             return;
           }

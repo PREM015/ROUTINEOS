@@ -1,7 +1,9 @@
-import type { HabitTier, SleepLog } from '@/generated/prisma';
+import type { DailyScore, HabitTier, SleepLog } from '@/generated/prisma';
 import { addDays } from 'date-fns';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';
+import { getWeekRange } from '@/lib/dates';
+import type { WeekStartsOn } from '@/lib/period-range';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
@@ -108,17 +110,17 @@ function toSleepLogLike(log: SleepLog): SleepLogLike {
 }
 
 /**
- * Given an ISO date string, return the seven days of the week it falls in.
+ * The seven days of the week containing `dateStr`, honouring the user's setting.
+ *
+ * This used to be open-coded here as ISO-Monday arithmetic — `getUTCDay() === 0 ?
+ * 7 : getUTCDay()` then an offset — which pinned every weekly report in the app
+ * to Monday while `UserSettings.weekStartsOn` sat unused and writable. It now
+ * delegates to `getWeekRange`, so there is one implementation of where a week
+ * begins and it takes the user's weekday.
  */
-function weekRange(dateStr: string): DateRange {
-  const parsed = new Date(`${dateStr}T00:00:00Z`);
-  const isoDay = parsed.getUTCDay() === 0 ? 7 : parsed.getUTCDay();
-  const mondayOffset = isoDay - 1;
-  const monday = new Date(parsed.getTime() - mondayOffset * 86400000);
-  return {
-    startDate: formatDate(monday),
-    endDate: formatDate(new Date(monday.getTime() + 6 * 86400000)),
-  };
+function weekRange(dateStr: string, weekStartsOn: WeekStartsOn): DateRange {
+  const { start, end } = getWeekRange(dateStr, weekStartsOn);
+  return { startDate: start, endDate: end };
 }
 
 /**
@@ -161,8 +163,13 @@ function groupProgressDelta(
 }
 
 /**
- * Weekly summary starting from a Monday (YYYY-MM-DD). Compares the week
- * against the immediately preceding week.
+ * Weekly summary for the week containing `weekStart`.
+ *
+ * `weekStartsOn` is required rather than defaulted. This module re-derives the
+ * week from the anchor it is given, and an omitted weekday would silently snap
+ * every weekly report back to Monday — the bug this parameter was added to fix.
+ * Callers that genuinely have no setting should pass
+ * `DEFAULT_WEEK_STARTS_ON` explicitly, so the choice is visible at the call site.
  *
  * `timezone` is required for every `Date`-typed column that has to be bucketed
  * into a calendar day. `.toISOString().slice(0, 10)` is UTC, so a goal completed
@@ -173,12 +180,14 @@ function groupProgressDelta(
  */
 export async function weeklySummary(
   userId: UserId,
-  monday: string,
+  weekStart: string,
   timezone: string,
+  weekStartsOn: WeekStartsOn,
   today?: string,
-  preloadedHabits?: PeriodHabitModel
+  preloadedHabits?: PeriodHabitModel,
+  preloadedScores?: DailyScore[]
 ): Promise<WeeklySummary> {
-  const range = weekRange(monday);
+  const range = weekRange(weekStart, weekStartsOn);
   const previousStart = formatDate(addDays(range.startDate, -7));
   const previousEnd = formatDate(addDays(range.endDate, -7));
   const previousRange: DateRange = { startDate: previousStart, endDate: previousEnd };
@@ -186,7 +195,17 @@ export async function weeklySummary(
 
   const [scores, previousScores, habitModel, sleepLogs, streak, goals, progressRows] =
     await Promise.all([
-      scoreRepository.findByRange(userId, range.startDate, range.endDate),
+      /*
+        Same escape hatch as `preloadedHabits`: a caller that already holds the
+        week's rows passes them in rather than paying for a second identical
+        read. `RecapService.buildWeek` used to do exactly that — it fetched this
+        range, discarded the rows, then fetched them again to build its trend
+        points, dragging the whole `calculationData` blob across the wire twice
+        per week view.
+      */
+      preloadedScores
+        ? Promise.resolve(preloadedScores)
+        : scoreRepository.findByRange(userId, range.startDate, range.endDate),
       scoreRepository.findByRange(userId, previousStart, previousEnd),
       preloadedHabits ?? loadPeriodHabits(userId, range.startDate, range.endDate, dayToday),
       sleepRepository.findByRange(userId, range.startDate, range.endDate),

@@ -77,7 +77,20 @@ type Showcase = {
   counts: { unlocked: number; inProgress: number; locked: number; total: number };
 };
 
-const INITIAL_LOCKED = 12;
+/**
+ * How many locked badges to ask for.
+ *
+ * Was 12, chosen when the catalogue was smaller. The route caps this at 40 and
+ * the catalogue holds 20 definitions, so 12 silently truncated the list: the card
+ * showed a dozen locked badges while `/achievements` showed all of them, and the
+ * header count came from `counts.total` - which counts the whole catalogue
+ * regardless of what was returned. The two views therefore disagreed about how
+ * many badges exist.
+ *
+ * 40 is the route's maximum and clears the 20-definition catalogue, so neither
+ * view can truncate and the count is always the truth.
+ */
+const LOCKED_LIMIT = 40;
 
 export function AchievementsShowcase() {
   const [data, setData] = useState<Showcase | null>(null);
@@ -93,7 +106,7 @@ export function AchievementsShowcase() {
       effect body, and every write is guarded by `cancelled` so a slow response
       arriving after unmount cannot update a component that is gone.
     */
-    apiRequest<Showcase>(`/api/achievements/showcase?locked=${INITIAL_LOCKED}`)
+    apiRequest<Showcase>(`/api/achievements/showcase?locked=${LOCKED_LIMIT}`)
       .then((payload) => {
         if (cancelled) return;
         setData(payload);

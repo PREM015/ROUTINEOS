@@ -82,10 +82,18 @@ export async function enqueueAction(
 
   // Tell the worker so it can arm Background Sync and take over replay if this
   // tab goes away.
+  //
+  // The message is deliberately NOT `OUTBOX_PUSH`. That handler calls
+  // `putAll(STORE_OUTBOX, …)` again, and because the record posted here has no
+  // `localId` (it is assigned by the store's `autoIncrement` on the write above),
+  // the worker's second `put` allocated a *new* key. One queued action therefore
+  // became two rows, both were flushed, and the user saw the pending count
+  // double. The page has already persisted it; the worker only needs to arm
+  // Background Sync, so that is all it is asked to do.
   try {
     const registration = await navigator.serviceWorker?.ready;
     const target = registration?.active ?? navigator.serviceWorker?.controller;
-    target?.postMessage({ type: 'OUTBOX_PUSH', items: [record] });
+    target?.postMessage({ type: 'ARM_SYNC' });
   } catch {
     // No worker (or not yet active) — the `online` listener still flushes.
   }

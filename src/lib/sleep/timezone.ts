@@ -1,3 +1,5 @@
+import { fromZonedTime } from 'date-fns-tz';
+
 export function getLocalTime(utcTime: Date, timezone: string): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,
@@ -7,9 +9,25 @@ export function getLocalTime(utcTime: Date, timezone: string): string {
   }).format(utcTime);
 }
 
-export function parseTimeInTimezone(timeStr: string, date: string, _timezone: string): Date {
-  const isoString = `${date}T${timeStr}:00`;
-  return new Date(isoString);
+/**
+ * Interpret a wall-clock `HH:mm` on `date` as an instant in `timezone`.
+ *
+ * The timezone argument used to be accepted and discarded (`_timezone`), so the
+ * result was parsed in the **host's** local zone — the exact server-timezone
+ * leak the rest of the sleep stack avoids via `fromZonedTime`/`formatInTimeZone`.
+ * It is honoured now.
+ *
+ * Returns `null` on an unparseable input rather than an `Invalid Date`, so a
+ * caller cannot silently persist `NaN` as a duration.
+ */
+export function parseTimeInTimezone(
+  timeStr: string,
+  date: string,
+  timezone: string
+): Date | null {
+  if (!/^\d{2}:\d{2}$/.test(timeStr)) return null;
+  const parsed = fromZonedTime(`${date}T${timeStr}:00`, timezone);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 export function isOvernightSleep(bedtime: string, wakeTime: string): boolean {

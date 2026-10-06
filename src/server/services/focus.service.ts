@@ -481,7 +481,21 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
         );
 
         if (active.startedAt >= startOfToday && active.startedAt < endOfToday) {
-          const next = nextBreakAt(active.startedAt, active.plannedDuration);
+          /*
+           * The user's configured cycle, not the schema default.
+           *
+           * `nextBreakAt` used to be called with only the session start and length, so it
+           * fell back to a hard-coded 25/5/15. For anyone whose focus block is not 25
+           * minutes the hint pointed at a break that would never arrive - contradicting
+           * the timer on screen, which is worse than not offering the hint at all.
+           */
+          const focusSettings = await this.settingsRepository.getOrCreate(userId);
+          const next = nextBreakAt(active.startedAt, active.plannedDuration, {
+            workMinutes: focusSettings.focusMinutes,
+            shortBreak: focusSettings.shortBreakMinutes,
+            longBreak: focusSettings.longBreakMinutes,
+            cyclesBeforeLongBreak: focusSettings.cyclesBeforeLongBreak,
+          });
           nextScheduledBreak = next ? next.toISOString() : null;
         }
       }

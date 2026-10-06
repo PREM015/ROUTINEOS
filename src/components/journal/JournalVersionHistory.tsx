@@ -12,6 +12,7 @@ import * as React from 'react';
 import type { JournalRevision } from '@/generated/prisma';
 import { History, RotateCcw } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
+import { richTextToPlainText } from '@/lib/security/html-sanitizer';
 import type { JournalEntryWithRelations } from '@/types/journal';
 import { Button, Card, Spinner } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -20,10 +21,6 @@ export interface JournalVersionHistoryProps {
   entryId: string;
   onRestored?: (entry: JournalEntryWithRelations) => void;
   className?: string;
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function formatTimestamp(value: string | Date): string {
@@ -43,18 +40,26 @@ export default function JournalVersionHistory({
   onRestored,
   className,
 }: JournalVersionHistoryProps) {
+  /**
+   * `null` means loading. A failed load sets `revisions` to `[]` as well as
+   * setting `error`, because the spinner is gated on `revisions === null` — so a
+   * failure used to leave the spinner on screen underneath the error with no way
+   * to retry.
+   */
   const [revisions, setRevisions] = React.useState<JournalRevision[] | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [restoringId, setRestoringId] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
     setError(null);
+    setRevisions(null);
     try {
       const data = await apiRequest<JournalRevision[]>(
-        `/api/journal/${entryId}/revisions`,
+        `/api/journal/${entryId}/revisions`
       );
       setRevisions(data);
     } catch (err) {
+      setRevisions([]);
       setError(err instanceof Error ? err.message : 'Failed to load version history');
     }
   }, [entryId]);
@@ -93,9 +98,12 @@ export default function JournalVersionHistory({
       </p>
 
       {error && (
-        <p role="alert" className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
-          {error}
-        </p>
+        <div role="alert" className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <p>{error}</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => void load()}>
+            Try again
+          </Button>
+        </div>
       )}
 
       {revisions === null ? (
@@ -104,12 +112,17 @@ export default function JournalVersionHistory({
         </div>
       ) : revisions.length === 0 ? (
         <p className="py-2 text-sm text-gray-500">
-          No previous versions yet — they appear here after the first edit.
+          {error
+            ? 'Version history is unavailable.'
+            : 'No previous versions yet — they appear here after the first edit.'}
         </p>
       ) : (
         <ul className="space-y-3">
           {revisions.map((revision) => {
-            const preview = stripHtml(revision.content).slice(0, 140);
+            // Sanitized before previewing: the revision body is stored HTML, and
+            // an entry saved before the sanitizer existed can contain markup
+            // whose text should not appear in a summary.
+            const preview = richTextToPlainText(revision.content).slice(0, 140);
             const isRestoring = restoringId === revision.id;
             return (
               <li

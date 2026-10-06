@@ -12,7 +12,7 @@ import * as React from 'react';
 import Tooltip from '@/components/ui/Tooltip';
 import { cn } from '@/lib/utils';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
-import { MOOD_COLORS } from '../journal/JournalEntry';
+import { MOOD_COLORS } from '@/constants/journal';
 
 const WEEKS = 17;
 

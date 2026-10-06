@@ -1,4 +1,4 @@
-import type { HabitTier, SleepLog } from '@/generated/prisma';
+import type { DailyScore, HabitTier, SleepLog } from '@/generated/prisma';
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { APP_CONFIG } from '@/config/app';
 import { FocusRepository } from '@/server/repositories/focus.repository';
@@ -6,6 +6,8 @@ import { GoalRepository } from '@/server/repositories/goal.repository';
 import { JournalRepository } from '@/server/repositories/journal.repository';
 import { ScoreRepository } from '@/server/repositories/score.repository';
 import { SleepRepository } from '@/server/repositories/sleep.repository';
+import { getWeekRange, shiftCalendarDay } from '@/lib/dates';
+import type { WeekStartsOn } from '@/lib/period-range';
 import { loadPeriodHabits } from '@/server/analytics/period-habits';
 import type { PeriodHabitModel } from '@/lib/analytics/period-habits';
 import {
@@ -98,24 +100,36 @@ function mean(values: number[]): number {
 }
 
 /**
- * Build week keys covering a month: each 7-day chunk anchored at its Monday.
+ * Week slices covering a month, each starting on the user's chosen weekday.
+ *
+ * This existed to give `weeklyRates` a column per week, and it hardcoded Monday
+ * with the same ISO arithmetic that `weekly.ts` used. So a Sunday-start user's
+ * month was sliced into weeks that began on the wrong day — the per-week habit
+ * rates did not sum to anything the user recognises as their week, while the
+ * month's own start and end (which come from `getPeriodRange`) were correct.
+ *
+ * Built by repeatedly taking the next week from `getWeekRange` rather than by
+ * advancing a cursor seven days at a time, so the slices stay aligned with the
+ * user's weeks by construction instead of by coincidence.
  */
-function monthWeeks(startDate: string, endDate: string): Array<{ index: number; start: string; end: string }> {
+function monthWeeks(
+  startDate: string,
+  endDate: string,
+  weekStartsOn: WeekStartsOn
+): Array<{ index: number; start: string; end: string }> {
   const weeks: Array<{ index: number; start: string; end: string }> = [];
-  const startMs = new Date(`${startDate}T00:00:00Z`).getTime();
-  const firstDay = new Date(startMs);
-  const isoDay = firstDay.getUTCDay() === 0 ? 7 : firstDay.getUTCDay();
-  let cursor = new Date(startMs - (isoDay - 1) * 86400000);
-  const endMs = new Date(`${endDate}T00:00:00Z`).getTime();
-  let index = 0;
+  let cursor = getWeekRange(startDate, weekStartsOn).start;
+  const lastStart = getWeekRange(endDate, weekStartsOn).start;
 
-  while (cursor.getTime() <= endMs) {
-    const weekStart = cursor.toISOString().slice(0, 10);
-    const weekEndDate = new Date(cursor.getTime() + 6 * 86400000);
-    const weekEnd = weekEndDate.toISOString().slice(0, 10);
-    weeks.push({ index, start: weekStart, end: weekEnd });
-    cursor = new Date(weekEndDate.getTime() + 86400000);
-    index++;
+  let index = 0;
+  // Bounded by the last week that *begins* within the month, so a month that ends
+  // mid-week still contributes its final partial slice. `cursor <= lastStart` on
+  // `YYYY-MM-DD` labels is a safe string comparison.
+  while (cursor <= lastStart) {
+    const { start, end } = getWeekRange(cursor, weekStartsOn);
+    weeks.push({ index, start, end });
+    cursor = shiftCalendarDay(end, 1);
+    index += 1;
   }
 
   return weeks;
@@ -135,8 +149,10 @@ export async function monthlySummary(
   userId: UserId,
   month: string,
   timezone: string,
+  weekStartsOn: WeekStartsOn,
   today?: string,
-  preloadedHabits?: PeriodHabitModel
+  preloadedHabits?: PeriodHabitModel,
+  preloadedScores?: DailyScore[]
 ): Promise<MonthlySummary> {
   // Number() yields NaN for malformed input, and NaN is not nullish, so a `?? 0`
   // fallback here would never fire and would silently produce a range like
@@ -162,7 +178,9 @@ export async function monthlySummary(
 
   const [scores, habitModel, sleepLogs, focusStats, journalCount, dailyGoals, milestones] =
     await Promise.all([
-      scoreRepository.findByRange(userId, startDate, endDate),
+      preloadedScores
+        ? Promise.resolve(preloadedScores)
+        : scoreRepository.findByRange(userId, startDate, endDate),
       preloadedHabits ?? loadPeriodHabits(userId, startDate, endDate, dayToday),
       sleepRepository.findByRange(userId, startDate, endDate),
       focusRepository.getStats(userId, rangeStart, rangeEnd),
@@ -193,7 +211,7 @@ export async function monthlySummary(
     null
   );
 
-  const weeks = monthWeeks(startDate, endDate);
+  const weeks = monthWeeks(startDate, endDate, weekStartsOn);
 
   const perHabit: MonthlyHabitReliability[] = habitModel.perHabit.map((habit) => {
     // Weekly slices come from the same per-day ids, so a week rate cannot disagree

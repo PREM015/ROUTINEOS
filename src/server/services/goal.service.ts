@@ -226,6 +226,28 @@ export class GoalService {
     }
 
     // Calculate initial progress percentage
+    // Ownership of every id we are about to link must be proven first.
+    //
+    // `project: { connect: { id } }` and `parentGoal: { connect: { id } }` are
+    // plain foreign keys with no owner constraint, and `input.projectId` is just
+    // a `z.string().cuid()`. Passing another user's project id linked the goal to
+    // it, and `findWithRelations` includes `project: true`, so the response
+    // handed the caller the victim's entire Project row (name, description,
+    // status, progress, dates). `attachToProject` already did this check; the
+    // create/update paths did not, so two routes to the same table disagreed.
+    if (input.projectId) {
+      const project = await this.projectRepository.findById(userId, input.projectId);
+      if (!project) {
+        throw new ValidationError('Project not found');
+      }
+    }
+    if (input.parentGoalId) {
+      const parent = await this.goalRepository.findById(input.parentGoalId, userId);
+      if (!parent) {
+        throw new ValidationError('Parent goal not found');
+      }
+    }
+
     const goal = await this.goalRepository.create({
       user: { connect: { id: userId } },
       title: input.title,
@@ -234,7 +256,7 @@ export class GoalService {
       priority: input.priority ?? 'MEDIUM',
       status: 'ACTIVE',
       targetValue: input.targetValue,
-      currentValue: input.currentValue || 0,
+      currentValue: Math.min(input.currentValue || 0, input.targetValue),
       unit: input.unit ?? null,
       startDate,
       endDate,
@@ -267,11 +289,33 @@ export class GoalService {
       );
     }
 
-    // Add tags if provided
+    // Add tags if provided.
+    //
+    // `addTags` writes `GoalTag` join rows with no owner check and `GoalTag`
+    // has no `userId` column, so nothing downstream could detect a foreign id.
+    // `findWithRelations` includes `tags: { include: { tag: true } }`, which
+    // returned the victim's tag name and colour. `setTags` already validated
+    // against `tagRepository.listForUser(userId)`; this path bypassed it.
+    await this.assertOwnedTags(userId, input.tagIds ?? []);
     await this.goalRepository.addTags(goal.id, input.tagIds ?? []);
 
 
     return this.goalRepository.findWithRelations(goal.id, userId);
+  }
+
+  /**
+   * Reject any tag id the caller does not own.
+   *
+   * A plain `z.object` silently strips unknown keys but does not validate that
+   * a supplied *id* belongs to the user, so this has to be explicit.
+   */
+  private async assertOwnedTags(userId: UserId, tagIds: string[]): Promise<void> {
+    if (!tagIds || tagIds.length === 0) return;
+    const owned = new Set((await this.tagRepository.listForUser(userId)).map((t) => t.id));
+    const foreign = tagIds.find((id) => !owned.has(id));
+    if (foreign) {
+      throw new ValidationError('Tag not found');
+    }
   }
 
   /**
@@ -286,6 +330,27 @@ export class GoalService {
     if (input.parentGoalId !== undefined) {
       await this.assertValidParent(userId, goalId, input.parentGoalId ?? null);
     }
+
+    // Ownership check for the project link, matching `createGoal` and the
+    // pre-existing `attachToProject`. Without it, a PATCH could point the goal
+    // at another user's project and read it back through `findWithRelations`.
+    if (input.projectId) {
+      const project = await this.projectRepository.findById(userId, input.projectId);
+      if (!project) {
+        throw new ValidationError('Project not found');
+      }
+    }
+
+    // Progress is bounded by the target (see `updateProgress`). `targetValue` can
+    // also be lowered below an existing `currentValue`, so the cap is recomputed
+    // from whichever of the two this request supplies.
+    const effectiveTarget = input.targetValue ?? goal.targetValue;
+    const nextCurrentValue =
+      input.currentValue !== undefined
+        ? Number.isFinite(effectiveTarget) && effectiveTarget > 0
+          ? Math.min(input.currentValue, effectiveTarget)
+          : input.currentValue
+        : goal.currentValue;
 
     await this.goalRepository.update(goalId, userId, {
       ...(input.title && { title: input.title }),
@@ -315,7 +380,7 @@ export class GoalService {
           : { completedAt: null }),
       }),
       ...(input.targetValue !== undefined && { targetValue: input.targetValue }),
-      ...(input.currentValue !== undefined && { currentValue: input.currentValue }),
+      ...(input.currentValue !== undefined && { currentValue: nextCurrentValue }),
       ...(input.unit !== undefined && { unit: input.unit }),
       ...(input.startDate !== undefined && { startDate: input.startDate ?? new Date() }),
       ...(input.endDate !== undefined && { endDate: input.endDate ?? new Date() }),
@@ -359,6 +424,8 @@ export class GoalService {
 
     // Update tags if provided
     if (input.tagIds) {
+      // Same ownership check as `createGoal` — see `assertOwnedTags`.
+      await this.assertOwnedTags(userId, input.tagIds);
       await this.goalRepository.clearTags(goalId);
       await this.goalRepository.addTags(goalId, input.tagIds);
     }
@@ -416,8 +483,19 @@ export class GoalService {
       throw new ValidationError('Progress value cannot be negative');
     }
 
+    // Progress is bounded by the target.
+    //
+    // `'delta'` mode was floored at 0 but never capped, so a single oversized
+    // entry (or the `mode: 'set'` stripping that made the slider additive)
+    // pushed `currentValue` past `targetValue`. Display helpers clamp the
+    // *percentage*, so the UI showed a reassuring 100% while the stored row
+    // read e.g. `147 / 100 km`, and the raw pair is what the exporter and
+    // `formatValuePair` print. Capping here keeps the stored data equal to what
+    // the user is shown.
+    const rawValue = mode === 'set' ? value : Math.max(0, goal.currentValue + value);
+    const target = goal.targetValue;
     const newValue =
-      mode === 'set' ? value : Math.max(0, goal.currentValue + value);
+      Number.isFinite(target) && target > 0 ? Math.min(rawValue, target) : rawValue;
 
     // The log records the movement, so summing a day's rows reconstructs the
     // running total regardless of which mode wrote them.
@@ -659,11 +737,31 @@ export class GoalService {
     const dayStart = new Date(`${date}T00:00:00.000Z`);
 
     if (!completed) {
-      await this.goalRepository.deleteProgressLogsForDate(goalId, dayStart);
-      // Mirrors the row's absence so widgets reading `currentValue` agree. The
-      // goal stays ACTIVE either way; a check-out never re-opens a goal.
+      // Undo removes ONLY the check-in row, never the whole day.
+      //
+      // `deleteProgressLogsForDate` deletes every `GoalProgress` row in the day,
+      // but `updateProgress` writes rows at arbitrary wall-clock times. A user
+      // who logged `+10 km` at 09:00 and then unticked the daily check-off lost
+      // the 09:00 row as well, and `currentValue` was reset to 0 — destroying
+      // real progress history and breaking the invariant that summing a day's
+      // rows reconstructs the running total (`netProgressByDay`,
+      // `findProgressLogsInRange` both rely on it).
+      //
+      // "Done today" is represented solely by the `daily-checkin` row, so
+      // deleting exactly that row is both sufficient and minimal.
+      await this.goalRepository.deleteDailyCheckinForDate(goalId, dayStart);
+      // Recompute `currentValue` from the surviving rows so the stored total
+      // matches the logs rather than being blindly zeroed.
+      const remaining = await this.goalRepository.findProgressLogsInRange(
+        userId,
+        goal.startDate,
+        new Date()
+      );
+      const dayTotal = remaining
+        .filter((l) => l.goalId === goalId)
+        .reduce((sum, l) => sum + l.value, 0);
       return this.goalRepository.update(goalId, userId, {
-        currentValue: 0,
+        currentValue: dayTotal,
       });
     }
 

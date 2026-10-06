@@ -170,11 +170,20 @@ export function scoreForMissedDay(): number {
 
 /**
  * Clamp into 0..100 and round per SCORING config.
+ *
+ * A non-finite input yields 0 rather than propagating. `Math.max(0, NaN)` is
+ * `NaN` and `Math.min(100, NaN)` is `NaN`, so an unguarded `NaN` reaching here
+ * (a `0/0` bucket percentage) was written straight through to
+ * `DailyScore.totalScore` and made the day permanently unscorable — every band
+ * comparison is `false` for `NaN`, so it rendered as "incomplete" forever.
+ *
  * @example
  * normalizeScore(137) // => 100
  * normalizeScore(-10) // => 0
+ * normalizeScore(NaN) // => 0
  */
 export function normalizeScore(score: number): number {
+  if (!Number.isFinite(score)) return 0;
   return roundScore(Math.min(100, Math.max(0, score)));
 }
 

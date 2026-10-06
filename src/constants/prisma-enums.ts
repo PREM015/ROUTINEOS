@@ -19,6 +19,56 @@ export const DeviceType = {
 
 export type DeviceType = (typeof DeviceType)[keyof typeof DeviceType];
 
+/**
+ * What kind of habit a `Habit` is — the tier that decides which habits are scored.
+ *
+ * Mirrored here for the same reason as the enums above: the analytics Habit Lab is a
+ * `'use client'` component that needs the tier list at runtime, and importing
+ * `HabitTier` from `@/generated/prisma` would pull the Node client into the browser
+ * bundle.
+ *
+ * The member list is long and has changed shape before, so `tests/lib/prisma-enum-sync.test.ts`
+ * parses `prisma/schema.prisma` and asserts these match. That test reads the schema as a
+ * *file* rather than importing the generated client, so it needs no `DATABASE_URL` and
+ * no generated output.
+ */
+export const HabitTier = {
+  NON_NEGOTIABLE: 'NON_NEGOTIABLE',
+  GROWTH: 'GROWTH',
+  BONUS: 'BONUS',
+  OPTIONAL: 'OPTIONAL',
+  EXPERIMENTAL: 'EXPERIMENTAL',
+  UNDEFINED: 'UNDEFINED',
+  ALTERNATIVE: 'ALTERNATIVE',
+  SPECIAL: 'SPECIAL',
+  FLEXIBLE: 'FLEXIBLE',
+  JUST_FOR_FUN: 'JUST_FOR_FUN',
+  LIFESTYLE: 'LIFESTYLE',
+} as const;
+
+export type HabitTier = (typeof HabitTier)[keyof typeof HabitTier];
+
+/**
+ * Display order for the Habit Lab's tier filter chips.
+ *
+ * Deliberately **not** the declaration order above. The scored tiers come first because
+ * they are the ones the rate is built from; everything else is unscored or optional, and
+ * burying it keeps the chip row from reading as twelve equally important categories.
+ * `UNDEFINED` is absent on purpose — it is the absence of a tier, not a kind of habit.
+ */
+export const HABIT_TIER_DISPLAY_ORDER: HabitTier[] = [
+  'NON_NEGOTIABLE',
+  'GROWTH',
+  'BONUS',
+  'ALTERNATIVE',
+  'LIFESTYLE',
+  'SPECIAL',
+  'FLEXIBLE',
+  'OPTIONAL',
+  'JUST_FOR_FUN',
+  'EXPERIMENTAL',
+];
+
 export const Theme = {
   LIGHT: 'LIGHT',
   DARK: 'DARK',

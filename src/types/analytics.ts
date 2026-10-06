@@ -117,17 +117,38 @@ export interface AnalyticsHabitPanel {
 }
 
 /**
- * The immediately preceding equivalent period, for the headline comparison.
+ * The preceding equivalent period, for the headline comparison.
  *
- * `null` for month and year: comparing a part-lived month against a whole one
- * produces a flattering number, not a measurement.
+ * Present for every period, not just day and week. It used to be `null` for month
+ * and year because comparing a part-lived month against a whole one produces a
+ * flattering number; the window is now clipped to the elapsed days instead, and
+ * `basis` says that is what happened.
  */
 export interface AnalyticsComparison {
   start: string;
   end: string;
-  /** `null` when the earlier period has no scored day. */
+  /** `null` when the earlier window has no scored day. */
   average: number | null;
   delta: number | null;
+  /**
+   * The earlier window's habit completion rate, on the same definition as the hero.
+   *
+   * Present so the Trend Strip and the habit comparison read one figure rather than
+   * deriving a second one from a habit read the comparison window did not perform.
+   */
+  habitRateAverage: number | null;
+  /**
+   * Exactly what was compared, in words.
+   *
+   * Always populated, including when `delta` is `null` — where it carries the reason
+   * rather than a claim. Derived from the same values the arithmetic used, so it
+   * cannot drift into describing a window the numbers did not come from.
+   */
+  basis: string;
+  /** True when the earlier window was cut short to match elapsed days. */
+  clipped: boolean;
+  /** Days of the current period the comparison covers. */
+  comparedDays: number;
 }
 
 export interface AnalyticsTierMix {
@@ -177,11 +198,56 @@ export interface AnalyticsSleepSnapshot {
   quality: number | null;
   feltRested: boolean | null;
   metTarget: boolean | null;
+  /**
+   * The duration target `metTarget` was measured against, in minutes.
+   *
+   * Resolved server-side from `UserSettings.minSleepDuration`, falling back to the app
+   * default. Sent so the card can state the number it judged against rather than
+   * hard-coding one and hoping it matches.
+   */
+  targetMinutes: number;
+  /**
+   * Whether that target is the user's own or the application's default.
+   *
+   * Present because "8 hours" is two different claims: a number someone chose, and a
+   * number nobody did. Without this the card must pick one wording and be wrong half the
+   * time.
+   */
+  targetSource: 'user' | 'app-default';
+  /** The user's configured bedtime and wake time, when set. */
+  targetBedtime: string | null;
+  targetWakeTime: string | null;
   /** Roll-up of every logged night in the selected period. */
   periodStats: {
     loggedDays: number;
     averageDurationMinutes: number | null;
   } | null;
+}
+
+/**
+ * A ranked finding about the period: what changed, and the numbers behind it.
+ *
+ * Named `AnalyticsHighlight` rather than `AnalyticsInsight`, which is already the AI
+ * callout's type at the bottom of this file. The two are unrelated — one is a
+ * rule-based finding computed from habit and score data, the other is a stored model
+ * output — and reusing the name would have made the payload ambiguous at every call
+ * site.
+ */
+export type AnalyticsHighlightCategory = 'mover' | 'day' | 'streak' | 'slipping';
+
+export interface AnalyticsHighlight {
+  /** Stable across renders, so a device-side mute preference can key on it. */
+  id: string;
+  category: AnalyticsHighlightCategory;
+  /** The finding, with its number in the sentence. */
+  headline: string;
+  /** The figures behind it, and the window they came from. */
+  evidence: string;
+  /** The minimum-data check that had to pass, stated so the claim is auditable. */
+  basis: string;
+  severity: 'positive' | 'negative' | 'neutral';
+  href: string | null;
+  hrefLabel: string | null;
 }
 
 export interface AnalyticsInsight {
@@ -203,6 +269,37 @@ export interface AnalyticsInsight {
 export interface AnalyticsChartData {
   name: string;
   value: number | null;
+  /**
+   * The calendar day this point covers, when it covers exactly one.
+   *
+   * Added for drill-down: a bar is a link only if the page knows what the bar *is*.
+   * `null` for a tier or a day-outcome bucket, which have no single date.
+   */
+  date?: string | null;
+  /**
+   * Where this point leads.
+   *
+   * Decided server-side, because the server is what knows a bar is habit `abc123`
+   * rather than a month — and a client guessing would have to re-derive that mapping
+   * for every chart, which is where two surfaces end up disagreeing.
+   */
+  href?: string | null;
+}
+
+/**
+ * Why a given day's score is what it is.
+ *
+ * Present so a low bar can be *explained*. A rest day is meant to score low, so
+ * annotating it is the difference between "your worst day" and "your rest day" — and
+ * the second is not a failure.
+ */
+export interface AnalyticsDayAnnotation {
+  date: string;
+  /** A day the user planned to take off. Low scores are expected, not a miss. */
+  isRestDay: boolean;
+  /** A reduced-load day: fewer habits were due than usual. */
+  isMinimumDay: boolean;
+  score: number | null;
 }
 
 export interface AnalyticsRoutineBlockBreakdown {
@@ -286,9 +383,24 @@ export interface AnalyticsDashboard {
     end: string;
     label: string;
     isCurrent: boolean;
+    /**
+     * The weekday this range's week began on, `0` being Sunday.
+     *
+     * Sent so the client can navigate by the same week boundaries the server used
+     * instead of re-deriving them from a setting it may not have loaded yet. The
+     * settings store is populated on sign-in, but the first `getPeriodRange` call
+     * can beat it — and a client guessing Monday would step to a visibly wrong
+     * anchor for a Sunday-start user.
+     */
+    weekStartsOn: number;
   };
-  /** `null` when no honest comparison exists for this period. */
-  comparison: AnalyticsComparison | null;
+  /**
+   * The comparison, for every period.
+   *
+   * Non-null by contract: `basis` always explains what was compared, so "no
+   * comparison" is a sentence rather than a missing object.
+   */
+  comparison: AnalyticsComparison;
   /**
    * How complete the period's scores are.
    *
@@ -323,8 +435,27 @@ export interface AnalyticsDashboard {
     focusMinutes: number | null;
   };
   habits: AnalyticsHabitPanel;
+  /**
+   * Up to three ranked findings about the period, each with the numbers behind it.
+   *
+   * Empty when nothing clears its threshold, which is the correct output for a sparse
+   * period — never a placeholder. Muted categories are filtered on the device, so the
+   * server always sends the full ranked set.
+   */
+  insights: AnalyticsHighlight[];
   chart1: AnalyticsChartData[];
   chart2: AnalyticsChartData[];
+  /**
+   * Per-day annotations for the period, keyed by `YYYY-MM-DD`.
+   *
+   * Covers rest days and reduced-load days only. Day *type* is deliberately absent:
+   * resolving it needs the day-type definitions and routine exceptions, which this
+   * endpoint does not read, and a guessed day type would be worse than none.
+   *
+   * Empty when the period has no scored days, rather than absent — so a consumer can
+   * tell "nothing to annotate" from "older server".
+   */
+  annotations: Record<string, AnalyticsDayAnnotation>;
   routine: AnalyticsRoutineDetail;
   /** All-time by nature — the page labels it as such rather than implying the period. */
   streaks: AnalyticsStreakSnapshot;

@@ -103,6 +103,29 @@ export const importPayloadSchema = z.object({
   journalEntries: z.array(importJournalSchema).optional(),
   sleepLogs: z.array(importSleepSchema).optional(),
   records: z.array(importedRecord).optional(),
+  /**
+   * Focus data, accepted but not restored.
+   *
+   * Declared here purely so it is *counted* rather than silently dropped. Because this
+   * is a plain `z.object`, an undeclared key is stripped before the service ever sees
+   * it - so before this key existed, focus collections in an uploaded file vanished
+   * with no import and no mention in the skipped total, while the import page promises
+   * "every other collection in the file is reported as skipped".
+   *
+   * Deliberately loose (`z.unknown()` per member) rather than a full session schema:
+   * the importer does not materialise these rows, so validating their contents would
+   * reject files over data it was never going to write.
+   */
+  focus: z
+    .object({
+      sessions: z.array(z.unknown()).optional(),
+      events: z.array(z.unknown()).optional(),
+      settings: z.unknown().optional(),
+      presets: z.array(z.unknown()).optional(),
+      dayTypeTargets: z.array(z.unknown()).optional(),
+      breaks: z.array(z.unknown()).optional(),
+    })
+    .optional(),
 });
 
 export const importQuerySchema = z.object({

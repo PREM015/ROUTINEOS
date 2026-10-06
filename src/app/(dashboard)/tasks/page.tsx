@@ -6,6 +6,7 @@ import { CalendarDays, CheckCircle2, Circle, ListTodo, Plus } from 'lucide-react
 import { apiRequest } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import type { TaskListItem } from '@/types/projects';
+import { notifyGoalsDataChanged } from '@/lib/app-events';
 import { Badge, Button, Card, EmptyState, Input, Select, Spinner } from '@/components/ui';
 import { Dialog } from '@/components/ui/Dialog';
 
@@ -97,6 +98,7 @@ export default function TasksPage() {
       setTasks((current) =>
         (current ?? []).map((item) => (item.id === task.id ? { ...item, status: next } : item)),
       );
+      notifyGoalsDataChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task');
     } finally {
@@ -122,6 +124,7 @@ export default function TasksPage() {
       setDueDate('');
       setDialogOpen(false);
       await load();
+      notifyGoalsDataChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create task');
     } finally {

@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { scheduleRoutineBlockNotifications, scheduleDailyReminder } from '@/server/notifications/scheduler';
 import { scheduleHabitReminders } from '@/server/notifications/habit-reminder';
 import { scheduleGoalReminders } from '@/server/notifications/goal-reminder';
+import { scheduleGoalCheckins } from '@/server/notifications/goal-checkin';
 import { toUserId } from '@/types/ids';
 
 export interface ScheduleAllResult {
@@ -12,6 +13,7 @@ export interface ScheduleAllResult {
   habitRemindersSkipped: number;
   goalReminders: number;
   goalRemindersSkipped: number;
+  goalCheckins: number;
   errors: string[];
 }
 
@@ -128,6 +130,16 @@ export async function scheduleAllReminders(now: Date = new Date()): Promise<Sche
     );
   }
 
+  let goalCheckins = 0;
+  try {
+    const result = await scheduleGoalCheckins(now);
+    goalCheckins = result.created;
+  } catch (error) {
+    errors.push(
+      `goal checkins: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
   return {
     usersProcessed: routineUsers.length + dailyUsers.length,
     routineNotificationsScheduled,
@@ -136,6 +148,7 @@ export async function scheduleAllReminders(now: Date = new Date()): Promise<Sche
     habitRemindersSkipped,
     goalReminders,
     goalRemindersSkipped,
+    goalCheckins,
     errors,
   };
 }

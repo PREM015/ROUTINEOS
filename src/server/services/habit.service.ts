@@ -1,6 +1,6 @@
 import type { Prisma, HabitLog } from '@/generated/prisma';
 import { format, parseISO, subDays } from 'date-fns';
-import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
+import { getTodayString, DEFAULT_TZ, calendarDaysBetween, previousCalendarDay } from '@/lib/dates';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { ValidationError } from '@/lib/errors/app-error';
@@ -14,6 +14,56 @@ import { ScoringService } from './scoring.service';
 import { AchievementService } from './achievement.service';
 import { automationService } from './automation.service';
 import type { UserId } from '@/types/ids';
+
+/**
+ * Consecutive-completion streak for a habit, from a set of completion dates.
+ *
+ * THE definition of a per-habit streak. `Habit.streakCount` / `longestStreak`
+ * are denormalised columns with a repository writer (`updateStreak`) that had
+ * **zero callers**, so both stayed at their schema default of 0 while the UI,
+ * the AI aggregator, the exporter and analytics all read them. The per-habit
+ * flame badge therefore never rendered for anyone.
+ *
+ * Deriving it from the completion dates instead of trusting the column means
+ * the number cannot silently disagree with the logs it describes.
+ *
+ * Rules:
+ *  - Only `COMPLETED` dates count; `MISSED`/`SKIPPED`/`PARTIAL` break the run.
+ *  - The streak is anchored at `today`, and a day with no log yet is tolerated
+ *    (the user simply has not logged today), matching the grace the user-level
+ *    streak gives itself.
+ *  - Non-consecutive dates start a new run.
+ */
+export function deriveHabitStreak(
+  completionDates: readonly string[],
+  today: string
+): { currentStreak: number; longestStreak: number } {
+  const completed = [...new Set(completionDates)].sort();
+
+  // Longest run of consecutive dates anywhere in the history.
+  let longest = 0;
+  let run = 0;
+  let prev: string | null = null;
+  for (const date of completed) {
+    run = prev !== null && calendarDaysBetween(prev, date) === 1 ? run + 1 : 1;
+    if (run > longest) longest = run;
+    prev = date;
+  }
+
+  // Current run: walk back from today, tolerating today itself being unlogged.
+  let currentStreak = 0;
+  let cursor = today;
+  if (!completed.includes(today)) {
+    cursor = previousCalendarDay(today);
+  }
+  const set = new Set(completed);
+  while (set.has(cursor)) {
+    currentStreak += 1;
+    cursor = previousCalendarDay(cursor);
+  }
+
+  return { currentStreak, longestStreak: Math.max(longest, currentStreak) };
+}
 
 /**
  * Habit Service
@@ -337,6 +387,18 @@ export class HabitService {
       } as Prisma.HabitLogCreateInput
     );
 
+    // The score must exist before the streak is derived from it.
+    //
+    // `calculateStreak` reads `DailyScore` for `date` and yesterday; on the
+    // FIRST habit completed on a date there is no score row yet, so
+    // `todayScore` was null, the `isStreakActiveDay` branch was skipped, and
+    // control fell through to "streak broken" — resetting a live streak to 0
+    // and then re-incrementing it once per remaining completion. A day with N
+    // completions could therefore yield at most N-1, and the first completion
+    // actively destroyed the streak. Calculating the score first removes the
+    // ordering hazard entirely.
+    await new ScoringService().calculateDailyScore(userId, date);
+
     // Update streak if completed
     let streakUpdated = false;
     let newStreak: number | undefined;
@@ -365,9 +427,6 @@ export class HabitService {
         }
       }
     }
-
-    // Trigger score recalculation for the date
-    await new ScoringService().calculateDailyScore(userId, date);
 
     // Fire `HABIT_COMPLETED` automations. Previously nothing evaluated
     // automation rules, so enabling one had no effect. Fire-and-forget like the
@@ -588,6 +647,16 @@ export class HabitService {
       this.habitRepository.findLogsByUserRange(userId, startDate, endDate),
     ]);
 
+    // Per-habit streaks come from the full completion history, not this 28-day
+    // window (a streak routinely predates it) and not the `streakCount` column,
+    // which nothing ever wrote. Same bulk call for every habit — no N+1.
+    const streakWindowStart = format(subDays(parseISO(endDate), 730), 'yyyy-MM-dd');
+    const completionDates = await this.habitRepository.findCompletionDatesByHabit(
+      userId,
+      streakWindowStart,
+      endDate
+    );
+
     const logsByHabit = new Map<string, HabitLog[]>();
     for (const log of logs) {
       const list = logsByHabit.get(log.habitId) ?? [];
@@ -609,6 +678,8 @@ export class HabitService {
         health = completionRate >= 75 ? 'HEALTHY' : completionRate >= 40 ? 'AT_RISK' : 'UNHEALTHY';
       }
 
+      const streak = deriveHabitStreak(completionDates.get(habit.id) ?? [], endDate);
+
       return {
         habitId: habit.id,
         name: habit.name,
@@ -616,8 +687,8 @@ export class HabitService {
         status: habit.status,
         color: habit.color,
         icon: habit.icon,
-        currentStreak: habit.streakCount,
-        longestStreak: habit.longestStreak,
+        currentStreak: streak.currentStreak,
+        longestStreak: Math.max(streak.longestStreak, habit.longestStreak ?? 0),
         completedCount,
         missedCount,
         skippedCount,
@@ -726,12 +797,29 @@ export class HabitService {
       throw new ValidationError('Habit not found');
     }
 
-    // Create skip override
+    // Skipping one day must skip exactly one day.
+    //
+    // `endDate` was left unset, and every reader treats `endDate: null` as
+    // *open-ended* — `findActiveOverrides` filters
+    // `startDate <= date AND (endDate IS NULL OR endDate >= date)`, and both
+    // eligibility implementations (`lib/habits/eligibility.ts`,
+    // `lib/habits/contribution-eligibility.ts`) match on `startDate <= date`
+    // alone. So a single "skip today" made the habit ineligible on every
+    // subsequent date, permanently: it vanished from `/today`, every further
+    // COMPLETED/MISSED log 400'd, and its whole history dropped out of the
+    // contribution heatmap. There was no way back — no un-skip route, and
+    // `resumeHabit` only clears `PAUSE` overrides.
+    //
+    // `endDate: date` is inclusive under that same query, so it covers the
+    // intended single day and nothing more. `lib/habits/skip.ts` already
+    // encoded the correct one-day meaning (`o.startDate === date`); this makes
+    // the stored row agree with it.
     await this.habitRepository.createOverride({
       habit: { connect: { id: habitId } },
       user: { connect: { id: userId } },
       type: 'SKIP_TODAY',
       startDate: date,
+      endDate: date,
       reason,
     } as Prisma.HabitOverrideCreateInput);
 
@@ -796,13 +884,28 @@ export class HabitService {
       endDate
     );
 
-    // Calculate metrics
+    // Calculate metrics.
     const completedCount = logs.filter(l => l.status === 'COMPLETED').length;
     const missedCount = logs.filter(l => l.status === 'MISSED').length;
     const skippedCount = logs.filter(l => l.status === 'SKIPPED').length;
-    const totalScheduled = logs.length;
+    // The denominator is the days the user was actually *asked* about —
+    // completed, missed or deliberately skipped. It used to be `logs.length`,
+    // which also swept in `PARTIAL` (written by `setLogNote`) and
+    // `NOT_APPLICABLE`, so merely adding a note to a day lowered the reported
+    // completion rate. This also makes the definition match `getHabitHealth`
+    // three methods above, where two rates for the same habit disagreed.
+    const totalScheduled = completedCount + missedCount + skippedCount;
 
     const completionRate = totalScheduled > 0 ? (completedCount / totalScheduled) * 100 : 0;
+
+    // Derived from real completions rather than the never-written
+    // `Habit.streakCount` column.
+    const completionDates = logs
+      .filter(l => l.status === 'COMPLETED')
+      .map(l => l.date);
+    // `logs` is ordered ascending, so the last row is the most recent day seen.
+    const lastLoggedDate = logs.length > 0 ? logs[logs.length - 1]?.date : undefined;
+    const streak = deriveHabitStreak(completionDates, lastLoggedDate ?? startDate);
 
     return {
       habitId,
@@ -816,8 +919,8 @@ export class HabitService {
         skippedDays: skippedCount,
         completionRate: Math.round(completionRate),
       },
-      currentStreak: habit.streakCount,
-      longestStreak: habit.longestStreak,
+      currentStreak: streak.currentStreak,
+      longestStreak: Math.max(streak.longestStreak, habit.longestStreak ?? 0),
       averageDifficulty: logs.length > 0
         ? Math.round(
             logs.filter(l => l.difficulty).reduce((sum, l) => sum + (l.difficulty || 0), 0) /

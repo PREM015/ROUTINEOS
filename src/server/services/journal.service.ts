@@ -10,6 +10,7 @@ import {
   type JournalExportFormat,
 } from '@/lib/journal/export';
 import { isValidDateKey, monthRange } from '@/lib/journal/date';
+import { EXPORT_MAX_ENTRIES, ForeignTagError } from '@/lib/journal/policy';
 import { normalizeSearchTerm, rankResults } from '@/lib/journal/search-ranking';
 import { sanitizeRichText } from '@/lib/security/html-sanitizer';
 import {
@@ -19,9 +20,7 @@ import {
   type UpdateJournalEntryInput,
 } from '@/schemas/journal.schema';
 import {
-  ForeignTagError,
   JournalRepository,
-  EXPORT_MAX_ENTRIES,
   type JournalQueryParams,
   type JournalSortField,
   type JournalSortOrder,
@@ -57,8 +56,22 @@ export interface JournalListFilters {
   mood?: number;
   isFavorite?: boolean;
   isArchived?: boolean;
+  /** Inclusive lower bound, `YYYY-MM-DD`. */
   startDate?: string;
+  /** Inclusive upper bound, `YYYY-MM-DD`. */
   endDate?: string;
+  /**
+   * A single day, `YYYY-MM-DD`.
+   *
+   * Expanded into a one-day range here rather than in each caller. The list
+   * route, the export route and the `/journal/[date]` page all pass it through,
+   * and when only the first two honoured it the date page received the whole
+   * journal and opened `entries[0]` — the newest entry, not the one for the day
+   * in the URL. A filter that looks applied but is not is worse than a missing
+   * one, because the result set claims to be filtered.
+   */
+  date?: string;
+  /** A calendar month, `YYYY-MM`. */
   month?: string;
   tagId?: string;
   sortBy?: JournalSortField;
@@ -196,10 +209,13 @@ export class JournalService {
 
     const created = await this.journalRepository.create(userId, {
       date: data.date,
+      // `null` and "absent" mean the same thing on create — there is no previous
+      // value to preserve — so both collapse to an unset column here rather than
+      // being handed to Prisma as a literal null.
       title: data.title?.trim() || undefined,
       content: sanitizeRichText(data.content),
-      mood: data.mood,
-      energy: data.energy,
+      mood: data.mood ?? undefined,
+      energy: data.energy ?? undefined,
       gratitude: data.gratitude ? serializeGratitude(data.gratitude) ?? undefined : undefined,
       isFavorite: data.isFavorite,
     });
@@ -493,15 +509,23 @@ export class JournalService {
   /**
    * Map browse filters onto a repository query.
    *
-   * A `month` is expanded here rather than in the route so that the list, the
-   * export and the count all narrow the same way. When `month` and an explicit
-   * range are both present the range wins: it is the narrower of the two, and
-   * silently widening a caller's range would be the worse failure.
+   * The date-shaped filters are collapsed into one inclusive range here so that
+   * the list, the count, the export and the by-date page cannot narrow
+   * differently. Precedence, narrowest first:
+   *
+   *   1. an explicit `startDate`/`endDate` — the caller already knows the range;
+   *   2. a single `date` — one day;
+   *   3. a `month` — the whole month.
+   *
+   * A wider request must never silently win over a narrower one, so the order is
+   * fixed rather than "whichever key happens to be set".
    */
   private toRepositoryQuery(filters: JournalListFilters): JournalQueryParams {
+    const day = filters.date;
     const month = filters.month ? monthRange(filters.month) : null;
-    const from = filters.startDate ?? month?.startDate;
-    const to = filters.endDate ?? month?.endDate;
+
+    const from = filters.startDate ?? day ?? month?.startDate;
+    const to = filters.endDate ?? day ?? month?.endDate;
 
     return {
       from,

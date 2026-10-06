@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FolderKanban, Plus } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import type { ProjectItem } from '@/types/projects';
+import { notifyGoalsDataChanged } from '@/lib/app-events';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui';
 import ProjectList from '@/components/projects/ProjectList';
@@ -112,6 +113,7 @@ export default function ProjectsPage() {
         onOpenChange={setModalOpen}
         onCreated={() => {
           void load();
+          notifyGoalsDataChanged();
         }}
       />
     </div>

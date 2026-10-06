@@ -15,6 +15,7 @@ import { apiRequest } from '@/lib/api-client';
 import { Button, Input, Textarea } from '@/components/ui';
 import Dialog from '@/components/ui/Dialog';
 import ColorPicker from '@/components/ui/ColorPicker';
+import { notifyGoalsDataChanged } from '@/lib/app-events';
 
 export interface AddProjectModalProps {
   open: boolean;
@@ -65,6 +66,7 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
       reset();
       onOpenChange(false);
       onCreated(project);
+      notifyGoalsDataChanged();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {

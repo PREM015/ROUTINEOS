@@ -155,6 +155,7 @@ const CATEGORY_OF: Record<NotificationType, NotificationCategory> = {
   GOAL_MILESTONE: 'goals',
   GOAL_AT_RISK: 'goals',
   GOAL_COMPLETED: 'goals',
+  GOAL_CHECKIN: 'goals',
 
   // Tasks
   TASK_DUE: 'tasks',
@@ -174,6 +175,10 @@ const CATEGORY_OF: Record<NotificationType, NotificationCategory> = {
   ROUTINE_PRE_START: 'routine',
   ROUTINE_COMPLETION: 'routine',
   ROUTINE_END_REMINDER: 'routine',
+
+  // Enhanced habit notifications
+  HABIT_PRE_START: 'habits',
+  HABIT_COMPLETION: 'habits',
 
   // Focus
   FOCUS_SESSION_START: 'focus',
@@ -258,12 +263,22 @@ export interface NotificationTags {
   all: string[];
 }
 
+/**
+ * Label for the entity a notification is about.
+ *
+ * `focus` is here because `NotificationCategory` has a `'focus'` bucket - so the
+ * category mapping already routed focus notifications correctly, but the entity lookup
+ * returned `undefined` for them and the label rendered blank. The two tables were
+ * written at different times and only one of them was updated when the focus domain
+ * arrived.
+ */
 const ENTITY_LABEL: Record<string, string> = {
   routine: 'Block',
   habit: 'Habit',
   goal: 'Goal',
   task: 'Task',
   sleep: 'Sleep',
+  focus: 'Session',
 };
 
 /**

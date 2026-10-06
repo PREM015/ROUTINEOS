@@ -36,7 +36,10 @@ export async function GET(request: NextRequest) {
       userIdFromSession(session),
       requested
     );
-    return NextResponse.json({ success: true, data: template ? [template] : [] });
+    // Always return an array with block count, even for missing template
+    // Type assertion needed because service return type doesn't include blocks in signature
+    const blocks = (template as { blocks?: { id: string }[] } | null)?.blocks ?? [];
+    return NextResponse.json({ success: true, data: [{ blocks, blockCount: blocks.length, dayTypeId: requested }] });
   }
 
   const templates = await routineService.listTemplates(userIdFromSession(session));

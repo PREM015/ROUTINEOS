@@ -122,20 +122,38 @@ export async function markNotificationFailed(
 }
 
 /**
- * Check if a notification already exists for this routine block
- * to prevent duplicates
+ * Whether this occurrence of a routine block has already been queued.
+ *
+ * `relatedEntityId` is the block id, which is **not** date-scoped, so the
+ * original `status: 'PENDING'` filter was doing two contradictory jobs: it let an
+ * already-dispatched (`SENT`) occurrence be queued again on the next tick —
+ * pushing the same reminder repeatedly — while a row left `PENDING` by a snooze
+ * suppressed every *future* occurrence of that block forever. Neither `SNOOZE`
+ * nor `markSent` expires those rows.
+ *
+ * Scoping to the occurrence's own time window instead makes the check mean what
+ * it says: "has this specific occurrence already been queued?". Any status
+ * counts, because the row is evidence the user was already notified about this
+ * occurrence regardless of whether delivery has since been attempted.
  */
-async function existsPendingNotification(
+async function existsNotificationForOccurrence(
   userId: UserId,
   routineBlockId: string,
-  type: NotificationType
+  type: NotificationType,
+  occurrence: Date
 ): Promise<boolean> {
+  // Widen slightly so a row written a few minutes either side of the exact
+  // instant still matches its own occurrence.
+  const windowMs = 60 * 60 * 1000;
+  const from = new Date(occurrence.getTime() - windowMs);
+  const to = new Date(occurrence.getTime() + windowMs);
+
   const existing = await prisma.notificationLog.count({
     where: {
       userId,
       type,
       relatedEntityId: routineBlockId,
-      status: 'PENDING',
+      scheduledFor: { gte: from, lte: to },
     },
   });
   return existing > 0;
@@ -413,9 +431,22 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
       const resolved = resolveDayTypeFromException(localDate, timezone, exception ?? undefined);
       const dayType = resolved.dayType;
 
-      const templateId = exception?.dayTypeId
-        ? exception.dayTypeId
-        : (await routineRepository.findTemplateByDayType(userId, dayType))?.id;
+      // Resolve a real `RoutineTemplate` id, in the same precedence
+      // `RoutineService.getRoutineForDate` uses: an explicit per-date template
+      // override wins, then a template attached to the exception's day-type
+      // definition, then the natural day's template.
+      //
+      // `exception.dayTypeId` is a `DayTypeDefinition` id and was being passed
+      // straight through as a template id. Both are cuids in different tables,
+      // so it type-checked and then resolved to nothing — every date carrying a
+      // day-type exception silently produced zero routine reminders. The
+      // exception's own `templateId` (the actual override) was never consulted.
+      const templateId =
+        exception?.templateId ??
+        (exception?.dayTypeId
+          ? (await routineRepository.findTemplateByDayTypeId(userId, exception.dayTypeId))?.id
+          : undefined) ??
+        (await routineRepository.findTemplateByDayType(userId, dayType))?.id;
 
       if (!templateId) continue;
       const template = await routineRepository.findTemplateWithBlocks(templateId, userId);
@@ -508,35 +539,40 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
       const diffMinutes = differenceInMinutes(nextOccurrence, now);
       if (diffMinutes < 0 || diffMinutes > 24 * 60) continue;
 
-      // Check for duplicate notifications (for start)
-      const duplicateStart = await existsPendingNotification(
+      // Duplicate check, scoped to THIS occurrence (see
+      // `existsNotificationForOccurrence`). Each type is checked
+      // independently: the original code `continue`d out of the whole block on
+      // the first duplicate found, so one lingering row suppressed all three
+      // notifications for that block.
+      const duplicateStart = await existsNotificationForOccurrence(
         userId,
         block.id,
-        'ROUTINE_START' as NotificationType
+        'ROUTINE_START' as NotificationType,
+        nextOccurrence
       );
-      if (duplicateStart) continue;
-
-      // Check for duplicate pre-start
-      const duplicatePreStart = await existsPendingNotification(
+      const duplicatePreStart = await existsNotificationForOccurrence(
         userId,
         block.id,
-        'ROUTINE_PRE_START' as NotificationType
+        'ROUTINE_PRE_START' as NotificationType,
+        nextOccurrence
       );
-      if (duplicatePreStart) continue;
-
-      // Check for duplicate completion
-      const duplicateCompletion = await existsPendingNotification(
+      const duplicateCompletion = await existsNotificationForOccurrence(
         userId,
         block.id,
-        'ROUTINE_COMPLETION' as NotificationType
+        'ROUTINE_COMPLETION' as NotificationType,
+        endOccurrence
       );
-      if (duplicateCompletion) continue;
 
       // ================================================================
       // 1. PRE-START NOTIFICATION (advanceMinutes before block starts)
       // ================================================================
+      // A pre-start reminder that fires at the same instant as the start is not a
+      // reminder — it is a duplicate. `advanceNotificationMinutes` defaults to 0
+      // in the schema, so every recurring block produced two pushes at an
+      // identical timestamp, one of them reading "starts in 0 minutes". Require
+      // a real lead time before queueing the pre-start row.
       const preStartTime = new Date(nextOccurrence.getTime() - advanceMinutes * 60 * 1000);
-      if (preStartTime > now) {
+      if (!duplicatePreStart && advanceMinutes > 0 && preStartTime > now) {
         notifications.push({
           userId,
           type: 'ROUTINE_PRE_START' as NotificationType,
@@ -569,35 +605,37 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
         scheduledStartTime = new Date(nextOccurrence.getTime());
       }
 
-      notifications.push({
-        userId,
-        type: 'ROUTINE_START' as NotificationType,
-        title: `${block.title} Time`,
-        body: `Your ${block.title} session starts now.`,
-        actionUrl: `/today?block=${block.id}`,
-        relatedEntityId: block.id,
-        scheduledFor: scheduledStartTime,
-        actions: [
-          { action: 'STARTED', title: 'Started' },
-          { action: 'NOT_YET', title: 'Not yet' },
-          { action: 'SKIP', title: 'Skip' },
-        ],
-        data: {
-          blockId: block.id,
-          routineTitle: block.title,
-          startTime: block.startTime,
-          endTime: block.endTime,
-          dayType: block.template?.name ?? null,
-          category: block.category ?? null,
-          notificationPhase: 'start',
-        },
-      });
+      if (!duplicateStart) {
+        notifications.push({
+          userId,
+          type: 'ROUTINE_START' as NotificationType,
+          title: `${block.title} Time`,
+          body: `Your ${block.title} session starts now.`,
+          actionUrl: `/today?block=${block.id}`,
+          relatedEntityId: block.id,
+          scheduledFor: scheduledStartTime,
+          actions: [
+            { action: 'STARTED', title: 'Started' },
+            { action: 'NOT_YET', title: 'Not yet' },
+            { action: 'SKIP', title: 'Skip' },
+          ],
+          data: {
+            blockId: block.id,
+            routineTitle: block.title,
+            startTime: block.startTime,
+            endTime: block.endTime,
+            dayType: block.template?.name ?? null,
+            category: block.category ?? null,
+            notificationPhase: 'start',
+          },
+        });
+      }
 
       // ================================================================
       // 3. COMPLETION NOTIFICATION (at block end time)
       // ================================================================
       // Only schedule if end time is in the future
-      if (endOccurrence > now) {
+      if (!duplicateCompletion && endOccurrence > now) {
         notifications.push({
           userId,
           type: 'ROUTINE_COMPLETION' as NotificationType,
@@ -708,7 +746,19 @@ export async function scheduleDailyReminder(userId: UserId): Promise<number> {
       userId,
       type: NotificationType.HABIT_REMINDER,
       relatedEntityId: `daily:${localDate}`,
-      status: 'PENDING',
+      // NO status filter, deliberately.
+      //
+      // The row is created PENDING and the dispatcher flips it to SENT within
+      // the same pass, so a `status: 'PENDING'` dedupe matched nothing on the
+      // next tick and a brand-new identical "Daily check-in" push was queued
+      // again. The cron runs every few minutes, so after the reminder time
+      // passed the user received the same push repeatedly for the rest of the
+      // day. `NotificationLog` has no unique constraint on
+      // `(userId, type, relatedEntityId)`, so nothing stopped it at the DB
+      // level either.
+      //
+      // The sibling helpers (`habit-reminder.ts`, `goal-reminder.ts`) count with
+      // no status filter and are correct; this one now matches them.
     },
   });
   if (existing > 0) return 0;

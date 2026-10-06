@@ -83,7 +83,7 @@ export class SleepSessionRepository extends BaseRepository {
     }
   }
 
-  /**
+/**
    * Create a new sleep session.
    */
   async create(
@@ -103,6 +103,55 @@ export class SleepSessionRepository extends BaseRepository {
     } catch (error) {
       this.handleError(error, 'create');
     }
+  }
+
+  /**
+   * Create an ACTIVE session only if the user has none, atomically.
+   *
+   * The caller's "find active, else create" sequence is a check-then-act race:
+   * two concurrent requests (a double-clicked button, or a push-action
+   * `respond` arriving alongside a manual start) both observe no active session
+   * and both insert. The schema cannot prevent it either — `@@unique([userId,
+   * promptKey])` has a **nullable** `promptKey`, and Postgres treats NULLs as
+   * distinct in a unique index, so every manual session (`promptKey: null`) is
+   * unconstrained.
+   *
+   * A single conditional `INSERT ... SELECT ... WHERE NOT EXISTS` is one
+   * statement, so the database serialises it and exactly one row can win.
+   * `count === 0` means somebody else got there first, and their session is
+   * returned instead of creating a second.
+   */
+  async createIfNoneActive(
+    userId: UserId,
+    input: CreateSleepSessionInput
+  ): Promise<{ session: SleepSession; created: boolean }> {
+    const startedAt = input.startedAt ?? new Date();
+    const source = input.source ?? ('MANUAL' as SleepStartSource);
+    const promptKey = input.promptKey ?? null;
+
+    const inserted = await this.prisma.$queryRaw<{ id: string }[]>`
+      INSERT INTO "SleepSession" ("id", "userId", "startedAt", "status", "source", "promptKey", "createdAt", "updatedAt")
+      SELECT gen_random_uuid()::text, ${userId}::text, ${startedAt}, 'ACTIVE'::"SleepSessionStatus", ${source}::"SleepStartSource", ${promptKey}, NOW(), NOW()
+      WHERE NOT EXISTS (
+        SELECT 1 FROM "SleepSession" WHERE "userId" = ${userId}::text AND "status" = 'ACTIVE'::"SleepSessionStatus"
+      )
+      RETURNING "id"
+    `;
+
+    const insertedId = inserted[0]?.id;
+    if (insertedId) {
+      const session = await this.prisma.sleepSession.findUniqueOrThrow({
+        where: { id: insertedId },
+      });
+      return { session, created: true };
+    }
+
+    // Lost the race — adopt the winner rather than duplicating it.
+    const existing = await this.findActive(userId);
+    if (!existing) {
+      throw new Error('Sleep session insert raced and no active session could be read back');
+    }
+    return { session: existing, created: false };
   }
 
   /**
@@ -154,6 +203,25 @@ export class SleepSessionRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'end');
+    }
+  }
+
+/**
+   * Cancel exactly one ACTIVE session, scoped to its owner.
+   *
+   * `cancelAllActive` is an `updateMany` over every ACTIVE row, so using it to
+   * clear one stranded session also discards a sibling that is legitimately
+   * running. Prefer this when a specific session has been identified as stale.
+   */
+  async cancelSession(sessionId: string, userId: UserId): Promise<number> {
+    try {
+      const result = await this.prisma.sleepSession.updateMany({
+        where: { id: sessionId, userId, status: SleepSessionStatus.ACTIVE },
+        data: { status: SleepSessionStatus.CANCELLED },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'cancelSession');
     }
   }
 

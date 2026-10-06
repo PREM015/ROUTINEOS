@@ -15,12 +15,20 @@ import type { UserId } from '@/types/ids';
  * route now just validates and delegates.
  */
 
-/** Collections the importer does not persist. */
+/**
+ * Collections the importer does not persist.
+ *
+ * `focus` is a single entry covering all six focus collections. The exporter emits them
+ * under one `focus` object, and the importer restores none of them, so counting the
+ * object once keeps the skipped total honest without enumerating every array inside it
+ * - the alternative is a second hardcoded list that drifts from the export shape.
+ */
 const UNSUPPORTED_COLLECTIONS = [
   'projects',
   'tasks',
   'journalEntries',
   'sleepLogs',
+  'focus',
 ] as const;
 
 export type ImportPayload = z.infer<typeof importPayloadSchema>;

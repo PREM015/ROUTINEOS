@@ -10,6 +10,24 @@ import type { UserId } from '@/types/ids';
 
 const log = createLogger('repository');
 
+/**
+ * The only user fields that may be returned to another user.
+ *
+ * Deliberately excludes `email` (PII — and it is one of the searchable columns,
+ * so exposing it turns search into an account-enumeration oracle),
+ * `passwordHash`, `sessionVersion`, `lockedUntil` / `failedLoginAttempts`
+ * (account-lockout state, useful for griefing a target), `role`,
+ * `socialSettings` / `preferences`, `emailVerified` and the soft-delete fields.
+ */
+export interface PublicUserSummary {
+  id: string;
+  name: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
+  isActive: boolean;
+  createdAt: Date;
+}
+
 export class UserRepository extends BaseRepository {
   /**
    * Find user by ID
@@ -302,9 +320,23 @@ export class UserRepository extends BaseRepository {
    * Case-insensitive search over name, displayName and email.
    * Soft-deleted accounts are excluded.
    */
-  async search(term: string, limit: number): Promise<User[]> {
+  async search(term: string, limit: number): Promise<PublicUserSummary[]> {
     try {
       return await this.prisma.user.findMany({
+        // Explicit `select`, never a whole row.
+        //
+        // This selected every column and relied on the caller to strip
+        // `passwordHash` — which is the only field it stripped. The response
+        // therefore carried every other user's `email`, `preferences`,
+        // `socialSettings` (privacy config), `role`, `sessionVersion`,
+        // `lockedUntil`, `failedLoginAttempts`, `emailVerified` and `deletedAt`.
+        // Because `email` was also one of the searchable columns with a
+        // `contains` match, `?q=a` matched the entire user table, so any
+        // registered account could harvest PII and account-lockout state for
+        // everyone.
+        //
+        // Searchability is preserved by matching `email` server-side while
+        // returning a display-safe projection.
         where: {
           isDeleted: false,
           OR: [
@@ -312,6 +344,14 @@ export class UserRepository extends BaseRepository {
             { displayName: { contains: term, mode: 'insensitive' } },
             { email: { contains: term, mode: 'insensitive' } },
           ],
+        },
+        select: {
+          id: true,
+          name: true,
+          displayName: true,
+          avatarUrl: true,
+          isActive: true,
+          createdAt: true,
         },
         take: limit,
       });

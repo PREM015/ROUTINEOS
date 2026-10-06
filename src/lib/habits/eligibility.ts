@@ -100,7 +100,20 @@ export async function calculateHabitEligibility(
 
   // Check for active overrides
   const overrides = await habitRepository.findActiveOverrides(habitId, userId, date);
-  const skipOverride = overrides.find(o => o.type === 'SKIP_TODAY' || o.type === 'SKIP_RANGE');
+  const skipOverride = overrides.find(
+    (o) =>
+      (o.type === 'SKIP_TODAY' || o.type === 'SKIP_RANGE') &&
+      // `findActiveOverrides` already filtered on `startDate <= date` and
+      // `endDate IS NULL OR endDate >= date`, but it cannot express the
+      // one-day rule for `SKIP_TODAY`: legacy rows were written without an
+      // `endDate` and therefore read as open-ended, so a single historic skip
+      // kept the habit permanently ineligible (it vanished from `/today`, every
+      // further log 400'd, and its history dropped out of the heatmap) with no
+      // way back. Requiring `startDate === date` for that type makes such rows
+      // single-day without needing a data migration, and matches the meaning
+      // `lib/habits/skip.ts` already gave them.
+      (o.type === 'SKIP_TODAY' ? o.startDate === date : true)
+  );
   if (skipOverride) {
     return {
       habitId,

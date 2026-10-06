@@ -1,5 +1,6 @@
 import { createConnection } from 'node:net';
 import type { Achievement, Goal, Habit } from '@/generated/prisma';
+import { ACHIEVEMENTS_PATH, achievementDeepLink } from '@/lib/achievements/links';
 
 /**
  * Email Service
@@ -386,15 +387,27 @@ export class EmailService {
   }
 
   /**
-   * Send an achievement unlocked notification
+   * Send an achievement unlocked notification.
+   *
+   * The button used to point at `${APP_URL}/achievements/${achievement.id}`, a 404:
+   * the page is one route with no `[id]` segment, and `achievement.id` is the row's
+   * cuid rather than the catalogue's definition id. It now uses the shared
+   * `achievementDeepLink`, matching the query-parameter convention the goal
+   * reminder above already uses.
    */
   async sendAchievementUnlocked(
     to: string,
-    achievement: Pick<Achievement, 'id' | 'title'>
+    achievement: Pick<Achievement, 'id' | 'title'> & { definitionId?: string | null }
   ): Promise<EmailSendResult> {
+    const definitionId = achievement.definitionId ?? null;
     const body = [
       `<p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.6;">Congratulations — you unlocked <strong>${escapeHtml(achievement.title)}</strong>.</p>`,
-      renderButton(`${APP_URL}/achievements/${achievement.id}`, 'View achievement'),
+      renderButton(
+        definitionId === null
+          ? `${APP_URL}${ACHIEVEMENTS_PATH}`
+          : `${APP_URL}${achievementDeepLink(definitionId)}`,
+        'View achievement'
+      ),
     ].join('');
     return this.sendEmail(to, `Achievement unlocked: ${achievement.title}`, body);
   }

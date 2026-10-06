@@ -81,10 +81,15 @@ async function main() {
     prisma.dailyScore.findMany({ orderBy: { createdAt: 'desc' }, take: SAMPLE_LIMIT }),
   ]);
 
-  const [routineCount, routineTemplates] = await Promise.all([
-    prisma.routineTemplate.count(),
-    prisma.routineTemplate.findMany({ orderBy: { createdAt: 'desc' }, take: SAMPLE_LIMIT }),
-  ]);
+const [routineCount, routineTemplates, focusSessionCount, focusSessions] = await Promise.all([
+  prisma.routineTemplate.count(),
+  prisma.routineTemplate.findMany({ orderBy: { createdAt: 'desc' }, take: SAMPLE_LIMIT }),
+  // Focus sessions are the largest user-owned table in this schema by row count, so
+  // an ops backup that omits them is missing the table that actually grows. Sampled
+  // like the others - this writes `recentRows`, not a full copy.
+  prisma.focusSession.count(),
+  prisma.focusSession.findMany({ orderBy: { startedAt: 'desc' }, take: SAMPLE_LIMIT }),
+]);
 
   const backup = {
     exportedAt: new Date().toISOString(),
@@ -99,6 +104,7 @@ async function main() {
       { name: 'MoodLog', count: moodCount, recentRows: moodLogs },
       { name: 'DailyScore', count: dailyScoreCount, recentRows: dailyScores },
       { name: 'RoutineTemplate', count: routineCount, recentRows: routineTemplates },
+      { name: 'FocusSession', count: focusSessionCount, recentRows: focusSessions },
     ],
   };
 

@@ -39,20 +39,33 @@ const ratingSchema = z
 
 const gratitudeItemSchema = z.string().max(500, 'Each gratitude item must be 500 characters or less');
 
+/**
+ * `.nullable()` matches `updateJournalEntrySchema` on purpose.
+ *
+ * The editor's create payload carries `mood: null` and `energy: null` for an entry
+ * the user did not rate — nothing in the UI asks for a rating before you can
+ * write. With `.optional()` alone these fields reject `null`, so every unrated
+ * new entry came back 400 from a payload that was perfectly reasonable. The two
+ * schemas accepting the same shapes also means a client does not have to know
+ * which endpoint it is calling to decide how to clear a field.
+ *
+ * `title` and `gratitude` are nullable for the same reason: both are optional on
+ * the column, and the editor reports "cleared" as `null` on create too.
+ */
 export const createJournalEntrySchema = z.object({
   date: journalDateSchema,
   title: z
     .string()
-    .min(1, 'Title is required')
     .max(200, 'Title must be 200 characters or less')
+    .nullable()
     .optional(),
   content: z
     .string()
     .min(1, 'Content is required')
     .max(10000, 'Content must be 10000 characters or less'),
-  mood: ratingSchema.optional(),
-  energy: ratingSchema.optional(),
-  gratitude: z.array(gratitudeItemSchema).optional(),
+  mood: ratingSchema.nullable().optional(),
+  energy: ratingSchema.nullable().optional(),
+  gratitude: z.array(gratitudeItemSchema).nullable().optional(),
   isFavorite: z.boolean().optional(),
   isArchived: z.boolean().optional(),
   tagIds: z.array(z.string().cuid()).optional(),
@@ -108,11 +121,26 @@ export const deletedJournalQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional(),
 });
 
+/**
+ * A boolean arriving from a query string.
+ *
+ * NOT `z.coerce.boolean()`: that is `Boolean(value)`, and `Boolean('false')` is
+ * `true`. Every boolean in this domain arrives from `searchParams`, so the
+ * naive coercion silently inverted every `isArchived=false` filter — the one the
+ * default "All entries" view depends on.
+ */
+const booleanQuerySchema = z
+  .enum(['true', 'false', '1', '0'])
+  .transform((value) => value === 'true' || value === '1');
+
 export const journalEntryQuerySchema = z.object({
-  search: z.string().trim().min(1).max(200).optional(),
+  // Deliberately not `.min(1)`: an emptied search box sends `?q=`, and rejecting
+  // it as invalid would turn "clear my search" into a 400. The service trims
+  // and drops an empty term, so `''` behaves as "no search".
+  search: z.string().max(200).optional(),
   mood: z.coerce.number().int().min(1).max(5).optional(),
-  isFavorite: z.coerce.boolean().optional(),
-  isArchived: z.coerce.boolean().optional(),
+  isFavorite: booleanQuerySchema.optional(),
+  isArchived: booleanQuerySchema.optional(),
   startDate: journalDateSchema.optional(),
   endDate: journalDateSchema.optional(),
   month: journalMonthSchema.optional(),
@@ -126,10 +154,10 @@ export const journalEntryQuerySchema = z.object({
 
 export const journalExportQuerySchema = z.object({
   format: z.enum(['markdown', 'json']).default('markdown'),
-  search: z.string().trim().min(1).max(200).optional(),
+  search: z.string().max(200).optional(),
   mood: z.coerce.number().int().min(1).max(5).optional(),
-  isFavorite: z.coerce.boolean().optional(),
-  isArchived: z.coerce.boolean().optional(),
+  isFavorite: booleanQuerySchema.optional(),
+  isArchived: booleanQuerySchema.optional(),
   startDate: journalDateSchema.optional(),
   endDate: journalDateSchema.optional(),
   month: journalMonthSchema.optional(),

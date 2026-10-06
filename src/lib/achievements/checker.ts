@@ -131,6 +131,22 @@ export function resolveCriterionValue(
     return countDatesWithinTimeframe(series, today, timeframe);
   }
 
+  /**
+   * A windowed criterion with no dated series is unmeasurable, and the guard has
+   * to sit *here* - after the series lookup, not inside it.
+   *
+   * Nothing below this line can answer "how many of these happened in the last
+   * seven days": `totals` and `counts` are lifetime aggregates that say nothing
+   * about *when*, and a derived streak is a run, not a windowed count. Falling
+   * through to one of them is precisely how seven perfect days scattered across
+   * two years unlocked "Perfect Week".
+   *
+   * Failing closed keeps the badge locked, which is the recoverable direction: the
+   * user misses an unlock they can still earn, rather than receiving one their
+   * data does not support.
+   */
+  if (isWindowedTimeframe(timeframe)) return undefined;
+
   const totalKey = field as keyof WorldStateTotals;
   if (TOTAL_FIELDS.includes(totalKey)) {
     const total = state.totals[totalKey];

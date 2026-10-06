@@ -22,6 +22,16 @@ export interface HeatMapProps {
   data: Array<Record<string, unknown>>;
   valueKey: string;
   labelKey?: string;
+  /**
+   * Marks a row as "known to have nothing" rather than "measured as zero".
+   *
+   * A rate of `0` and the absence of an observation are different facts, and a
+   * two-colour scale cannot draw the difference — it draws both as the minimum.
+   * Rows in this set are rendered with a hatch and excluded from the
+   * min/max normalisation, so a run of unrecorded days neither drags the scale
+   * down nor reads as a run of failures.
+   */
+  noRecordKey?: string;
   columns?: number;
   className?: string;
   minColor?: string;
@@ -61,6 +71,7 @@ export function HeatMap({
   data,
   valueKey,
   labelKey,
+  noRecordKey,
   columns,
   className,
   minColor = '#18181b',
@@ -80,34 +91,59 @@ export function HeatMap({
     );
   }
 
-  const values = data.map((row) => {
-    const raw = Number(row[valueKey]);
-    return Number.isFinite(raw) ? raw : 0;
-  });
+  const isNoRecord = (row: Record<string, unknown>): boolean =>
+    noRecordKey !== undefined && row[noRecordKey] === true;
 
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  /*
+    Unrecorded rows are excluded from the normalisation rather than coerced to
+    0. Including them pinned the scale's minimum to zero, so a single day with a
+    50% rate rendered at the bottom of the range instead of the middle.
+  */
+  const values = data
+    .filter((row) => !isNoRecord(row))
+    .map((row) => {
+      const raw = Number(row[valueKey]);
+      return Number.isFinite(raw) ? raw : 0;
+    });
+
+  const min = values.length > 0 ? Math.min(...values) : 0;
+  const max = values.length > 0 ? Math.max(...values) : 0;
   const range = max - min || 1;
   const cols = columns ?? Math.min(data.length, 12);
 
   return (
-    <div
-      className={cn('w-full', className)}
-      role="img"
-      aria-label={ariaLabel}
-    >
+    <div className={cn('w-full', className)} role="img" aria-label={ariaLabel}>
       <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {data.map((row, index) => {
-          const value = values[index] ?? 0;
+          const label =
+            labelKey !== undefined && row[labelKey] !== undefined ? String(row[labelKey]) : '';
+
+          if (isNoRecord(row)) {
+            return (
+              <div
+                key={index}
+                title={label ? `${label} — no record` : 'No record'}
+                aria-hidden="true"
+                className="aspect-square rounded border border-dashed border-border bg-muted/40"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(45deg, transparent, transparent 3px, var(--color-border, #27272a) 3px, var(--color-border, #27272a) 4px)',
+                  opacity: 0.7,
+                }}
+              />
+            );
+          }
+
+          const raw = Number(row[valueKey]);
+          const value = Number.isFinite(raw) ? raw : 0;
           const intensity = range === 0 ? (max > 0 ? 1 : 0) : (value - min) / range;
           const background = mixHex(minColor, maxColor, intensity);
-          const label =
-            labelKey !== undefined && row[labelKey] !== undefined ? String(row[labelKey]) : String(value);
+          const title = label || String(value);
           return (
             <div
               key={index}
-              title={label}
-              className="flex aspect-square items-center justify-center rounded text-[10px] text-white/90 transition-transform hover:scale-105"
+              title={title}
+              className="flex aspect-square items-center justify-center rounded text-[10px] text-white/90 transition-transform hover:scale-105 motion-reduce:transition-none motion-reduce:hover:scale-100"
               style={{ backgroundColor: background }}
             >
               {showValues && String(value)}

@@ -2,24 +2,33 @@
  * Break scheduling — when the next break falls inside a running focus session.
  *
  * Reinstated because `FocusService.listBreaks` uses it to compute the
- * `nextScheduledBreak` hint that `GET /api/breaks` returns. That route is dead in
- * the client (nothing calls it) but it is the breaks domain's API surface and is
- * not this page's to delete.
+ * `nextScheduledBreak` hint that `GET /api/breaks` returns.
  *
- * The four-duration shape is hard-coded to the Pomodoro defaults rather than read
- * from settings, because the only caller passes a *planned* session length and has
- * no settings to hand. If the hint is ever shown in the UI it must first be
- * re-derived from the user's configured durations — a hint computed from defaults
- * would silently contradict the timer the user is actually looking at.
+ * ## Why the constants below are only a last-resort default
+ *
+ * They mirror the `FocusSettings` column defaults so a caller with no settings still
+ * gets a usable answer. They are **not** the answer for a user who configured a 50-
+ * minute block: a hint computed from defaults would contradict the timer they are
+ * looking at. `FocusService.listBreaks` therefore reads the real durations and passes
+ * them through `options` - the `??` fallbacks here only fire when nothing is supplied.
+ *
+ * Single-sourced from `durations.ts` rather than re-typed, so there is one definition
+ * of the default rather than three that can drift.
  */
+import { DEFAULT_FOCUS_DURATIONS } from './durations';
 
 /** Minutes of focused work per cycle. */
-const WORK_MINUTES = 25;
+const WORK_MINUTES = DEFAULT_FOCUS_DURATIONS.focusMinutes;
 /** Minutes of a short break. */
-const SHORT_BREAK = 5;
+const SHORT_BREAK = DEFAULT_FOCUS_DURATIONS.shortBreakMinutes;
 /** Minutes of a long break. */
-const LONG_BREAK = 15;
-/** Work cycles before a long break. */
+const LONG_BREAK = DEFAULT_FOCUS_DURATIONS.longBreakMinutes;
+/**
+ * Work cycles before a long break.
+ *
+ * Not in `DEFAULT_FOCUS_DURATIONS` because it is a count rather than a duration, so it
+ * has no business in a durations module. Mirrors `FocusSettings.cyclesBeforeLongBreak`.
+ */
 const CYCLES_BEFORE_LONG_BREAK = 4;
 
 export interface BreakPlanOptions {
@@ -68,6 +77,10 @@ export function planBreaks(
  * @example
  * nextBreakAt(new Date('2026-09-18T09:00:00'), 55) // => 2026-09-18T09:25:00
  */
-export function nextBreakAt(sessionStart: Date, durationMinutes: number): Date | null {
-  return planBreaks(sessionStart, durationMinutes)[0] ?? null;
+export function nextBreakAt(
+  sessionStart: Date,
+  durationMinutes: number,
+  options: Partial<BreakPlanOptions> = {}
+): Date | null {
+  return planBreaks(sessionStart, durationMinutes, options)[0] ?? null;
 }

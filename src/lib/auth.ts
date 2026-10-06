@@ -321,7 +321,15 @@ export const authOptions = {
     },
   },
 
-  secret: process.env.NEXTAUTH_SECRET,
+  // Resolve the secret the SAME way `proxy.ts` does (`AUTH_SECRET` first).
+  // Hard-pinning NEXTAUTH_SECRET here diverged from the proxy the moment
+  // `AUTH_SECRET` — the name Auth.js v5 prefers and the one most hosting
+  // providers document — appeared in the environment: the proxy would decode
+  // cookies with AUTH_SECRET while NextAuth encrypted them with
+  // NEXTAUTH_SECRET. That mismatch is `JWTSessionError: no matching
+  // decryption secret`, and because `readSessionToken` swallows it, every
+  // protected route saw a live session as anonymous and 307'd to /login.
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

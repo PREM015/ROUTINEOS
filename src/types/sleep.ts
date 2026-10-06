@@ -314,8 +314,11 @@ export function calculateSleepDuration(
   const bedMinutes = bedHour * 60 + bedMin;
   let wakeMinutes = wakeHour * 60 + wakeMin;
   
-  // Handle overnight sleep
-  if (wakeMinutes <= bedMinutes) {
+  // Handle overnight sleep.
+  //
+  // Strictly `<`: equal clock times are a zero-length entry, not a 1440-minute
+  // night. With `<=` they scored as perfect sleep with no deficit.
+  if (wakeMinutes < bedMinutes) {
     wakeMinutes += 24 * 60;
   }
   

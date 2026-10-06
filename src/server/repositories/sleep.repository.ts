@@ -176,10 +176,18 @@ export class SleepRepository extends BaseRepository {
    * `actualWakeTime` is a `HH:mm` string, so a lexicographic `<` is a correct
    * time comparison for zero-padded 24-hour values — the same basis the
    * caller's previous in-memory filter used.
+   *
+   * `startDate` is **optional, and omitting it means all time** rather than
+   * "nothing". `early-riser` declares `timeframe: 'ALL_TIME'` and is described as
+   * a lifetime claim, but it was being answered with a 730-day count because the
+   * window was the only shape this signature accepted — so a user with more than
+   * two years of history was credited only the recent part, and could be sitting
+   * one wake-up short of a badge they had in fact earned years ago. Omitting the
+   * bound is what lets the criterion mean what it says.
    */
   async countEarlyWakeups(
     userId: UserId,
-    startDate: string,
+    startDate: string | undefined,
     endDate: string,
     before: string
   ): Promise<number> {
@@ -187,7 +195,9 @@ export class SleepRepository extends BaseRepository {
       return await this.prisma.sleepLog.count({
         where: {
           userId,
-          date: { gte: startDate, lte: endDate },
+          // A one-sided range rather than a sentinel date: no magic epoch, and
+          // the shape says "everything up to endDate".
+          date: startDate === undefined ? { lte: endDate } : { gte: startDate, lte: endDate },
           actualWakeTime: { not: null, lt: before },
         },
       });

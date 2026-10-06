@@ -49,6 +49,23 @@ import type { UserId } from '@/types/ids';
  * The bucket names line up 1:1 with `computeDayScore`'s nonNeg/growth/bonus
  * slots and with the three per-user weight overrides, so each bucket is
  * weighted by the setting the user actually configured for it.
+ *
+ * ## Every tier is scored, including OPTIONAL
+ *
+ * `SCORED_TIERS` below is the union of all three buckets, i.e. all 11 tiers.
+ * A comment elsewhere in this file used to claim the opposite — that
+ * `SCORED_TIERS` was a policy excluding OPTIONAL/EXPERIMENTAL/SPECIAL "so an
+ * OPTIONAL habit cannot drag a day's score down". That was never true of the
+ * code: an OPTIONAL habit sits in `BONUS_TIERS`, so it is in the denominator of
+ * `bonusScore` and in `habitCompletionRate`. `UNDEFINED` is the one tier that
+ * is effectively inert, because it is configured with `points: 0` *and*
+ * `weight: 0`.
+ *
+ * Which tiers should count is a product decision, so the code is left as-is and
+ * the false claim is corrected here instead. If the intent really was to exclude
+ * the bonus tiers, the change belongs in `SCORED_TIERS` and in `buildBucket`,
+ * and `habitCompletionRate` must be scoped to the same set — otherwise the two
+ * numbers disagree about the same habit.
  */
 const CORE_TIERS: HabitTier[] = ['NON_NEGOTIABLE', 'GROWTH'];
 const GROWTH_TIERS: HabitTier[] = ['LIFESTYLE', 'FLEXIBLE'];
@@ -120,6 +137,14 @@ export class ScoringService {
     const routineLogs = await this.routineRepository.findLogsByDate(userId, parsed.date);
     const sleepLog = await this.sleepRepository.findByDate(userId, parsed.date);
 
+    // Overrides for this one date, in a single query for every habit.
+    // `calculateHabitEligibility` is the canonical rule but costs 2-4 queries per
+    // habit; scoring needs the same answer for all habits at once, so the
+    // overrides are bulk-loaded here and applied with the identical precedence.
+    const overridesForDate = await this.habitRepository
+      .findOverridesByUserRange(userId, parsed.date, parsed.date)
+      .catch(() => []);
+
     /**
      * `DailyScore.sleepScore` was read by `/today`, `/dashboard` and
      * `analytics/daily` but written by nobody, so the field was permanently
@@ -172,10 +197,6 @@ export class ScoringService {
     /*
      * Eligibility, then day type, then tier.
      *
-     * `SCORED_TIERS` is a SCORING POLICY and is correct on its own — an OPTIONAL
-     * habit should not be able to drag a day's score down, and that was a
-     * deliberate decision.
-     *
      * Frequency is not a policy, it is a FACT. A "Tuesdays only" habit is not due
      * on a Monday, and this filter used to omit that check entirely: `habits` was
      * day-type filtered only, so `scoredHabits.length` counted habits that were
@@ -194,7 +215,51 @@ export class ScoringService {
     const dueToday = allHabits.filter((habit) =>
       isHabitScheduledForDate(habit, parsed.date, 'UTC')
     );
-    const habits = dueToday.filter((habit) => habitAppliesToDayType(habit, resolvedDayType));
+
+    /**
+     * Drop habits the user was never asked about on this date, applying the
+     * same precedence as `calculateHabitEligibility`.
+     *
+     * The previous filter was frequency + day type only, so a habit that is
+     * *ineligible* still occupied a scoring slot worth full points. That is not a
+     * neutral omission: `logHabit` refuses `COMPLETED` for an ineligible habit,
+     * so a skipped / paused / not-applicable / already-ended habit could never
+     * fill its own slot and was a **guaranteed zero** in both `totalScore` and
+     * `habitCompletionRate`, forever. The user was penalised every single day for
+     * a habit that does not appear on their `/today` checklist at all.
+     *
+     * `BEFORE_START_DATE` matters most: `/api/scores` accepts an arbitrary
+     * `date`, so a habit created today retroactively depressed every past day's
+     * score. A habit past its `endDate` likewise stayed in the denominator every
+     * day after it ended (nothing auto-archives it).
+     */
+    const suppressedByOverride = new Set<string>();
+    for (const o of overridesForDate) {
+      // Same single-day rule as `lib/habits/eligibility.ts`: a `SKIP_TODAY`
+      // written without an `endDate` is that day only, not every day after it.
+      const isActiveOn =
+        o.type === 'SKIP_TODAY' ? o.startDate === parsed.date : true;
+      if (!isActiveOn) continue;
+      if (
+        o.type === 'SKIP_TODAY' ||
+        o.type === 'SKIP_RANGE' ||
+        o.type === 'PAUSE' ||
+        o.type === 'NOT_APPLICABLE'
+      ) {
+        suppressedByOverride.add(o.habitId);
+      }
+    }
+
+    const habits = dueToday
+      .filter((habit) => {
+        if (suppressedByOverride.has(habit.id)) return false;
+        // Calendar-day bounds, matching `calculateHabitEligibility`.
+        const startDay = habit.startDate.toISOString().slice(0, 10);
+        if (parsed.date < startDay) return false;
+        if (habit.endDate && parsed.date > habit.endDate.toISOString().slice(0, 10)) return false;
+        return true;
+      })
+      .filter((habit) => habitAppliesToDayType(habit, resolvedDayType));
 
     const core = this.buildBucket(CORE_TIERS, habits, logMap, weights);
     const growth = this.buildBucket(GROWTH_TIERS, habits, logMap, weights);
@@ -484,7 +549,19 @@ export class ScoringService {
     return {
       score: Math.round(score * 100) / 100,
       maxScore: Math.round(maxScore * 100) / 100,
-      percentage: Math.round((score / maxScore) * 1000) / 10,
+      // `maxScore` is `Σ points × weight`, which is 0 when every habit in the
+      // bucket carries 0 points *and* 0 weight. That is reachable: the
+      // `UNDEFINED` tier is configured with `points: 0` and `weight: 0`, and
+      // `UserSettings.weightNonNeg/Growth/Bonus` are all `z.number().min(0)`.
+      // `0 / 0` is `NaN`, and `NaN` is not `null`, so the `?? 0` fallbacks
+      // further up did not catch it: it propagated through `computeDayScore` and
+      // `normalizeScore` (`Math.max(0, NaN)` is `NaN`) into `DailyScore.
+      // totalScore`, which is then permanently unscorable and renders as
+      // "incomplete" in every band lookup.
+      //
+      // An empty denominator is "no opinion", not "zero out of zero" — `null`
+      // is what the caller already expects for a bucket with nothing in it.
+      percentage: maxScore > 0 ? Math.round((score / maxScore) * 1000) / 10 : null,
       contributions,
     };
   }

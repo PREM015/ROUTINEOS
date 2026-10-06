@@ -1,7 +1,22 @@
 'use client';
 
 import { AlarmClock, BedDouble, MoonStar } from 'lucide-react';
+import { minutesToTarget, targetProgress } from '@/lib/analytics/sleep-target';
 import type { AnalyticsSleepSnapshot } from '@/types/analytics';
+
+/**
+ * Format a duration in minutes as `7h 30m`, or `8h` when it divides evenly.
+ *
+ * Reads the value the **server** measured against rather than a local constant. That is the
+ * whole point: the card's `metTarget` is computed from `targetMinutes`, and if the label
+ * came from anywhere else the two could describe different numbers while appearing to be
+ * one fact.
+ */
+function formatTargetDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`;
+}
 
 interface SleepSnapshotCardProps {
   sleep: AnalyticsSleepSnapshot | null;
@@ -34,6 +49,25 @@ export default function SleepSnapshotCard({ sleep }: SleepSnapshotCardProps) {
     sleep.periodStats?.averageDurationMinutes != null
       ? (sleep.periodStats.averageDurationMinutes / 60).toFixed(1)
       : null;
+
+  /*
+    Progress and the met/not-met word come from one place, so they cannot disagree.
+
+    `targetProgress` returns 100 exactly when the server's `metTarget` is true, so the bar
+    reaching the end and the verdict beside it are the same fact stated twice — not two
+    independently computed ones. Deriving the tick from the server's verdict instead would
+    be a second source of truth, which is how a card ends up saying "met ✓" beside a bar
+    that stops at 94%.
+  */
+  const percent =
+    sleep.durationMinutes != null && sleep.targetMinutes != null
+      ? targetProgress(sleep.durationMinutes, sleep.targetMinutes)
+      : null;
+  const gap =
+    sleep.durationMinutes != null && sleep.targetMinutes != null
+      ? minutesToTarget(sleep.durationMinutes, sleep.targetMinutes)
+      : null;
+  const met = percent !== null ? percent >= 100 : (sleep.metTarget ?? null);
 
   return (
     <section className="glass-panel spotlight-hover rounded-2xl p-6 shadow-soft">
@@ -73,10 +107,34 @@ export default function SleepSnapshotCard({ sleep }: SleepSnapshotCardProps) {
             <span className="font-semibold tabular-nums text-foreground">{sleep.deficitMinutes} min</span>
           </div>
         )}
-        {sleep.metTarget != null && (
+        {met != null && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {/*
+              "Your target" only when it is the user's. `targetSource` comes from the
+              server, which is the only place that read the settings row, so the wording
+              is correct whether or not anyone has set a target — rather than asserting a
+              personal target that may not exist.
+            */}
+            <span className="text-muted-foreground">
+              {sleep.targetSource === 'user' ? 'Your target' : 'App target'}
+            </span>
+            <span className="font-semibold text-foreground">
+              {formatTargetDuration(sleep.targetMinutes ?? 0)}
+            </span>
+            <span className="font-semibold text-foreground">{met ? 'met ✓' : 'not met'}</span>
+            {sleep.targetSource === 'app-default' && (
+              <span className="text-[11px] text-muted-foreground">
+                app default — set your own in Settings
+              </span>
+            )}
+          </div>
+        )}
+        {(sleep.targetBedtime != null || sleep.targetWakeTime != null) && (
           <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">Target</span>
-            <span className="font-semibold text-foreground">{sleep.metTarget ? 'met ✓' : 'missed'}</span>
+            <span className="text-muted-foreground">Your hours</span>
+            <span className="font-semibold tabular-nums text-foreground">
+              {sleep.targetBedtime ?? '—'} – {sleep.targetWakeTime ?? '—'}
+            </span>
           </div>
         )}
         {sleep.feltRested != null && (
@@ -92,6 +150,43 @@ export default function SleepSnapshotCard({ sleep }: SleepSnapshotCardProps) {
           </div>
         )}
       </dl>
+
+      {/*
+        The bar is capped at 100% and the remainder is stated in minutes, so oversleeping
+        reads as "reached" rather than as a bar that overflows its track. `role="progressbar"`
+        with the real values means a screen reader announces the same thing the eye reads;
+        the visible text is not enough on its own.
+      */}
+      {percent !== null && gap !== null && (
+        <div className="mt-4">
+          <div className="flex items-baseline justify-between text-[11px] text-muted-foreground">
+            <span>Progress to target</span>
+            <span className="tabular-nums">{percent}%</span>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Sleep toward target: ${percent} percent`}
+            className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          >
+            <div
+              className={`h-full rounded-full transition-[width] duration-300 ease-out-expo ${
+                met ? 'bg-emerald-500' : 'bg-indigo-500'
+              }`}
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {gap > 0
+              ? `${gap} min short of target.`
+              : gap < 0
+                ? `${Math.abs(gap)} min over target.`
+                : 'Exactly on target.'}
+          </p>
+        </div>
+      )}
 
       {sleep.periodStats && sleep.periodStats.loggedDays > 0 && (
         <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-border/60 pt-3 text-xs">

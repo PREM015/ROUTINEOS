@@ -67,6 +67,13 @@ export async function calculateStreak(
 
   // If today's score is a minimum day, increment streak
   if (todayScore?.isMinimumDay) {
+    // Same once-per-day requirement as the normal branch below: this runs on
+    // every habit completion, so a user completing four habits on a minimum day
+    // incremented their streak four times.
+    if (streak.lastCompletedDate === date && streak.currentStreak > 0) {
+      return result;
+    }
+
     const updated = await streakRepository.addMinimumDay(userId, date);
     result.changed = true;
     result.currentStreak = updated.currentStreak;
@@ -86,6 +93,24 @@ export async function calculateStreak(
   // `totalScore >= 50` test, so the stored streak and the streak shown by
   // `analytics/streaks.ts` cannot diverge. See the note on that function.
   if (todayScore && isStreakActiveDay(todayScore)) {
+    // A streak counts DAYS, and `calculateStreak` is called once per habit
+    // completion. Completing four habits in one day therefore reached this
+    // branch four times and incremented four times, so the stored row claimed
+    // `currentStreak += 4` while every read path (`calculateCurrentStreak`)
+    // derives one point per day — the stored value and the displayed value
+    // disagreed for every user who completes more than one habit a day.
+    //
+    // `lastCompletedDate` is what makes the day idempotent: it is written to the
+    // same `date` this call is scoring, so a second completion on the same day
+    // sees it already set and does not count again. Continuing a streak from
+    // yesterday is still the `else` branch's job.
+    const alreadyCountedToday =
+      streak.lastCompletedDate === date && streak.currentStreak > 0;
+
+    if (alreadyCountedToday) {
+      return result;
+    }
+
     // Check if streak continues from yesterday
     if (yesterdayScore) {
       // Streak continues

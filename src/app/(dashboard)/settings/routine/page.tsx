@@ -29,6 +29,7 @@ import {
 import { apiRequest, ApiError } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
 import { DEFAULT_DAY_TYPES as DEFAULT_DAY_TYPE_DEFS } from '@/constants/day-types';
+import { notifyRoutineDataChanged } from '@/lib/app-events';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -121,21 +122,20 @@ export default function RoutineSettingsPage() {
     setCreating(true);
     setError(null);
     setNotice(null);
-    try {
+try {
       await apiRequest('/api/routine', {
         method: 'POST',
         body: {
           name: name.trim(),
-          description: description.trim() || undefined,
+          description: description.trim() || '',
           dayType,
           isDefault,
         },
       });
       setNotice(`Template “${name.trim()}” created.`);
-      setName('');
-      setDescription('');
-      setIsDefault(false);
+      setCreating(false);
       void load();
+      notifyRoutineDataChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to create routine template.');
     } finally {
@@ -161,6 +161,7 @@ export default function RoutineSettingsPage() {
       setNotice(`Template “${editing.name.trim()}” updated.`);
       setEditing(null);
       void load();
+      notifyRoutineDataChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to update template.');
     } finally {
@@ -179,6 +180,7 @@ export default function RoutineSettingsPage() {
       });
       setNotice(`“${template.name}” is now the default for ${template.dayType.toLowerCase().replace(/_/g, ' ')} days.`);
       void load();
+      notifyRoutineDataChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to set default template.');
     } finally {
@@ -198,6 +200,7 @@ export default function RoutineSettingsPage() {
       setNotice(`Template “${template.name}” deleted.`);
       setConfirmDeleteId(null);
       void load();
+      notifyRoutineDataChanged();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to delete template.');
     } finally {

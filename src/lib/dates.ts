@@ -14,6 +14,11 @@
 
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addDays, subDays } from 'date-fns';
 import { toZonedTime, formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+// Type-only, and that qualifier is load-bearing: `period-range.ts` imports real
+// values (`DEFAULT_TZ`, `getTodayString`) from this module, so a value import back
+// would close a runtime cycle. A type import is erased at compile time, which
+// leaves the dependency one-way.
+import type { WeekStartsOn } from './period-range';
 
 /**
  * Last-resort zone for a request whose user row could not be read.
@@ -83,16 +88,29 @@ export function isCalendarDate(value: string | null | undefined): value is strin
 }
 
 /**
- * Get the start and end of a week (default: week starts Monday).
+ * Get the start and end of a week.
  *
- * `tz` is accepted for call-site clarity but a `YYYY-MM-DD` calendar date has
- * an intrinsic weekday, so it is parsed as UTC midnight and formatted in UTC.
- * Formatting it in a user zone shifted the week for anyone west of it — a
- * Sunday resolved to the *following* week.
+ * `weekStartsOn` is `Date.getDay()` numbering — 0 is Sunday — and accepts the full
+ * `0..6` because `UserSettings.weekStartsOn` does. It used to be typed `0 | 1`
+ * with a Monday default while the setting permitted any weekday, so a user who
+ * picked Wednesday got a cast, a runtime surprise, or a silently wrong week.
+ *
+ * The user's chosen weekday is not defaulted to Monday here. `getWeekRange` is the
+ * single implementation of "where does a week begin" for the analytics period
+ * modules, so a default would quietly reintroduce the bug for every caller that
+ * forgot to thread the setting through — the exact failure mode this parameter
+ * exists to remove.
+ *
+ * `tz` is accepted for call-site clarity but a `YYYY-MM-DD` calendar date has an
+ * intrinsic weekday, so it is parsed and formatted in the host's local frame and
+ * never in a user zone. Formatting it in a user zone shifted the week for anyone
+ * west of it — a Sunday resolved to the *following* week. Staying in one frame
+ * from `parseISO` through `format` is what makes this safe: no UTC is involved at
+ * any step, so the host's offset cannot move the boundary.
  */
 export function getWeekRange(
   dateStr: string,
-  weekStartsOn: 0 | 1 = 1,
+  weekStartsOn: WeekStartsOn = 1,
   _tz?: string
 ): { start: string; end: string } {
   const d = parseISO(dateStr);
@@ -105,11 +123,11 @@ export function getWeekRange(
 }
 
 /**
- * Get all days in a week as YYYY-MM-DD strings.
+ * Get all days in a week as YYYY-MM-DD strings, starting on `weekStartsOn`.
  */
 export function getWeekDays(
   dateStr: string,
-  weekStartsOn: 0 | 1 = 1
+  weekStartsOn: WeekStartsOn = 1
 ): string[] {
   const d = parseISO(dateStr);
   const start = startOfWeek(d, { weekStartsOn });
@@ -148,11 +166,15 @@ export function timeToMinutes(time: string): number {
 /**
  * Calculate available sleep window between bedtime and wake time.
  * Returns minutes. Handles overnight (e.g. 23:00 to 06:00).
+ *
+ * Equal times return 0, not 1440. `wake === bed` used to fall through to the
+ * overnight branch and yield `(1440 - bed) + bed` = a full 24 hours, which then
+ * reported zero sleep deficit for an entry that recorded no sleep at all.
  */
 export function calculateSleepWindow(bedtime: string, wakeTime: string): number {
   const bed = timeToMinutes(bedtime);
   const wake = timeToMinutes(wakeTime);
-  if (wake > bed) return wake - bed;
+  if (wake >= bed) return wake - bed;
   // Overnight
   return (24 * 60 - bed) + wake;
 }

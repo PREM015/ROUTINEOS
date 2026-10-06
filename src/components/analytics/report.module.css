@@ -1,0 +1,129 @@
+/*
+ * Print rules for `/analytics`.
+ *
+ * ## Why a CSS Module and not `globals.css`
+ *
+ * Every rule here hangs off `.printRoot`, which only exists inside the report view. Putting
+ * them in `globals.css` would work and would also mean this change sits in a file another
+ * agent is actively editing — where a merge conflict turns a print stylesheet into a lost
+ * week. A module keeps the whole feature in one file that nobody else has a reason to touch,
+ * and `@media print` in a module still applies document-wide once the route loads it.
+ *
+ * ## Why the selectors look like this
+ *
+ * CSS Modules reject a selector with no local class in it ("not pure"), so a bare
+ * `[data-print-hide]` will not compile. Every rule therefore names `.printRoot` and then
+ * reaches its descendants through `:global(...)`. The attributes stay global because they are
+ * put on elements in *other* files — the period control, the view switcher, the chart rails —
+ * none of which import this module and so have no access to a hashed class name from it.
+ * That is the whole reason the data-attribute protocol exists here rather than a shared
+ * class.
+ *
+ * ## What paper cannot do
+ *
+ * A printed page has no hover, no click, no focus ring and no way to load three more
+ * periods. So navigation, period controls, export buttons and the load-more affordances
+ * are removed rather than printed as dead grey rectangles — an inert button on paper reads
+ * as a broken page, not as a disabled control.
+ *
+ * The measurements are kept, because they are the report. And the light theme is forced:
+ * printing a dark card stack onto white paper wastes ink, drops contrast to near-nothing
+ * for the muted greys, and is how a report ends up unreadable.
+ */
+
+/*
+ * There is deliberately no "hide the standard page but keep it mounted" rule here.
+ *
+ * An earlier version clipped the standard dashboard to a 1px box behind the report and the
+ * zen view. The intent was to keep one set of numbers across all three modes, but the data
+ * already lives in the page component, so the standard arrangement unmounts and remounts on
+ * every mode change without refetching and without any chance of disagreeing with the report.
+ * What the hidden copy did cost was real: a screen reader announced the whole dashboard a
+ * second time after the report it had just finished reading.
+ */
+
+@media print {
+  /* Forcing colours on the root is the one global override print genuinely needs. */
+  .printRoot {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  /*
+    `display: none` rather than `visibility: hidden`, because the element has already been
+    clipped away on screen and here the goal is to remove it from the page entirely.
+  */
+  .printRoot :global([data-print-hide]) {
+    display: none !important;
+  }
+
+  /* Chrome that is meaningless on paper: glass, gradients-as-decoration, hover states. */
+  .printRoot :global(.glass-panel) {
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  .printRoot :global(*) {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* A section must not be split across a page boundary mid-table or mid-card. */
+  .printRoot :global([data-print-block]) {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /*
+    A heading at the foot of a page is the classic orphaned-header defect: the title prints,
+    the content it introduces does not. `break-after: avoid` keeps them together.
+  */
+  .printRoot :global(h1),
+  .printRoot :global(h2),
+  .printRoot :global(h3) {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Tables may break across pages; a row may not be split down the middle. */
+  .printRoot :global(table) {
+    break-inside: auto;
+  }
+
+  .printRoot :global(tr) {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .printRoot :global(thead) {
+    display: table-header-group;
+  }
+
+  /*
+    Tailwind's page margins come from the browser's own print dialog and are usually already
+    tight. `size: auto` matters more than the value: forcing a paper size the printer does not
+    have produces blank pages.
+  */
+  @page {
+    size: auto;
+    margin: 14mm;
+  }
+
+  /* No fixed-height containers: a clipped card prints as a card with its bottom cut off. */
+  .printRoot :global([style*='max-height']) {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /*
+    The trend rail is sized with percentage heights inside a fixed-height flex row. On paper
+    the row keeps its height, but the bars are backgrounds, so they are restated as borders
+    to survive a printer that drops background graphics — which most do by default.
+  */
+  .printRoot :global([data-print-bar]) {
+    background: none !important;
+    border-top: 3pt solid #4f46e5 !important;
+  }
+}

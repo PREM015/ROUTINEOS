@@ -208,9 +208,38 @@ export function perfectWeekStarts(dates: readonly string[]): Set<string> {
  * Distinct from `countPerfectWeeks`: four perfect weeks in a row is a different
  * claim from four perfect weeks anywhere in two years, and only this one is what
  * "Record 4 perfect weeks in a row" promises.
+ *
+ * **Consecutive here means seven days apart, not one.** This deliberately does not
+ * reuse `longestConsecutiveRun`, which requires adjacent *calendar days* and so
+ * would break every pair of neighbouring week starts immediately: `weekStart`
+ * values are always a multiple of 7 days apart. Measured as-is, this function
+ * could only ever return 0 or 1, which made `consistency-king`
+ * (`perfectWeekStreak >= 4`) impossible to unlock for any user, at any point,
+ * regardless of their data.
+ *
+ * @example
+ * longestPerfectWeekStreak(fullWeeks('2026-09-07', '2026-09-14')) // => 2
  */
 export function longestPerfectWeekStreak(dates: readonly string[]): number {
-  return longestConsecutiveRun([...perfectWeekStarts(dates)]);
+  // Sorted explicitly rather than relying on `Set` insertion order, which is an
+  // implementation detail of how `perfectWeekStarts` happened to be built.
+  const starts = [...perfectWeekStarts(dates)].sort((a, b) => toUtcMs(a) - toUtcMs(b));
+  if (starts.length === 0) return 0;
+
+  let longest = 1;
+  let run = 1;
+  for (let i = 1; i < starts.length; i += 1) {
+    const previous = starts[i - 1];
+    const current = starts[i];
+    if (previous === undefined || current === undefined) continue;
+    if (calendarDaysBetween(previous, current) === 7) {
+      run += 1;
+    } else {
+      run = 1;
+    }
+    if (run > longest) longest = run;
+  }
+  return longest;
 }
 
 // ============================================================================

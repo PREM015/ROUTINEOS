@@ -3,10 +3,10 @@ import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import {
   createJournalEntrySchema,
+  DEFAULT_JOURNAL_PAGE_SIZE,
   journalEntryQuerySchema,
-  MAX_JOURNAL_PAGE_SIZE,
 } from '@/schemas/journal.schema';
-import { ForeignTagError } from '@/server/repositories/journal.repository';
+import { ForeignTagError } from '@/lib/journal/policy';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
     }
 
     const query = validated.data;
-    const limit = query.limit ?? MAX_JOURNAL_PAGE_SIZE;
+    // `DEFAULT_JOURNAL_PAGE_SIZE`, not the 100-row ceiling: an unspecified limit
+    // should return a page, not the largest page the schema permits.
+    const limit = query.limit ?? DEFAULT_JOURNAL_PAGE_SIZE;
 
     const result = await journalService.list(userIdFromSession(session), { ...query, limit });
 

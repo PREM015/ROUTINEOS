@@ -8,7 +8,7 @@
  *
  *   - `new Date().toISOString().slice(0, 10)` is the **UTC** date, so an entry
  *     written at 22:00 in `Asia/Kolkata` was filed under the previous day;
- *   - `new Date('2026-02-30')` is *not* invalid — it rolls over to March 2, so
+ *   - `new Date('2026-02-30')` is *not* invalid â€” it rolls over to March 2, so
  *     a naive regex check accepts a date that can never exist;
  *   - `new Date('YYYY-MM-DD')` is parsed as UTC midnight, then read back with
  *     local getters, which shifts the day for anyone west of Greenwich.
@@ -17,7 +17,7 @@
  * them, and so can a `'use client'` file, without pulling in Prisma.
  */
 
-/** Matches the `date` column's shape. Shape only — see `isValidDateKey`. */
+/** Matches the `date` column's shape. Shape only â€” see `isValidDateKey`. */
 export const DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const MONTH_KEY_PATTERN = /^\d{4}-\d{2}$/;
@@ -59,34 +59,7 @@ export function daysInMonth(year: number, month: number): number {
 }
 
 /**
- * `YYYY-MM-DD` for a `Date`, read in `timezone`.
- *
- * Defaults to the host zone rather than committing to UTC or to the app's
- * historical `DEFAULT_TZ`, and returns `null` for an invalid date instead of
- * emitting `NaN-NaN-NaN` into a date column.
- */
-export function dateKeyFor(date: Date, timezone?: string): string | null {
-  if (Number.isNaN(date.getTime())) return null;
-
-  try {
-    // `en-CA` formats as YYYY-MM-DD, which is already the key format — no
-    // manual pad/slice assembly to get wrong.
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(date);
-  } catch {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  }
-}
-
-/**
- * A `Date` at **local noon** on the day a date key names.
+ * `YYYY-MM-DD` for a `Date` at **local noon** on the day a date key names.
  *
  * Local noon is the whole trick. `new Date('2026-03-04')` is UTC midnight; in
  * `America/New_York` that is the previous evening, so calling `getDate()` on it
@@ -101,10 +74,22 @@ export function dateFromKey(value: string): Date | null {
   return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
-/** `'2026-03-04'` → `'2026-03'`. */
+/** `'2026-03-04'` â†’ `'2026-03'`. */
 export function monthKeyFromDateKey(dateKey: string): string | null {
   if (!isValidDateKey(dateKey)) return null;
   return dateKey.slice(0, 7);
+}
+
+/**
+ * A valid month key, falling back to the current month.
+ *
+ * Preferred over `isValidMonthKey(x) ? x : ...` in render paths: the type guard
+ * narrows `string` to `string` in both branches, so the fallback branch becomes
+ * `never` and the defensive code stops compiling the moment it is needed.
+ */
+export function coerceMonthKey(value: string | null | undefined, now = new Date()): string {
+  if (isValidMonthKey(value)) return value;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
 /** First and last day of a `YYYY-MM` month, as date keys. */
@@ -181,7 +166,9 @@ export function compareDateKeys(a: string, b: string): number | null {
   return a < b ? -1 : 1;
 }
 
-/** True when `dateKey` is a real day the user has not written yet. */
+/**
+ * True when `dateKey` is a real day the user has not written yet.
+ */
 export function isFutureDateKey(dateKey: string, todayKey: string): boolean {
   const comparison = compareDateKeys(dateKey, todayKey);
   return comparison !== null && comparison > 0;
@@ -207,39 +194,4 @@ export function calendarGrid(monthKey: string): Array<string | null> {
   for (let i = 1; i <= last.getDate(); i += 1) cells.push(`${monthKey}-${String(i).padStart(2, '0')}`);
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
-}
-
-/**
- * Resolve the date a create request is filing against, and say whether that
- * date is already taken.
- *
- * `JournalEntry` is `@@unique([userId, date])`, so a second entry for the same
- * day is a database-level conflict rather than something the UI can quietly
- * ignore. The two callers want opposite behaviour from it — the editor should
- * open the existing entry instead of duplicating it, the API should answer 409
- * — so both need the same decision and neither should re-derive it.
- *
- * @example
- * resolveCreateDate({ date: '2026-03-04', today: '2026-03-06' })
- * // => { date: '2026-03-04', isPast: true }
- */
-export function resolveCreateDate(
-  requested: string | undefined,
-  todayKey: string
-): { date: string; isPast: boolean; isToday: boolean } | null {
-  const fallback = isValidDateKey(todayKey) ? todayKey : null;
-  if (requested === undefined || requested === '') {
-    if (!fallback) return null;
-    return { date: fallback, isPast: false, isToday: true };
-  }
-
-  if (!isValidDateKey(requested)) return null;
-  if (!fallback) return { date: requested, isPast: false, isToday: false };
-
-  const comparison = compareDateKeys(requested, fallback);
-  return {
-    date: requested,
-    isPast: comparison === -1,
-    isToday: comparison === 0,
-  };
 }

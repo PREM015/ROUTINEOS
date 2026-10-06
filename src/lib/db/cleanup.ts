@@ -30,7 +30,18 @@ export async function cleanupExpiredTokens(): Promise<{
   };
 }
 
-/** Child tables wiped for soft-deleted users (order matters, children first). */
+/**
+ * Child tables wiped for soft-deleted users (order matters, children first).
+ *
+ * The focus tables are listed explicitly rather than left to `onDelete: Cascade`. The
+ * sweep below also hard-deletes the `user` row at the end, and cascade only fires *if*
+ * that delete succeeds - so if the user delete ever fails or is filtered, a table
+ * omitted from this list leaves its rows behind with no owner and no way to attribute
+ * them. Listing them costs six `deleteMany` calls per soft-deleted user.
+ *
+ * Child-first order matters for the same reason: `focusSessionEvent` references
+ * `focusSession`, so it is deleted before it.
+ */
 const ORPHAN_TABLES = [
   'passwordResetToken',
   'emailVerificationToken',
@@ -41,6 +52,12 @@ const ORPHAN_TABLES = [
   'dataExport',
   'auditLog',
   'activityLog',
+  'focusSessionEvent',
+  'focusSession',
+  'focusDayTypeTarget',
+  'focusPreset',
+  'focusSettings',
+  'break',
 ] as const;
 
 interface DeleteManyDelegate {

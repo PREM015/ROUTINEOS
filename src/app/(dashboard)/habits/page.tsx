@@ -18,6 +18,7 @@ import { TagChip, type TagOption } from '@/components/habits/TagPicker';
 import { cn } from '@/lib/utils';
 import { fetchWithAuth } from '@/lib/api-client';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { onAppEvent, notifyHabitsDataChanged } from '@/lib/app-events';
 
 
 type TabType = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
@@ -243,6 +244,12 @@ export default function HabitsPage() {
     void loadTodayDayType();
   }, [loadTodayDayType]);
 
+  // Cross-page synchronization: refresh today's day type when it changes on /today
+  useEffect(() => {
+    const cleanup = onAppEvent('today-data-changed', () => void loadTodayDayType());
+    return cleanup;
+  }, [loadTodayDayType]);
+
   const loadDayTypes = async () => {
     try {
       setDayTypesLoading(true);
@@ -401,6 +408,7 @@ export default function HabitsPage() {
       // until the health query finished, and not marking it at all is what
       // produced the `no-floating-promises` lint error.
       void fetchHealth();
+      notifyHabitsDataChanged();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'Action failed');
     } finally {
@@ -1114,12 +1122,12 @@ export default function HabitsPage() {
       <AddHabitModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSaved={() => void fetchHealth()}
+        onSaved={() => { void fetchHealth(); notifyHabitsDataChanged(); }}
       />
       <EditHabitModal
         habit={editing}
         onClose={() => setEditing(null)}
-        onSaved={() => void fetchHealth()}
+        onSaved={() => { void fetchHealth(); notifyHabitsDataChanged(); }}
       />
 
       {/*

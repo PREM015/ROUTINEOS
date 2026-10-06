@@ -34,8 +34,12 @@ export function countOccurrences(text: string, term: string): number {
 /**
  * A window of `text` centred on the first match, with `…` where it was cut.
  *
+ * The window is `radius` characters either side of the match, so short text is
+ * returned whole rather than truncated for no reason.
+ *
  * @example
- * buildSnippet('never give up, never surrender', 'never') // => 'never give up, never sur'
+ * buildSnippet('never give up, never surrender', 'never') // => 'never give up, never surrender'
+ * buildSnippet(`a ${'x'.repeat(200)} needle`, 'needle', 5) // => '…xxxxx needle…'
  */
 export function buildSnippet(text: string, term: string, radius: number = 60): string {
   const normalized = normalizeSearchTerm(term);

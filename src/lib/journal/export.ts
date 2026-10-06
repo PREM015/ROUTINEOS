@@ -8,21 +8,38 @@ import type { JournalEntryWithRelations, JournalGratitudeItem } from '@/types/jo
 export type JournalExportFormat = 'json' | 'markdown';
 
 /**
- * Coerce the stored gratitude JSON string back into its item array. Falls back
- * to an empty list when the field is missing or unparsable.
+ * Coerce the stored gratitude JSON string back into its item array.
+ *
+ * Two shapes are accepted because both exist in the `gratitude` column:
+ *
+ *   - `["coffee", "a quiet morning"]` — what the journal editor writes today;
+ *   - `[{"text": "coffee", "emoji": "☕"}]` — what `/today`'s reflection wrote,
+ *     which shares the column convention but carries objects.
+ *
+ * Rejecting the object form would silently drop gratitude from an export of a
+ * journal that had it, which is exactly the failure an export exists to prevent.
+ * Entries with neither shape, or unparsable JSON, yield an empty list.
  */
 export function parseGratitude(raw: string | null): JournalGratitudeItem[] {
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (Array.isArray(parsed)) {
-      return parsed.filter(
-        (item): item is JournalGratitudeItem =>
-          typeof item === 'object' &&
-          item !== null &&
-          typeof (item as { text?: unknown }).text === 'string'
-      );
-    }
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((item): JournalGratitudeItem | null => {
+        if (typeof item === 'string') {
+          return item.trim().length > 0 ? { text: item } : null;
+        }
+        if (typeof item === 'object' && item !== null) {
+          const text = (item as { text?: unknown }).text;
+          if (typeof text !== 'string' || text.trim().length === 0) return null;
+          const emoji = (item as { emoji?: unknown }).emoji;
+          return typeof emoji === 'string' ? { text, emoji } : { text };
+        }
+        return null;
+      })
+      .filter((item): item is JournalGratitudeItem => item !== null);
   } catch {
     // fallthrough to empty
   }
@@ -78,7 +95,8 @@ export function journalEntriesToMarkdown(entries: readonly JournalEntryWithRelat
 
 /**
  * Serialize entries to a JSON string. `gratitude` is expanded back into its
- * array form.
+ * item array so a JSON export round-trips through `parseGratitude` and stays
+ * readable rather than leaking the column's storage shape.
  */
 export function journalEntriesToJson(entries: readonly JournalEntryWithRelations[]): string {
   return JSON.stringify(

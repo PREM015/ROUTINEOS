@@ -494,6 +494,32 @@ async getDeleteImpact(goalId: string, userId: UserId): Promise<{
    *
    * `dayStart` must be the UTC midnight of the day; the window is half-open.
    */
+  /**
+ * Remove ONLY the daily check-in marker for one day.
+   *
+   * `deleteProgressLogsForDate` wipes every row in the day, which also destroyed
+   * real progress entries written by `updateProgress` at arbitrary times of day.
+   * The daily tick is identified by its `note`, so the delete is narrowed to
+   * that marker and leaves genuine progress history intact.
+   */
+  async deleteDailyCheckinForDate(
+    goalId: string,
+    dayStart: Date
+  ): Promise<number> {
+    try {
+      const end = new Date(dayStart);
+      end.setUTCDate(end.getUTCDate() + 1);
+
+      const result = await this.prisma.goalProgress.deleteMany({
+        where: { goalId, note: 'daily-checkin', date: { gte: dayStart, lt: end } },
+      });
+
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'deleteDailyCheckinForDate');
+    }
+  }
+
   async deleteProgressLogsForDate(
     goalId: string,
     dayStart: Date

@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { AppError } from '@/lib/errors/app-error';
-import { ForeignTagError } from '@/server/repositories/journal.repository';
+import { ForeignTagError } from '@/lib/journal/policy';
 import { journalService } from '@/server/services/journal.service';
 import { setJournalTagsSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';

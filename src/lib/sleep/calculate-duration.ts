@@ -13,8 +13,17 @@ export function calculateSleepDuration(
   const bedMinutes = bedHour * 60 + bedMin;
   let wakeMinutes = wakeHour * 60 + wakeMin;
 
-  // Handle overnight sleep
-  if (wakeMinutes <= bedMinutes) {
+  // Handle overnight sleep.
+  //
+  // Strictly `<`, not `<=`. With `<=`, equal clock times ("23:00" -> "23:00")
+  // resolved to a full 1440-minute sleep: `deficitMinutes` became 0 and
+  // `calculateSleepScore` awarded the entire 50-point duration share, so an
+  // empty or mistaken entry scored as a perfect night and could never register
+  // a deficit. Equal times are not evidence of 24 hours asleep — they are a
+  // zero-length (or missing) entry, and 0 is the honest answer. A genuine
+  // same-time sleep is not representable in HH:mm and should be entered
+  // explicitly rather than inferred.
+  if (wakeMinutes < bedMinutes) {
     wakeMinutes += 24 * 60;
   }
 

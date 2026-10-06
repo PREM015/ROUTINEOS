@@ -2,6 +2,7 @@ import type { User, UserSettings, DeviceType, Prisma } from '@/generated/prisma'
 import { z } from 'zod';
 import { DEFAULT_TZ, getTodayString, shiftCalendarDay } from '@/lib/dates';
 import { UserRepository } from '@/server/repositories/user.repository';
+import type { PublicUserSummary } from '@/server/repositories/user.repository';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
@@ -373,7 +374,7 @@ export class UserService {
   async searchUsers(
     query: string,
     limit: number = 100
-  ): Promise<Omit<User, 'passwordHash'>[]> {
+  ): Promise<PublicUserSummary[]> {
     if (typeof query !== 'string' || query.trim().length === 0) {
       return [];
     }
@@ -381,9 +382,12 @@ export class UserService {
     const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 100);
     const term = query.trim();
 
-    const users = await this.userRepository.search(term, safeLimit);
-
-    return users.map(toSafeUser);
+    // `search` already projects to `PublicUserSummary` at the query level, so
+    // there is nothing left to strip here. It used to select whole rows and
+    // rely on `toSafeUser` to remove `passwordHash` — which was the only field
+    // removed, so every other user's email, privacy settings and lockout state
+    // were returned to any caller.
+    return this.userRepository.search(term, safeLimit);
   }
 
   /**

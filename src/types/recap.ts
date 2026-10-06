@@ -14,8 +14,21 @@ export interface RecapScorePoint {
  * empty arrays or null so each card decides its own empty state.
  */
 export interface RecapExtras {
-  /** Per-day habit completion for the period (heatmap). */
-  habitHeatmap: Array<{ date: string; completed: number; scheduled: number }>;
+  /**
+   * Per-day habit completion for the period.
+   *
+   * `scheduled` is the number of habits actually **due** that day under the
+   * shared eligibility rule — the same figure the period heroes use — and
+   * `noRecord` counts the due ones with no log row at all. A cell therefore has
+   * three distinguishable states rather than two: completed, attempted, and
+   * "I was due and recorded nothing".
+   */
+  habitHeatmap: Array<{
+    date: string;
+    completed: number;
+    scheduled: number;
+    noRecord: number;
+  }>;
   /** Nightly sleep durations in the period. */
   sleepTrend: Array<{ date: string; durationMinutes: number | null }>;
   /** Daily mood + energy from reflections in the period. */
@@ -83,14 +96,46 @@ export interface RecapExtras {
   }>;
 }
 
+/**
+ * How much of the window had anything scheduled at all.
+ *
+ * Exists because a completion rate over a window where four days had nothing
+ * due is not a low score — it is a rate about nothing. Reporting the coverage
+ * alongside it lets the page say something true ("3 of 7 days had anything
+ * scheduled") instead of a percentage that reads like a verdict.
+ */
+export interface RecapHabitCoverage {
+  /** Days in the window with at least one habit due. */
+  dueDays: number;
+  /** Days in the window considered, already clipped to today. */
+  totalDays: number;
+  /** `completed / scheduled` pooled, or `null` when nothing was ever due. */
+  completionRate: number | null;
+}
+
 export interface RecapReport {
   period: Period;
   anchorDate: string;
   startDate: string;
   endDate: string;
   label: string;
+  /** True when the resolved range contains today in the user's timezone. */
+  isCurrent: boolean;
+  /**
+   * The weekday the server resolved this range against, reported so the client
+   * navigates by the same week rather than re-guessing Monday.
+   */
+  weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   hasData: boolean;
   points: RecapScorePoint[];
+  habitCoverage: RecapHabitCoverage;
+  /**
+   * Absent — not empty — when the period has no activity at all.
+   *
+   * The service skips the sixteen enrichment queries for a window it can prove
+   * is empty, so an empty period genuinely has no `extras` object rather than
+   * one full of empty arrays. Every render site guards it.
+   */
   extras?: RecapExtras;
   day?: {
     score: {

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/Dialog';
+import { TimePickerModal } from '@/components/ui/TimePickerModal';
 import { Mount } from '@/components/motion/Mount';
 import { showNotification } from '@/lib/pwa/notifications';
 import { notifyTodayDataChanged } from '@/lib/today-sync';
@@ -52,6 +53,7 @@ export function TodaySleep({ date }: TodaySleepProps) {
   const notifiedPreWarning = useRef<Set<string>>(new Set());
   const [longRunningOpen, setLongRunningOpen] = useState(false);
   const [wakeConfirmOpen, setWakeConfirmOpen] = useState(false);
+  const [wakeLaterOpen, setWakeLaterOpen] = useState(false);
 
   const active = state?.active ?? null;
   const prompt = state?.prompt ?? null;
@@ -112,8 +114,24 @@ export function TodaySleep({ date }: TodaySleepProps) {
     setWakeConfirmOpen(true);
   };
 
-  const submitWakeTimes = (actual: { bedtime: string; wakeTime: string }) => {
-    void stop(actual).then((ok) => {
+  const handleWakeLater = (selectedTime: string) => {
+    setWakeLaterOpen(false);
+    // Use the selected time as wake time, bedtime from session start
+    const sessionBedtime = active?.startedAt
+      ? new Date(active.startedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : "";
+    void stop({ bedtime: sessionBedtime, wakeTime: selectedTime }).then((ok) => {
+      if (ok) setWakeConfirmOpen(false);
+    });
+  };
+
+  const handleWakeAtTarget = () => {
+    // Use target wake time from settings
+    const targetWake = wakePrompt?.targetWakeTime || todaySleepLog?.targetWakeTime || "05:00";
+    const sessionBedtime = active?.startedAt
+      ? new Date(active.startedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : "";
+    void stop({ bedtime: sessionBedtime, wakeTime: targetWake }).then((ok) => {
       if (ok) setWakeConfirmOpen(false);
     });
   };
@@ -312,15 +330,38 @@ export function TodaySleep({ date }: TodaySleepProps) {
           wakeConfirmOpen ? (
             <WakeConfirmDialog
               onClose={() => setWakeConfirmOpen(false)}
-              onConfirm={submitWakeTimes}
+              onConfirmAtTarget={handleWakeAtTarget}
+              onConfirmLater={() => setWakeLaterOpen(true)}
+              onStillSleeping={() => {
+                // Dismiss wake prompt via API
+                void fetch('/api/sleep/session/wake-confirm', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({ promptId: wakePrompt?.id, action: 'still-sleeping' }),
+                }).catch(() => undefined);
+                setWakeConfirmOpen(false);
+              }}
               busy={busy === 'stop'}
-              scheduledBedtime={
-                (todaySleepLog as SleepLogView | null)?.targetBedtime ?? null
-              }
               targetWakeTime={
-                (todaySleepLog as SleepLogView | null)?.targetWakeTime ?? null
+                wakePrompt?.targetWakeTime || todaySleepLog?.targetWakeTime || null
               }
-              startedAt={active?.startedAt ?? ''}
+            />
+          ) : null,
+          document.body
+        )}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          wakeLaterOpen ? (
+            <TimePickerModal
+              open={wakeLaterOpen}
+              onClose={() => setWakeLaterOpen(false)}
+              onConfirm={handleWakeLater}
+              initialTime={wakePrompt?.targetWakeTime || todaySleepLog?.targetWakeTime || "05:00"}
+              title="When did you wake up?"
+              description="Select the actual time you woke up"
+              timeFormat="24h"
+              isLoading={busy === 'stop'}
             />
           ) : null,
           document.body
@@ -389,55 +430,27 @@ function ActiveTimer({
  * answered. It is rendered conditionally by the parent so it mounts fresh with
  * current defaults each time rather than keeping stale state.
  *
- * Both inputs accept any `HH:mm`, and both prefill with the *scheduled* value so
- * the common case is one tap. Entering a real time is what makes the duration,
- * the deficit and `DailyScore.sleepScore` meaningful.
+ * Three options:
+ * - "Yes, at target time" → uses target wake time
+ * - "I woke up later" → opens TimePickerModal for actual wake time
+ * - "Still sleeping" → dismisses prompt, keeps session running
  */
 function WakeConfirmDialog({
   onClose,
-  onConfirm,
+  onConfirmAtTarget,
+  onConfirmLater,
+  onStillSleeping,
   busy,
-  scheduledBedtime,
-  startedAt,
   targetWakeTime,
 }: {
   onClose: () => void;
-  onConfirm: (actual: { bedtime: string; wakeTime: string }) => void;
+  onConfirmAtTarget: () => void;
+  onConfirmLater: () => void;
+  onStillSleeping: () => void;
   busy: boolean;
-  /** Target bedtime from settings, when set. */
-  scheduledBedtime?: string | null;
-  /** Session start, used as the fallback bedtime label. */
-  startedAt: string;
   /** Target wake time from settings, used as the wake prefill. */
   targetWakeTime?: string | null;
 }) {
-  // The session's own start is the honest "when did tracking begin"; the
-  // scheduled bedtime is what the plan wanted. Offer the plan, fall back to
-  // what actually happened.
-  const sessionBedtime = (() => {
-    const ms = Date.parse(startedAt);
-    if (Number.isNaN(ms)) return '';
-    const d = new Date(ms);
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  })();
-  const plannedBedtime = scheduledBedtime?.trim() || sessionBedtime || '';
-
-  const [bedtime, setBedtime] = useState(plannedBedtime);
-  /**
-   * Prefilled from the **target** wake time only — never from the current clock.
-   *
-   * This previously fell back to `nowHHmm()`, which reintroduced exactly the bug
-   * this dialog exists to prevent: a user who ignored the 05:00 alarm and opened
-   * the card at 17:23 could press Save without touching the field and silently
-   * record a 17h23m night. An empty field forces the actual time to be stated;
-   * where a target exists the common case is still one tap.
-   */
-  const [wakeTime, setWakeTime] = useState(targetWakeTime?.trim() ?? '');
-
-  const bedtimeValid = /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(bedtime);
-  const wakeValid = /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(wakeTime);
-  const canSubmit = bedtimeValid && wakeValid && !busy;
-
   return (
     <Dialog
       open
@@ -447,89 +460,50 @@ function WakeConfirmDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Confirm your sleep</DialogTitle>
+          <DialogTitle>Confirm your wake time</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 px-1">
           <p className="text-sm text-muted-foreground">
-            Your target was{' '}
-            <span className="font-semibold text-foreground">
-              {plannedBedtime || 'not set'}
-            </span>
-            {targetWakeTime?.trim() ? (
-              <>
-                {' '}
-                â†’{' '}
-                <span className="font-semibold text-foreground">
-                  {targetWakeTime.trim()}
-                </span>
-              </>
-            ) : null}
-            . Only you know when you actually slept and woke â€” your answers are
-            what get recorded, not this button press.
+            Your target wake time is{' '}
+            <span className="font-semibold text-foreground">{targetWakeTime || 'not set'}</span>.
+            When did you actually wake up?
           </p>
 
-          <div>
-            <label
-              htmlFor="sleep-actual-bedtime"
-              className="mb-1.5 block text-sm font-medium text-foreground"
-            >
-              When did you go to sleep?
-            </label>
-            <Input
-              id="sleep-actual-bedtime"
-              type="time"
-              value={bedtime}
-              onChange={(e) => setBedtime(e.target.value)}
-              aria-describedby="sleep-bedtime-hint"
-            />
-            <p id="sleep-bedtime-hint" className="mt-1 text-xs text-muted-foreground">
-              Enter the real time â€” earlier or later than the target, including
-              after midnight.
-            </p>
-          </div>
-
-          <div>
-            <label
-              htmlFor="sleep-actual-wake"
-              className="mb-1.5 block text-sm font-medium text-foreground"
-            >
-              When did you wake up?
-            </label>
-            <Input
-              id="sleep-actual-wake"
-              type="time"
-              value={wakeTime}
-              onChange={(e) => setWakeTime(e.target.value)}
-              aria-describedby="sleep-wake-hint"
-            />
-            <p id="sleep-wake-hint" className="mt-1 text-xs text-muted-foreground">
-              {targetWakeTime?.trim()
-                ? `Prefilled with your ${targetWakeTime.trim()} target. Change it if you woke earlier or later.`
-                : 'Required — enter the time you actually woke up.'}
-            </p>
-          </div>
-
-          {!bedtimeValid || !wakeValid ? (
-            <p role="alert" className="text-xs text-destructive">
-              {!wakeValid
-                ? 'Enter the time you actually woke up — it is not filled in for you, because the time you press this button is not when you woke.'
-                : 'Both times must be a valid time of day.'}
-            </p>
-          ) : null}
-
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" onClick={onClose} disabled={busy}>
-              Cancel
-            </Button>
+          <div className="space-y-2">
             <Button
-              onClick={() => onConfirm({ bedtime, wakeTime })}
+              onClick={onConfirmAtTarget}
               isLoading={busy}
-              disabled={!canSubmit}
+              className="w-full justify-start"
             >
-              Save sleep
+              <span className="mr-2">✓</span>
+              Yes, I woke up at {targetWakeTime || 'target time'}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={onConfirmLater}
+              isLoading={busy}
+              className="w-full justify-start"
+            >
+              <span className="mr-2">🕐</span>
+              I woke up at a different time
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={onStillSleeping}
+              isLoading={busy}
+              className="w-full justify-start text-amber-600 dark:text-amber-400"
+            >
+              <span className="mr-2">🌙</span>
+              Still sleeping
             </Button>
           </div>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Only you know when you actually woke up — your answer is what gets recorded.
+          </p>
         </div>
       </DialogContent>
     </Dialog>

@@ -8,28 +8,14 @@
  * Usage:
  *   <JournalEntry entry={entry} onSelect={(id) => openEntry(id)} />
  */
-import { CalendarDays, Heart, Smile, Zap } from 'lucide-react';
+import { CalendarDays, Heart, Zap } from 'lucide-react';
 import type { JournalEntryWithRelations } from '@/types/journal';
-import { formatDate } from '@/lib/utils';
+import { formatDateKeyShort } from '@/lib/journal/date';
+import { richTextToPlainText } from '@/lib/security/html-sanitizer';
+import { energyLabel, moodColor, moodLabel } from '@/constants/journal';
 import { Badge, Card } from '@/components/ui';
 import TagBadge from '../tags/TagBadge';
 import { cn } from '@/lib/utils';
-
-export const MOOD_LABELS: Record<number, string> = {
-  1: 'Bad',
-  2: 'Low',
-  3: 'Okay',
-  4: 'Good',
-  5: 'Great',
-};
-
-export const MOOD_COLORS: Record<number, string> = {
-  1: '#ef4444',
-  2: '#f97316',
-  3: '#eab308',
-  4: '#84cc16',
-  5: '#22c55e',
-};
 
 export interface JournalEntryProps {
   entry: JournalEntryWithRelations;
@@ -38,18 +24,13 @@ export interface JournalEntryProps {
   className?: string;
 }
 
-/** Strip HTML tags from stored content for a plain-text preview. */
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
 export default function JournalEntry({ entry, onSelect, className }: JournalEntryProps) {
-  const preview = stripHtml(entry.content);
-  const mood = entry.mood;
-  const energy = entry.energy;
-  const moodLabel = mood !== null && mood !== undefined ? (MOOD_LABELS[mood] ?? `Mood ${mood}`) : null;
-  const moodColor =
-    mood !== null && mood !== undefined ? (MOOD_COLORS[mood] ?? '#6b7280') : null;
+  // Sanitized before previewing: the stored HTML may predate the sanitizer, and
+  // the preview should show exactly the text that will be rendered when opened.
+  const preview = richTextToPlainText(entry.content);
+  const label = moodLabel(entry.mood);
+  const color = moodColor(entry.mood);
+  const energy = energyLabel(entry.energy);
 
   const inner = (
     <>
@@ -60,34 +41,44 @@ export default function JournalEntry({ entry, onSelect, className }: JournalEntr
           </h3>
           <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
             <CalendarDays className="h-3.5 w-3.5" />
-            {formatDate(entry.date)}
+            {formatDateKeyShort(entry.date)}
           </p>
         </div>
-        {entry.isFavorite && (
-          <Heart className="h-5 w-5 shrink-0 fill-red-500 text-red-500" aria-label="Favorite" />
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {entry.isArchived && (
+            <Badge className="gap-1 border border-border bg-transparent text-[10px] uppercase tracking-wide text-muted-foreground">
+              Archived
+            </Badge>
+          )}
+          {entry.isFavorite && (
+            <Heart
+              className="h-5 w-5 fill-red-500 text-red-500"
+              role="img"
+              aria-label="Favorite"
+            />
+          )}
+        </div>
       </div>
 
       <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-gray-600">
         {preview.length > 0 ? preview : 'No content…'}
       </p>
 
-      {(moodLabel || energy !== null || entry.tags.length > 0) && (
+      {(label || energy || entry.tags.length > 0) && (
         <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          {moodLabel && (
+          {label && (
             <Badge
               variant="default"
               className="gap-1"
-              style={{ backgroundColor: `${moodColor ?? '#6b7280'}1f`, color: moodColor ?? '#6b7280' }}
+              style={{ backgroundColor: `${color ?? '#6b7280'}1f`, color: color ?? '#6b7280' }}
             >
-              <Smile className="h-3 w-3" />
-              {moodLabel}
+              {label}
             </Badge>
           )}
-          {energy !== null && energy !== undefined && (
+          {energy && (
             <Badge variant="warning" className="gap-1">
               <Zap className="h-3 w-3" />
-              Energy {energy}/5
+              {energy}
             </Badge>
           )}
           {entry.tags.map((relation) => (
@@ -110,7 +101,7 @@ export default function JournalEntry({ entry, onSelect, className }: JournalEntr
         <button
           type="button"
           onClick={() => onSelect(entry.id)}
-          aria-label={`Open journal entry for ${formatDate(entry.date)}`}
+          aria-label={`Open journal entry for ${formatDateKeyShort(entry.date)}`}
           className="block w-full text-left focus-visible:outline-none"
         >
           {inner}

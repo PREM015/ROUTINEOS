@@ -6,7 +6,7 @@ import { apiRequest } from '@/lib/api-client';
 import { Card, Spinner } from '@/components/ui';
 import MoodTracker from '@/components/wellness/MoodTracker';
 import MoodCalendar from '@/components/wellness/MoodCalendar';
-import { MOOD_LABELS } from '@/components/journal/JournalEntry';
+import { MOOD_LABELS } from '@/constants/journal';
 
 interface MoodLog {
   id: string;

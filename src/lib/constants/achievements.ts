@@ -65,39 +65,76 @@ export type AchievementCategoryConfig = (typeof ACHIEVEMENT_CATEGORIES)[Achievem
 // Rarity Tiers
 // ============================================================================
 
+/**
+ * Rarity palette — a designed ramp, not five palette picks.
+ *
+ * ## The rule this encodes
+ *
+ * Rarity is the page's main hierarchy device, so the five tiers have to read as
+ * **one ordered scale**. Three properties do that work together:
+ *
+ * 1. **Chroma rises with rarity.** Common is genuinely desaturated slate and
+ *    deliberately recedes; a "common" badge should not compete for attention.
+ * 2. **Hue travels cool to warm.** slate → teal → azure → violet → gold. A cool
+ *    ramp that ends warm means the top of the scale is unmistakable at a glance,
+ *    which is what makes a Legendary tile legible across a grid without reading
+ *    its label.
+ * 3. **Value is tuned for the surface it sits on.** These are the dark-theme
+ *    values, stepped lighter than their Tailwind defaults so they hold up against
+ *    a near-black card. `rarityChipStyle` (below) derives the theme-safe chip
+ *    treatment from whatever value is here, so both themes stay legible.
+ *
+ * The previous values were stock Tailwind 500s — `#22c55e`, `#3b82f6`, `#8b5cf6`,
+ * `#f59e0b`. Beside each other they read as an arbitrary palette rather than a
+ * scale: Uncommon and Rare were the same weight of colour, and Epic's violet sat
+ * too close to Rare's blue to separate without reading the text.
+ *
+ * ## Not a rainbow
+ *
+ * Five hues would be. This is one ramp with a direction: neutral → cool → warm,
+ * with monotonic chroma. The hue changes are supporting information; the chroma
+ * and the label carry the meaning.
+ */
 export const ACHIEVEMENT_RARITIES = {
   COMMON: {
     label: 'Common',
     description: 'Unlocked by more than 50% of active users',
-    color: '#64748b',
+    // Neutral slate. Intentionally the least colourful tier on the page.
+    color: '#8b93a7',
     icon: '🪙',
     order: 1,
   },
   UNCOMMON: {
     label: 'Uncommon',
     description: 'Unlocked by 25-50% of active users',
-    color: '#22c55e',
+    // Teal-leaning green: clearly richer than Common, still not competing.
+    color: '#2dd4a7',
     icon: '🎖️',
     order: 2,
   },
   RARE: {
     label: 'Rare',
     description: 'Unlocked by 10-25% of active users',
-    color: '#3b82f6',
+    // Azure. The first "premium" tier, and the coolest strong hue.
+    color: '#4d9bff',
     icon: '💎',
     order: 3,
   },
   EPIC: {
     label: 'Epic',
     description: 'Unlocked by 5-10% of active users',
-    color: '#8b5cf6',
+    // Violet with real chroma, far enough from Rare's azure to separate at a glance.
+    color: '#b06bff',
     icon: '🏆',
     order: 4,
   },
   LEGENDARY: {
     label: 'Legendary',
     description: 'Unlocked by fewer than 5% of active users',
-    color: '#f59e0b',
+    // Warm gold. The only warm hue on the scale, which is what makes it read as
+    // the top of it — and it matches `--accent-gold`, so the trophy hero and the
+    // rarest badge are visibly the same idea.
+    color: '#f7b93f',
     icon: '👑',
     order: 5,
   },
@@ -124,6 +161,27 @@ export type AchievementRarityConfig = (typeof ACHIEVEMENT_RARITIES)[AchievementR
  * and so the rule stays documented next to the palette that causes it.
  */
 export { accentChipStyle as rarityChipStyle, accentTint as rarityTint };
+
+/**
+ * A rarity hue as **readable text** on any surface, in either theme.
+ *
+ * The raw `color` in {@link ACHIEVEMENT_RARITIES} is a swatch: on a white card the
+ * five tiers measure 1.75:1 to 3.28:1, so none of them may be used as a text colour
+ * directly. `rarityChipStyle` above mixes toward `--foreground` at a fixed 72%,
+ * which was tuned for the previous, darker Tailwind values; these hues are lighter
+ * and higher-chroma, and at 72% they still only reach 2.35-4.28:1 on white.
+ *
+ * This uses `--ach-rarity-ink` instead, which each theme sets to the percentage its
+ * surfaces actually need (48% light, 80% dark). Both were solved against WCAG AA:
+ * worst tier 5.21:1 on the three light surfaces and 5.72:1 on the three dark ones.
+ *
+ * Use this for the rarity **label**. Use `accentTint` for a border, ring or track,
+ * and the raw `color` for a fill or a chart mark, where no text contrast is
+ * involved.
+ */
+export function rarityInk(accent: string): string {
+  return `color-mix(in oklab, ${accent} var(--ach-rarity-ink), var(--foreground))`;
+}
 
 // ============================================================================
 // Achievement Definitions
