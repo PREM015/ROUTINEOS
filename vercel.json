@@ -21,10 +21,6 @@
 
   "crons": [
     {
-      "path": "/api/cron/notification-tick",
-      "schedule": "*/5 * * * *"
-    },
-    {
       "path": "/api/cron/compute-daily-scores",
       "schedule": "0 1 * * *"
     },

@@ -64,14 +64,6 @@ export const forgotPasswordSchema = z.object({
   email: emailSchema,
 });
 
-export const verifyEmailSchema = z.object({
-  token: z.string().min(1, 'Verification token is required'),
-});
-
-export const resendVerificationSchema = z.object({
-  email: emailSchema,
-});
-
 export const accountDeletionSchema = z.object({
   password: z.string().min(1, 'Password is required'),
   reason: z.string().max(2000).optional(),
@@ -87,5 +79,4 @@ export type SetupTwoFactorInput = z.infer<typeof setupTwoFactorSchema>;
 export type VerifyTwoFactorInput = z.infer<typeof verifyTwoFactorSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
-export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
 export type AccountDeletionInput = z.infer<typeof accountDeletionSchema>;

@@ -16,15 +16,12 @@ import { AuthTokenRepository } from '@/server/repositories/auth-token.repository
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
 import { RoutineRepository } from '@/server/repositories/routine.repository';
-import { EmailService } from '@/server/services/email.service';
 import {
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
-  resendVerificationSchema,
   resetPasswordSchema,
-  verifyEmailSchema,
 } from '@/lib/validation/auth';
 import { toUserId, type UserId } from '@/types/ids';
 
@@ -59,7 +56,6 @@ interface TwoFactorState {
   verifiedAt: string | null;
 }
 
-const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
 /**
@@ -110,7 +106,6 @@ export class AuthService {
   private auditRepository: AuditRepository;
   private streakRepository: StreakRepository;
   private routineRepository: RoutineRepository;
-  private emailService: EmailService;
 
   constructor() {
     this.userRepository = new UserRepository();
@@ -118,7 +113,6 @@ export class AuthService {
     this.auditRepository = new AuditRepository();
     this.streakRepository = new StreakRepository();
     this.routineRepository = new RoutineRepository();
-    this.emailService = new EmailService();
   }
 
   /**
@@ -186,9 +180,6 @@ export class AuthService {
       // Streak initialization is best-effort; do not fail registration
     }
 
-    const token = await this.createEmailVerificationToken(toUserId(user.id));
-    await this.emailService.sendVerificationEmail(user.email, token);
-
     return toSafeUser(user);
   }
 
@@ -232,9 +223,6 @@ export class AuthService {
     if (!passwordMatch) {
       await this.userRepository.incrementFailedLogin(toUserId(user.id));
       return null;
-    }
-    if (!user.emailVerified) {
-      throw new Error('Please verify your email first');
     }
 
     await this.userRepository.updateLastLogin(toUserId(user.id));
@@ -398,82 +386,13 @@ export class AuthService {
       userId: user.id,
       action: 'PASSWORD_RESET_REQUESTED',
     });
-    await this.emailService.sendPasswordReset(user.email, token);
+    // Note: Email sending is not implemented. The reset token is stored and can be used via /reset-password?token=<token>
 
     return {
       success: true,
       message:
         'If an account exists for that email, a password reset link has been sent.',
     };
-  }
-
-  /**
-   * Verify an email using its one-time token
-   */
-  async verifyEmail(
-    token: string
-  ): Promise<{ success: boolean; message: string }> {
-    const parsed = verifyEmailSchema.safeParse({ token });
-    if (!parsed.success) {
-      throw new Error(firstZodIssue(parsed.error));
-    }
-
-    const tokenRow = await this.authTokenRepository.findVerificationToken(
-      parsed.data.token
-    );
-    if (
-      !tokenRow ||
-      tokenRow.expiresAt <= new Date() ||
-      tokenRow.usedAt
-    ) {
-      throw new Error('Invalid or expired verification token');
-    }
-
-    await this.userRepository.verifyEmail(toUserId(tokenRow.userId));
-    await this.authTokenRepository.markVerificationTokenUsed(tokenRow.id);
-    await this.auditRepository.create({
-      userId: tokenRow.userId,
-      action: 'EMAIL_VERIFIED',
-    });
-
-    return { success: true, message: 'Email verified successfully' };
-  }
-
-  /**
-   * Resend the verification email, throttled to one per minute
-   */
-  async resendVerification(
-    email: string
-  ): Promise<{ success: boolean; message: string }> {
-    const parsed = resendVerificationSchema.safeParse({ email });
-    if (!parsed.success) {
-      throw new Error(firstZodIssue(parsed.error));
-    }
-
-    const user = await this.userRepository.findByEmail(parsed.data.email);
-    if (!user || user.isDeleted) {
-      return {
-        success: true,
-        message:
-          'If an account exists for that email, a verification link has been sent.',
-      };
-    }
-    if (user.emailVerified) {
-      throw new Error('Email is already verified');
-    }
-
-    const previous =
-      await this.authTokenRepository.findLatestUnusedVerificationToken(toUserId(user.id));
-    if (previous && previous.createdAt.getTime() > Date.now() - 60_000) {
-      throw new Error(
-        'Please wait a moment before requesting another verification email'
-      );
-    }
-
-    const token = await this.createEmailVerificationToken(toUserId(user.id));
-    await this.emailService.sendVerificationEmail(user.email, token);
-
-    return { success: true, message: 'Verification email sent' };
   }
 
   /**
@@ -628,16 +547,6 @@ export class AuthService {
     });
 
     return { success: true, revoked };
-  }
-
-  private async createEmailVerificationToken(userId: UserId): Promise<string> {
-    const token = randomBytes(32).toString('hex');
-    await this.authTokenRepository.createVerificationToken(
-      userId,
-      token,
-      new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS)
-    );
-    return token;
   }
 }
 

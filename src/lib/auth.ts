@@ -22,10 +22,6 @@ class InvalidCredentialsError extends CredentialsSignin {
   code = 'InvalidCredentials';
 }
 
-class EmailNotVerifiedError extends CredentialsSignin {
-  code = 'EmailNotVerified';
-}
-
 class AccountLockedError extends CredentialsSignin {
   code = 'AccountLocked';
 }
@@ -133,10 +129,7 @@ export const authOptions = {
           throw new InvalidCredentialsError();
         }
 
-        // Check if email is verified
-        if (!user.emailVerified) {
-          throw new EmailNotVerifiedError();
-        }
+        
 
         // ── Two-factor enforcement ───────────────────────────────────────────
         // This used to be missing entirely. `setupTwoFactor`/`verifyTwoFactor`

@@ -11,13 +11,21 @@ import {
   Eye,
   EyeOff,
   Mail,
-  MailCheck,
   ShieldCheck,
   User as UserIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { AUTH_INPUT_CLASS } from '@/components/auth/AuthCard';
+
+interface RegisterResponse {
+  success: boolean;
+  message: string;
+  data?: { id: string; email: string };
+  autoLogin?: boolean;
+  error?: string;
+  details?: { fieldErrors?: Record<string, string[]> };
+}
 
 type SocialProvider = { id: 'google' | 'github'; label: string };
 
@@ -48,8 +56,6 @@ export function RegisterForm({ socialProviders = [] }: { socialProviders?: Socia
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<'name' | 'email' | 'password', string>>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
-  /** Set once the account exists; swaps the form for the verification prompt. */
-  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const rules = useMemo(
     () => PASSWORD_RULES.map((rule) => ({ ...rule, ok: rule.test(form.password) })),
@@ -133,7 +139,7 @@ export function RegisterForm({ socialProviders = [] }: { socialProviders?: Socia
         return;
       }
 
-      const data = await res.json().catch(() => null);
+      const data: RegisterResponse = await res.json().catch(() => null);
 
       if (!res.ok) {
         /**
@@ -161,21 +167,16 @@ export function RegisterForm({ socialProviders = [] }: { socialProviders?: Socia
         return;
       }
 
-      /**
-       * The account now exists and a verification email is on its way.
-       *
-       * The previous implementation immediately called `signIn('credentials')`
-       * and pushed to `/login` when it failed. It failed *every* time:
-       * `registerUser` deliberately leaves `emailVerified` null and sends a
-       * verification mail, while `authorize` in `lib/auth.ts` throws
-       * `EmailNotVerified` for an unverified address. So a brand-new user was
-       * silently bounced to a sign-in form that could not possibly succeed,
-       * with no indication that the next step was to check their inbox.
-       *
-       * Showing the verification step directly is both honest about the
-       * server's policy and the only route that actually gets them in.
-       */
-      setRegisteredEmail(form.email.trim());
+      // Account created successfully, auto-login then redirect to dashboard
+      if (data.autoLogin) {
+        await signIn('credentials', {
+          email: form.email,
+          password: form.password,
+          callbackUrl: '/dashboard',
+          redirect: false,
+        });
+      }
+      router.push('/dashboard');
     } catch {
       setError('We could not reach the server. Check your connection and try again.');
     } finally {
@@ -187,52 +188,6 @@ export function RegisterForm({ socialProviders = [] }: { socialProviders?: Socia
     setSocialLoading(providerId);
     await signIn(providerId, { callbackUrl: '/dashboard' });
   };
-
-  // ---------------------------------------------------------------- success
-  if (registeredEmail) {
-    return (
-      <div className="space-y-5" role="status" aria-live="polite">
-        <div className="flex flex-col items-center gap-3 py-2 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <MailCheck className="h-7 w-7" aria-hidden="true" />
-          </span>
-          <h2 className="text-lg font-bold text-foreground">Check your inbox</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">
-            We sent a verification link to{' '}
-            <strong className="font-semibold text-foreground">{registeredEmail}</strong>
-            . Open it to activate your account, then sign in.
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
-          <p className="font-semibold text-foreground">Nothing arrived?</p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-4">
-            <li>Check your spam or promotions folder.</li>
-            <li>Confirm you used the same address you just signed up with.</li>
-            <li>Verification links expire, so request a fresh one if it is old.</li>
-          </ul>
-        </div>
-
-        <div className="space-y-2">
-          <Button
-            type="button"
-            className="w-full"
-            onClick={() => router.push('/resend-verification')}
-          >
-            Resend verification email
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            className="w-full"
-            onClick={() => router.push('/login')}
-          >
-            I have verified — sign in
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   // ------------------------------------------------------------------- form
   return (
