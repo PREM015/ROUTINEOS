@@ -40,7 +40,7 @@ import { STORE_OUTBOX, idbGetAll, idbPut, idbDelete } from '@/lib/offline/idb';
  * replaying a stale one tells the server nothing true. Only transitions that change
  * state are worth surviving a reload.
  */
-export type OutboxKind = 'pause' | 'resume' | 'end';
+export type OutboxKind = 'pause' | 'resume' | 'end' | 'distraction';
 
 export interface OutboxItem {
   /** IndexedDB key. Also the per-device ordering token. */
@@ -49,6 +49,8 @@ export interface OutboxItem {
   sessionId: string;
   kind: OutboxKind;
   endReason?: string;
+  /** Optional label for distraction items. */
+  label?: string;
   /** ISO timestamp, for diagnostics and for dropping items that are too old to matter. */
   queuedAt: string;
   /** How many times this has been attempted, so a permanently-failing item can be given up on. */

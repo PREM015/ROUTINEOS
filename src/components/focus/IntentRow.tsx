@@ -89,7 +89,7 @@ export function IntentRow({ className }: { className?: string }) {
           maxLength={200}
           placeholder="What are you working on?"
           onChange={(event) => adopt({ intent: event.target.value })}
-          className="w-full rounded-full border border-border bg-background/60 px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="w-full rounded-full border border-border/50 bg-background/40 px-5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground shadow-inner backdrop-blur-md transition-all duration-300 ease-out-expo focus-visible:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:bg-background/50 hover:shadow-md"
         />
       </label>
 
@@ -103,11 +103,11 @@ export function IntentRow({ className }: { className?: string }) {
               aria-pressed={minutes === preset}
               aria-label={`Set duration to ${preset} minutes`}
               className={cn(
-                'tap-target min-h-9 rounded-full border px-3 text-xs font-medium transition-colors',
+                'tap-target min-h-9 rounded-full border px-3.5 text-xs font-medium transition-all duration-300 ease-out-expo',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 minutes === preset
-                  ? 'border-transparent bg-accent-focus text-white'
-                  : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'border-transparent bg-accent-focus text-white shadow-[0_2px_10px_rgba(var(--accent-focus),0.3)] scale-105'
+                  : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105'
               )}
             >
               {preset}m
@@ -126,7 +126,7 @@ export function IntentRow({ className }: { className?: string }) {
             onKeyDown={(event) => {
               if (event.key === 'Enter') onCustom((event.target as HTMLInputElement).value);
             }}
-            className="tap-target h-9 w-20 rounded-full border border-border bg-background/60 px-3 text-xs tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="tap-target h-9 w-20 rounded-full border border-border/50 bg-background/40 px-3 text-xs tabular-nums shadow-inner backdrop-blur-sm transition-all focus-visible:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
           />
         </div>
       )}

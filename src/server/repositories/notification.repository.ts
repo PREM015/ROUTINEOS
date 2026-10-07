@@ -172,6 +172,40 @@ export class NotificationRepository extends BaseRepository {
   }
 
   /**
+   * Mark a check-in notification as read with response data.
+   * Updates checkInRespondedAt and checkInResponse fields.
+   */
+  async markReadWithCheckIn(
+    userId: UserId,
+    notificationId: string,
+    action: string,
+    actualStartTime?: string,
+    actualEndTime?: string,
+    replacementActivity?: string
+  ): Promise<NotificationLog> {
+    try {
+      const responseData = JSON.stringify({
+        action,
+        actualStartTime,
+        actualEndTime,
+        replacementActivity,
+        respondedAt: new Date().toISOString(),
+      });
+      return await this.prisma.notificationLog.update({
+        where: { id: notificationId, userId },
+        data: {
+          readAt: new Date(),
+          status: NotificationStatus.READ,
+          checkInRespondedAt: new Date(),
+          checkInResponse: responseData,
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'markReadWithCheckIn');
+    }
+  }
+
+  /**
    * Mark all unread notifications as read
    */
   async markAllRead(userId: UserId): Promise<number> {

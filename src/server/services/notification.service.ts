@@ -240,16 +240,38 @@ export class NotificationService {
    *
    * `DONE` and `SKIP` both close the notification out but mean different things
    * to the history feed - read versus dismissed - so they are not collapsed.
+   *
+   * Routine check-in actions:
+   * - `STARTED_ON_TIME` / `STARTED_LATE` / `STARTED_EARLY` - start check-in responses
+   * - `BUSY_WITH_OTHER` - user is doing something else instead
+   * - `SKIP_BLOCK` - user doesn't want to do the task
+   * - `FINISHED_ON_TIME` / `FINISHED_LATE` / `FINISHED_EARLY` - completion check-in responses
+   * - `NOT_COMPLETED` - user explicitly says they didn't complete
    */
   async applyAction(
     userId: UserId,
     notificationId: string,
-    action: 'DONE' | 'SNOOZE' | 'SKIP',
-    snoozeMinutes = 10,
+    action: 'DONE' | 'SNOOZE' | 'SKIP' | 'STARTED_ON_TIME' | 'STARTED_LATE' | 'STARTED_EARLY' | 'BUSY_WITH_OTHER' | 'SKIP_BLOCK' | 'FINISHED_ON_TIME' | 'FINISHED_LATE' | 'FINISHED_EARLY' | 'NOT_COMPLETED',
+    options?: { 
+      snoozeMinutes?: number; 
+      actualStartTime?: string; 
+      actualEndTime?: string;
+      replacementActivity?: string;
+    }
   ): Promise<NotificationLog | { snoozed: boolean; scheduledFor: Date }> {
     const existing = await this.notificationRepository.findById(userId, notificationId);
     if (!existing) {
       throw new Error('Notification not found');
+    }
+
+    // Handle routine check-in actions
+    const isStartCheckIn = action.startsWith('STARTED_');
+    const isCompletionCheckIn = action.startsWith('FINISHED_') || action === 'NOT_COMPLETED';
+    const isBusyWithOther = action === 'BUSY_WITH_OTHER';
+    const isSkipBlock = action === 'SKIP_BLOCK';
+
+    if (isStartCheckIn || isCompletionCheckIn || isBusyWithOther || isSkipBlock) {
+      return this.handleRoutineCheckIn(userId, existing, action, options);
     }
 
     if (action === 'DONE') {
@@ -267,15 +289,127 @@ export class NotificationService {
       });
     }
 
-    const scheduledFor = new Date(Date.now() + snoozeMinutes * 60 * 1000);
+    const scheduledFor = new Date(Date.now() + (options?.snoozeMinutes ?? 10) * 60 * 1000);
     const snoozed = await this.notificationRepository.snooze(userId, notificationId, scheduledFor);
     if (snoozed === 0) {
-      // `snooze` only touches `PENDING` rows, so this is a notification that has
-      // already been sent or closed. Reporting it is better than a silent no-op:
-      // the button would otherwise appear to work and change nothing.
       throw new Error('Notification is no longer pending and cannot be snoozed');
     }
     return { snoozed: true, scheduledFor };
+  }
+
+  /**
+   * Handle routine block check-in responses.
+   * Updates the notification and creates/updates the RoutineLog.
+   */
+  private async handleRoutineCheckIn(
+    userId: UserId,
+    notification: any,
+    action: string,
+    options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string }
+  ): Promise<NotificationLog> {
+    // Mark notification as read/responded
+    const updatedNotification = await this.notificationRepository.markReadWithCheckIn(
+      userId,
+      notification.id,
+      action,
+      options?.actualStartTime,
+      options?.actualEndTime,
+      options?.replacementActivity
+    );
+
+    // If this is a routine check-in notification, update the RoutineLog
+    if (notification.type === 'ROUTINE_START_CHECKIN' || notification.type === 'ROUTINE_COMPLETION_CHECKIN') {
+      const blockId = notification.routineBlockId;
+      const blockDate = notification.blockDate;
+      
+      if (blockId && blockDate) {
+        await this.updateRoutineLogFromCheckIn(userId, blockId, blockDate, action, options);
+      }
+    }
+
+    return updatedNotification;
+  }
+
+  /**
+   * Update RoutineLog based on check-in response.
+   */
+  private async updateRoutineLogFromCheckIn(
+    userId: UserId,
+    blockId: string,
+    blockDate: string,
+    action: string,
+    options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string }
+  ): Promise<void> {
+    const routineRepo = new (await import('@/server/repositories/routine.repository')).RoutineRepository();
+    
+    const existingLog = await routineRepo.findLog(blockId, toUserId(userId), blockDate);
+    
+    const isStartCheckIn = action.startsWith('STARTED_');
+    const isCompletionCheckIn = action.startsWith('FINISHED_') || action === 'NOT_COMPLETED';
+    const isBusyWithOther = action === 'BUSY_WITH_OTHER';
+    const isSkipBlock = action === 'SKIP_BLOCK';
+
+    // Determine the status and times from the action
+    let status: 'COMPLETED' | 'MISSED' | 'PARTIAL' | 'IN_PROGRESS' = 'IN_PROGRESS';
+    let actualStartTime: string | null = null;
+    let actualEndTime: string | null = null;
+    let completionSource: 'USER_CONFIRMED' | 'AUTO_ASSUMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION' | undefined;
+    let note: string | null = null;
+
+    if (isStartCheckIn) {
+      if (action === 'STARTED_ON_TIME') {
+        status = 'IN_PROGRESS';
+        actualStartTime = options?.actualStartTime ?? null;
+      } else if (action === 'STARTED_LATE' || action === 'STARTED_EARLY') {
+        status = 'IN_PROGRESS';
+        actualStartTime = options?.actualStartTime ?? null;
+      } else if (isBusyWithOther) {
+        status = 'IN_PROGRESS';
+        actualStartTime = options?.actualStartTime ?? null;
+        note = `Replaced with: ${options?.replacementActivity ?? 'Other activity'}`;
+      } else if (isSkipBlock) {
+        status = 'MISSED';
+        completionSource = 'USER_CONFIRMED';
+      }
+    } else if (isCompletionCheckIn) {
+      if (action === 'NOT_COMPLETED') {
+        status = 'MISSED';
+        completionSource = 'USER_CONFIRMED';
+      } else {
+        status = 'COMPLETED';
+        actualEndTime = options?.actualEndTime ?? null;
+        // If start wasn't confirmed earlier, use the start from options or scheduled time
+        if (!existingLog?.actualStartTime) {
+          actualStartTime = options?.actualStartTime ?? null;
+        }
+        completionSource = 'USER_CONFIRMED';
+      }
+    }
+
+    // Calculate duration if both times available
+    let durationMinutes: number | null = null;
+    if (actualStartTime && actualEndTime) {
+      const startParts = actualStartTime.split(':');
+      const endParts = actualEndTime.split(':');
+      const startH = Number(startParts[0]);
+      const startM = Number(startParts[1]);
+      const endH = Number(endParts[0]);
+      const endM = Number(endParts[1]);
+      if (!Number.isNaN(startH) && !Number.isNaN(startM) && !Number.isNaN(endH) && !Number.isNaN(endM)) {
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        durationMinutes = endMinutes >= startMinutes ? endMinutes - startMinutes : (24 * 60 - startMinutes) + endMinutes;
+      }
+    }
+
+    await routineRepo.upsertLog(toUserId(userId), blockId, blockDate, {
+      status,
+      actualStartTime,
+      actualEndTime,
+      durationMinutes,
+      note,
+      completionSource,
+    });
   }
 
   /**

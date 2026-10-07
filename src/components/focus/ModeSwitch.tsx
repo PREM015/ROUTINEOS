@@ -37,6 +37,26 @@ export const MODE_META: Record<FocusMode, ModeMeta> = {
 
 export const MODE_PANEL_ID = MODE_META.focus.panelId;
 
+/**
+ * Per-mode selected-state classes.
+ *
+ * Each mode has a domain accent. A plain white active-tab chip reads
+ * as neutral and does not communicate which mode is running. The accent
+ * colour makes the current mode legible at a glance without reading the
+ * label, which is especially useful when the tab row is the first thing
+ * you see on returning to the page mid-session.
+ */
+const MODE_ACTIVE_CLASSES: Record<FocusMode, string> = {
+  focus:
+    'bg-accent-focus/10 text-accent-focus ring-1 ring-accent-focus/30 shadow-[0_2px_10px_rgba(var(--accent-focus-rgb,225,29,72),0.12)] scale-105',
+  'short-break':
+    'bg-accent-habits/10 text-accent-habits ring-1 ring-accent-habits/30 shadow-[0_2px_8px_rgba(var(--accent-habits-rgb,5,150,105),0.10)] scale-105',
+  'long-break':
+    'bg-accent-habits/10 text-accent-habits ring-1 ring-accent-habits/30 shadow-[0_2px_8px_rgba(var(--accent-habits-rgb,5,150,105),0.10)] scale-105',
+  stopwatch:
+    'bg-background text-foreground shadow-[0_2px_10px_rgba(0,0,0,0.08)] ring-1 ring-border/50 scale-105',
+};
+
 export function ModeSwitch({ className }: { className?: string }) {
   const mode = useFocusStore((s) => s.mode);
   const status = useFocusStore((s) => s.status);
@@ -118,12 +138,12 @@ export function ModeSwitch({ className }: { className?: string }) {
             disabled={busy}
             onClick={() => choose(item)}
             className={cn(
-              'tap-target inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+              'tap-target inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all duration-300 ease-out-expo',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               'disabled:opacity-50',
               selected
-                ? 'bg-background text-foreground shadow-flat'
-                : 'text-muted-foreground hover:text-foreground'
+                ? MODE_ACTIVE_CLASSES[item]
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             )}
           >
             <Icon className="h-3.5 w-3.5" aria-hidden="true" />

@@ -135,7 +135,7 @@ export function Transport({ className }: { className?: string }) {
                 'inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 'disabled:pointer-events-none disabled:opacity-40',
-                variant === 'primary' && 'bg-primary text-primary-foreground hover:opacity-90',
+                variant === 'primary' && 'bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(var(--primary),0.3)] hover:shadow-[0_4px_28px_rgba(var(--primary),0.5)] hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 ease-out-expo',
                 variant === 'danger' &&
                   'bg-destructive/10 text-destructive hover:bg-destructive/20',
                 variant === 'ghost' && 'text-muted-foreground hover:bg-muted hover:text-foreground',

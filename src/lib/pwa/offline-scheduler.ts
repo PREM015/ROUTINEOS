@@ -241,9 +241,57 @@ export async function generateTomorrowNotificationsLocally(
           isLocal: true,
         });
       }
+
+      // Start Check-in (20 min after start)
+      const checkInStartAt = new Date(startScheduledAt.getTime() + 20 * 60 * 1000);
+      if (checkInStartAt > now && checkInStartAt < horizonEnd) {
+        records.push({
+          id: `local:routine-start-checkin:${block.id}:${tomorrowDate}`,
+          title: `Did you start ${block.title}?`,
+          body: `Your ${block.title} session started at ${startTime}. Did you begin?`,
+          url: `/today?block=${block.id}`,
+          scheduledTime: checkInStartAt.getTime(),
+          scheduledFor: checkInStartAt.toISOString(),
+          notificationId: null,
+          promptId: null,
+          tag: `routineos-routine-start-checkin-${block.id}-${tomorrowDate}`,
+          actions: [
+            { action: 'STARTED_ON_TIME', title: `Yes, at ${startTime}` },
+            { action: 'STARTED_LATE', title: 'Started later' },
+            { action: 'BUSY_WITH_OTHER', title: 'Busy with something else' },
+            { action: 'SKIP_BLOCK', title: "Don't want to do it" },
+          ],
+          type: 'ROUTINE_START_CHECKIN',
+          isLocal: true,
+        });
+      }
+
+      // Completion Check-in (5 min after end)
+      const checkInEndAt = new Date(endAt.getTime() + 5 * 60 * 1000);
+      if (checkInEndAt > now && checkInEndAt < horizonEnd) {
+        records.push({
+          id: `local:routine-completion-checkin:${block.id}:${tomorrowDate}`,
+          title: `${block.title} block ended`,
+          body: `Your ${block.title} session ended at ${endTime}. What time did you finish?`,
+          url: `/today?block=${block.id}`,
+          scheduledTime: checkInEndAt.getTime(),
+          scheduledFor: checkInEndAt.toISOString(),
+          notificationId: null,
+          promptId: null,
+          tag: `routineos-routine-completion-checkin-${block.id}-${tomorrowDate}`,
+          actions: [
+            { action: 'FINISHED_ON_TIME', title: `Finished at ${endTime}` },
+            { action: 'FINISHED_EARLY', title: 'Finished earlier' },
+            { action: 'FINISHED_LATE', title: 'Finished later' },
+            { action: 'NOT_COMPLETED', title: "Didn't complete" },
+          ],
+          type: 'ROUTINE_COMPLETION_CHECKIN',
+          isLocal: true,
+        });
+      }
     }
 
-    // Habit reminders (simplified - just daily reminder)
+    // Habit reminders
     if (userSettings?.dailyReminder && userSettings?.dailyReminderTime) {
       const [hours, minutes] = userSettings.dailyReminderTime.split(':').map(Number);
       const reminderAt = fromZonedTime(

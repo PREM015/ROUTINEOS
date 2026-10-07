@@ -125,6 +125,24 @@ function TimerDialImpl({ className }: TimerDialProps) {
    */
   const progressAlt = describeProgress(fraction, isStopwatch);
 
+  /*
+   * Mode identity dot: a small filled circle at the center of the ring whose colour
+   * names the current mode. Rose = Focus (the domain accent), Green = any break,
+   * Neutral = stopwatch or idle.
+   *
+   * Transitions smoothly between modes via `focus-mode-dot` in globals.css.
+   * No interval, no extra render — read from the store, re-rendered only when
+   * the mode changes.
+   */
+  const dotColor =
+    mode === 'focus'
+      ? 'var(--accent-focus)'
+      : mode === 'short-break' || mode === 'long-break'
+        ? 'var(--accent-habits)'
+        : 'var(--muted-foreground)';
+
+  const dotOpacity = status === 'idle' ? 0.35 : status === 'paused' ? 0.5 : 0.85;
+
   return (
     <div className={cn('flex flex-col items-center', className)}>
       {/* The text equivalent of the arc. Visually hidden, but present for anyone
@@ -165,6 +183,17 @@ function TimerDialImpl({ className }: TimerDialProps) {
             )}
             data-focus-dial-progress=""
             data-status={status}
+          />
+          {/* Mode identity dot — tiny filled circle at centre.
+              Colour = domain accent for the active mode; opacity dims when idle/paused.
+              `focus-mode-dot` in globals.css gives it a smooth colour transition. */}
+          <circle
+            cx={CENTER}
+            cy={CENTER}
+            r={6}
+            fill={dotColor}
+            opacity={dotOpacity}
+            className="focus-mode-dot"
           />
         </svg>
 

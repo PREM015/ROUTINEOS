@@ -65,7 +65,7 @@ const HEARTBEAT_MS = 60_000;
  */
 interface PendingTransition {
   sessionId: string;
-  kind: 'pause' | 'resume' | 'end';
+  kind: 'pause' | 'resume' | 'end' | 'distraction';
   endReason?: 'COMPLETED' | 'STOPPED' | 'SKIPPED' | 'MODE_SWITCHED';
   at: number;
   /**

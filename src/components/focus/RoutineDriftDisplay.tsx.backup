@@ -1,0 +1,239 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { Clock, AlertTriangle, CheckCircle2, Minus, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { apiRequest } from '@/lib/api-client';
+import { useFocusStore } from '@/store/focus.store';
+import { useUserTimezone } from '@/hooks/useUserTimezone';
+import { useNowMinutes } from '@/hooks/useNowMinutes';
+import type { ResolvedDailyRoutine, ResolvedRoutineBlock } from '@/types/routine';
+
+function parseHHmm(time: string): number | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(time);
+  if (!match) return null;
+  const h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+function formatBlockTime(time: string): string {
+  const minutes = parseHHmm(time);
+  if (minutes === null) return time;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  const suffix = h < 12 ? 'am' : 'pm';
+  const display12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return display12 + ':' + String(m).padStart(2, '0') + ' ' + suffix;
+}
+
+function formatDrift(minutes: number): string {
+  if (minutes === 0) return 'on time';
+  const abs = Math.abs(minutes);
+  if (abs < 60) return (minutes > 0 ? '+' : '-') + abs + 'm';
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  return m === 0 ? (minutes > 0 ? '+' : '-') + h + 'h' : (minutes > 0 ? '+' : '-') + h + 'h ' + m + 'm';
+}
+
+function getStartClassName(drift: number | null): string {
+  if (drift === null) return 'bg-muted/50';
+  if (drift > 0) return 'bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800';
+  if (drift < 0) return 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800';
+  return 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800';
+}
+
+function getEndClassName(endDrift: number | null): string {
+  if (endDrift === null) return 'bg-muted/50';
+  if (endDrift > 0) return 'bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800';
+  if (endDrift < 0) return 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800';
+  return 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800';
+}
+
+function getEndDriftClass(endDrift: number | null): string {
+  if (endDrift === null) return '';
+  if (endDrift > 0) return 'text-amber-600 dark:text-amber-400';
+  if (endDrift < 0) return 'text-emerald-600 dark:text-emerald-400';
+  return 'text-emerald-600 dark:text-emerald-400';
+}
+
+export function RoutineDriftDisplay({ className }: { className?: string }) {
+  const status = useFocusStore((s) => s.status);
+  const actualStartTime = useFocusStore((s) => s.actualStartTime);
+  const startCheckInState = useFocusStore((s) => s.startCheckInState);
+  const actualEndTime = useFocusStore((s) => s.actualEndTime);
+  const completionCheckInState = useFocusStore((s) => s.completionCheckInState);
+  const { timezone, today } = useUserTimezone();
+  const { minutes: nowMinutes } = useNowMinutes(timezone);
+
+  const [routine, setRoutine] = useState<ResolvedDailyRoutine | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const live = status === 'running' || status === 'paused';
+
+  useEffect(() => {
+    if (!today) return;
+    setLoading(true);
+    setError(false);
+
+    apiRequest<ResolvedDailyRoutine>('/api/routine/today', { query: { date: today } })
+      .then((data) => {
+        setRoutine(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
+  }, [today]);
+
+  const { current } = useMemo(() => {
+    if (!routine || nowMinutes === null) return { current: null };
+    const timed = routine.blocks
+      .map((b) => {
+        const start = parseHHmm(b.startTime);
+        const end = parseHHmm(b.endTime);
+        if (start === null || end === null) return null;
+        return { ...b, startMinutes: start, endMinutes: end };
+      })
+      .filter((b): b is (ResolvedRoutineBlock & { startMinutes: number; endMinutes: number }) => b !== null);
+    return {
+      current: timed.find((b) => nowMinutes !== null && nowMinutes >= b.startMinutes && nowMinutes < b.endMinutes) ?? null,
+    };
+  }, [routine, nowMinutes]);
+
+  const drift = useMemo(() => {
+    if (!current || actualStartTime === null) return null;
+    const scheduledStart = current.startMinutes;
+    const actualStart = parseHHmm(
+      new Date(actualStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+    );
+    if (actualStart === null) return null;
+    return actualStart - scheduledStart;
+  }, [current, actualStartTime]);
+
+  const endDrift = useMemo(() => {
+    if (!current || actualEndTime === null) return null;
+    const scheduledEnd = current.endMinutes;
+    const actualEnd = parseHHmm(
+      new Date(actualEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+    );
+    if (actualEnd === null) return null;
+    return actualEnd - scheduledEnd;
+  }, [current, actualEndTime]);
+
+  if (loading || error || !current) return null;
+
+  const hasStartDrift = drift !== null && drift !== 0;
+  const hasEndDrift = endDrift !== null && endDrift !== 0;
+  const hasCheckInState = startCheckInState || completionCheckInState;
+
+  if (!hasStartDrift && !hasEndDrift && !hasCheckInState) return null;
+
+  const startClassName = getStartClassName(drift);
+  const endClassName = getEndClassName(endDrift);
+  const endDriftClass = getEndDriftClass(endDrift);
+
+  return (
+    <section aria-labelledby="routine-drift-heading" className="w-full max-w-sm">
+      <h2 id="routine-drift-heading" className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Clock className="h-3.5 w-3.5 text-accent-focus" aria-hidden="true" />
+        Routine drift
+      </h2>
+
+      <div className="space-y-2">
+        {current && (
+          <div className="rounded-xl border border-border bg-card/40 px-3 py-2.5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground">
+                {current.title}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-focus/15 px-1.5 py-0.5 text-[0.6rem] font-semibold text-accent-focus">
+                <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                Live
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className={startClassName}>
+                <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                  <Clock className="h-3 w-3" aria-hidden="true" />
+                  Scheduled start
+                </div>
+                <div className="text-lg font-mono font-bold tabular-nums text-foreground">
+                  {formatBlockTime(current.startTime)}
+                </div>
+              </div>
+
+              <div className={startClassName}>
+                <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                  {drift !== null ? (
+                    <>
+                      {drift > 0 && <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-400" aria-hidden="true" />}
+                      {drift < 0 && <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />}
+                      {drift === 0 && <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />}
+                      <span>Actual start</span>
+                    </>
+                  ) : (
+                    <span>Actual start</span>
+                  )}
+                </div>
+                <div className="text-lg font-mono font-bold tabular-nums text-foreground">
+                  {actualStartTime ? new Date(actualStartTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '\u2014'}
+                </div>
+                {drift !== null && (
+                  <div className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    {drift > 0 && <Plus className="h-2.5 w-2.5 inline" aria-hidden="true" />}
+                    {drift < 0 && <Minus className="h-2.5 w-2.5 inline" aria-hidden="true" />}
+                    {formatDrift(drift)}
+                    {startCheckInState && (
+                      <span className="ml-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[0.55rem] font-medium bg-muted text-muted-foreground">
+                        {startCheckInState === 'confirmed' && 'Confirmed'}
+                        {startCheckInState === 'skipped' && 'Skipped'}
+                        {startCheckInState === 'pending' && 'Pending'}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {actualEndTime !== null && (
+                <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-border">
+                  <div className="rounded-lg p-3 text-center transition-colors bg-muted/50">
+                    <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                      <Clock className="h-3 w-3" aria-hidden="true" />
+                      Scheduled end
+                    </div>
+                    <div className="text-lg font-mono font-bold tabular-nums text-foreground">
+                      {formatBlockTime(current.endTime)}
+                    </div>
+                  </div>
+
+                  <div className={endClassName}>
+                    <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                      <Clock className="h-3 w-3" aria-hidden="true" />
+                      Actual end
+                    </div>
+                    <div className="text-lg font-mono font-bold tabular-nums text-foreground">
+                      {new Date(actualEndTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    {endDrift !== null && (
+                      <div className="mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                        {endDrift > 0 && <Plus className="h-2.5 w-2.5 inline" aria-hidden="true" />}
+                        {endDrift < 0 && <Minus className="h-2.5 w-2.5 inline" aria-hidden="true" />}
+                        {formatDrift(endDrift)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+  );
+}
+
+export default RoutineDriftDisplay;

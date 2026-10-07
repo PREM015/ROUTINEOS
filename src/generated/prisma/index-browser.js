@@ -382,6 +382,7 @@ exports.Prisma.RoutineLogScalarFieldEnum = {
   productivityRating: 'productivityRating',
   energyLevel: 'energyLevel',
   note: 'note',
+  completionSource: 'completionSource',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -1099,6 +1100,10 @@ exports.Prisma.NotificationLogScalarFieldEnum = {
   sentViaSMS: 'sentViaSMS',
   errorMessage: 'errorMessage',
   retryCount: 'retryCount',
+  checkInRespondedAt: 'checkInRespondedAt',
+  checkInResponse: 'checkInResponse',
+  routineBlockId: 'routineBlockId',
+  blockDate: 'blockDate',
   createdAt: 'createdAt'
 };
 
@@ -1339,6 +1344,13 @@ exports.RoutineLogStatus = exports.$Enums.RoutineLogStatus = {
   MISSED: 'MISSED',
   PARTIAL: 'PARTIAL',
   IN_PROGRESS: 'IN_PROGRESS'
+};
+
+exports.CompletionSource = exports.$Enums.CompletionSource = {
+  USER_CONFIRMED: 'USER_CONFIRMED',
+  AUTO_ASSUMED: 'AUTO_ASSUMED',
+  MANUAL_EDIT: 'MANUAL_EDIT',
+  CHECKIN_COMPLETION: 'CHECKIN_COMPLETION'
 };
 
 exports.HabitTier = exports.$Enums.HabitTier = {
@@ -1605,7 +1617,9 @@ exports.NotificationType = exports.$Enums.NotificationType = {
   HABIT_COMPLETION: 'HABIT_COMPLETION',
   MOTIVATIONAL: 'MOTIVATIONAL',
   PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
-  SYSTEM_UPDATE: 'SYSTEM_UPDATE'
+  SYSTEM_UPDATE: 'SYSTEM_UPDATE',
+  ROUTINE_START_CHECKIN: 'ROUTINE_START_CHECKIN',
+  ROUTINE_COMPLETION_CHECKIN: 'ROUTINE_COMPLETION_CHECKIN'
 };
 
 exports.NotificationStatus = exports.$Enums.NotificationStatus = {

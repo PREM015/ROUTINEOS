@@ -469,6 +469,16 @@ export const RoutineLogStatus: {
 export type RoutineLogStatus = (typeof RoutineLogStatus)[keyof typeof RoutineLogStatus]
 
 
+export const CompletionSource: {
+  USER_CONFIRMED: 'USER_CONFIRMED',
+  AUTO_ASSUMED: 'AUTO_ASSUMED',
+  MANUAL_EDIT: 'MANUAL_EDIT',
+  CHECKIN_COMPLETION: 'CHECKIN_COMPLETION'
+};
+
+export type CompletionSource = (typeof CompletionSource)[keyof typeof CompletionSource]
+
+
 export const HabitTier: {
   NON_NEGOTIABLE: 'NON_NEGOTIABLE',
   GROWTH: 'GROWTH',
@@ -712,7 +722,9 @@ export const NotificationType: {
   HABIT_COMPLETION: 'HABIT_COMPLETION',
   MOTIVATIONAL: 'MOTIVATIONAL',
   PRODUCTIVITY_INSIGHT: 'PRODUCTIVITY_INSIGHT',
-  SYSTEM_UPDATE: 'SYSTEM_UPDATE'
+  SYSTEM_UPDATE: 'SYSTEM_UPDATE',
+  ROUTINE_START_CHECKIN: 'ROUTINE_START_CHECKIN',
+  ROUTINE_COMPLETION_CHECKIN: 'ROUTINE_COMPLETION_CHECKIN'
 };
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
@@ -966,6 +978,10 @@ export const DayType: typeof $Enums.DayType
 export type RoutineLogStatus = $Enums.RoutineLogStatus
 
 export const RoutineLogStatus: typeof $Enums.RoutineLogStatus
+
+export type CompletionSource = $Enums.CompletionSource
+
+export const CompletionSource: typeof $Enums.CompletionSource
 
 export type HabitTier = $Enums.HabitTier
 
@@ -30674,6 +30690,7 @@ export namespace Prisma {
     productivityRating: number | null
     energyLevel: number | null
     note: string | null
+    completionSource: $Enums.CompletionSource | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -30691,6 +30708,7 @@ export namespace Prisma {
     productivityRating: number | null
     energyLevel: number | null
     note: string | null
+    completionSource: $Enums.CompletionSource | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -30708,6 +30726,7 @@ export namespace Prisma {
     productivityRating: number
     energyLevel: number
     note: number
+    completionSource: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -30741,6 +30760,7 @@ export namespace Prisma {
     productivityRating?: true
     energyLevel?: true
     note?: true
+    completionSource?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -30758,6 +30778,7 @@ export namespace Prisma {
     productivityRating?: true
     energyLevel?: true
     note?: true
+    completionSource?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -30775,6 +30796,7 @@ export namespace Prisma {
     productivityRating?: true
     energyLevel?: true
     note?: true
+    completionSource?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -30879,6 +30901,7 @@ export namespace Prisma {
     productivityRating: number | null
     energyLevel: number | null
     note: string | null
+    completionSource: $Enums.CompletionSource | null
     createdAt: Date
     updatedAt: Date
     _count: RoutineLogCountAggregateOutputType | null
@@ -30915,6 +30938,7 @@ export namespace Prisma {
     productivityRating?: boolean
     energyLevel?: boolean
     note?: boolean
+    completionSource?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
@@ -30934,6 +30958,7 @@ export namespace Prisma {
     productivityRating?: boolean
     energyLevel?: boolean
     note?: boolean
+    completionSource?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
@@ -30953,6 +30978,7 @@ export namespace Prisma {
     productivityRating?: boolean
     energyLevel?: boolean
     note?: boolean
+    completionSource?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
@@ -30972,11 +30998,12 @@ export namespace Prisma {
     productivityRating?: boolean
     energyLevel?: boolean
     note?: boolean
+    completionSource?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type RoutineLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "routineBlockId" | "userId" | "date" | "status" | "actualStartTime" | "actualEndTime" | "durationMinutes" | "focusRating" | "productivityRating" | "energyLevel" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["routineLog"]>
+  export type RoutineLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "routineBlockId" | "userId" | "date" | "status" | "actualStartTime" | "actualEndTime" | "durationMinutes" | "focusRating" | "productivityRating" | "energyLevel" | "note" | "completionSource" | "createdAt" | "updatedAt", ExtArgs["result"]["routineLog"]>
   export type RoutineLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -31009,6 +31036,10 @@ export namespace Prisma {
       productivityRating: number | null
       energyLevel: number | null
       note: string | null
+      /**
+       * How the completion was recorded
+       */
+      completionSource: $Enums.CompletionSource | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["routineLog"]>
@@ -31448,6 +31479,7 @@ export namespace Prisma {
     readonly productivityRating: FieldRef<"RoutineLog", 'Int'>
     readonly energyLevel: FieldRef<"RoutineLog", 'Int'>
     readonly note: FieldRef<"RoutineLog", 'String'>
+    readonly completionSource: FieldRef<"RoutineLog", 'CompletionSource'>
     readonly createdAt: FieldRef<"RoutineLog", 'DateTime'>
     readonly updatedAt: FieldRef<"RoutineLog", 'DateTime'>
   }
@@ -85267,6 +85299,10 @@ export namespace Prisma {
     sentViaSMS: boolean | null
     errorMessage: string | null
     retryCount: number | null
+    checkInRespondedAt: Date | null
+    checkInResponse: string | null
+    routineBlockId: string | null
+    blockDate: string | null
     createdAt: Date | null
   }
 
@@ -85289,6 +85325,10 @@ export namespace Prisma {
     sentViaSMS: boolean | null
     errorMessage: string | null
     retryCount: number | null
+    checkInRespondedAt: Date | null
+    checkInResponse: string | null
+    routineBlockId: string | null
+    blockDate: string | null
     createdAt: Date | null
   }
 
@@ -85311,6 +85351,10 @@ export namespace Prisma {
     sentViaSMS: number
     errorMessage: number
     retryCount: number
+    checkInRespondedAt: number
+    checkInResponse: number
+    routineBlockId: number
+    blockDate: number
     createdAt: number
     _all: number
   }
@@ -85343,6 +85387,10 @@ export namespace Prisma {
     sentViaSMS?: true
     errorMessage?: true
     retryCount?: true
+    checkInRespondedAt?: true
+    checkInResponse?: true
+    routineBlockId?: true
+    blockDate?: true
     createdAt?: true
   }
 
@@ -85365,6 +85413,10 @@ export namespace Prisma {
     sentViaSMS?: true
     errorMessage?: true
     retryCount?: true
+    checkInRespondedAt?: true
+    checkInResponse?: true
+    routineBlockId?: true
+    blockDate?: true
     createdAt?: true
   }
 
@@ -85387,6 +85439,10 @@ export namespace Prisma {
     sentViaSMS?: true
     errorMessage?: true
     retryCount?: true
+    checkInRespondedAt?: true
+    checkInResponse?: true
+    routineBlockId?: true
+    blockDate?: true
     createdAt?: true
     _all?: true
   }
@@ -85496,6 +85552,10 @@ export namespace Prisma {
     sentViaSMS: boolean
     errorMessage: string | null
     retryCount: number
+    checkInRespondedAt: Date | null
+    checkInResponse: string | null
+    routineBlockId: string | null
+    blockDate: string | null
     createdAt: Date
     _count: NotificationLogCountAggregateOutputType | null
     _avg: NotificationLogAvgAggregateOutputType | null
@@ -85537,6 +85597,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: boolean
     retryCount?: boolean
+    checkInRespondedAt?: boolean
+    checkInResponse?: boolean
+    routineBlockId?: boolean
+    blockDate?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["notificationLog"]>
@@ -85560,6 +85624,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: boolean
     retryCount?: boolean
+    checkInRespondedAt?: boolean
+    checkInResponse?: boolean
+    routineBlockId?: boolean
+    blockDate?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["notificationLog"]>
@@ -85583,6 +85651,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: boolean
     retryCount?: boolean
+    checkInRespondedAt?: boolean
+    checkInResponse?: boolean
+    routineBlockId?: boolean
+    blockDate?: boolean
     createdAt?: boolean
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["notificationLog"]>
@@ -85606,10 +85678,14 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: boolean
     retryCount?: boolean
+    checkInRespondedAt?: boolean
+    checkInResponse?: boolean
+    routineBlockId?: boolean
+    blockDate?: boolean
     createdAt?: boolean
   }
 
-  export type NotificationLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "type" | "relatedEntityId" | "title" | "body" | "actionUrl" | "actionData" | "scheduledFor" | "sentAt" | "readAt" | "dismissedAt" | "status" | "sentViaEmail" | "sentViaPush" | "sentViaSMS" | "errorMessage" | "retryCount" | "createdAt", ExtArgs["result"]["notificationLog"]>
+  export type NotificationLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "type" | "relatedEntityId" | "title" | "body" | "actionUrl" | "actionData" | "scheduledFor" | "sentAt" | "readAt" | "dismissedAt" | "status" | "sentViaEmail" | "sentViaPush" | "sentViaSMS" | "errorMessage" | "retryCount" | "checkInRespondedAt" | "checkInResponse" | "routineBlockId" | "blockDate" | "createdAt", ExtArgs["result"]["notificationLog"]>
   export type NotificationLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -85644,6 +85720,22 @@ export namespace Prisma {
       sentViaSMS: boolean
       errorMessage: string | null
       retryCount: number
+      /**
+       * For routine check-in notifications: tracks whether the user has responded
+       */
+      checkInRespondedAt: Date | null
+      /**
+       * For routine check-in notifications: stores the user's response data
+       */
+      checkInResponse: string | null
+      /**
+       * For routine check-in notifications: links to the routine block
+       */
+      routineBlockId: string | null
+      /**
+       * For routine check-in notifications: the scheduled block date (YYYY-MM-DD)
+       */
+      blockDate: string | null
       createdAt: Date
     }, ExtArgs["result"]["notificationLog"]>
     composites: {}
@@ -86087,6 +86179,10 @@ export namespace Prisma {
     readonly sentViaSMS: FieldRef<"NotificationLog", 'Boolean'>
     readonly errorMessage: FieldRef<"NotificationLog", 'String'>
     readonly retryCount: FieldRef<"NotificationLog", 'Int'>
+    readonly checkInRespondedAt: FieldRef<"NotificationLog", 'DateTime'>
+    readonly checkInResponse: FieldRef<"NotificationLog", 'String'>
+    readonly routineBlockId: FieldRef<"NotificationLog", 'String'>
+    readonly blockDate: FieldRef<"NotificationLog", 'String'>
     readonly createdAt: FieldRef<"NotificationLog", 'DateTime'>
   }
     
@@ -101965,6 +102061,7 @@ export namespace Prisma {
     productivityRating: 'productivityRating',
     energyLevel: 'energyLevel',
     note: 'note',
+    completionSource: 'completionSource',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -102814,6 +102911,10 @@ export namespace Prisma {
     sentViaSMS: 'sentViaSMS',
     errorMessage: 'errorMessage',
     retryCount: 'retryCount',
+    checkInRespondedAt: 'checkInRespondedAt',
+    checkInResponse: 'checkInResponse',
+    routineBlockId: 'routineBlockId',
+    blockDate: 'blockDate',
     createdAt: 'createdAt'
   };
 
@@ -103214,6 +103315,20 @@ export namespace Prisma {
    * Reference to a field of type 'RoutineLogStatus[]'
    */
   export type ListEnumRoutineLogStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RoutineLogStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'CompletionSource'
+   */
+  export type EnumCompletionSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CompletionSource'>
+    
+
+
+  /**
+   * Reference to a field of type 'CompletionSource[]'
+   */
+  export type ListEnumCompletionSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CompletionSource[]'>
     
 
 
@@ -105460,6 +105575,7 @@ export namespace Prisma {
     productivityRating?: IntNullableFilter<"RoutineLog"> | number | null
     energyLevel?: IntNullableFilter<"RoutineLog"> | number | null
     note?: StringNullableFilter<"RoutineLog"> | string | null
+    completionSource?: EnumCompletionSourceNullableFilter<"RoutineLog"> | $Enums.CompletionSource | null
     createdAt?: DateTimeFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineLog"> | Date | string
     routineBlock?: XOR<RoutineBlockScalarRelationFilter, RoutineBlockWhereInput>
@@ -105479,6 +105595,7 @@ export namespace Prisma {
     productivityRating?: SortOrderInput | SortOrder
     energyLevel?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
+    completionSource?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     routineBlock?: RoutineBlockOrderByWithRelationInput
@@ -105502,6 +105619,7 @@ export namespace Prisma {
     productivityRating?: IntNullableFilter<"RoutineLog"> | number | null
     energyLevel?: IntNullableFilter<"RoutineLog"> | number | null
     note?: StringNullableFilter<"RoutineLog"> | string | null
+    completionSource?: EnumCompletionSourceNullableFilter<"RoutineLog"> | $Enums.CompletionSource | null
     createdAt?: DateTimeFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineLog"> | Date | string
     routineBlock?: XOR<RoutineBlockScalarRelationFilter, RoutineBlockWhereInput>
@@ -105521,6 +105639,7 @@ export namespace Prisma {
     productivityRating?: SortOrderInput | SortOrder
     energyLevel?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
+    completionSource?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: RoutineLogCountOrderByAggregateInput
@@ -105546,6 +105665,7 @@ export namespace Prisma {
     productivityRating?: IntNullableWithAggregatesFilter<"RoutineLog"> | number | null
     energyLevel?: IntNullableWithAggregatesFilter<"RoutineLog"> | number | null
     note?: StringNullableWithAggregatesFilter<"RoutineLog"> | string | null
+    completionSource?: EnumCompletionSourceNullableWithAggregatesFilter<"RoutineLog"> | $Enums.CompletionSource | null
     createdAt?: DateTimeWithAggregatesFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"RoutineLog"> | Date | string
   }
@@ -109945,6 +110065,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFilter<"NotificationLog"> | boolean
     errorMessage?: StringNullableFilter<"NotificationLog"> | string | null
     retryCount?: IntFilter<"NotificationLog"> | number
+    checkInRespondedAt?: DateTimeNullableFilter<"NotificationLog"> | Date | string | null
+    checkInResponse?: StringNullableFilter<"NotificationLog"> | string | null
+    routineBlockId?: StringNullableFilter<"NotificationLog"> | string | null
+    blockDate?: StringNullableFilter<"NotificationLog"> | string | null
     createdAt?: DateTimeFilter<"NotificationLog"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }
@@ -109968,6 +110092,10 @@ export namespace Prisma {
     sentViaSMS?: SortOrder
     errorMessage?: SortOrderInput | SortOrder
     retryCount?: SortOrder
+    checkInRespondedAt?: SortOrderInput | SortOrder
+    checkInResponse?: SortOrderInput | SortOrder
+    routineBlockId?: SortOrderInput | SortOrder
+    blockDate?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     user?: UserOrderByWithRelationInput
   }
@@ -109994,6 +110122,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFilter<"NotificationLog"> | boolean
     errorMessage?: StringNullableFilter<"NotificationLog"> | string | null
     retryCount?: IntFilter<"NotificationLog"> | number
+    checkInRespondedAt?: DateTimeNullableFilter<"NotificationLog"> | Date | string | null
+    checkInResponse?: StringNullableFilter<"NotificationLog"> | string | null
+    routineBlockId?: StringNullableFilter<"NotificationLog"> | string | null
+    blockDate?: StringNullableFilter<"NotificationLog"> | string | null
     createdAt?: DateTimeFilter<"NotificationLog"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
   }, "id">
@@ -110017,6 +110149,10 @@ export namespace Prisma {
     sentViaSMS?: SortOrder
     errorMessage?: SortOrderInput | SortOrder
     retryCount?: SortOrder
+    checkInRespondedAt?: SortOrderInput | SortOrder
+    checkInResponse?: SortOrderInput | SortOrder
+    routineBlockId?: SortOrderInput | SortOrder
+    blockDate?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: NotificationLogCountOrderByAggregateInput
     _avg?: NotificationLogAvgOrderByAggregateInput
@@ -110047,6 +110183,10 @@ export namespace Prisma {
     sentViaSMS?: BoolWithAggregatesFilter<"NotificationLog"> | boolean
     errorMessage?: StringNullableWithAggregatesFilter<"NotificationLog"> | string | null
     retryCount?: IntWithAggregatesFilter<"NotificationLog"> | number
+    checkInRespondedAt?: DateTimeNullableWithAggregatesFilter<"NotificationLog"> | Date | string | null
+    checkInResponse?: StringNullableWithAggregatesFilter<"NotificationLog"> | string | null
+    routineBlockId?: StringNullableWithAggregatesFilter<"NotificationLog"> | string | null
+    blockDate?: StringNullableWithAggregatesFilter<"NotificationLog"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"NotificationLog"> | Date | string
   }
 
@@ -113229,6 +113369,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
     routineBlock: RoutineBlockCreateNestedOneWithoutLogsInput
@@ -113248,6 +113389,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -113263,6 +113405,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     routineBlock?: RoutineBlockUpdateOneRequiredWithoutLogsNestedInput
@@ -113282,6 +113425,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -113299,6 +113443,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -113314,6 +113459,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -113331,6 +113477,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -118259,6 +118406,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: string | null
     retryCount?: number
+    checkInRespondedAt?: Date | string | null
+    checkInResponse?: string | null
+    routineBlockId?: string | null
+    blockDate?: string | null
     createdAt?: Date | string
     user: UserCreateNestedOneWithoutNotificationLogsInput
   }
@@ -118282,6 +118433,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: string | null
     retryCount?: number
+    checkInRespondedAt?: Date | string | null
+    checkInResponse?: string | null
+    routineBlockId?: string | null
+    blockDate?: string | null
     createdAt?: Date | string
   }
 
@@ -118303,6 +118458,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutNotificationLogsNestedInput
   }
@@ -118326,6 +118485,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -118348,6 +118511,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: string | null
     retryCount?: number
+    checkInRespondedAt?: Date | string | null
+    checkInResponse?: string | null
+    routineBlockId?: string | null
+    blockDate?: string | null
     createdAt?: Date | string
   }
 
@@ -118369,6 +118536,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -118391,6 +118562,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -121534,6 +121709,13 @@ export namespace Prisma {
     not?: NestedEnumRoutineLogStatusFilter<$PrismaModel> | $Enums.RoutineLogStatus
   }
 
+  export type EnumCompletionSourceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.CompletionSource | EnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCompletionSourceNullableFilter<$PrismaModel> | $Enums.CompletionSource | null
+  }
+
   export type RoutineBlockScalarRelationFilter = {
     is?: RoutineBlockWhereInput
     isNot?: RoutineBlockWhereInput
@@ -121558,6 +121740,7 @@ export namespace Prisma {
     productivityRating?: SortOrder
     energyLevel?: SortOrder
     note?: SortOrder
+    completionSource?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -121582,6 +121765,7 @@ export namespace Prisma {
     productivityRating?: SortOrder
     energyLevel?: SortOrder
     note?: SortOrder
+    completionSource?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -121599,6 +121783,7 @@ export namespace Prisma {
     productivityRating?: SortOrder
     energyLevel?: SortOrder
     note?: SortOrder
+    completionSource?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -121618,6 +121803,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRoutineLogStatusFilter<$PrismaModel>
     _max?: NestedEnumRoutineLogStatusFilter<$PrismaModel>
+  }
+
+  export type EnumCompletionSourceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CompletionSource | EnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCompletionSourceNullableWithAggregatesFilter<$PrismaModel> | $Enums.CompletionSource | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumCompletionSourceNullableFilter<$PrismaModel>
+    _max?: NestedEnumCompletionSourceNullableFilter<$PrismaModel>
   }
 
   export type EnumHabitTierFilter<$PrismaModel = never> = {
@@ -124854,6 +125049,10 @@ export namespace Prisma {
     sentViaSMS?: SortOrder
     errorMessage?: SortOrder
     retryCount?: SortOrder
+    checkInRespondedAt?: SortOrder
+    checkInResponse?: SortOrder
+    routineBlockId?: SortOrder
+    blockDate?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -124880,6 +125079,10 @@ export namespace Prisma {
     sentViaSMS?: SortOrder
     errorMessage?: SortOrder
     retryCount?: SortOrder
+    checkInRespondedAt?: SortOrder
+    checkInResponse?: SortOrder
+    routineBlockId?: SortOrder
+    blockDate?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -124902,6 +125105,10 @@ export namespace Prisma {
     sentViaSMS?: SortOrder
     errorMessage?: SortOrder
     retryCount?: SortOrder
+    checkInRespondedAt?: SortOrder
+    checkInResponse?: SortOrder
+    routineBlockId?: SortOrder
+    blockDate?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -129315,6 +129522,10 @@ export namespace Prisma {
     set?: $Enums.RoutineLogStatus
   }
 
+  export type NullableEnumCompletionSourceFieldUpdateOperationsInput = {
+    set?: $Enums.CompletionSource | null
+  }
+
   export type RoutineBlockUpdateOneRequiredWithoutLogsNestedInput = {
     create?: XOR<RoutineBlockCreateWithoutLogsInput, RoutineBlockUncheckedCreateWithoutLogsInput>
     connectOrCreate?: RoutineBlockCreateOrConnectWithoutLogsInput
@@ -132426,6 +132637,13 @@ export namespace Prisma {
     not?: NestedEnumRoutineLogStatusFilter<$PrismaModel> | $Enums.RoutineLogStatus
   }
 
+  export type NestedEnumCompletionSourceNullableFilter<$PrismaModel = never> = {
+    equals?: $Enums.CompletionSource | EnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCompletionSourceNullableFilter<$PrismaModel> | $Enums.CompletionSource | null
+  }
+
   export type NestedEnumRoutineLogStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.RoutineLogStatus | EnumRoutineLogStatusFieldRefInput<$PrismaModel>
     in?: $Enums.RoutineLogStatus[] | ListEnumRoutineLogStatusFieldRefInput<$PrismaModel>
@@ -132434,6 +132652,16 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumRoutineLogStatusFilter<$PrismaModel>
     _max?: NestedEnumRoutineLogStatusFilter<$PrismaModel>
+  }
+
+  export type NestedEnumCompletionSourceNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.CompletionSource | EnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    in?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    notIn?: $Enums.CompletionSource[] | ListEnumCompletionSourceFieldRefInput<$PrismaModel> | null
+    not?: NestedEnumCompletionSourceNullableWithAggregatesFilter<$PrismaModel> | $Enums.CompletionSource | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedEnumCompletionSourceNullableFilter<$PrismaModel>
+    _max?: NestedEnumCompletionSourceNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumHabitTierFilter<$PrismaModel = never> = {
@@ -134637,6 +134865,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: string | null
     retryCount?: number
+    checkInRespondedAt?: Date | string | null
+    checkInResponse?: string | null
+    routineBlockId?: string | null
+    blockDate?: string | null
     createdAt?: Date | string
   }
 
@@ -134658,6 +134890,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: string | null
     retryCount?: number
+    checkInRespondedAt?: Date | string | null
+    checkInResponse?: string | null
+    routineBlockId?: string | null
+    blockDate?: string | null
     createdAt?: Date | string
   }
 
@@ -135000,6 +135236,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
     routineBlock: RoutineBlockCreateNestedOneWithoutLogsInput
@@ -135017,6 +135254,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -137131,6 +137369,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFilter<"NotificationLog"> | boolean
     errorMessage?: StringNullableFilter<"NotificationLog"> | string | null
     retryCount?: IntFilter<"NotificationLog"> | number
+    checkInRespondedAt?: DateTimeNullableFilter<"NotificationLog"> | Date | string | null
+    checkInResponse?: StringNullableFilter<"NotificationLog"> | string | null
+    routineBlockId?: StringNullableFilter<"NotificationLog"> | string | null
+    blockDate?: StringNullableFilter<"NotificationLog"> | string | null
     createdAt?: DateTimeFilter<"NotificationLog"> | Date | string
   }
 
@@ -137440,6 +137682,7 @@ export namespace Prisma {
     productivityRating?: IntNullableFilter<"RoutineLog"> | number | null
     energyLevel?: IntNullableFilter<"RoutineLog"> | number | null
     note?: StringNullableFilter<"RoutineLog"> | string | null
+    completionSource?: EnumCompletionSourceNullableFilter<"RoutineLog"> | $Enums.CompletionSource | null
     createdAt?: DateTimeFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineLog"> | Date | string
   }
@@ -143527,6 +143770,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineLogsInput
@@ -143544,6 +143788,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -171156,6 +171401,10 @@ export namespace Prisma {
     sentViaSMS?: boolean
     errorMessage?: string | null
     retryCount?: number
+    checkInRespondedAt?: Date | string | null
+    checkInResponse?: string | null
+    routineBlockId?: string | null
+    blockDate?: string | null
     createdAt?: Date | string
   }
 
@@ -171285,6 +171534,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -173209,6 +173459,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -173230,6 +173484,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -173251,6 +173509,10 @@ export namespace Prisma {
     sentViaSMS?: BoolFieldUpdateOperationsInput | boolean
     errorMessage?: NullableStringFieldUpdateOperationsInput | string | null
     retryCount?: IntFieldUpdateOperationsInput | number
+    checkInRespondedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    checkInResponse?: NullableStringFieldUpdateOperationsInput | string | null
+    routineBlockId?: NullableStringFieldUpdateOperationsInput | string | null
+    blockDate?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -173617,6 +173879,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     routineBlock?: RoutineBlockUpdateOneRequiredWithoutLogsNestedInput
@@ -173634,6 +173897,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -173650,6 +173914,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -174998,6 +175263,7 @@ export namespace Prisma {
     productivityRating?: number | null
     energyLevel?: number | null
     note?: string | null
+    completionSource?: $Enums.CompletionSource | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -175137,6 +175403,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineLogsNestedInput
@@ -175154,6 +175421,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -175170,6 +175438,7 @@ export namespace Prisma {
     productivityRating?: NullableIntFieldUpdateOperationsInput | number | null
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
+    completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

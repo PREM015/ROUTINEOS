@@ -661,6 +661,88 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           },
         });
       }
+
+      // ================================================================
+      // 4. START CHECK-IN NOTIFICATION (20 minutes after block start)
+      // ================================================================
+      // This fires 20 minutes after the scheduled start time to check if user started
+      const checkInStartTime = new Date(scheduledStartTime.getTime() + 20 * 60 * 1000);
+      const duplicateStartCheckIn = await existsNotificationForOccurrence(
+        userId,
+        block.id,
+        'ROUTINE_START_CHECKIN' as NotificationType,
+        checkInStartTime
+      );
+      if (!duplicateStartCheckIn && checkInStartTime > now) {
+        notifications.push({
+          userId,
+          type: 'ROUTINE_START_CHECKIN' as NotificationType,
+          title: `Did you start ${block.title}?`,
+          body: `Your ${block.title} session started at ${block.startTime}. Did you begin?`,
+          actionUrl: `/today?block=${block.id}`,
+          relatedEntityId: block.id,
+          routineBlockId: block.id,
+          blockDate: getTodayString(timezone),
+          scheduledFor: checkInStartTime,
+          actions: [
+            { action: 'STARTED_ON_TIME', title: `Yes, at ${block.startTime}` },
+            { action: 'STARTED_LATE', title: 'Started later' },
+            { action: 'BUSY_WITH_OTHER', title: 'Busy with something else' },
+            { action: 'SKIP_BLOCK', title: "Don't want to do it" },
+          ],
+          data: {
+            blockId: block.id,
+            routineTitle: block.title,
+            startTime: block.startTime,
+            endTime: block.endTime,
+            dayType: block.template?.name ?? null,
+            category: block.category ?? null,
+            notificationPhase: 'start-checkin',
+            scheduledStartTime: scheduledStartTime.toISOString(),
+          },
+        });
+      }
+
+      // ================================================================
+      // 5. COMPLETION CHECK-IN NOTIFICATION (5 minutes after block end)
+      // ================================================================
+      // This fires 5 minutes after the scheduled end time to check completion
+      const checkInEndTime = new Date(endOccurrence.getTime() + 5 * 60 * 1000);
+      const duplicateEndCheckIn = await existsNotificationForOccurrence(
+        userId,
+        block.id,
+        'ROUTINE_COMPLETION_CHECKIN' as NotificationType,
+        checkInEndTime
+      );
+      if (!duplicateEndCheckIn && checkInEndTime > now) {
+        notifications.push({
+          userId,
+          type: 'ROUTINE_COMPLETION_CHECKIN' as NotificationType,
+          title: `${block.title} block ended`,
+          body: `Your ${block.title} session ended at ${block.endTime}. What time did you finish?`,
+          actionUrl: `/today?block=${block.id}`,
+          relatedEntityId: block.id,
+          routineBlockId: block.id,
+          blockDate: getTodayString(timezone),
+          scheduledFor: checkInEndTime,
+          actions: [
+            { action: 'FINISHED_ON_TIME', title: `Finished at ${block.endTime}` },
+            { action: 'FINISHED_EARLY', title: 'Finished earlier' },
+            { action: 'FINISHED_LATE', title: 'Finished later' },
+            { action: 'NOT_COMPLETED', title: "Didn't complete" },
+          ],
+          data: {
+            blockId: block.id,
+            routineTitle: block.title,
+            startTime: block.startTime,
+            endTime: block.endTime,
+            dayType: block.template?.name ?? null,
+            category: block.category ?? null,
+            notificationPhase: 'completion-checkin',
+            scheduledEndTime: endOccurrence.toISOString(),
+          },
+        });
+      }
     }
 
     // Bulk create notifications

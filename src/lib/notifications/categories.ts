@@ -175,6 +175,8 @@ const CATEGORY_OF: Record<NotificationType, NotificationCategory> = {
   ROUTINE_PRE_START: 'routine',
   ROUTINE_COMPLETION: 'routine',
   ROUTINE_END_REMINDER: 'routine',
+  ROUTINE_START_CHECKIN: 'routine',
+  ROUTINE_COMPLETION_CHECKIN: 'routine',
 
   // Enhanced habit notifications
   HABIT_PRE_START: 'habits',

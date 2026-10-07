@@ -634,6 +634,7 @@ async upsertExceptions(
       focusRating?: number | null;
       productivityRating?: number | null;
       energyLevel?: number | null;
+      completionSource?: 'USER_CONFIRMED' | 'AUTO_ASSUMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION';
     }
   ): Promise<RoutineLog> {
     try {

@@ -1989,6 +1989,69 @@ body {
   }
 }
 
+/*
+   ── /focus ambient system ──────────────────────────────────────────────────
+   Three layered effects that activate when a focus session is live. All three
+   are opt-in via data attributes and respect both `prefers-reduced-motion` and
+   the in-app `animationsEnabled` setting via `.reduce-motion`.
+
+   1. `focus-panel-running` — the timer panel gains a slow breathing glow ring
+      derived from `--accent-focus` (rose) so the panel feels alive without
+      moving anything the user is reading.
+
+   2. `focus-bg-bloom` — the page gradient mesh adds an extra rose bloom that
+      slowly expands and contracts. Applied as an `::after` on the mesh overlay
+      so it composites on top of the existing static gradient without repainting.
+
+   The cycle is 4s: long enough to feel like a heartbeat, short enough to notice.
+   Amplitude is minimal: a box-shadow `0 0 40px` at 18% opacity is barely visible
+   at room brightness but removes any sense of "dead" from the panel.
+*/
+
+@keyframes focus-breathe {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent-focus) 14%, transparent),
+      0 8px 24px -12px rgb(0 0 0 / 0.16);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent-focus) 28%, transparent),
+      0 0 48px -8px color-mix(in srgb, var(--accent-focus) 22%, transparent),
+      0 8px 24px -12px rgb(0 0 0 / 0.16);
+  }
+}
+
+/*
+  Applied to the main timer panel when a focus session is running.
+  Data attribute `data-live="true"` is toggled by the page component.
+  Pure CSS — no JS interval, no React re-render per tick.
+*/
+[data-live='true'].focus-panel-live {
+  animation: focus-breathe 4s ease-in-out infinite;
+}
+
+/* Paused: static dim ring, no breathing. */
+[data-live='paused'].focus-panel-live {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-focus) 16%, transparent),
+    0 8px 24px -12px rgb(0 0 0 / 0.16);
+}
+
+/* The mode indicator dot inside the timer dial. */
+.focus-mode-dot {
+  transition: background-color 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-live='true'].focus-panel-live {
+    animation: none;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent-focus) 22%, transparent),
+      0 8px 24px -12px rgb(0 0 0 / 0.16);
+  }
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -427,6 +427,8 @@ model RoutineLog {
   productivityRating Int?
   energyLevel        Int?
   note               String?
+  /// How the completion was recorded
+  completionSource   CompletionSource?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   routineBlock       RoutineBlock     @relation(fields: [routineBlockId], references: [id], onDelete: Cascade)
@@ -1501,30 +1503,39 @@ model Attachment {
 }
 
 model NotificationLog {
-  id              String             @id @default(cuid())
-  userId          String
-  type            NotificationType
-  relatedEntityId String?
-  title           String
-  body            String?
-  actionUrl       String?
-  actionData      String?
-  scheduledFor    DateTime
-  sentAt          DateTime?
-  readAt          DateTime?
-  dismissedAt     DateTime?
-  status          NotificationStatus @default(PENDING)
-  sentViaEmail    Boolean            @default(false)
-  sentViaPush     Boolean            @default(false)
-  sentViaSMS      Boolean            @default(false)
-  errorMessage    String?
-  retryCount      Int                @default(0)
-  createdAt       DateTime           @default(now())
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String             @id @default(cuid())
+  userId              String
+  type                NotificationType
+  relatedEntityId     String?
+  title               String
+  body                String?
+  actionUrl           String?
+  actionData          String?
+  scheduledFor        DateTime
+  sentAt              DateTime?
+  readAt              DateTime?
+  dismissedAt         DateTime?
+  status              NotificationStatus @default(PENDING)
+  sentViaEmail        Boolean            @default(false)
+  sentViaPush         Boolean            @default(false)
+  sentViaSMS          Boolean            @default(false)
+  errorMessage        String?
+  retryCount          Int                @default(0)
+  /// For routine check-in notifications: tracks whether the user has responded
+  checkInRespondedAt  DateTime?
+  /// For routine check-in notifications: stores the user's response data
+  checkInResponse     String?
+  /// For routine check-in notifications: links to the routine block
+  routineBlockId      String?
+  /// For routine check-in notifications: the scheduled block date (YYYY-MM-DD)
+  blockDate           String?
+  createdAt           DateTime           @default(now())
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status, scheduledFor])
   @@index([type, status])
   @@index([userId, createdAt])
+  @@index([routineBlockId, blockDate])
 }
 
 model PushSubscription {
@@ -1832,6 +1843,13 @@ enum RoutineLogStatus {
   IN_PROGRESS
 }
 
+enum CompletionSource {
+  USER_CONFIRMED
+  AUTO_ASSUMED
+  MANUAL_EDIT
+  CHECKIN_COMPLETION
+}
+
 enum HabitTier {
   NON_NEGOTIABLE
   GROWTH
@@ -2031,6 +2049,8 @@ enum NotificationType {
   MOTIVATIONAL
   PRODUCTIVITY_INSIGHT
   SYSTEM_UPDATE
+  ROUTINE_START_CHECKIN
+  ROUTINE_COMPLETION_CHECKIN
 }
 
 enum NotificationStatus {

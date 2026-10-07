@@ -11,7 +11,23 @@ import { toUserId } from '@/types/ids';
 
 const bodySchema = z.object({
   notificationId: z.string().min(1),
-  action: z.enum(['DONE', 'SNOOZE', 'SKIP']),
+  action: z.enum([
+    'DONE', 
+    'SNOOZE', 
+    'SKIP',
+    'STARTED_ON_TIME',
+    'STARTED_LATE',
+    'STARTED_EARLY',
+    'BUSY_WITH_OTHER',
+    'SKIP_BLOCK',
+    'FINISHED_ON_TIME',
+    'FINISHED_LATE',
+    'FINISHED_EARLY',
+    'NOT_COMPLETED'
+  ]),
+  actualStartTime: z.string().optional(),
+  actualEndTime: z.string().optional(),
+  replacementActivity: z.string().optional(),
 });
 
 /** How long "Snooze" postpones a routine reminder. */
@@ -53,7 +69,12 @@ export async function POST(request: NextRequest) {
       toUserId(userId),
       parsed.data.notificationId,
       parsed.data.action,
-      SNOOZE_MINUTES
+      {
+        snoozeMinutes: SNOOZE_MINUTES,
+        actualStartTime: parsed.data.actualStartTime,
+        actualEndTime: parsed.data.actualEndTime,
+        replacementActivity: parsed.data.replacementActivity,
+      }
     );
 
     return NextResponse.json({ success: true, data });

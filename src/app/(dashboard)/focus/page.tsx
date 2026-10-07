@@ -9,12 +9,16 @@ import { TimerDial } from '@/components/focus/TimerDial';
 import { ModeSwitch, MODE_PANEL_ID } from '@/components/focus/ModeSwitch';
 import { IntentRow } from '@/components/focus/IntentRow';
 import { ContextRail } from '@/components/focus/ContextRail';
+import { RoutineContextCard } from '@/components/focus/RoutineContextCard';
 import { Transport } from '@/components/focus/Transport';
-import { DaySummary } from '@/components/focus/DaySummary';
 import { ReflectionStrip } from '@/components/focus/ReflectionStrip';
 import { ShortcutsDialog } from '@/components/focus/ShortcutsDialog';
 import { useFocusShortcuts } from '@/components/focus/useFocusShortcuts';
-import { cn } from '@/lib/utils';
+import { DistractionCapture, FocusLockMode } from '@/components/focus/distraction-capture';
+import { FocusTodaySummary } from '@/components/focus/FocusTodaySummary';
+import { NextActionSuggestion } from '@/components/focus/NextActionSuggestion';
+import { RoutineDriftDisplay } from '@/components/focus/RoutineDriftDisplay';
+
 import { getFocusRuntime, useFocusStore, isLive } from '@/store/focus.store';
 import type { FocusMode } from '@/lib/focus/type-backfill';
 
@@ -102,111 +106,136 @@ export default function FocusPage() {
   });
 
   return (
-    <div
-      className={cn(
-        'relative mx-auto w-full px-4 py-8 transition-[max-width] duration-300 sm:py-12',
-        zen ? 'max-w-2xl' : 'max-w-2xl'
-      )}
-    >
+    <FocusLockMode>
       <div
-        className="gradient-mesh-animated pointer-events-none absolute inset-0 -z-10 opacity-40"
-        aria-hidden="true"
-      />
-
-      {/*
-        Zen mode drops the header and the intent row, leaving the dial and its
-        controls. It is a visibility reduction rather than a fullscreen takeover on
-        purpose: `requestFullscreen` needs a gesture, blocks on some mobile
-        browsers, and exits unexpectedly on tab switch. Reducing what is on screen
-        achieves the same thing without a permission prompt or a trap.
-      */}
-      {!zen && (
-        <header className="mb-6 flex items-center justify-between gap-3">
-          <h1 className="font-display text-xl font-semibold tracking-tight text-foreground">
-            Focus
-          </h1>
-          <div className="flex items-center gap-1">
-            <IconAction
-              label="Session history and stats"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <History className="h-4 w-4" aria-hidden="true" />
-            </IconAction>
-            <IconAction
-              label={zen ? 'Exit zen mode' : 'Zen mode'}
-              onClick={() => setZen(true)}
-            >
-              <Maximize2 className="h-4 w-4" aria-hidden="true" />
-            </IconAction>
-            <IconAction label="Keyboard shortcuts" onClick={() => setShortcutsOpen(true)}>
-              <HelpCircle className="h-4 w-4" aria-hidden="true" />
-            </IconAction>
-          </div>
-        </header>
-      )}
-
-      {zen && (
-        <>
-          {/*
-            Zen mode hides the visible header, which would leave the page with no
-            `<h1>` at all. A screen-reader user toggling zen would land in a document
-            with no top-level heading — so the heading stays in the accessibility
-            tree and only its visual presentation is removed.
-          */}
-          <h1 className="sr-only">Focus — zen mode</h1>
-          <div className="mb-4 flex justify-end">
-            <IconAction label="Exit zen mode" onClick={() => setZen(false)}>
-              <Minimize2 className="h-4 w-4" aria-hidden="true" />
-            </IconAction>
-          </div>
-        </>
-      )}
-
-      <div className="flex flex-col items-center gap-6">
-        <ModeSwitch />
+        className="relative mx-auto w-full max-w-2xl px-4 py-8 transition-[max-width] duration-300 sm:py-12"
+      >
+        <div
+          className="gradient-mesh-animated pointer-events-none absolute inset-0 -z-10 opacity-40"
+          aria-hidden="true"
+        />
+        <div className="noise-overlay pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
 
         {/*
-          The panel the tablist points at. `aria-labelledby` names the active tab,
-          so the mode is announced with the region — the pairing `aria-controls`
-          promises and the old markup never provided.
+          Zen mode drops the header and the intent row, leaving the dial and its
+          controls. It is a visibility reduction rather than a fullscreen takeover on
+          purpose: `requestFullscreen` needs a gesture, blocks on some mobile
+          browsers, and exits unexpectedly on tab switch. Reducing what is on screen
+          achieves the same thing without a permission prompt or a trap.
         */}
-        <div
-          role="tabpanel"
-          id={MODE_PANEL_ID}
-          aria-labelledby={`focus-tab-${mode}`}
-          className="glass-panel flex w-full flex-col items-center gap-8 rounded-2xl p-6 shadow-soft sm:p-10"
-        >
-          <TimerDial />
-          <Transport />
-        </div>
+        {!zen && (
+          <header className="mb-6 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-700 ease-out-expo">
+            <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
+              Focus
+            </h1>
+            <div className="flex items-center gap-1">
+              <IconAction
+                label="Session history and stats"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <History className="h-4 w-4" aria-hidden="true" />
+              </IconAction>
+              <IconAction
+                label={zen ? 'Exit zen mode' : 'Zen mode'}
+                onClick={() => setZen(true)}
+              >
+                <Maximize2 className="h-4 w-4" aria-hidden="true" />
+              </IconAction>
+              <IconAction label="Keyboard shortcuts" onClick={() => setShortcutsOpen(true)}>
+                <HelpCircle className="h-4 w-4" aria-hidden="true" />
+              </IconAction>
+            </div>
+          </header>
+        )}
 
-{!zen && (
+        {zen && (
           <>
-            <IntentRow />
-            {/* Above the reflection strip: what you are working on is an input to the
-                session, so it belongs next to the intent field rather than below the
-                summary of what happened. */}
-            <ContextRail />
-            {/* Keyed on the cycle count: a new finished block remounts the strip with
-                an empty rating, rather than resetting it in an effect. */}
-            <ReflectionStrip key={cycles} resetKey={cycles} />
-            <DaySummary />
+            {/*
+              Zen mode hides the visible header, which would leave the page with no
+              `<h1>` at all. A screen-reader user toggling zen would land in a document
+              with no top-level heading — so the heading stays in the accessibility
+              tree and only its visual presentation is removed.
+            */}
+            <h1 className="sr-only">Focus — zen mode</h1>
+            <div className="mb-4 flex justify-end">
+              <IconAction label="Exit zen mode" onClick={() => setZen(false)}>
+                <Minimize2 className="h-4 w-4" aria-hidden="true" />
+              </IconAction>
+            </div>
           </>
         )}
-      </div>
 
-      <SessionsDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        initialTab={initialTab}
-      />
-      <ShortcutsDialog
-        open={shortcutsOpen}
-        onOpenChange={setShortcutsOpen}
-        status={status}
-        mode={mode}
-      />
-    </div>
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out-expo delay-150 fill-mode-both">
+            <ModeSwitch />
+          </div>
+
+          {/*
+            The panel the tablist points at. `aria-labelledby` names the active tab,
+            so the mode is announced with the region — the pairing `aria-controls`
+            promises and the old markup never provided.
+
+            `--glass-hue` is set to `--accent-focus` (rose) so the glassmorphism
+            material reflects the Focus domain rather than the default primary green.
+            `data-live` drives the `focus-panel-live` breathing animation purely from
+            CSS — no interval, no React re-render per tick.
+          */}
+          <div
+            role="tabpanel"
+            id={MODE_PANEL_ID}
+            aria-labelledby={`focus-tab-${mode}`}
+            data-live={
+              status === 'running' ? 'true' : status === 'paused' ? 'paused' : 'idle'
+            }
+            className="glass-panel glass-panel-lift spotlight-hover focus-panel-live flex w-full flex-col items-center gap-8 rounded-2xl p-6 shadow-soft sm:p-10 animate-in fade-in slide-in-from-bottom-6 duration-1000 ease-out-expo delay-200 fill-mode-both group"
+            style={{ ['--glass-hue' as string]: 'var(--accent-focus)' }}
+          >
+            <TimerDial />
+            <Transport />
+          </div>
+
+          {!zen && (
+            <div className="flex w-full flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out-expo delay-300 fill-mode-both">
+              <IntentRow />
+              {/*
+                Routine context: shows what block is active/up next and allows
+                one-click pre-fill. Rendered after IntentRow so it supplements
+                rather than replaces the manual intent input. Hidden during live
+                sessions (RoutineContextCard's own guard).
+              */}
+              <RoutineContextCard />
+              {/* Routine drift display: shows actual vs scheduled timing */}
+              <RoutineDriftDisplay />
+              {/* Above the reflection strip: what you are working on is an input to the
+                  session, so it belongs next to the intent field rather than below the
+                  summary of what happened. */}
+              <ContextRail />
+              {/* Keyed on the cycle count: a new finished block remounts the strip with
+                  an empty rating, rather than resetting it in an effect. */}
+              <ReflectionStrip key={cycles} resetKey={cycles} />
+              {/* Today's Focus Summary with real stats */}
+              <FocusTodaySummary />
+              {/* Next action suggestion after completion */}
+              <NextActionSuggestion />
+            </div>
+          )}
+
+          <DistractionCapture />
+        </div>
+
+        <SessionsDrawer
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          initialTab={initialTab}
+        />
+        <ShortcutsDialog
+          open={shortcutsOpen}
+          onOpenChange={setShortcutsOpen}
+          status={status}
+          mode={mode}
+        />
+      </div>
+    </FocusLockMode>
   );
 }
 

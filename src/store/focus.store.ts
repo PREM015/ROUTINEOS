@@ -85,6 +85,20 @@ export interface FocusSnapshot {
   busy: boolean;
   /** Bar collapsed to its pill. Presentation only, so it is not persisted. */
   collapsed: boolean;
+  /** Actual start time confirmed by user (ms since epoch). */
+  actualStartTime: number | null;
+  /** Actual end time confirmed by user (ms since epoch). */
+  actualEndTime: number | null;
+  /** Check-in state for start confirmation. */
+  startCheckInState: 'pending' | 'confirmed' | 'skipped' | null;
+  /** Check-in state for completion confirmation. */
+  completionCheckInState: 'pending' | 'confirmed' | 'skipped' | null;
+  /** Replacement activity when user chooses "Busy with something else". */
+  replacementActivity: string | null;
+  /** How the completion was recorded. */
+  completionSource: 'USER_CONFIRMED' | 'AUTO_ASSUMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION' | null;
+  /** Distractions captured during the session. */
+  distractions: Array<{ label: string; timestamp: number }>;
 }
 
 export const EMPTY_SNAPSHOT: FocusSnapshot = {
@@ -95,13 +109,6 @@ export const EMPTY_SNAPSHOT: FocusSnapshot = {
   endsAt: null,
   pausedAt: null,
   pausedTotalMs: 0,
-  /*
-   * Replaced by the user's `FocusSettings.focusMinutes` as soon as
-   * `FocusRuntime` has loaded them. This is the pre-request value so the first paint
-   * shows a plausible timebox instead of `0`, and it comes from the same
-   * `DEFAULT_FOCUS_DURATIONS` the settings page defaults to rather than a second
-   * literal - one number, one definition.
-   */
   plannedMs: DEFAULT_FOCUS_DURATIONS.focusMinutes * 60_000,
   cycles: 0,
   intent: '',
@@ -115,6 +122,13 @@ export const EMPTY_SNAPSHOT: FocusSnapshot = {
   error: null,
   busy: false,
   collapsed: false,
+  actualStartTime: null,
+  actualEndTime: null,
+  startCheckInState: null,
+  completionCheckInState: null,
+  replacementActivity: null,
+  completionSource: null,
+  distractions: [],
 };
 
 interface FocusStoreState extends FocusSnapshot {
@@ -142,7 +156,10 @@ export const useFocusStore = create<FocusStoreState>()((set) => ({
   toggleCollapsed: () => set((state) => ({ collapsed: !state.collapsed })),
 
   // `collapsed` is presentation state, not session state, so it survives a reset.
-  reset: () => set((state) => ({ ...EMPTY_SNAPSHOT, collapsed: state.collapsed })),
+  reset: () => set((state) => ({
+    ...EMPTY_SNAPSHOT,
+    collapsed: state.collapsed,
+  })),
 }));
 
 /** True when a session is in flight, for anything that only cares "is it live". */
