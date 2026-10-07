@@ -66,21 +66,6 @@ export function NextActionSuggestion({ className }: { className?: string }) {
       });
   }, [show, today]);
 
-  if (!show) return null;
-
-  if (loading) {
-    return (
-      <div className={cn('w-full max-w-sm', className)}>
-        <div className="animate-pulse space-y-3">
-          <div className="h-4 w-24 bg-muted rounded" />
-          <div className="h-12 w-full bg-muted rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !routine) return null;
-
   const { next } = useMemo(() => {
     if (!routine || nowMinutes === null) return { next: null };
     const timed = routine.blocks
@@ -95,6 +80,21 @@ export function NextActionSuggestion({ className }: { className?: string }) {
       next: timed.find((b) => b.startMinutes > nowMinutes) ?? null,
     };
   }, [routine, nowMinutes]);
+
+  if (!show) return null;
+
+  if (loading) {
+    return (
+      <div className={cn('w-full max-w-sm', className)}>
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 w-24 bg-muted rounded" />
+          <div className="h-12 w-full bg-muted rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !routine) return null;
 
   if (!next) {
     return (

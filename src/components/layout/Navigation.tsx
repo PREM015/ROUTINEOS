@@ -13,6 +13,10 @@
  * - orientation: 'vertical' | 'horizontal' stack direction
  * - ariaLabel: label for the nav landmark (default "Primary")
  * - onNavigate: optional click callback
+ * - pillLayoutId: layoutId for the shared active pill. Override when a second
+ *   copy of the same nav can be mounted at once (the mobile drawer opens on
+ *   top of the display:none desktop sidebar, and two elements sharing a
+ *   layoutId make the pill animate from the hidden one's zero-sized box).
  */
 
 import Link from 'next/link';
@@ -35,6 +39,7 @@ export interface NavigationProps {
   ariaLabel?: string;
   className?: string;
   onNavigate?: () => void;
+  pillLayoutId?: string;
 }
 
 const DEFAULT_ITEMS: NavigationItem[] = [
@@ -52,6 +57,7 @@ export function Navigation({
   ariaLabel = 'Primary',
   className,
   onNavigate,
+  pillLayoutId = 'nav-active-pill',
 }: NavigationProps) {
   const pathname = usePathname();
   const reduce = useReducedMotion();
@@ -95,7 +101,7 @@ export function Navigation({
               ) : (
                 <motion.span
                   aria-hidden="true"
-                  layoutId="nav-active-pill"
+                  layoutId={pillLayoutId}
                   className="glow-primary absolute inset-0 rounded-lg bg-primary/10"
                   transition={{ duration: 0.35, ease: EASE }}
                 />

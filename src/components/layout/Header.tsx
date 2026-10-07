@@ -12,6 +12,7 @@ import { Logo } from '@/components/layout/Logo';
 import { EASE } from '@/lib/motion';
 import { DateSwitcher } from '@/components/layout/DateSwitcher';
 import { JumpTo } from '@/components/layout/JumpTo';
+import { MobileMenuButton } from '@/components/layout/MobileMenu';
 
 export function Header() {
   const { data: session } = useSession();
@@ -22,13 +23,21 @@ export function Header() {
   const initial = name.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background/70 backdrop-blur-xl shadow-soft sticky top-0 z-30">
-      <div className="flex items-center gap-3">
+    <header className="h-16 border-b border-border flex items-center justify-between px-4 md:px-6 bg-background/70 backdrop-blur-xl shadow-soft sticky top-0 z-30">
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Opens the mobile navigation drawer; the desktop Sidebar replaces it at md. */}
+        <MobileMenuButton />
         <h2 className="font-semibold text-lg text-foreground hidden md:block">
           RoutineOS
         </h2>
+        {/*
+          Icon-only below md: the hamburger plus the full wordmark pushed the
+          header's right-hand controls past the viewport on a 360–390px phone
+          (the row was ~47px wider than the screen). The wordmark still shows
+          in the drawer, in the desktop sidebar and in the h2 at md+.
+        */}
         <div className="md:hidden flex items-center gap-2">
-          <Logo size="sm" />
+          <Logo size="sm" variant="icon" />
         </div>
       </div>
 
@@ -41,8 +50,12 @@ export function Header() {
         calendar-navigation section on every page, because the selected date is
         global (`AppContext.selectedDate`) and the dashboard, analytics, recap
         and habits pages all read it.
+
+        Only at lg+: between md (sidebar takes 256px) and lg the centre slot
+        plus the right-hand controls overflowed the header by ~235px, which is
+        what caused horizontal page scroll at exactly 768px.
       */}
-      <div className="hidden md:flex flex-1 justify-center px-4">
+      <div className="hidden lg:flex flex-1 justify-center px-4">
         <DateSwitcher />
       </div>
 

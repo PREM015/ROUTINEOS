@@ -55,20 +55,17 @@ function readScope(): 'all' | 'mine' {
   }
 }
 
-/** Lazily read the stored quote (client only; SSR gets null). */
-function readInitialQuote(): Quote | null {
-  if (typeof window === 'undefined') return null;
-  const stored = readStored();
-  return stored && Date.now() - stored.changedAt < ROTATE_MS ? stored.quote : null;
-}
-
 /**
  * Quote of the moment. Rotates every 10 minutes (persisted so reloads do
  * not reset the timer), never repeats twice in a row, and always renders a
  * fallback quote instead of breaking.
  */
 export function QuoteDisplay() {
-  const [quote, setQuote] = useState<Quote | null>(readInitialQuote);
+  // Always null on the first render — including the client's hydration
+  // pass — so it matches the SSR placeholder. The stored quote is applied
+  // in the effect below; reading localStorage during render made the first
+  // client render differ from the server HTML (hydration mismatch).
+  const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(false);
   const [fading, setFading] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -115,8 +112,11 @@ export function QuoteDisplay() {
       stored && Date.now() - stored.changedAt < ROTATE_MS
         ? ROTATE_MS - (Date.now() - stored.changedAt)
         : 0;
+    if (remaining > 0 && stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resume the stored quote after hydration; SSR must render the same placeholder on both sides
+      setQuote(stored.quote);
+    }
     if (remaining <= 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- initial quote fetch + rotation timer setup
       fetchQuote().catch(() => undefined);
       timerRef.current = setInterval(rotate, ROTATE_MS);
     } else {

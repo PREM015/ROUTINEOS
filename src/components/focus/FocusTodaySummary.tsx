@@ -106,7 +106,7 @@ export function FocusTodaySummary({ className }: { className?: string }) {
   if (error) {
     return (
       <p className={cn('text-xs text-muted-foreground', className)} role="status">
-        Today's focus is unavailable right now.
+        Today&apos;s focus is unavailable right now.
       </p>
     );
   }

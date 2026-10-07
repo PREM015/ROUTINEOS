@@ -31,12 +31,29 @@ const FEATURE_LINKS: SidebarLink[] = [
   { label: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar() {
+/**
+ * The sidebar's inner content — logo, the two link groups, and the profile
+ * footer — shared by the desktop `<aside>` and the mobile navigation drawer
+ * (`MobileMenu`), so a phone shows exactly the destinations the PC sidebar
+ * shows. The parent must be a flex column; `min-h-full` lets the profile
+ * footer sit at the bottom when the content is short.
+ *
+ * `onNavigate` closes the drawer after a link click, `pillLayoutId` keeps the
+ * drawer's active pill from colliding with the (hidden but still mounted)
+ * desktop sidebar's pill.
+ */
+export function SidebarContent({
+  onNavigate,
+  pillLayoutId,
+}: {
+  onNavigate?: () => void;
+  pillLayoutId?: string;
+}) {
   const { data: session } = useSession();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 border-r border-border bg-card/70 backdrop-blur-xl shadow-soft p-4 overflow-y-auto z-40">
-      <Link href="/dashboard" className="flex items-center gap-2 mb-6 px-2" aria-label="RoutineOS dashboard">
+    <div className="flex min-h-full flex-col">
+      <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-2 mb-6 px-2" aria-label="RoutineOS dashboard">
         <Logo size="md" />
       </Link>
 
@@ -45,14 +62,14 @@ export function Sidebar() {
           <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             Core
           </p>
-          <Navigation items={MAIN_LINKS} ariaLabel="Core" />
+          <Navigation items={MAIN_LINKS} ariaLabel="Core" onNavigate={onNavigate} pillLayoutId={pillLayoutId} />
         </div>
 
         <div>
           <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             Features & Insights
           </p>
-          <Navigation items={FEATURE_LINKS} ariaLabel="Features & Insights" />
+          <Navigation items={FEATURE_LINKS} ariaLabel="Features & Insights" onNavigate={onNavigate} pillLayoutId={pillLayoutId} />
         </div>
       </div>
 
@@ -81,6 +98,14 @@ export function Sidebar() {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 border-r border-border bg-card/70 backdrop-blur-xl shadow-soft p-4 overflow-y-auto z-40">
+      <SidebarContent />
     </aside>
   );
 }

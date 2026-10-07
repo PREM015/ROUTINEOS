@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileNav } from '@/components/layout/MobileNav';
+import { MobileMenu } from '@/components/layout/MobileMenu';
 import { SleepPromptHost } from '@/components/shared/SleepPromptHost';
 import { FloatingFocusBar } from '@/components/focus/FloatingFocusBar';
 import { FocusRuntime } from '@/components/focus/FocusRuntime';
@@ -68,6 +69,9 @@ export default function DashboardLayout({
 
         <Footer />
         <MobileNav />
+        {/* Slide-in nav drawer for phones: same destinations as the desktop
+            Sidebar, opened by the header hamburger or the bottom bar's "More". */}
+        <MobileMenu />
         <FloatingFocusBar />
         <CelebrationHost />
         <SleepPromptHost />

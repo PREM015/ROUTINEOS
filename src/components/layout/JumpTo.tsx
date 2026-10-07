@@ -72,7 +72,7 @@ export function JumpTo() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:flex"
+        className="hidden items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:flex"
       >
         <Search className="h-3.5 w-3.5" aria-hidden="true" />
         <span>Jump to…</span>
@@ -82,14 +82,15 @@ export function JumpTo() {
       </button>
 
       {/*
-        A plain icon button below `md`, where the pill has no room. Same
-        affordance, same key binding.
+        A plain icon button below `lg`, where the pill has no room (between md
+        and lg the sidebar steals 256px of header width). Same affordance,
+        same key binding.
       */}
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Jump to (Command K)"
-        className="rounded-full border border-border bg-card/60 p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+        className="rounded-full border border-border bg-card/60 p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden"
       >
         <Search className="h-3.5 w-3.5" aria-hidden="true" />
       </button>

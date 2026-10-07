@@ -7,8 +7,12 @@ import { useEffect, useState } from 'react';
  * `online`/`offline` events. Defaults to `true` on the server.
  */
 export function useOnlineStatus(): boolean {
+  // `?? true`: Node 21+ defines a partial global `navigator` during SSR with
+  // no `onLine` property, so checking `typeof navigator === 'undefined'`
+  // alone returned `undefined`, which rendered <OfflineNotice /> in the
+  // server HTML and then failed hydration once the browser reported online.
   const [online, setOnline] = useState(() =>
-    typeof navigator === 'undefined' ? true : navigator.onLine
+    typeof navigator === 'undefined' ? true : navigator.onLine ?? true
   );
 
   useEffect(() => {
