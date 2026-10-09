@@ -11,6 +11,10 @@ import { Role, TemplateType, type Prisma } from '@/generated/prisma';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { toUserId, type UserId } from '@/types/ids';
+import {
+  DEFAULT_CATEGORIES as DEFAULT_CATEGORY_DEFINITIONS,
+  normalizeCategoryName,
+} from '@/constants/categories';
 
 const DEFAULT_TIMEZONE = 'America/New_York';
 
@@ -67,53 +71,21 @@ export interface SeedCategoryInput {
 }
 
 /**
- * Default categories seeded per user — the standard RoutineOS set covering
- * health, study, build work, career and life admin. `nameNormalized` mirrors
- * `normalizeCategoryName` in `category.service.ts` (lowercase, spaces → `-`)
- * because that is what the `[userId, nameNormalized]` unique key compares on.
+ * Default categories seeded per user. The canonical definitions live in
+ * `@/constants/categories` (shared with the runtime first-list seed) and are
+ * mapped here; `nameNormalized` comes from the same `normalizeCategoryName`
+ * the `[userId, nameNormalized]` unique key compares on.
  */
-export const DEFAULT_CATEGORIES: readonly SeedCategoryInput[] = [
-  { name: 'Health', nameNormalized: 'health', description: 'Workout, sleep, meals, hygiene, recovery', color: '#10b981', icon: '🟢', sortOrder: 1 },
-  { name: 'Learning', nameNormalized: 'learning', description: "General learning that isn't DSA/Web Dev", color: '#eab308', icon: '🟡', sortOrder: 2 },
-  { name: 'DSA', nameNormalized: 'dsa', description: 'DSA concepts, LeetCode, problem solving', color: '#0ea5e9', icon: '🔷', sortOrder: 3 },
-  { name: 'Web Dev / AI', nameNormalized: 'web-dev-/-ai', description: 'Coding, projects, AI learning, development', color: '#8b5cf6', icon: '🟣', sortOrder: 4 },
-  { name: 'Career', nameNormalized: 'career', description: 'Resume, portfolio, interview prep, networking', color: '#3b82f6', icon: '🔵', sortOrder: 5 },
-  { name: 'College', nameNormalized: 'college', description: 'Classes, assignments, labs, college work', color: '#a855f7', icon: '🟪', sortOrder: 6 },
-  { name: 'Personal', nameNormalized: 'personal', description: 'Breaks, family, errands, personal activities', color: '#94a3b8', icon: '⚪', sortOrder: 7 },
-  { name: 'Job Apply', nameNormalized: 'job-apply', description: 'Applications, job searching, recruiter outreach', color: '#f97316', icon: '🟠', sortOrder: 8 },
-  { name: 'Plan & Review', nameNormalized: 'plan-&-review', description: 'Daily planning, weekly reviews, journaling, reflection', color: '#06b6d4', icon: '📅', sortOrder: 9 },
-  { name: 'Chores / Home', nameNormalized: 'chores-/-home', description: 'Cooking, cleaning, laundry, room upkeep', color: '#ef4444', icon: '🧹', sortOrder: 10 },
-  { name: 'Finance', nameNormalized: 'finance', description: 'Budgeting, expenses, payments, investments', color: '#22c55e', icon: '💰', sortOrder: 11 },
-  { name: 'Recreation', nameNormalized: 'recreation', description: 'Hobbies, gaming, shows, leisure time', color: '#14b8a6', icon: '🎮', sortOrder: 12 },
-  { name: 'Commute / Transit', nameNormalized: 'commute-/-transit', description: 'Travel to college, travel between places', color: '#38bdf8', icon: '✈️', sortOrder: 13 },
-  { name: 'Social', nameNormalized: 'social', description: 'Friends, calls, catching up (non-career)', color: '#2dd4bf', icon: '💬', sortOrder: 14 },
-  { name: 'Mental Wellbeing', nameNormalized: 'mental-wellbeing', description: 'Meditation, mindfulness, stress management, breathing exercises', color: '#7c3aed', icon: '🧘', sortOrder: 15 },
-  { name: 'Reading', nameNormalized: 'reading', description: 'Books, novels, articles, non-study reading', color: '#f59e0b', icon: '📚', sortOrder: 16 },
-  { name: 'Assignments / Projects', nameNormalized: 'assignments-/-projects', description: "Large academic/project deliverables that don't fit College or Web Dev / AI", color: '#f43f5e', icon: '📝', sortOrder: 17 },
-  { name: 'Maintenance', nameNormalized: 'maintenance', description: 'Device maintenance, software updates, backups, organizing files', color: '#475569', icon: '🛠️', sortOrder: 18 },
-  { name: 'Appointments', nameNormalized: 'appointments', description: 'Doctor, dentist, bank, government office visits', color: '#fb7185', icon: '🩺', sortOrder: 19 },
-  { name: 'Errands', nameNormalized: 'errands', description: 'Shopping, groceries, collecting parcels', color: '#fbbf24', icon: '🛒', sortOrder: 20 },
-  { name: 'Family', nameNormalized: 'family', description: 'Family responsibilities, events, helping at home', color: '#d946ef', icon: '🙏', sortOrder: 21 },
-  { name: 'Experiments', nameNormalized: 'experiments', description: 'Trying new routines, tools, productivity experiments', color: '#84cc16', icon: '🧪', sortOrder: 22 },
-  { name: 'Growth', nameNormalized: 'growth', description: 'Personal development, communication, discipline, confidence', color: '#4ade80', icon: '🌱', sortOrder: 23 },
-  { name: 'Open Source', nameNormalized: 'open-source', description: 'GitHub issues/PRs, community projects', color: '#6366f1', icon: '🧑‍💻', sortOrder: 24 },
-  { name: 'Internship / Part-time', nameNormalized: 'internship-/-part-time', description: 'Actual paid work or internship hours', color: '#0284c7', icon: '💼', sortOrder: 25 },
-  { name: 'Communication', nameNormalized: 'communication', description: 'Email, messages, calls, DMs', color: '#7dd3fc', icon: '📧', sortOrder: 26 },
-  { name: 'Travel / Trip', nameNormalized: 'travel-/-trip', description: 'Vacations, trips, outings', color: '#fdba74', icon: '🏖️', sortOrder: 27 },
-  { name: 'Events / Meetups', nameNormalized: 'events-/-meetups', description: 'Workshops, hackathons, seminars', color: '#facc15', icon: '🎯', sortOrder: 28 },
-  { name: 'Certification / Course', nameNormalized: 'certification-/-course', description: 'Structured courses, exams, certificates (Coursera, NPTEL)', color: '#a78bfa', icon: '🎓', sortOrder: 29 },
-  { name: 'Design / Creative', nameNormalized: 'design-/-creative', description: 'Figma, UI design, art, video editing, music, photography', color: '#ec4899', icon: '🎨', sortOrder: 30 },
-  { name: 'Content Creation', nameNormalized: 'content-creation', description: 'Blog, YouTube, LinkedIn posts, personal brand', color: '#e11d48', icon: '📢', sortOrder: 31 },
-  { name: 'Freelance / Side Hustle', nameNormalized: 'freelance-/-side-hustle', description: 'Paid freelance work, side income', color: '#16a34a', icon: '💸', sortOrder: 32 },
-  { name: 'Volunteering', nameNormalized: 'volunteering', description: 'Community service, NGO, event volunteering', color: '#5eead4', icon: '🤝', sortOrder: 33 },
-  { name: 'College Admin', nameNormalized: 'college-admin', description: 'Forms, fees, documents, paperwork (vs actual classes)', color: '#c084fc', icon: '📋', sortOrder: 34 },
-  { name: 'Ideas / Brainstorming', nameNormalized: 'ideas-/-brainstorming', description: 'Capturing ideas, planning future side projects', color: '#fde047', icon: '💡', sortOrder: 35 },
-  { name: 'Typing / Skills Drills', nameNormalized: 'typing-/-skills-drills', description: 'Typing practice, speed drills, rote skill drills', color: '#a3e635', icon: '⌨️', sortOrder: 36 },
-  { name: 'Sleep & Recovery', nameNormalized: 'sleep-&-recovery', description: 'Bed/wake time, naps, sleep quality', color: '#60a5fa', icon: '😴', sortOrder: 37 },
-  { name: 'Focus / Deep Work', nameNormalized: 'focus-/-deep-work', description: 'Pomodoro & Focus Mode sessions, distraction-free blocks', color: '#2563eb', icon: '🧠', sortOrder: 38 },
-  { name: 'Language Learning', nameNormalized: 'language-learning', description: 'Practicing a new language (distinct from general Learning)', color: '#34d399', icon: '🗣️', sortOrder: 39 },
-  { name: 'Misc / Unsorted', nameNormalized: 'misc-/-unsorted', description: 'Anything that fits nowhere — prevents getting stuck when nothing matches', color: '#64748b', icon: '🎲', sortOrder: 40 },
-];
+export const DEFAULT_CATEGORIES: readonly SeedCategoryInput[] = DEFAULT_CATEGORY_DEFINITIONS.map(
+  (category) => ({
+    name: category.name,
+    nameNormalized: normalizeCategoryName(category.name),
+    description: category.description,
+    color: category.color,
+    icon: category.icon,
+    sortOrder: category.sortOrder,
+  })
+);
 
 /**
  * Upsert the default categories for a user keyed on the composite

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CategoryRepository } from '@/server/repositories/category.repository';
 import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
+import { normalizeCategoryName } from '@/constants/categories';
 import type { Category, Prisma } from '@/generated/prisma';
 import type { UserId } from '@/types/ids';
 
@@ -11,15 +12,6 @@ import type { UserId } from '@/types/ids';
  * `create` takes a plain field object and builds the Prisma input here, so the
  * route no longer has to know that `Category` connects to a user by id.
  */
-
-/**
- * Category names are compared case- and whitespace-insensitively via
- * `nameNormalized`, which is what `findByName` and the per-user unique
- * constraint rely on.
- */
-function normalizeCategoryName(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-');
-}
 
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Name is required').max(50),
@@ -47,7 +39,10 @@ export class CategoryService {
   }
 
   async list(userId: UserId, includeArchived = false): Promise<Category[]> {
-    return this.categoryRepository.findAll(userId, includeArchived);
+    // Every account gets the platform default categories the first time its
+    // categories are listed — no registration hook, and it covers accounts
+    // created by any path.
+    return this.categoryRepository.seedDefaultsIfEmpty(userId, includeArchived);
   }
 
   async get(userId: UserId, categoryId: string): Promise<Category | null> {
