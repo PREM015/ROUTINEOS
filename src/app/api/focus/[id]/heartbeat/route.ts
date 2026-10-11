@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -37,7 +38,6 @@ export async function POST(_request: Request, { params }: RouteContext) {
     await focusService.heartbeat(userIdFromSession(session), id);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    console.error('Error recording focus heartbeat:', error);
-    return NextResponse.json({ error: 'Failed to record heartbeat' }, { status: 500 });
+    return handleError(error);
   }
 }

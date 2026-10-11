@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { getTodayString } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -41,10 +42,6 @@ export async function GET(request: NextRequest) {
     const logs = await habitService.getLogsForDate(userIdFromSession(session), date);
     return NextResponse.json({ success: true, data: logs });
   } catch (error) {
-    console.error('Error fetching habit logs:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch habit logs' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

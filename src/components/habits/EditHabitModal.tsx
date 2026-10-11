@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button, Checkbox } from '@/components/ui';
 import { useApp, type Habit, type HabitTier, type FrequencyType } from '@/context/AppContext';
-import { fetchWithAuth } from '@/lib/api-client';
+import { HABIT_TIERS_ORDERED, getHabitTierLabel } from '@/constants/habit-tiers';
+import { fetchWithAuth, extractFieldErrors } from '@/lib/api-client';
+import { focusFirstInvalidField } from '@/lib/utils';
 import type { DayTypeDefinition } from '@/types/routine';
 import { TagPicker } from './TagPicker';
 
@@ -21,15 +23,13 @@ interface EditHabitModalProps {
   onSaved?: () => void;
 }
 
-const TIERS: Array<{ label: string; value: HabitTier }> = [
-  { label: 'Core (Non-Negotiable)', value: 'NON_NEGOTIABLE' },
-  { label: 'Growth', value: 'GROWTH' },
-  { label: 'Bonus', value: 'BONUS' },
-  { label: 'Lifestyle', value: 'LIFESTYLE' },
-  { label: 'Flexible', value: 'FLEXIBLE' },
-  { label: 'Experimental', value: 'EXPERIMENTAL' },
-  { label: 'Optional', value: 'OPTIONAL' },
-];
+/**
+ * Every tier, derived from the canonical list so a new enum member cannot go
+ * missing from the picker (this previously offered only 7 of 11).
+ */
+const TIERS: Array<{ label: string; value: HabitTier }> = HABIT_TIERS_ORDERED.map(
+  (value) => ({ value, label: getHabitTierLabel(value) })
+);
 
 const FREQUENCIES: Array<{ label: string; value: FrequencyType }> = [
   { label: 'Everyday', value: 'DAILY' },
@@ -84,6 +84,7 @@ function EditHabitForm({
   const [color, setColor] = useState<string>(habit.color ?? (COLORS[0] as string));
   const [reminderTime, setReminderTime] = useState(habit.reminderTime ?? '');
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [appliesEveryDay, setAppliesEveryDay] = useState(habit.appliesEveryDay ?? true);
   const [dayTypeIds, setDayTypeIds] = useState<string[]>(habit.dayTypeAssignments?.map(dta => dta.dayTypeId) || []);
@@ -150,21 +151,35 @@ function EditHabitForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || submitting) return;
+    if (submitting) return;
+
+    const parsedTarget = targetCount.trim() ? parseInt(targetCount.trim(), 10) : undefined;
+    const nextErrors: Record<string, string> = {};
+
+    if (!name.trim()) nextErrors.name = 'Give the habit a name';
+    if (targetCount.trim() && (!parsedTarget || parsedTarget < 1)) {
+      nextErrors.targetCount = 'Target count must be a positive number';
+    }
+    if (frequencyType === 'SPECIFIC_WEEKDAYS' && weekdays.length === 0) {
+      nextErrors.weekdays = 'Pick at least one weekday';
+    }
+    if (!appliesEveryDay && dayTypeIds.length === 0) {
+      nextErrors.dayTypes = dayTypesError
+        ? `Could not load day types, so none can be selected. ${dayTypesError}`
+        : 'Pick at least one day type';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(null);
+      focusFirstInvalidField();
+      return;
+    }
+
     setSubmitting(true);
+    setFieldErrors({});
     setError(null);
     try {
-      const parsedTarget = targetCount.trim() ? parseInt(targetCount.trim(), 10) : undefined;
-      if (targetCount.trim() && (!parsedTarget || parsedTarget < 1)) {
-        throw new Error('Target count must be a positive number');
-      }
-      if (frequencyType === 'SPECIFIC_WEEKDAYS' && weekdays.length === 0) {
-        throw new Error('Pick at least one weekday');
-      }
-      if (!appliesEveryDay && dayTypeIds.length === 0) {
-        throw new Error('Pick at least one day type');
-      }
-
       await updateHabit(habit.id, {
         name: name.trim(),
         // `null` rather than `undefined` for every field the form can empty.
@@ -192,7 +207,13 @@ function EditHabitForm({
       onSaved?.();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update habit');
+      const serverFieldErrors = extractFieldErrors(err);
+      if (Object.keys(serverFieldErrors).length > 0) {
+        setFieldErrors(serverFieldErrors);
+        focusFirstInvalidField();
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to update habit');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -200,7 +221,7 @@ function EditHabitForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-        <Input label="Habit Name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
+        <Input label="Habit Name" value={name} onChange={(e) => setName(e.target.value)} error={fieldErrors.name} required autoFocus />
 
         <div>
           <label htmlFor="edit-habit-desc" className="block text-sm font-medium mb-1 text-foreground">Description (optional)</label>
@@ -220,7 +241,11 @@ function EditHabitForm({
         </div>
 
         {frequencyType === 'SPECIFIC_WEEKDAYS' && (
-          <div>
+          <div
+            aria-invalid={fieldErrors.weekdays ? true : undefined}
+            aria-describedby={fieldErrors.weekdays ? 'edit-habit-weekdays-error' : undefined}
+            tabIndex={-1}
+          >
             <span className="block text-sm font-medium mb-2 text-foreground">Weekdays</span>
             <div className="flex flex-wrap gap-2">
               {WEEKDAYS.map((d) => (
@@ -239,11 +264,16 @@ function EditHabitForm({
                 </button>
               ))}
             </div>
+            {fieldErrors.weekdays && (
+              <p id="edit-habit-weekdays-error" role="alert" className="mt-1.5 text-sm text-destructive">
+                {fieldErrors.weekdays}
+              </p>
+            )}
           </div>
         )}
 
         {(frequencyType === 'WEEKLY_TARGET' || frequencyType === 'MONTHLY_TARGET') && (
-          <Input label="Target count" type="number" min={1} value={targetCount} onChange={(e) => setTargetCount(e.target.value)} />
+          <Input label="Target count" type="number" min={1} value={targetCount} onChange={(e) => setTargetCount(e.target.value)} error={fieldErrors.targetCount} />
         )}
 
         {/* Day Type Assignment */}
@@ -256,7 +286,12 @@ function EditHabitForm({
             />
           </div>
           {!appliesEveryDay && (
-            <div className="space-y-2">
+            <div
+              aria-invalid={fieldErrors.dayTypes ? true : undefined}
+              aria-describedby={fieldErrors.dayTypes ? 'edit-habit-daytypes-error' : undefined}
+              tabIndex={-1}
+              className="space-y-2"
+            >
               <label className="block text-sm font-medium text-foreground">
                 Assign to day types
               </label>
@@ -303,6 +338,11 @@ function EditHabitForm({
               {!dayTypesLoading && !dayTypesError && dayTypes.length === 0 && (
                 <p className="text-xs text-muted-foreground">No day types available. Create one in Routine settings.</p>
               )}
+              {fieldErrors.dayTypes && (
+                <p id="edit-habit-daytypes-error" role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.dayTypes}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -324,7 +364,7 @@ function EditHabitForm({
               ))}
             </div>
           </div>
-        <Input label="Reminder (optional)" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} />
+        <Input label="Reminder (optional)" type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} error={fieldErrors.reminderTime} />
         </div>
 
         <TagPicker value={tagIds} onChange={setTagIds} />

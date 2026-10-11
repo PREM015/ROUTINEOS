@@ -1,4 +1,5 @@
 import { auth, signOut } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextResponse } from 'next/server';
 
 /**
@@ -14,10 +15,6 @@ export async function POST() {
 
     return NextResponse.json({ success: true, data: { loggedOut: true } });
   } catch (error) {
-    console.error('Error signing out:', error);
-    return NextResponse.json(
-      { error: 'Failed to sign out' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

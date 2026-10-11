@@ -73,6 +73,17 @@ export const authOptions = {
           windowMs: 5 * 60_000,
         });
         if (!limit.ok) {
+          /*
+           * Logged because this is the one rejection that leaves **no trace in
+           * the database at all** — it is an in-memory per-IP bucket, so the
+           * account row still looks completely healthy while every sign-in is
+           * being refused. Without this line it is indistinguishable from a
+           * wrong password.
+           */
+          console.error(
+            `[auth] sign-in rejected: IP rate limit tripped, retry in ` +
+              `${limit.retryAfterSeconds}s`
+          );
           throw new InvalidCredentialsError();
         }
 
@@ -81,6 +92,10 @@ export const authOptions = {
         // decides whether it was required.
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) {
+          console.error(
+            `[auth] sign-in rejected at schema validation: ` +
+              parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}`).join(', ')
+          );
           throw new InvalidCredentialsError();
         }
 
@@ -89,27 +104,70 @@ export const authOptions = {
           typeof credentials?.totpCode === 'string' ? credentials.totpCode.trim() : '';
 
         // Find user
+        const lookupEmail = email.trim().toLowerCase();
         const user = await prisma.user.findUnique({
-          where: { email: email.toLowerCase() },
+          where: { email: lookupEmail },
         });
 
+        /*
+         * Which branch rejected, and the address that was looked up.
+         *
+         * Every failure below throws a `CredentialsSignin` subclass, and NextAuth
+         * flattens all of them into one generic `[auth][error] CredentialsSignin`
+         * line. That line cannot distinguish a mistyped email from a wrong
+         * password from a locked account — and the `if (!user)` branch and the
+         * schema branch even fail at the same column, so a stack trace alone
+         * cannot tell them apart either.
+         *
+         * This log is deliberately **server-side only**. Nothing here is added to
+         * the response or the redirect, because telling a caller "no such
+         * account" *would* be an account-enumeration oracle; the client must keep
+         * receiving one undifferentiated "invalid credentials". The operator log
+         * is the one place where the distinction is safe and necessary.
+         *
+         * The address is shown as **first character + length + domain**. That is
+         * the combination that actually resolves this class of failure: the
+         * domain is where typos live (`gamil.com`, `.cmo`), and the length
+         * catches a dropped character that still happens to be a valid email
+         * shape. The local part stays masked, since it is the identifying half.
+         *
+         * Everything here is the value the *caller submitted*, echoed back — not
+         * stored data — so there is nothing here that an attacker could not
+         * already see.
+         */
+        const at = lookupEmail.lastIndexOf('@');
+        const domain = at === -1 ? '(no domain)' : lookupEmail.slice(at);
+        const masked = lookupEmail.length
+          ? `${lookupEmail[0]}*** ${domain} (${lookupEmail.length} chars)`
+          : '(empty)';
+
         if (!user) {
+          console.error(
+            `[auth] sign-in rejected: no account for ${masked}` +
+              (at === -1 ? ' — the submitted value has no "@"' : '')
+          );
           throw new InvalidCredentialsError();
         }
 
         // Check if account is deleted
         if (user.isDeleted) {
+          console.error(`[auth] sign-in rejected for ${masked}: account deleted`);
           throw new AccountDeletedError();
         }
 
         // Check if account is locked
         if (user.lockedUntil && user.lockedUntil > new Date()) {
+          console.error(
+            `[auth] sign-in rejected for ${masked}: account locked until ` +
+              user.lockedUntil.toISOString()
+          );
           throw new AccountLockedError();
         }
 
         // Verify password
         const passwordMatch = await bcrypt.compare(password, user.passwordHash || '');
         if (!passwordMatch) {
+          console.error(`[auth] sign-in rejected for ${masked}: wrong password`);
           // Count the failure and lock the account once the threshold is
           // crossed. `lockedUntil` was previously incremented-adjacent data
           // that nothing ever set, so `failedLoginAttempts` grew forever and

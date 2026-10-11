@@ -69,9 +69,54 @@ export const DAY_TYPE_CONFIG: Record<DayType, DayTypeConfig> = {
   },
 } as const;
 
+export const DAY_TYPES_ORDERED: readonly DayType[] = [
+  'WORKDAY',
+  'WEEKEND',
+  'HOLIDAY',
+  'EXAM_DAY',
+  'LOW_ENERGY',
+  'CUSTOM',
+];
+
+export const ENUM_TO_SLUG = {
+  WORKDAY: 'work-day',
+  WEEKEND: 'weekend',
+  HOLIDAY: 'holiday',
+  EXAM_DAY: 'exam-day',
+  LOW_ENERGY: 'low-energy-day',
+  CUSTOM: 'custom',
+} as const;
+
+export const slugToDayType = (slug: string): DayType => {
+  if (typeof slug !== 'string' || slug.trim() === '') return 'CUSTOM';
+  const normalized = slug.trim().toLowerCase().replace(/[\s_-]+/g, '-');
+  const mapping: Record<string, DayType> = {
+    'work-day': 'WORKDAY',
+    'weekend': 'WEEKEND',
+    'holiday': 'HOLIDAY',
+    'exam-day': 'EXAM_DAY',
+    'low-energy-day': 'LOW_ENERGY',
+    'custom': 'CUSTOM',
+  };
+  return mapping[normalized] ?? 'CUSTOM';
+};
+
+export const isDayType = (value: unknown): value is DayType => {
+  return typeof value === 'string' && (DAY_TYPES_ORDERED as readonly string[]).includes(value);
+};
+
 // ============================================================================
 // Routine Log Status Configuration
 // ============================================================================
+
+export interface DayTypeConfig {
+  type: DayType;
+  label: string;
+  description: string;
+  color: string;
+  icon: string;
+  isDefault: boolean;
+}
 
 export interface RoutineLogStatusConfig {
   status: RoutineLogStatus;
@@ -280,6 +325,7 @@ export const DEFAULT_WEEKEND_ROUTINE: DefaultRoutineBlock[] = [
     title: 'Personal Projects',
     description: 'Hobbies and interests',
     energyLevel: 'HIGH',
+    trackCompletion: true,
     icon: '🎨',
   },
   {
@@ -351,76 +397,3 @@ export function getEnergyLevelConfig(level: EnergyLevel): EnergyLevelConfig {
   return ENERGY_LEVEL_CONFIG[level];
 }
 
-export const DAY_TYPES_ORDERED: DayType[] = [
-  'WORKDAY',
-  'WEEKEND',
-  'HOLIDAY',
-  'EXAM_DAY',
-  'LOW_ENERGY',
-  'CUSTOM',
-];
-
-/**
- * Canonical membership check for the `DayType` enum.
- *
- * This is the single place that answers "is this string a day type?". Several
- * call sites previously carried their own inline array of literals, which is how
- * a non-existent 'WEEKDAY' pseudo-day-type ended up being accepted by the client
- * and the API while never existing in the schema.
- */
-export function isDayType(value: unknown): value is DayType {
-  return typeof value === 'string' && (DAY_TYPES_ORDERED as string[]).includes(value);
-}
-
-// Map DayType enum values to DayTypeDefinition slugs
-export const ENUM_TO_SLUG: Record<DayType, string> = {
-  WORKDAY: 'work-day',
-  WEEKEND: 'weekend',
-  HOLIDAY: 'holiday',
-  EXAM_DAY: 'exam-day',
-  LOW_ENERGY: 'low-energy-day',
-  CUSTOM: 'custom',
-};
-
-/**
- * Normalise a DayTypeDefinition slug so it can be compared against both the
- * canonical slugs and the enum members. Slugs are kebab-case; enum members are
- * UPPER_SNAKE_CASE. Whitespace and underscores are treated like dashes so that
- * a hand-written slug ('work day', 'work_day') still resolves.
- */
-function normalizeDayTypeSlug(slug: string): string {
-  return slug.trim().toLowerCase().replace(/[\s_-]+/g, '_');
-}
-
-// Reverse of ENUM_TO_SLUG: 'work_day' -> 'WORKDAY', 'low_energy_day' -> 'LOW_ENERGY'.
-const SLUG_TO_ENUM: Record<string, DayType> = Object.fromEntries(
-  (Object.entries(ENUM_TO_SLUG) as [DayType, string][]).map(([dayType, slug]) => [
-    normalizeDayTypeSlug(slug),
-    dayType,
-  ])
-);
-
-/**
- * Canonical slug -> DayType classification.
- *
- * Slugs are not enum members: 'work-day' is WORKDAY, not 'WORK_DAY', and
- * 'low-energy-day' is LOW_ENERGY, not 'LOW_ENERGY_DAY'. Deriving the value
- * mechanically (`slug.toUpperCase().replace(/-/g, '_')`) therefore produced
- * non-existent enum values that every call site then collapsed to 'CUSTOM',
- * which is what made distinct day types indistinguishable in the UI.
- *
- * Unknown slugs (user-defined day types such as 'Focus') classify as 'CUSTOM';
- * identity always stays with the DayTypeDefinition row's `id`.
- */
-export function slugToDayType(slug: string | null | undefined): DayType {
-  if (typeof slug !== 'string') return 'CUSTOM';
-
-  const normalized = normalizeDayTypeSlug(slug);
-  if (!normalized) return 'CUSTOM';
-
-  const fromCanonicalSlug = SLUG_TO_ENUM[normalized];
-  if (fromCanonicalSlug) return fromCanonicalSlug;
-
-  const upper = normalized.toUpperCase();
-  return isDayType(upper) ? upper : 'CUSTOM';
-}

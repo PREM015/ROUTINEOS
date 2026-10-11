@@ -6,6 +6,12 @@
 export interface FrequencyConfig {
   daysOfWeek?: number[];
   exactDates?: string[];
+  /**
+   * Optional carry for `EVERY_N_DAYS` when the gap was written into
+   * `frequencyValue` rather than the dedicated `Habit.intervalDays` column.
+   * Both are read by `isHabitScheduledForDate`, with the column winning.
+   */
+  intervalDays?: number;
   [key: string]: unknown;
 }
 
@@ -34,6 +40,18 @@ export function getFrequencyLabel(frequencyType: string, frequencyValue?: string
   switch (frequencyType) {
     case 'DAILY':
       return 'Every day';
+
+    case 'EVERY_N_DAYS': {
+      const config = parseFrequencyConfig(frequencyValue);
+      const gap = config?.intervalDays;
+      if (!gap || gap < 1) return 'Every N days';
+      if (gap === 1) return 'Every day';
+      if (gap % 7 === 0) {
+        const weeks = gap / 7;
+        return weeks === 1 ? 'Every week' : `Every ${weeks} weeks`;
+      }
+      return `Every ${gap} days`;
+    }
 
     case 'SPECIFIC_WEEKDAYS':
       return formatWeekdays(frequencyValue);

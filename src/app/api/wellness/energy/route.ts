@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { wellnessService } from '@/server/services/wellness.service';
 import { energyLogSchema, energyQuerySchema } from '@/schemas/wellness.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -53,8 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result.data, meta: result.meta });
   } catch (error) {
-    console.error('Error fetching energy logs:', error);
-    return NextResponse.json({ error: 'Failed to fetch energy logs' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -82,10 +82,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: log }, { status: 201 });
   } catch (error) {
-    console.error('Error logging energy:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to log energy' }, { status: 500 });
+    return handleError(error);
   }
 }

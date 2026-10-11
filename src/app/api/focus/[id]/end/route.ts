@@ -4,7 +4,7 @@ import { focusReflectionSchema } from '@/schemas/focus.schema';
 import { focusSessionEndReasonSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
@@ -81,13 +81,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: ended });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error ending focus session:', error);
-    return NextResponse.json({ error: 'Failed to end focus session' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -19,10 +20,6 @@ export async function GET() {
     const data = await sleepSessionService.resolveSleepState(userIdFromSession(session));
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching sleep session status:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sleep session status' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

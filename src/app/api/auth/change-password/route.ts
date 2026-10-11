@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { changePasswordSchema } from '@/lib/validation/auth';
+import { handleError } from '@/lib/errors/error-handler';
+import { changePasswordSchema } from '@/schemas/auth.schema';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -36,15 +37,6 @@ export async function POST(request: NextRequest) {
       message: 'Password changed successfully',
     });
   } catch (error) {
-    console.error('Error changing password:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to change password' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -27,7 +27,33 @@ export type SchedulableHabit = {
   status: Habit['status'];
   frequencyType: Habit['frequencyType'];
   frequencyValue?: string | null;
+  /**
+   * For `EVERY_N_DAYS`: the gap in calendar days, and the anchor the gap is
+   * counted from. Both optional because the reduced client-side `Habit` in
+   * `AppContext` does not carry them yet; a habit with `EVERY_N_DAYS` but no
+   * usable pair falls back to daily rather than silently never being scheduled.
+   */
+  intervalDays?: number | null;
+  startDate?: Date | string | null;
 };
+
+/** Calendar days between two `YYYY-MM-DD` strings, ignoring time of day. */
+function calendarDayDiff(from: string, to: string): number {
+  const [fy, fm, fd] = from.split('-').map(Number);
+  const [ty, tm, td] = to.split('-').map(Number);
+  const a = Date.UTC(fy ?? 1970, (fm ?? 1) - 1, fd ?? 1);
+  const b = Date.UTC(ty ?? 1970, (tm ?? 1) - 1, td ?? 1);
+  return Math.round((b - a) / 86_400_000);
+}
+
+/** The `YYYY-MM-DD` day part of a `Habit.startDate`, whatever shape it arrives in. */
+function calendarDayOf(value: Date | string): string {
+  if (typeof value === 'string') return value.slice(0, 10);
+  const y = value.getUTCFullYear();
+  const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(value.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 /**
  * Weekday (0 = Sunday … 6 = Saturday) of a `YYYY-MM-DD` calendar date.
@@ -66,6 +92,28 @@ export function isHabitScheduledForDate(
   if (habit.status === 'ARCHIVED') return false;
 
   const config = parseFrequencyConfig(habit.frequencyValue);
+
+  /*
+   * `EVERY_N_DAYS` is checked *before* the "no config means daily" early return
+   * below. An interval habit normally carries no `frequencyValue` at all — the
+   * gap lives in `intervalDays` — so that early return would otherwise make
+   * every interval habit daily, and a "dentist every 180 days" habit would sit
+   * on the checklist forever.
+   */
+  if (habit.frequencyType === 'EVERY_N_DAYS') {
+    const gap = habit.intervalDays ?? config?.intervalDays ?? null;
+    if (!gap || gap < 1) return true; // Unusable gap: fall back to daily, never to "never".
+
+    const anchor = habit.startDate ? calendarDayOf(habit.startDate) : null;
+    // Without an anchor there is nothing to count from, so treat the habit as
+    // due rather than as never due. "Invisible forever" is the worse failure.
+    if (!anchor) return true;
+
+    const diff = calendarDayDiff(anchor, date);
+    // Dates before the anchor are handled by the start-date eligibility check;
+    // here we only care that the gap divides evenly.
+    return diff >= 0 && diff % gap === 0;
+  }
 
   if (!config) return true; // Default to daily if no config
 

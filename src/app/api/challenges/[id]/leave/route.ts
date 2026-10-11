@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { challengeService } from '@/server/services/challenge.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
@@ -31,13 +31,6 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: { left } });
   } catch (error) {
-    console.error('Error leaving challenge:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to leave challenge' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

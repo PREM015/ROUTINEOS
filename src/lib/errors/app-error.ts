@@ -38,9 +38,10 @@ export class AppError extends Error {
 
   toJSON() {
     return {
+      success: false as const,
       error: this.message,
       code: this.code,
-      details: this.details,
+      ...(this.details !== undefined && { details: this.details }),
     };
   }
 }
@@ -100,5 +101,69 @@ export class ExternalServiceError extends AppError {
       'EXTERNAL_SERVICE_ERROR',
       503
     );
+  }
+}
+
+export class ForbiddenError extends AuthorizationError {
+  constructor(message: string = 'Insufficient permissions') {
+    super(message);
+    this.code = 'FORBIDDEN';
+  }
+}
+
+export class BadRequestError extends AppError {
+  constructor(message: string) {
+    super(message, 'BAD_REQUEST', 400);
+  }
+}
+
+export class UnprocessableEntityError extends AppError {
+  constructor(message: string) {
+    super(message, 'UNPROCESSABLE_ENTITY', 422);
+  }
+}
+
+export class ForeignTagError extends AuthorizationError {
+  readonly tagIds: readonly string[];
+
+  constructor(tagIds: readonly string[]) {
+    super('One or more tags do not belong to this user');
+    this.name = 'ForeignTagError';
+    this.code = 'FOREIGN_TAG';
+    this.tagIds = tagIds;
+  }
+}
+
+export class IntegrationError extends AppError {
+  readonly provider: string;
+
+  constructor(provider: string, message: string) {
+    super(message, 'INTEGRATION_ERROR', 400);
+    this.name = 'IntegrationError';
+    this.provider = provider;
+  }
+}
+
+export class IntegrationTokenError extends ExternalServiceError {
+  readonly provider: string;
+
+  constructor(provider: string, message: string = 'Access token exchange failed') {
+    super(provider, message);
+    this.name = 'IntegrationTokenError';
+    this.code = 'INTEGRATION_TOKEN_ERROR';
+    this.provider = provider;
+  }
+}
+
+export class EditWindowError extends AuthorizationError {
+  readonly daysAgo: number;
+  readonly retroactiveEditDays: number;
+
+  constructor(message: string, daysAgo: number, retroactiveEditDays: number) {
+    super(message);
+    this.name = 'EditWindowError';
+    this.code = 'EDIT_WINDOW_EXCEEDED';
+    this.daysAgo = daysAgo;
+    this.retroactiveEditDays = retroactiveEditDays;
   }
 }

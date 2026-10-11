@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
-import { dayTypeSchema, calendarDateSchema } from '@/lib/validation/routine.schema';
+import { dayTypeSchema, calendarDateSchema } from '@/schemas/routine.schema';
 import { DAY_TYPE_CONFIG } from '@/constants/routine';
 import type { DayOverride } from '@/types/routine';
 import type { DayType } from '@/generated/prisma';

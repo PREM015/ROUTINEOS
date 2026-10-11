@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
-import { updateProfileSchema } from '@/lib/validation/user';
+import { handleError } from '@/lib/errors/error-handler';
+import { updateProfileSchema } from '@/schemas/user.schema';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -40,16 +41,7 @@ async function handleUpdateProfile(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: user });
   } catch (error) {
-    console.error('Error updating profile:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

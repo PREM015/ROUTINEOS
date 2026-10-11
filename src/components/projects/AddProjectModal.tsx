@@ -11,7 +11,8 @@
 import * as React from 'react';
 import { FolderKanban } from 'lucide-react';
 import type { Project } from '@/generated/prisma';
-import { apiRequest } from '@/lib/api-client';
+import { apiRequest, extractFieldErrors } from '@/lib/api-client';
+import { focusFirstInvalidField } from '@/lib/utils';
 import { Button, Input, Textarea } from '@/components/ui';
 import Dialog from '@/components/ui/Dialog';
 import ColorPicker from '@/components/ui/ColorPicker';
@@ -30,6 +31,7 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
   const [color, setColor] = React.useState('#3b82f6');
   const [dueDate, setDueDate] = React.useState('');
   const [creating, setCreating] = React.useState(false);
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [error, setError] = React.useState<string | null>(null);
 
   const reset = () => {
@@ -37,21 +39,28 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
     setDescription('');
     setColor('#3b82f6');
     setDueDate('');
+    setErrors({});
     setError(null);
   };
 
   const create = async () => {
+    if (creating) return;
     const trimmedName = name.trim();
-    if (trimmedName.length === 0 || creating) {
-      setError('Project name is required');
-      return;
-    }
-    if (trimmedName.length > 200) {
-      setError('Project name must be 200 characters or less');
+
+    const nextErrors: Record<string, string> = {};
+    if (trimmedName.length === 0) nextErrors.name = 'Project name is required';
+    else if (trimmedName.length > 200)
+      nextErrors.name = 'Project name must be 200 characters or less';
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      setError(null);
+      focusFirstInvalidField();
       return;
     }
 
     setCreating(true);
+    setErrors({});
     setError(null);
     try {
       const project = await apiRequest<Project>('/api/projects', {
@@ -68,7 +77,13 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
       onCreated(project);
       notifyGoalsDataChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project');
+      const fieldErrors = extractFieldErrors(err);
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+        focusFirstInvalidField();
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create project');
+      }
     } finally {
       setCreating(false);
     }
@@ -85,7 +100,12 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
       size="md"
       footer={
         <>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={creating}
+          >
             Cancel
           </Button>
           <Button type="button" onClick={() => void create()} isLoading={creating}>
@@ -102,7 +122,9 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Launch SEO refresh"
           maxLength={200}
+          error={errors.name}
           autoFocus
+          required
         />
         <Textarea
           label="Description"
@@ -110,6 +132,7 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What is this project about?"
           rows={3}
+          error={errors.description}
         />
         <ColorPicker label="Color" value={color} onChange={setColor} />
         <Input
@@ -117,6 +140,7 @@ export default function AddProjectModal({ open, onOpenChange, onCreated }: AddPr
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
+          error={errors.endDate}
         />
         {error && (
           <p role="alert" className="text-sm text-red-600">

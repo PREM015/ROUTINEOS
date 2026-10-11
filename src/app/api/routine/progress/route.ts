@@ -1,7 +1,8 @@
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { NextRequest, NextResponse } from 'next/server';
-import { calendarDateSchema } from '@/lib/validation/routine.schema';
+import { calendarDateSchema } from '@/schemas/routine.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
 
@@ -45,10 +46,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Error fetching routine progress:", error);
-    return NextResponse.json(
-      { error: 'Failed to fetch routine progress' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

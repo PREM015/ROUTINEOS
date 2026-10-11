@@ -1,4 +1,5 @@
 import { templateService } from '@/server/services/template.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -41,7 +42,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching public templates:', error);
-    return NextResponse.json({ error: 'Failed to fetch public templates' }, { status: 500 });
+    return handleError(error);
   }
 }

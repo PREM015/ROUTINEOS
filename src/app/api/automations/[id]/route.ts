@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { automationService } from '@/server/services/automation.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { updateAutomationSchema } from '@/schemas/automation.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -36,8 +36,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: rule });
   } catch (error) {
-    console.error('Error fetching automation:', error);
-    return NextResponse.json({ error: 'Failed to fetch automation' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -77,14 +76,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: rule });
   } catch (error) {
-    console.error('Error updating automation:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update automation' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -103,10 +95,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     await automationService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
-    console.error('Error deleting automation:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Automation rule not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to delete automation' }, { status: 500 });
+    return handleError(error);
   }
 }

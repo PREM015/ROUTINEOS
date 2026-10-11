@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
 import { createHabitSchema, updateHabitSchema } from '@/schemas/habit.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { toUserId } from '@/types/ids';
 
@@ -97,7 +98,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in bulk habit operation:', error);
-    return NextResponse.json({ error: 'Bulk habit operation failed' }, { status: 500 });
+    return handleError(error);
   }
 }

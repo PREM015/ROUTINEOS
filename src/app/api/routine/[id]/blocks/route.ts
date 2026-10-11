@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
-import { NotFoundError } from '@/lib/errors/app-error';
-import { ValidationError } from '@/lib/errors/app-error';
-import { timeSchema, energyLevelSchema } from '@/lib/validation/routine.schema';
+import { handleError } from '@/lib/errors/error-handler';
+import { timeSchema, energyLevelSchema } from '@/schemas/routine.schema';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
 
@@ -74,8 +73,7 @@ export async function GET(
     const blocks = await routineService.getBlocks(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: blocks });
   } catch (error) {
-    console.error('Error fetching routine blocks:', error);
-    return NextResponse.json({ error: 'Failed to fetch blocks' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -115,19 +113,6 @@ export async function POST(
       { status: 201 }
     );
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.flatten() },
-        { status: 400 }
-      );
-    }
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error creating routine block:', error);
-    return NextResponse.json({ error: 'Failed to create block' }, { status: 500 });
+    return handleError(error);
   }
 }

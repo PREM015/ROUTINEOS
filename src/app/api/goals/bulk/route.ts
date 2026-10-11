@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { createGoalSchema, updateGoalSchema } from '@/schemas/goal.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { toUserId } from '@/types/ids';
 
@@ -100,7 +101,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in bulk goal operation:', error);
-    return NextResponse.json({ error: 'Bulk goal operation failed' }, { status: 500 });
+    return handleError(error);
   }
 }

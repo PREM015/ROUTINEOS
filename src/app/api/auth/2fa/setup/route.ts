@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAuthRateLimit, rateLimited } from '@/lib/security/auth-rate-limit';
@@ -35,15 +36,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error setting up two-factor authentication:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to set up two-factor authentication' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

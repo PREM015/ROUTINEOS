@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { tagService } from '@/server/services/tag.service';
 import { updateTagSchema } from '@/schemas/tag.schema';
-import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -36,8 +36,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: tag });
   } catch (error) {
-    console.error('Error fetching tag:', error);
-    return NextResponse.json({ error: 'Failed to fetch tag' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -77,20 +76,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const tag = await tagService.update(userIdFromSession(session), paramId, validated.data);
     return NextResponse.json({ success: true, data: tag });
   } catch (error) {
-    console.error('Error updating tag:', error);
-    if (error instanceof ConflictError) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Tag not found' }, { status: 404 });
-    }
-    if (error instanceof RangeError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update tag' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -114,7 +100,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     await tagService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
-    console.error('Error deleting tag:', error);
-    return NextResponse.json({ error: 'Failed to delete tag' }, { status: 500 });
+    return handleError(error);
   }
 }

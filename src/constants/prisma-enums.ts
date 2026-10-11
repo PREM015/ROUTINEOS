@@ -172,6 +172,130 @@ export const BreakType = {
 
 export type BreakType = (typeof BreakType)[keyof typeof BreakType];
 
+export const HabitFrequencyType = {
+  DAILY: 'DAILY',
+  SPECIFIC_WEEKDAYS: 'SPECIFIC_WEEKDAYS',
+  WEEKLY_TARGET: 'WEEKLY_TARGET',
+  MONTHLY_TARGET: 'MONTHLY_TARGET',
+  YEARLY_TARGET: 'YEARLY_TARGET',
+  RANDOM: 'RANDOM',
+  ONE_TIME: 'ONE_TIME',
+  CUSTOM: 'CUSTOM',
+  EVERY_N_DAYS: 'EVERY_N_DAYS',
+} as const;
+
+export type HabitFrequencyType =
+  (typeof HabitFrequencyType)[keyof typeof HabitFrequencyType];
+
+/**
+ * Canonical `HabitFrequencyType` list in the schema's declaration order.
+ *
+ * The habit modals deliberately expose only the schedulable subset (see
+ * `AddHabitModal` FREQUENCIES), but validation accepts the full enum, so the
+ * list is defined once here rather than retyped in each zod schema.
+ */
+export const HABIT_FREQUENCY_TYPES: HabitFrequencyType[] = [
+  'DAILY',
+  'SPECIFIC_WEEKDAYS',
+  'WEEKLY_TARGET',
+  'MONTHLY_TARGET',
+  'YEARLY_TARGET',
+  'RANDOM',
+  'ONE_TIME',
+  'CUSTOM',
+  'EVERY_N_DAYS',
+];
+
+/**
+ * How a habit's progress is measured.
+ *
+ * `BOOLEAN` is the historical behaviour — a tick with no number — so it is the
+ * default everywhere and nothing about existing habits changes. `COUNT` and
+ * `DURATION` require a `targetValue` to be meaningful, which is why
+ * `habit.schema.ts` demands one for those two and not for `BOOLEAN`.
+ */
+export const HabitTrackingType = {
+  BOOLEAN: 'BOOLEAN',
+  COUNT: 'COUNT',
+  DURATION: 'DURATION',
+} as const;
+
+export type HabitTrackingType =
+  (typeof HabitTrackingType)[keyof typeof HabitTrackingType];
+
+export const HABIT_TRACKING_TYPES: HabitTrackingType[] = [
+  'BOOLEAN',
+  'COUNT',
+  'DURATION',
+];
+
+/**
+ * What completing a habit means numerically.
+ *
+ * The three rules live in `lib/habits/completion.ts`:
+ *   BUILD  -> `quantity >= target`
+ *   LIMIT  -> `quantity <= target`
+ *   AVOID  -> success when the user did *not* do it; no target is consulted.
+ */
+export const HabitDirection = {
+  BUILD: 'BUILD',
+  LIMIT: 'LIMIT',
+  AVOID: 'AVOID',
+} as const;
+
+export type HabitDirection = (typeof HabitDirection)[keyof typeof HabitDirection];
+
+export const HABIT_DIRECTIONS: HabitDirection[] = ['BUILD', 'LIMIT', 'AVOID'];
+
+/**
+ * Coarse day-part grouping for the daily checklist. Not a clock time: two
+ * morning habits sort together regardless of whether one is at 06:00 and the
+ * other at 09:00.
+ */
+export const TimeOfDay = {
+  MORNING: 'MORNING',
+  AFTERNOON: 'AFTERNOON',
+  EVENING: 'EVENING',
+  NIGHT: 'NIGHT',
+  ANYTIME: 'ANYTIME',
+} as const;
+
+export type TimeOfDay = (typeof TimeOfDay)[keyof typeof TimeOfDay];
+
+/**
+ * Display order for grouping the checklist. `ANYTIME` is last because a habit
+ * with no natural day-part is a fallback, not a morning task.
+ */
+export const TIME_OF_DAY_ORDER: TimeOfDay[] = [
+  'MORNING',
+  'AFTERNOON',
+  'EVENING',
+  'NIGHT',
+  'ANYTIME',
+];
+
+/** Where an application stands. Mirrors `ApplicationStatus` in the schema. */
+export const ApplicationStatus = {
+  APPLIED: 'APPLIED',
+  SCREENING: 'SCREENING',
+  INTERVIEW: 'INTERVIEW',
+  OFFER: 'OFFER',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN',
+} as const;
+
+export type ApplicationStatus =
+  (typeof ApplicationStatus)[keyof typeof ApplicationStatus];
+
+export const APPLICATION_STATUSES: ApplicationStatus[] = [
+  'APPLIED',
+  'SCREENING',
+  'INTERVIEW',
+  'OFFER',
+  'REJECTED',
+  'WITHDRAWN',
+];
+
 /** Short human labels for an end reason. Reused by history rows and detail sheets. */
 export const FOCUS_END_REASON_LABELS: Record<FocusSessionEndReason, string> = {
   COMPLETED: 'Completed',

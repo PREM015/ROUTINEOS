@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { AppError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { journalService } from '@/server/services/journal.service';
 import { journalRevisionIdSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -41,14 +41,6 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { error: error.message, details: error.details ?? undefined },
-        { status: error.statusCode }
-      );
-    }
-
-    console.error('Error restoring journal revision:', error);
-    return NextResponse.json({ error: 'Failed to restore journal revision' }, { status: 500 });
+    return handleError(error);
   }
 }

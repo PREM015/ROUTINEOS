@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useId } from 'react';
 import { Modal, Input, Select, Button, Checkbox } from '@/components/ui';
 import { useApp, type HabitTier, type FrequencyType } from '@/context/AppContext';
+import { HABIT_TIERS_ORDERED, getHabitTierLabel } from '@/constants/habit-tiers';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import type { DayTypeDefinition } from '@/types/routine';
-import { fetchWithAuth } from '@/lib/api-client';
+import { fetchWithAuth, extractFieldErrors } from '@/lib/api-client';
+import { focusFirstInvalidField } from '@/lib/utils';
 import { TagPicker } from './TagPicker';
 
 
@@ -22,14 +24,13 @@ interface AddHabitModalProps {
   onSaved?: () => void;
 }
 
-const TIERS: Array<{ label: string; value: HabitTier }> = [
-  { label: 'Core (Non-Negotiable)', value: 'NON_NEGOTIABLE' },
-  { label: 'Growth', value: 'GROWTH' },
-  { label: 'Bonus', value: 'BONUS' },
-  { label: 'Lifestyle', value: 'LIFESTYLE' },
-  { label: 'Flexible', value: 'FLEXIBLE' },
-  { label: 'Experimental', value: 'EXPERIMENTAL' },
-];
+/**
+ * Every tier, derived from the canonical list so a new enum member cannot go
+ * missing from the picker (this previously offered only 6 of 11).
+ */
+const TIERS: Array<{ label: string; value: HabitTier }> = HABIT_TIERS_ORDERED.map(
+  (value) => ({ value, label: getHabitTierLabel(value) })
+);
 
 const FREQUENCIES: Array<{ label: string; value: FrequencyType }> = [
   { label: 'Everyday', value: 'DAILY' },
@@ -80,6 +81,7 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
   const [colorError, setColorError] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [appliesEveryDay, setAppliesEveryDay] = useState(true);
   const [dayTypeIds, setDayTypeIds] = useState<string[]>([]);
@@ -134,6 +136,7 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
     setColorInput(PRESET_COLORS[0] as string);
     setColorError(null);
     setReminderTime('');
+    setFieldErrors({});
     setError(null);
     setSubmitting(false);
     setAppliesEveryDay(true);
@@ -181,36 +184,56 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
     );
   };
 
+  /**
+   * Live validation errors (from typing) and server field errors share one
+   * visible slot under the colour input.
+   */
+  const colorMessage = colorError ?? fieldErrors.color ?? null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || submitting) return;
+    if (submitting) return;
+
+    // Validate every field up front and attach each message to its control,
+    // rather than throwing the first failure into one form-level banner. The
+    // user sees everything that is wrong at once and focus lands on the first
+    // offender.
+    const parsedTarget = targetCount.trim() ? parseInt(targetCount.trim(), 10) : undefined;
+    const nextErrors: Record<string, string> = {};
+
+    if (!name.trim()) nextErrors.name = 'Give the habit a name';
+    if (targetCount.trim() && (!parsedTarget || parsedTarget < 1)) {
+      nextErrors.targetCount = 'Target count must be a positive number';
+    }
+    if (frequencyType === 'SPECIFIC_WEEKDAYS' && weekdays.length === 0) {
+      nextErrors.weekdays = 'Pick at least one weekday';
+    }
+    if (reminderTime && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminderTime)) {
+      nextErrors.reminderTime = 'Reminder time must be HH:mm';
+    }
+    if (!HEX_PATTERN.test(color)) {
+      nextErrors.color = 'Colour must be a 6-digit hex value, for example #FF5733.';
+    }
+    if (!appliesEveryDay && dayTypeIds.length === 0) {
+      // Name the cause: with a failed day-type load the picker is empty, so
+      // "Pick at least one day type" is unachievable and unexplained.
+      nextErrors.dayTypes = dayTypesError
+        ? `Could not load day types, so none can be selected. ${dayTypesError}`
+        : 'Pick at least one day type';
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError(null);
+      focusFirstInvalidField();
+      return;
+    }
+
     setSubmitting(true);
+    setFieldErrors({});
     setError(null);
 
     try {
-      const parsedTarget = targetCount.trim() ? parseInt(targetCount.trim(), 10) : undefined;
-      if (targetCount.trim() && (!parsedTarget || parsedTarget < 1)) {
-        throw new Error('Target count must be a positive number');
-      }
-      if (frequencyType === 'SPECIFIC_WEEKDAYS' && weekdays.length === 0) {
-        throw new Error('Pick at least one weekday');
-      }
-      if (reminderTime && !/^([01]\d|2[0-3]):([0-5]\d)$/.test(reminderTime)) {
-        throw new Error('Reminder time must be HH:mm');
-      }
-      if (!HEX_PATTERN.test(color)) {
-        throw new Error('Colour must be a 6-digit hex value, for example #FF5733.');
-      }
-      if (!appliesEveryDay && dayTypeIds.length === 0) {
-        // Name the cause: with a failed day-type load the picker is empty, so
-        // "Pick at least one day type" is unachievable and unexplained.
-        throw new Error(
-          dayTypesError
-            ? `Could not load day types, so none can be selected. ${dayTypesError}`
-            : 'Pick at least one day type'
-        );
-      }
-
       await addHabit({
         name: name.trim(),
         description: description.trim() || undefined,
@@ -237,7 +260,14 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
       onSaved?.();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create habit');
+      const serverFieldErrors = extractFieldErrors(err);
+      if (Object.keys(serverFieldErrors).length > 0) {
+        setFieldErrors(serverFieldErrors);
+        focusFirstInvalidField();
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create habit');
+      }
+    } finally {
       setSubmitting(false);
     }
   };
@@ -271,6 +301,7 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Morning Workout"
+          error={fieldErrors.name}
           required
           autoFocus
         />
@@ -304,7 +335,11 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
         </div>
 
         {frequencyType === 'SPECIFIC_WEEKDAYS' && (
-          <div>
+          <div
+            aria-invalid={fieldErrors.weekdays ? true : undefined}
+            aria-describedby={fieldErrors.weekdays ? 'add-habit-weekdays-error' : undefined}
+            tabIndex={-1}
+          >
             <span className="block text-sm font-medium mb-2 text-foreground">Weekdays</span>
             <div className="flex flex-wrap gap-2">
               {WEEKDAYS.map((d) => (
@@ -323,6 +358,11 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
                 </button>
               ))}
             </div>
+            {fieldErrors.weekdays && (
+              <p id="add-habit-weekdays-error" role="alert" className="mt-1.5 text-sm text-destructive">
+                {fieldErrors.weekdays}
+              </p>
+            )}
           </div>
         )}
 
@@ -334,6 +374,7 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
             value={targetCount}
             onChange={(e) => setTargetCount(e.target.value)}
             placeholder="e.g. 4"
+            error={fieldErrors.targetCount}
           />
         )}
 
@@ -347,7 +388,12 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
             />
           </div>
           {!appliesEveryDay && (
-            <div className="space-y-2">
+            <div
+              aria-invalid={fieldErrors.dayTypes ? true : undefined}
+              aria-describedby={fieldErrors.dayTypes ? 'add-habit-daytypes-error' : undefined}
+              tabIndex={-1}
+              className="space-y-2"
+            >
               <label className="block text-sm font-medium text-foreground">
                 Assign to day types
               </label>
@@ -392,6 +438,11 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
               )}
               {!dayTypesLoading && !dayTypesError && dayTypes.length === 0 && (
                 <p className="text-xs text-muted-foreground">No day types available. Create one in Routine settings.</p>
+              )}
+              {fieldErrors.dayTypes && (
+                <p id="add-habit-daytypes-error" role="alert" className="mt-1.5 text-sm text-destructive">
+                  {fieldErrors.dayTypes}
+                </p>
               )}
             </div>
           )}
@@ -462,21 +513,21 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
                 spellCheck={false}
                 autoComplete="off"
                 inputMode="text"
-                aria-invalid={colorError ? true : undefined}
-                aria-describedby={colorError ? `${formId}-color-error` : undefined}
+                aria-invalid={colorMessage ? true : undefined}
+                aria-describedby={colorMessage ? `${formId}-color-error` : undefined}
                 className={`h-9 min-w-0 flex-1 rounded-lg border bg-background px-2.5 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary ${
-                  colorError ? 'border-destructive' : 'border-border'
+                  colorMessage ? 'border-destructive' : 'border-border'
                 }`}
               />
             </div>
 
-            {colorError && (
+            {colorMessage && (
               <p
                 id={`${formId}-color-error`}
                 role="alert"
                 className="mt-1.5 text-xs text-destructive"
               >
-                {colorError}
+                {colorMessage}
               </p>
             )}
 
@@ -499,6 +550,7 @@ export default function AddHabitModal({ open, onClose, onSaved }: AddHabitModalP
             type="time"
             value={reminderTime}
             onChange={(e) => setReminderTime(e.target.value)}
+            error={fieldErrors.reminderTime}
           />
         </div>
 

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { integrationService } from '@/server/services/integration.service';
 import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
@@ -27,8 +28,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching integrations:', error);
-    return NextResponse.json({ error: 'Failed to fetch integrations' }, { status: 500 });
+    return handleError(error);
   }
 }
 

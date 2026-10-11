@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
-import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -37,11 +37,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       meta: { goalId: id, total: tags.length },
     });
   } catch (error) {
-    console.error('Error fetching goal tags:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch goal tags' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -82,18 +78,6 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       meta: { goalId: id, total: tags.length },
     });
   } catch (error) {
-    console.error('Error updating goal tags:', error);
-
-    if (error instanceof NotFoundError) {
-      // `NotFoundError` carries either "Goal" or "Tag <id>", so the message
-      // distinguishes a missing goal from a tag the caller does not own — the
-      // same distinction the route drew inline.
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to update goal tags' }, { status: 500 });
+    return handleError(error);
   }
 }

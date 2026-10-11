@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { sleepService } from '@/server/services/sleep.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -33,10 +34,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching sleep history:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch sleep history' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

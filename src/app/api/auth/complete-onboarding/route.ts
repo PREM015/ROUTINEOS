@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { UserService } from '@/server/services/user.service';
 import { NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -26,13 +27,6 @@ export async function POST() {
       data: { onboardingCompletedAt: user.onboardingCompletedAt },
     });
   } catch (error) {
-    console.error('Error completing onboarding:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to complete onboarding' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

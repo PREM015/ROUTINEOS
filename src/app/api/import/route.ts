@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { importService } from '@/server/services/import.service';
-import { importPayloadSchema } from '@/lib/validation/import.schema';
+import { importPayloadSchema } from '@/schemas/import.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 /**
@@ -43,10 +44,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Import failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to import data', details: String(error) },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

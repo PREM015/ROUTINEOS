@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AddHabitModal from '@/components/habits/AddHabitModal';
 import EditHabitModal from '@/components/habits/EditHabitModal';
 import { HabitContributionHeatmap } from '@/components/habits/HabitContributionHeatmap';
+import { HabitOriginBadge } from '@/components/habits/HabitOriginBadge';
 import { useApp, type Habit } from '@/context/AppContext';
 import { getFrequencyLabel } from '@/lib/habits/frequency';
 import { isHabitScheduledForDate } from '@/lib/habits/scheduling';
@@ -12,7 +13,8 @@ import { habitAppliesToDayType } from '@/lib/habits/day-type-match';
 import type { DayType } from '@/generated/prisma';
 import type { DayTypeDefinition } from '@/types/routine';
 import { getTodayString } from '@/lib/dates';
-import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, RotateCcw, CheckCircle2, Circle, CircleSlash, CircleMinus, Flame, TrendingUp, Filter, Search, X, Bell } from 'lucide-react';
+import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, RotateCcw, CheckCircle2, Circle, CircleSlash, CircleMinus, Flame, TrendingUp, Filter, Search, X, Bell, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
 import { Button, EmptyState, Select, Modal } from '@/components/ui';
 import { TagChip, type TagOption } from '@/components/habits/TagPicker';
 import { cn } from '@/lib/utils';
@@ -595,6 +597,26 @@ export default function HabitsPage() {
             >
               {habit.name}
             </span>
+            {/*
+              Provenance, not a lock. A non-null `definitionId` means this habit
+              began as a copy of a catalogue suggestion; `null` means the user
+              made it. Either way the habit is entirely theirs, which is what the
+              tooltip says — so the badge cannot be misread as "managed by the
+              catalogue and editable only by it".
+            */}
+            <HabitOriginBadge definitionId={habit.definitionId} />
+            {/* The target this habit is judged against, for a numeric habit.
+                Always this user's own target: the list is scoped to the session
+                user server-side, so there is nothing else it could be. */}
+            {habit.trackingType &&
+              habit.trackingType !== 'BOOLEAN' &&
+              habit.targetValue != null && (
+                <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                  {habit.direction === 'LIMIT' ? 'max ' : ''}
+                  {habit.targetValue.toLocaleString()}
+                  {habit.unit ? ` ${habit.unit}` : ''}
+                </span>
+              )}
             {isMarked && !done && (
               <span className={cn('shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium', LOG_STATUS_STYLE[logStatus ?? 'NONE'].className)}>
                 {stateLabel}
@@ -865,6 +887,17 @@ export default function HabitsPage() {
         <Button onClick={() => setModalOpen(true)} variant="primary">
           <Plus size={16} /> Add Habit
         </Button>
+        {/*
+          The catalogue is a *different* way in, not a replacement: this button
+          creates a habit from nothing, that one starts from a suggestion. Both
+          produce an ordinary personal habit, and neither gives the catalogue any
+          say over the result.
+        */}
+        <Link href="/habits/catalog" className="contents">
+          <Button variant="outline">
+            <LayoutGrid size={16} /> Browse Catalogue
+          </Button>
+        </Link>
       </div>
 
       {/*

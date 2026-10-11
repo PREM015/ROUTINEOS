@@ -2,7 +2,7 @@ import type { PrismaClient, Prisma } from '@/generated/prisma';
 import type {
   ImportGoalInput,
   ImportHabitInput,
-} from '@/lib/validation/import.schema';
+} from '@/schemas/import.schema';
 import { createLogger } from '@/lib/monitoring/logger';
 import type { UserId } from '@/types/ids';
 

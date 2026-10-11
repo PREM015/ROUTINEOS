@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { userService } from '@/server/services/user.service';
-import { AuthorizationError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { toUserId } from '@/types/ids';
 
@@ -33,18 +33,6 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {
-    console.error('Error fetching user settings:', error);
-
-    if (error instanceof AuthorizationError) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch user settings' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

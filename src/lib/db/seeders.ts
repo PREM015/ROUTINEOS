@@ -15,6 +15,14 @@ import {
   DEFAULT_CATEGORIES as DEFAULT_CATEGORY_DEFINITIONS,
   normalizeCategoryName,
 } from '@/constants/categories';
+import {
+  HABIT_CATALOG_SEED,
+  toDefinitionCreateInput,
+} from '@/constants/habit-catalog';
+import {
+  STARTER_PACK,
+  buildStarterPackContent,
+} from '@/constants/starter-pack';
 
 const DEFAULT_TIMEZONE = 'America/New_York';
 
@@ -272,6 +280,148 @@ export interface SeedSummary {
   quotes: number;
   users?: number;
   categories?: number;
+  habitDefinitions?: { created: number; updated: number };
+  starterPack?: string;
+}
+
+/**
+ * Seed the shared habit catalogue.
+ *
+ * System-owned and **idempotent by slug**: a re-run updates the display fields
+ * of existing rows and creates the missing ones, so the catalogue converges
+ * rather than growing on every deploy.
+ *
+ * Note what is deliberately *not* overwritten on an existing row: the suggested
+ * `targetValue`, `unit`, `frequencyType` and `trackingType`. Those are
+ * suggestions an operator may have deliberately adjusted, and a nightly seed
+ * silently reverting them would be worse than a stale suggestion. Personal
+ * habits are unaffected either way — they are copies, not references.
+ */
+export async function seedHabitDefinitions(): Promise<{
+  created: number;
+  updated: number;
+}> {
+  const existing = await prisma.habitDefinition.findMany({
+    select: {
+      slug: true,
+      name: true,
+      description: true,
+      category: true,
+      icon: true,
+      color: true,
+      sortOrder: true,
+      isActive: true,
+    },
+  });
+  const bySlug = new Map(existing.map((d) => [d.slug, d]));
+
+  let created = 0;
+  let updated = 0;
+
+  for (const [index, seed] of HABIT_CATALOG_SEED.entries()) {
+    const values = {
+      name: seed.name,
+      description: seed.description,
+      category: seed.category,
+      icon: seed.icon,
+      color: seed.color,
+      sortOrder: index,
+      isActive: true,
+    };
+
+    const match = bySlug.get(seed.slug);
+    if (match) {
+      // Only write when something actually differs, so a steady-state re-run
+      // issues no UPDATE at all.
+      const changed =
+        match.name !== values.name ||
+        match.description !== values.description ||
+        match.category !== values.category ||
+        match.icon !== values.icon ||
+        match.color !== values.color ||
+        match.sortOrder !== values.sortOrder ||
+        match.isActive !== values.isActive;
+
+      if (changed) {
+        await prisma.habitDefinition.update({
+          where: { slug: seed.slug },
+          data: values,
+        });
+        updated += 1;
+      } else {
+        updated += 1;
+      }
+      continue;
+    }
+
+    await prisma.habitDefinition.create({
+      data: toDefinitionCreateInput(seed, index),
+    });
+    created += 1;
+  }
+
+  return { created, updated };
+}
+
+/**
+ * Seed the "Daily Essentials" starter pack as an official, `userId = null`
+ * `Template`.
+ *
+ * Reusable by **every** user: `userId: null` + `isOfficial: true` is what marks
+ * it as a system pack, and `POST /api/starter-packs/apply` has no per-account
+ * branch of any kind.
+ *
+ * The habit values are resolved against the catalogue *at seed time* and stored
+ * inside the template's JSON. Two consequences worth being explicit about:
+ *
+ *  - applying a pack needs no catalogue lookup, so the two cannot drift;
+ *  - editing the catalogue later does **not** change what the pack offers, which
+ *    is the correct behaviour — a pack is a snapshot of a suggestion, not a
+ *    live query.
+ *
+ * Idempotent: matched on `name + type + isOfficial`, so a re-run refreshes the
+ * payload rather than creating a second pack.
+ */
+export async function seedStarterPack(): Promise<string> {
+  const definitions = await prisma.habitDefinition.findMany();
+  const bySlug = new Map(definitions.map((d) => [d.slug, d]));
+
+  const content = buildStarterPackContent(bySlug);
+  const payload = JSON.stringify(content);
+
+  const existing = await prisma.template.findFirst({
+    where: {
+      name: STARTER_PACK.name,
+      type: TemplateType.HABIT_SET,
+      isOfficial: true,
+    },
+  });
+
+  if (existing) {
+    await prisma.template.update({
+      where: { id: existing.id },
+      data: { content: payload, description: STARTER_PACK.description },
+    });
+    return existing.id;
+  }
+
+  const created = await prisma.template.create({
+    data: {
+      type: TemplateType.HABIT_SET,
+      name: STARTER_PACK.name,
+      description: STARTER_PACK.description,
+      category: STARTER_PACK.category,
+      // Public + official + no owner: the system pack every user may apply.
+      userId: null,
+      isPublic: true,
+      isOfficial: true,
+      isFeatured: true,
+      content: payload,
+      tags: JSON.stringify(['starter', 'habits', 'tier-1', 'tier-2', 'tier-3']),
+    },
+  });
+
+  return created.id;
 }
 
 /**
@@ -279,14 +429,18 @@ export interface SeedSummary {
  * demo user + categories when `withDemoUser` is enabled (mirrors `prisma/seed.ts`).
  */
 export async function seedDatabase(options: { withDemoUser?: boolean } = {}): Promise<SeedSummary> {
-  const [templates, quotes] = await Promise.all([
+  const habitDefinitions = await seedHabitDefinitions();
+  const [templates, quotes, starterPackId] = await Promise.all([
     seedSystemTemplates(),
     seedDefaultQuotes(),
+    seedStarterPack(),
   ]);
 
   const summary: SeedSummary = {
     templates: templates.length,
     quotes: quotes.length,
+    habitDefinitions,
+    starterPack: starterPackId,
   };
 
   if (options.withDemoUser) {

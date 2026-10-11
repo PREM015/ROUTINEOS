@@ -33,11 +33,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: habit });
   } catch (error) {
-    console.error('Error fetching habit:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch habit' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

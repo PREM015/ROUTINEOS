@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { dayModeService } from '@/server/services/day-mode.service';
-import { calendarDateSchema, dayTypeSchema } from '@/lib/validation/routine.schema';
+import { calendarDateSchema, dayTypeSchema } from '@/schemas/routine.schema';
 import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';

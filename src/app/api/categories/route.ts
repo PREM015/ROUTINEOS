@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { categoryService } from '@/server/services/category.service';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { ConflictError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -27,8 +28,7 @@ export async function GET(_request: NextRequest) {
     const categories = await categoryService.list(userIdFromSession(session));
     return successResponse(categories);
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    return errorResponse('Failed to fetch categories', 500);
+    return handleError(error);
   }
 }
 

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { challengeService } from '@/server/services/challenge.service';
 import { createChallengeSchema } from '@/schemas/challenge.schema';
@@ -27,11 +28,7 @@ export async function GET(_request: NextRequest) {
       meta: { total: data.length },
     });
   } catch (error) {
-    console.error('Error listing challenges:', error);
-    return NextResponse.json(
-      { error: 'Failed to list challenges' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -62,10 +59,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating challenge:', error);
-    return NextResponse.json(
-      { error: 'Failed to create challenge' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

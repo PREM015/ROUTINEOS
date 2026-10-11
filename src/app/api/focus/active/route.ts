@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -18,10 +19,6 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching active focus session:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch active focus session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

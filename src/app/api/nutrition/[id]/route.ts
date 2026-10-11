@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { nutritionService } from '@/server/services/nutrition.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { updateNutritionSchema } from '@/schemas/nutrition.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -32,11 +32,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    console.error('Error fetching nutrition entry:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Nutrition entry not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch nutrition entry' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -68,14 +64,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    console.error('Error updating nutrition entry:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Nutrition entry not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update nutrition entry' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -94,10 +83,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     await nutritionService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
-    console.error('Error deleting nutrition entry:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Nutrition entry not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to delete nutrition entry' }, { status: 500 });
+    return handleError(error);
   }
 }

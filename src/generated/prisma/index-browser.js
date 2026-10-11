@@ -415,6 +415,41 @@ exports.Prisma.HabitScalarFieldEnum = {
   lastCompletedDate: 'lastCompletedDate',
   completionRate: 'completionRate',
   createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  definitionId: 'definitionId',
+  trackingType: 'trackingType',
+  direction: 'direction',
+  targetValue: 'targetValue',
+  unit: 'unit',
+  timeOfDay: 'timeOfDay',
+  sortOrder: 'sortOrder',
+  linkedMetricType: 'linkedMetricType',
+  intervalDays: 'intervalDays',
+  parentHabitId: 'parentHabitId'
+};
+
+exports.Prisma.HabitDefinitionScalarFieldEnum = {
+  id: 'id',
+  slug: 'slug',
+  name: 'name',
+  description: 'description',
+  category: 'category',
+  tier: 'tier',
+  frequencyType: 'frequencyType',
+  frequencyValue: 'frequencyValue',
+  targetValue: 'targetValue',
+  unit: 'unit',
+  targetCount: 'targetCount',
+  intervalDays: 'intervalDays',
+  trackingType: 'trackingType',
+  direction: 'direction',
+  timeOfDay: 'timeOfDay',
+  linkedMetricType: 'linkedMetricType',
+  icon: 'icon',
+  color: 'color',
+  sortOrder: 'sortOrder',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
 
@@ -432,6 +467,8 @@ exports.Prisma.HabitLogScalarFieldEnum = {
   moodBefore: 'moodBefore',
   moodAfter: 'moodAfter',
   note: 'note',
+  targetSnapshot: 'targetSnapshot',
+  unitSnapshot: 'unitSnapshot',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -642,6 +679,94 @@ exports.Prisma.HealthMetricScalarFieldEnum = {
   source: 'source',
   sourceId: 'sourceId',
   createdAt: 'createdAt'
+};
+
+exports.Prisma.ExerciseScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  description: 'description',
+  muscleGroup: 'muscleGroup',
+  equipment: 'equipment',
+  isArchived: 'isArchived',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WorkoutSessionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  name: 'name',
+  notes: 'notes',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  durationMinutes: 'durationMinutes',
+  isRestDay: 'isRestDay',
+  habitId: 'habitId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WorkoutSessionExerciseScalarFieldEnum = {
+  id: 'id',
+  sessionId: 'sessionId',
+  exerciseId: 'exerciseId',
+  userId: 'userId',
+  sortOrder: 'sortOrder',
+  notes: 'notes'
+};
+
+exports.Prisma.WorkoutSetScalarFieldEnum = {
+  id: 'id',
+  sessionExerciseId: 'sessionExerciseId',
+  userId: 'userId',
+  setNumber: 'setNumber',
+  reps: 'reps',
+  weightKg: 'weightKg',
+  rpe: 'rpe',
+  isWarmup: 'isWarmup',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  workoutSessionId: 'workoutSessionId'
+};
+
+exports.Prisma.ProblemLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  platform: 'platform',
+  problemUrl: 'problemUrl',
+  difficulty: 'difficulty',
+  topicTags: 'topicTags',
+  notes: 'notes',
+  solvedAt: 'solvedAt',
+  reviewCount: 'reviewCount',
+  reviewIntervalDays: 'reviewIntervalDays',
+  nextReviewAt: 'nextReviewAt',
+  lastReviewedAt: 'lastReviewedAt',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.JobApplicationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  company: 'company',
+  role: 'role',
+  jobUrl: 'jobUrl',
+  location: 'location',
+  workMode: 'workMode',
+  status: 'status',
+  appliedAt: 'appliedAt',
+  compensation: 'compensation',
+  notes: 'notes',
+  rejectionReason: 'rejectionReason',
+  rejectionFeedback: 'rejectionFeedback',
+  followUpAt: 'followUpAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.NutritionEntryScalarFieldEnum = {
@@ -1383,7 +1508,28 @@ exports.HabitFrequencyType = exports.$Enums.HabitFrequencyType = {
   YEARLY_TARGET: 'YEARLY_TARGET',
   RANDOM: 'RANDOM',
   ONE_TIME: 'ONE_TIME',
-  CUSTOM: 'CUSTOM'
+  CUSTOM: 'CUSTOM',
+  EVERY_N_DAYS: 'EVERY_N_DAYS'
+};
+
+exports.HabitTrackingType = exports.$Enums.HabitTrackingType = {
+  BOOLEAN: 'BOOLEAN',
+  COUNT: 'COUNT',
+  DURATION: 'DURATION'
+};
+
+exports.HabitDirection = exports.$Enums.HabitDirection = {
+  BUILD: 'BUILD',
+  LIMIT: 'LIMIT',
+  AVOID: 'AVOID'
+};
+
+exports.TimeOfDay = exports.$Enums.TimeOfDay = {
+  MORNING: 'MORNING',
+  AFTERNOON: 'AFTERNOON',
+  EVENING: 'EVENING',
+  NIGHT: 'NIGHT',
+  ANYTIME: 'ANYTIME'
 };
 
 exports.HabitLogStatus = exports.$Enums.HabitLogStatus = {
@@ -1481,6 +1627,15 @@ exports.WeatherCondition = exports.$Enums.WeatherCondition = {
   SNOWY: 'SNOWY',
   FOGGY: 'FOGGY',
   WINDY: 'WINDY'
+};
+
+exports.ApplicationStatus = exports.$Enums.ApplicationStatus = {
+  APPLIED: 'APPLIED',
+  SCREENING: 'SCREENING',
+  INTERVIEW: 'INTERVIEW',
+  OFFER: 'OFFER',
+  REJECTED: 'REJECTED',
+  WITHDRAWN: 'WITHDRAWN'
 };
 
 exports.FocusSessionType = exports.$Enums.FocusSessionType = {
@@ -1755,6 +1910,7 @@ exports.Prisma.ModelName = {
   RoutineException: 'RoutineException',
   RoutineLog: 'RoutineLog',
   Habit: 'Habit',
+  HabitDefinition: 'HabitDefinition',
   HabitLog: 'HabitLog',
   HabitOverride: 'HabitOverride',
   MinimumDayTemplate: 'MinimumDayTemplate',
@@ -1771,6 +1927,12 @@ exports.Prisma.ModelName = {
   EnergyLog: 'EnergyLog',
   WeatherLog: 'WeatherLog',
   HealthMetric: 'HealthMetric',
+  Exercise: 'Exercise',
+  WorkoutSession: 'WorkoutSession',
+  WorkoutSessionExercise: 'WorkoutSessionExercise',
+  WorkoutSet: 'WorkoutSet',
+  ProblemLog: 'ProblemLog',
+  JobApplication: 'JobApplication',
   NutritionEntry: 'NutritionEntry',
   DailyScore: 'DailyScore',
   DailyReflection: 'DailyReflection',

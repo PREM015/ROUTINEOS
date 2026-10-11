@@ -52,6 +52,7 @@ model User {
   deviceSessions          DeviceSession[]
   emailVerificationTokens EmailVerificationToken[]
   energyLogs              EnergyLog[]
+  exercises               Exercise[]
   feedback                Feedback[]
   focusDayTypeTargets     FocusDayTypeTarget[]
   focusPresets            FocusPreset[]
@@ -65,6 +66,7 @@ model User {
   habitOverrides          HabitOverride[]
   healthMetrics           HealthMetric[]
   integrations            Integration[]
+  jobApplications         JobApplication[]
   journalEntries          JournalEntry[]
   journalRevisions        JournalRevision[]
   locations               Location[]
@@ -76,6 +78,7 @@ model User {
   passwordResetTokens     PasswordResetToken[]
   productivityPatterns    ProductivityPattern[]
   projects                Project[]
+  problemLogs             ProblemLog[]
   pushSubscriptions       PushSubscription[]
   quotes                  Quote[]
   routineBlocks           RoutineBlock[]
@@ -91,6 +94,7 @@ model User {
   templates               Template[]
   timeEntries             TimeEntry[]
   tomorrowDayTypePlans    TomorrowDayTypePlan[]
+  workoutSessions         WorkoutSession[]
   connections             UserConnection[]         @relation("UserFollows")
   followers               UserConnection[]         @relation("UserFollowing")
   settings                UserSettings?
@@ -441,49 +445,144 @@ model RoutineLog {
 }
 
 model Habit {
-  id                  String                    @id @default(cuid())
-  userId              String
-  name                String
-  description         String?
-  tier                HabitTier                 @default(GROWTH)
-  status              HabitStatus               @default(ACTIVE)
-  categoryId          String?
-  color               String?
-  icon                String?
-  frequencyType       HabitFrequencyType
-  frequencyValue      String?
-  targetCount         Int?
-  startDate           DateTime                  @default(now())
-  endDate             DateTime?
-  archivedAt          DateTime?
-  reminderTime        String?
-  reminderEnabled     Boolean                   @default(false)
-  points              Float?
-  estimatedDuration   Int?
-  difficulty          Int?
-  isPublic            Boolean                   @default(false)
-  appliesEveryDay     Boolean                   @default(true)
-  streakCount         Int                       @default(0)
-  longestStreak       Int                       @default(0)
-  lastCompletedDate   String?
-  completionRate      Float?
-  createdAt           DateTime                  @default(now())
-  updatedAt           DateTime                  @updatedAt
+  id                String             @id @default(cuid())
+  userId            String
+  name              String
+  description       String?
+  tier              HabitTier          @default(GROWTH)
+  status            HabitStatus        @default(ACTIVE)
+  categoryId        String?
+  color             String?
+  icon              String?
+  frequencyType     HabitFrequencyType
+  frequencyValue    String?
+  targetCount       Int?
+  startDate         DateTime           @default(now())
+  endDate           DateTime?
+  archivedAt        DateTime?
+  reminderTime      String?
+  reminderEnabled   Boolean            @default(false)
+  points            Float?
+  estimatedDuration Int?
+  difficulty        Int?
+  isPublic          Boolean            @default(false)
+  appliesEveryDay   Boolean            @default(true)
+  streakCount       Int                @default(0)
+  longestStreak     Int                @default(0)
+  lastCompletedDate String?
+  completionRate    Float?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  /// The shared catalogue row this habit was created from, if any.
+  ///
+  /// A **reference, not a link**. Selecting a catalogue entry copies its
+  /// defaults onto this row; nothing here reads back from `HabitDefinition`, so
+  /// editing the catalogue can never change an existing personal habit, and two
+  /// users who picked the same entry are fully independent. `null` = a custom
+  /// habit that has no catalogue entry at all, which is the normal case and must
+  /// work completely.
+  definitionId String?
+
+  /// How progress is measured. BOOLEAN is a tick; COUNT and DURATION carry a
+  /// numeric `targetValue` in `unit`.
+  trackingType HabitTrackingType @default(BOOLEAN)
+
+  /// BUILD accumulates towards a target, LIMIT must stay at or below one, AVOID
+  /// succeeds when the user did *not* do the thing.
+  direction HabitDirection @default(BUILD)
+
+  /// Fractional so 7.5 hours of sleep and 2.5 L of water are representable.
+  targetValue Float?
+  unit        String?
+
+  /// Drives the grouping order on the daily checklist.
+  timeOfDay TimeOfDay?
+
+  /// Manual ordering within a group. Ascending; ties fall back to name.
+  sortOrder Int @default(0)
+
+  /// `HealthMetric.metricType` this habit is fed by, when one exists. Lets a
+  /// numeric habit be completed from a health reading without duplicating that
+  /// table.
+  linkedMetricType String?
+
+  /// For `EVERY_N_DAYS`: how many calendar days between occurrences, anchored
+  /// on `startDate`.
+  intervalDays Int?
+
+  /// Grouping. Set on the children ("moisturise"), never on the parent, so a
+  /// parent row is a container and not a second thing to complete.
+  parentHabitId String?
+  children      Habit[] @relation("HabitChildren")
+
   focusSessions       FocusSession[]
   category            Category?                 @relation(fields: [categoryId], references: [id])
   user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  definition          HabitDefinition?          @relation(fields: [definitionId], references: [id], onDelete: SetNull)
+  parent              Habit?                    @relation("HabitChildren", fields: [parentHabitId], references: [id], onDelete: SetNull)
   dayTypeAssignments  HabitDayType[]
   logs                HabitLog[]
   overrides           HabitOverride[]
   tags                HabitTag[]
   minimumDayTemplates MinimumDayTemplateHabit[]
   timeEntries         TimeEntry[]
+  workoutSessions     WorkoutSession[]
 
+  @@unique([userId, name])
   @@index([userId, status])
   @@index([userId, isPublic])
   @@index([categoryId])
   @@index([userId, createdAt])
   @@index([status, tier])
+  @@index([definitionId])
+  @@index([parentHabitId])
+  @@index([userId, sortOrder])
+}
+
+/// The shared habit catalogue.
+///
+/// System-owned and read-only to everyone except an admin. A row here is a
+/// *suggestion*: selecting one copies these values into the user's own `Habit`,
+/// after which the two share nothing. There is deliberately no `userId` and no
+/// per-user state on this model — a catalog default that became live-linked
+/// would be exactly the bug the `definitionId` column's doc comment rules out.
+model HabitDefinition {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String?
+
+  /// Free-text category ("Health", "Career"). Deliberately a plain string, not
+  /// a relation to the per-user `Category`: a catalogue row has to be readable
+  /// before the reader has any categories of their own.
+  category String?
+
+  /// Suggested starting values. Copied, never linked.
+  tier             HabitTier          @default(GROWTH)
+  frequencyType    HabitFrequencyType @default(DAILY)
+  frequencyValue   String?
+  targetValue      Float?
+  unit             String?
+  targetCount      Int?
+  intervalDays     Int?
+  trackingType     HabitTrackingType  @default(BOOLEAN)
+  direction        HabitDirection     @default(BUILD)
+  timeOfDay        TimeOfDay?
+  linkedMetricType String?
+
+  icon      String?
+  color     String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  habits Habit[]
+
+  @@index([isActive, sortOrder])
+  @@index([category])
 }
 
 model HabitLog {
@@ -494,16 +593,27 @@ model HabitLog {
   status          HabitLogStatus
   completedAt     DateTime?
   durationMinutes Int?
-  quantity        Int?
+  /// Fractional: 7.5 hours of sleep, 2.5 L of water, 12.5 push-ups.
+  quantity        Float?
   difficulty      Int?
   energyLevel     Int?
   moodBefore      Int?
   moodAfter       Int?
   note            String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  habit           Habit          @relation(fields: [habitId], references: [id], onDelete: Cascade)
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The target and unit in force **when this row was written**.
+  ///
+  /// Without these, raising a target silently re-judged every past day, so
+  /// raising "Daily Steps" from 8k to 15k would retroactively turn three months
+  /// of completed logs into misses. The snapshot is the historical record; the
+  /// habit's own `targetValue` only governs today onward.
+  targetSnapshot Float?
+  unitSnapshot   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, habitId, date])
   @@index([userId, date])
@@ -815,6 +925,177 @@ model HealthMetric {
   @@unique([userId, date, metricType, timeOfDay])
   @@index([userId, metricType, date])
   @@index([date, userId])
+}
+
+/// A movement in someone's training split ("bench press", "pull-up").
+///
+/// Scoped per user and unrelated to the shared catalogue: two people training
+/// the same lift keep entirely separate rows, and no `userId` here is ever
+/// read without an ownership check.
+model Exercise {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  /// Free-text muscle group, so the split can be filtered without a taxonomy.
+  muscleGroup String?
+  equipment   String?
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions WorkoutSessionExercise[]
+
+  @@unique([userId, name])
+  @@index([userId, isArchived])
+}
+
+/// One training session ("Push day, Tuesday").
+model WorkoutSession {
+  id              String    @id @default(cuid())
+  userId          String
+  date            String
+  name            String?
+  notes           String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  durationMinutes Int?
+  /// Set on the session when the user marks it a rest day, so "recovery day" is
+  /// a real recorded thing rather than the absence of a row.
+  isRestDay       Boolean   @default(false)
+  /// Optional link to the habit this session satisfies, so a "Gym" habit can be
+  /// completed from real logging rather than a second manual tick.
+  habitId         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit       Habit?                   @relation(fields: [habitId], references: [id], onDelete: SetNull)
+  exercises   WorkoutSessionExercise[]
+  workoutSets WorkoutSet[]
+
+  @@index([userId, date])
+  @@index([habitId])
+}
+
+/// A join row: which exercises were performed in a session, and in what order.
+model WorkoutSessionExercise {
+  id         String  @id @default(cuid())
+  sessionId  String
+  exerciseId String
+  userId     String
+  sortOrder  Int     @default(0)
+  notes      String?
+
+  session  WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  sets     WorkoutSet[]
+
+  @@index([sessionId, sortOrder])
+  @@index([exerciseId])
+  @@index([userId])
+}
+
+/// One logged set.
+///
+/// Reached through the `WorkoutSessionExercise` row rather than from the session
+/// and exercise separately, so "the sets of the bench press in this session" is
+/// a single nested include instead of a join the query planner has to invent.
+/// `userId` is carried for the same reason as everywhere else: an ownership
+/// predicate that can be applied without walking a relation.
+model WorkoutSet {
+  id                String   @id @default(cuid())
+  sessionExerciseId String
+  userId            String
+  setNumber         Int
+  reps              Int?
+  weightKg          Float?
+  /// Rate of perceived exertion, 1-10. Nullable: a bodyweight set often has no
+  /// meaningful number.
+  rpe               Int?
+  isWarmup          Boolean  @default(false)
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  sessionExercise  WorkoutSessionExercise @relation(fields: [sessionExerciseId], references: [id], onDelete: Cascade)
+  workoutSession   WorkoutSession?        @relation(fields: [workoutSessionId], references: [id])
+  workoutSessionId String?
+
+  @@index([sessionExerciseId])
+  @@index([userId])
+}
+
+/// A DSA problem the user has worked on, with spaced-repetition scheduling.
+///
+/// `nextReviewAt` is the whole point: solving is not the same as remembering,
+/// so a problem re-surfaces on an expanding interval instead of being marked
+/// done forever.
+model ProblemLog {
+  id                 String    @id @default(cuid())
+  userId             String
+  title              String
+  platform           String?
+  problemUrl         String?
+  difficulty         String?
+  topicTags          String?
+  /// Free-text: what the user got wrong the first time.
+  notes              String?
+  solvedAt           DateTime?
+  /// How many times it has been revisited, which drives the interval.
+  reviewCount        Int       @default(0)
+  /// The interval *in effect*, kept alongside the date so the schedule stays
+  /// explainable after the fact.
+  reviewIntervalDays Int?
+  nextReviewAt       DateTime?
+  lastReviewedAt     DateTime?
+  status             String    @default("SOLVED")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, nextReviewAt])
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+/// Where an application stands.
+enum ApplicationStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+/// A job or internship application, with the feedback that comes back with it.
+model JobApplication {
+  id                String            @id @default(cuid())
+  userId            String
+  company           String
+  role              String
+  jobUrl            String?
+  location          String?
+  workMode          String?
+  status            ApplicationStatus @default(APPLIED)
+  appliedAt         DateTime          @default(now())
+  /// Free-text salary or compensation notes.
+  compensation      String?
+  notes             String?
+  /// What the rejection actually said, kept because "learn from rejections" is
+  /// only possible if the rejection was recorded.
+  rejectionReason   String?
+  rejectionFeedback String?
+  followUpAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, appliedAt])
 }
 
 model NutritionEntry {
@@ -1897,6 +2178,38 @@ enum HabitFrequencyType {
   RANDOM
   ONE_TIME
   CUSTOM
+  /// Every N calendar days, anchored on `Habit.startDate`. Dentist ~180,
+  /// toothbrush ~90, haircut ~21.
+  EVERY_N_DAYS
+}
+
+/// How a habit's progress is measured.
+enum HabitTrackingType {
+  /// Ticked done or not done; there is no number.
+  BOOLEAN
+  /// A count of repetitions against `targetValue` ("8 glasses", "3 DSA problems").
+  COUNT
+  /// A duration against `targetValue`, in `unit` ("7.5 h", "45 min").
+  DURATION
+}
+
+/// What completing the habit means numerically.
+enum HabitDirection {
+  /// Reach `targetValue` or more: `quantity >= targetValue`.
+  BUILD
+  /// Stay at or under `targetValue`: `quantity <= targetValue`. Sugar, screen time.
+  LIMIT
+  /// Success is *not* doing it. No target is read; the boolean is the answer.
+  AVOID
+}
+
+/// Coarse grouping used by the daily checklist, not a clock time.
+enum TimeOfDay {
+  MORNING
+  AFTERNOON
+  EVENING
+  NIGHT
+  ANYTIME
 }
 
 enum GoalType {

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { nutritionService } from '@/server/services/nutrition.service';
 import { createNutritionSchema, nutritionQuerySchema } from '@/schemas/nutrition.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -59,8 +60,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching nutrition entries:', error);
-    return NextResponse.json({ error: 'Failed to fetch nutrition entries' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -88,10 +88,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: entries }, { status: 201 });
   } catch (error) {
-    console.error('Error creating nutrition entries:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create nutrition entries' }, { status: 500 });
+    return handleError(error);
   }
 }

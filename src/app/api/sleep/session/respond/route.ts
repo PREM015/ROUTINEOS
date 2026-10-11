@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -45,10 +46,6 @@ export async function POST(req: NextRequest) {
     );
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error responding to sleep prompt:', error);
-    return NextResponse.json(
-      { error: 'Failed to respond to sleep prompt' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { importHabits, importGoals } from '@/server/data/importer';
 import type { z } from 'zod';
-import type { importPayloadSchema } from '@/lib/validation/import.schema';
+import type { importPayloadSchema } from '@/schemas/import.schema';
 import type { UserId } from '@/types/ids';
 
 /**

@@ -1,4 +1,5 @@
-import { resetPasswordSchema } from '@/lib/validation/auth';
+import { resetPasswordSchema } from '@/schemas/auth.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import {
@@ -44,15 +45,6 @@ export async function POST(request: NextRequest) {
       message: 'Password has been reset',
     });
   } catch (error) {
-    console.error('Error resetting password:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to reset password' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

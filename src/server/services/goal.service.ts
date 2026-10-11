@@ -2,7 +2,7 @@ import type { GoalPriority, GoalStatus, GoalType, Prisma } from '@/generated/pri
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { TagRepository } from '@/server/repositories/tag.repository';
 import { ProjectRepository } from '@/server/repositories/project.repository';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { NotFoundError, ValidationError, BadRequestError } from '@/lib/errors/app-error';
 import type { CreateGoalInput, UpdateGoalInput } from '@/types/goal';
 import type { milestoneSchema } from '@/schemas/project.schema';
 import type { GoalCheckinInput } from '@/schemas/goal.schema';
@@ -203,7 +203,7 @@ export class GoalService {
       new Date(startDate.getTime() + 365 * 24 * 60 * 60 * 1000);
 
     if (endDate <= startDate) {
-      throw new Error('End date must be after start date');
+      throw new BadRequestError('End date must be after start date');
     }
 
     const appliesEveryDay = input.appliesEveryDay ?? true;

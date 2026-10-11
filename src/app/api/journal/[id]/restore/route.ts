@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { AppError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryIdSchema } from '@/schemas/journal.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -35,14 +35,6 @@ export async function POST(
     const entry = await journalService.restore(userIdFromSession(session), parsedParams.data.id);
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { error: error.message, details: error.details ?? undefined },
-        { status: error.statusCode }
-      );
-    }
-
-    console.error('Error restoring journal entry:', error);
-    return NextResponse.json({ error: 'Failed to restore journal entry' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -1,4 +1,5 @@
 import { calendarDaysBetween } from '@/lib/dates';
+import { EditWindowError } from '@/lib/errors/app-error';
 
 /**
  * The retroactive-edit window, as one pure rule.
@@ -84,22 +85,5 @@ export function assertWithinEditWindow(
   }
 }
 
-/**
- * Thrown when a write is outside the user's retroactive window.
- *
- * Its own class rather than a bare `ValidationError` so the route can answer
- * `403` for "your window closed" and `400` for genuinely malformed input. The
- * distinction matters: retrying with different data cannot fix a closed window,
- * so telling the client to fix the payload would be a lie.
- */
-export class EditWindowError extends Error {
-  readonly daysAgo: number;
-  readonly retroactiveEditDays: number;
+export { EditWindowError } from '@/lib/errors/app-error';
 
-  constructor(message: string, daysAgo: number, retroactiveEditDays: number) {
-    super(message);
-    this.name = 'EditWindowError';
-    this.daysAgo = daysAgo;
-    this.retroactiveEditDays = retroactiveEditDays;
-  }
-}

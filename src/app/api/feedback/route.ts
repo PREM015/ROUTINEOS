@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { feedbackService } from '@/server/services/feedback.service';
 import { createFeedbackSchema, feedbackQuerySchema } from '@/schemas/feedback.schema';
@@ -46,11 +47,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error listing feedback:', error);
-    return NextResponse.json(
-      { error: 'Failed to list feedback' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -81,10 +78,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating feedback:', error);
-    return NextResponse.json(
-      { error: 'Failed to create feedback' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

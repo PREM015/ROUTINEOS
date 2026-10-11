@@ -23,11 +23,14 @@
  */
 
 import { NextResponse } from 'next/server';
+import { ERROR_CODES, codeForStatus } from '@/lib/errors/error-codes';
 
 export interface APIResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
+  /** Stable, machine-readable error code. Present on error responses. */
+  code?: string;
   details?: any;
   meta?: {
     total?: number;
@@ -46,10 +49,11 @@ function successBody<T>(data: T, meta?: APIResponse['meta']): APIResponse<T> {
   };
 }
 
-function errorBody(error: string, details?: any): APIResponse {
+function errorBody(error: string, code: string, details?: any): APIResponse {
   return {
     success: false,
     error,
+    code,
     ...(details !== undefined && { details }),
   };
 }
@@ -86,22 +90,32 @@ export function errorResponse(
   status = 500,
   details?: unknown
 ): NextResponse {
-  return NextResponse.json(errorBody(error, details), { status });
+  return NextResponse.json(errorBody(error, codeForStatus(status), details), { status });
 }
 
 /** 400 with a Zod `flatten()` payload attached. */
 export function validationErrorResponse(errors: any): NextResponse {
-  return NextResponse.json(errorBody('Validation failed', errors), { status: 400 });
+  return NextResponse.json(
+    errorBody('Validation failed', ERROR_CODES.VALIDATION_ERROR, errors),
+    { status: 400 }
+  );
 }
 
 export function unauthorizedResponse(): NextResponse {
-  return NextResponse.json(errorBody('Unauthorized'), { status: 401 });
+  return NextResponse.json(errorBody('Unauthorized', ERROR_CODES.UNAUTHORIZED), {
+    status: 401,
+  });
 }
 
 export function forbiddenResponse(): NextResponse {
-  return NextResponse.json(errorBody('Forbidden'), { status: 403 });
+  return NextResponse.json(errorBody('Forbidden', ERROR_CODES.FORBIDDEN), {
+    status: 403,
+  });
 }
 
 export function notFoundResponse(resource: string = 'Resource'): NextResponse {
-  return NextResponse.json(errorBody(`${resource} not found`), { status: 404 });
+  return NextResponse.json(
+    errorBody(`${resource} not found`, ERROR_CODES.NOT_FOUND),
+    { status: 404 }
+  );
 }

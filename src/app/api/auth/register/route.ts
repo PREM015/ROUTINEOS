@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authService } from '@/server/services/auth.service';
-import { registerSchema } from '@/lib/validation/auth';
-import { loginSchema } from '@/lib/validation/auth';
+import { registerSchema, loginSchema } from '@/schemas/auth.schema';
 import {
   AUTH_RATE_LIMITS,
   checkAuthRateLimit,

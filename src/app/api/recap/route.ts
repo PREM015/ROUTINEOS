@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { recapService } from '@/server/services/recap.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -42,7 +43,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error generating recap:', error);
-    return NextResponse.json({ error: 'Failed to generate recap' }, { status: 500 });
+    return handleError(error);
   }
 }

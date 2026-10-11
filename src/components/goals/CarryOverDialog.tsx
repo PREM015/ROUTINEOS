@@ -2,7 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { CalendarPlus } from 'lucide-react';
-import { apiRequest } from '@/lib/api-client';
+import { apiRequest, extractFieldErrors } from '@/lib/api-client';
+import { focusFirstInvalidField } from '@/lib/utils';
 import { addDays } from '@/lib/goals/goal-metrics';
 import { Button, Input } from '@/components/ui';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
@@ -56,6 +57,7 @@ export function CarryOverDialog({ goal, onClose, onCarried }: CarryOverDialogPro
     () => addDays(today, DEFAULT_WINDOW_DAYS)
   );
   const [keepProgress, setKeepProgress] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +66,20 @@ export function CarryOverDialog({ goal, onClose, onCarried }: CarryOverDialogPro
       event.preventDefault();
       if (busy) return;
 
+      const nextErrors: Record<string, string> = {};
+      if (!endDate || endDate < today) {
+        nextErrors.endDate = 'Deadline must be today or later';
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setFieldErrors(nextErrors);
+        setError(null);
+        focusFirstInvalidField();
+        return;
+      }
+
       setBusy(true);
+      setFieldErrors({});
       setError(null);
       try {
         const created = await apiRequest<{ id: string }>(
@@ -73,11 +88,17 @@ export function CarryOverDialog({ goal, onClose, onCarried }: CarryOverDialogPro
         );
         onCarried(created.id);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not carry that goal over');
+        const serverFieldErrors = extractFieldErrors(err);
+        if (Object.keys(serverFieldErrors).length > 0) {
+          setFieldErrors(serverFieldErrors);
+          focusFirstInvalidField();
+        } else {
+          setError(err instanceof Error ? err.message : 'Could not carry that goal over');
+        }
         setBusy(false);
       }
     },
-    [busy, endDate, goal.id, keepProgress, onCarried]
+    [busy, endDate, goal.id, keepProgress, onCarried, today]
   );
 
   return (
@@ -113,6 +134,7 @@ export function CarryOverDialog({ goal, onClose, onCarried }: CarryOverDialogPro
           value={endDate}
           min={today}
           onChange={(e) => setEndDate(e.target.value)}
+          error={fieldErrors.endDate}
         />
       </div>
 
@@ -153,7 +175,12 @@ export function CarryOverDialog({ goal, onClose, onCarried }: CarryOverDialogPro
         </label>
       </fieldset>
 
-      {error && (
+      {fieldErrors.endDate && (
+        <p role="alert" className="text-xs text-destructive">
+          {fieldErrors.endDate}
+        </p>
+      )}
+      {error && !fieldErrors.endDate && (
         <p role="alert" className="text-xs text-destructive">
           {error}
         </p>

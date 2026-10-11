@@ -33,7 +33,7 @@ import {
   resolveRetroactiveEditDays,
   type EditWindowDecision,
 } from '@/lib/routine/edit-window';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { NotFoundError, ValidationError, BadRequestError } from '@/lib/errors/app-error';
 import { ScoringService } from '@/server/services/scoring.service';
 import { notificationService } from '@/server/services/notification.service';
 import { toUserId, type UserId } from '@/types/ids';
@@ -630,7 +630,7 @@ category: block.category
     },
   ): Promise<RoutineTemplateWithBlocks | RoutineTemplate> {
     if (!input.name?.trim()) {
-      throw new Error('Template name is required');
+      throw new BadRequestError('Template name is required');
     }
 
     const isDefault = input.isDefault ?? false;
@@ -689,7 +689,7 @@ category: block.category
   ) {
     const existing = await this.routineRepository.findTemplateById(templateId, userId);
     if (!existing) {
-      throw new Error('Routine template not found');
+      throw new NotFoundError('Routine template');
     }
 
     const isDefault = input.isDefault === undefined ? existing.isDefault : input.isDefault;
@@ -893,7 +893,7 @@ category: block.category
     // Verify template ownership
     const template = await this.routineRepository.findTemplateById(templateId, userId);
     if (!template) {
-      throw new Error('Template not found');
+      throw new NotFoundError('Template');
     }
 
     return this.writeBlock(userId, template, input);
@@ -923,10 +923,10 @@ category: block.category
 
     // Validate time format
     if (!/^\d{2}:\d{2}$/.test(input.startTime)) {
-      throw new Error('Start time must be in HH:mm format');
+      throw new BadRequestError('Start time must be in HH:mm format');
     }
     if (!/^\d{2}:\d{2}$/.test(input.endTime)) {
-      throw new Error('End time must be in HH:mm format');
+      throw new BadRequestError('End time must be in HH:mm format');
     }
 
     // Overlaps are advisory, not a rejection: the route answers 201 with a
@@ -1033,7 +1033,7 @@ category: block.category
       const endTime = input.endTime ?? block.endTime;
 
       if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime)) {
-        throw new Error('Times must be in HH:mm format');
+        throw new BadRequestError('Times must be in HH:mm format');
       }
 
       // A resize can create an overlap just as an insert can, and it is advisory
@@ -1073,10 +1073,10 @@ category: block.category
   ): Promise<RoutineBlock[]> {
     const template = await this.routineRepository.findTemplateById(templateId, userId);
     if (!template) {
-      throw new Error('Template not found');
+      throw new NotFoundError('Template');
     }
     if (blockId === peerId) {
-      throw new Error('Cannot reorder a block relative to itself');
+      throw new BadRequestError('Cannot reorder a block relative to itself');
     }
 
     const blocks = await this.routineRepository.findBlocksByTemplate(templateId);
@@ -1084,7 +1084,7 @@ category: block.category
     const peer = blocks.find((b) => b.id === peerId);
 
     if (!block || !peer) {
-      throw new Error('Block not found');
+      throw new NotFoundError('Block');
     }
 
     return this.routineRepository.swapBlockOrder(userId, blockId, peerId);
@@ -1096,10 +1096,10 @@ category: block.category
   async deleteBlock(userId: UserId, templateId: string, blockId: string) {
     const block = await this.routineRepository.findBlockByIdForService(blockId);
     if (!isOwnedByUser(block, userId)) {
-      throw new NotFoundError('Block not found');
+      throw new NotFoundError('Block');
     }
     if (block.templateId !== templateId) {
-      throw new Error('Block belongs to a different template');
+      throw new BadRequestError('Block belongs to a different template');
     }
 
     // Cancel any pending notifications for this block
@@ -1351,7 +1351,7 @@ async deleteById(
       const found = await this.routineRepository.findTemplateByDayTypeId(toUserId(input.dayTypeId), userId);
       if (found) return found;
       const definition = await this.routineRepository.findDayTypeDefinitionById(input.dayTypeId, userId);
-      if (!definition) throw new Error('Day type not found');
+      if (!definition) throw new NotFoundError('Day type');
       return this.createSimpleTemplate(userId, {
         name: input.name ?? definition.name,
         dayType: slugToDayType(definition.slug),
@@ -1396,7 +1396,7 @@ async deleteById(
     // caller attach another account's category to their own block.
     if (categoryId) {
       const category = await this.categoryRepository.findById(categoryId, userId);
-      if (!category) throw new Error('Category not found');
+      if (!category) throw new NotFoundError('Category not found');
     }
 
     // Append after the highest slot rather than at `count`, so a block deleted

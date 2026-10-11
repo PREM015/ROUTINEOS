@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { createFocusSessionSchema, focusQuerySchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -39,11 +40,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data, meta });
   } catch (error) {
-    console.error('Error fetching focus sessions:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch focus sessions' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -78,14 +75,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating focus session:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to create focus session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

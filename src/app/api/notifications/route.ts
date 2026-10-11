@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { notificationService } from '@/server/services/notification.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { toUserId, userIdFromSession, type UserId } from '@/types/ids';
@@ -97,11 +98,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch notifications' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -134,11 +131,7 @@ export async function POST(request: NextRequest) {
     const updated = await notificationService.markAllRead(userIdFromSession(session));
     return NextResponse.json({ success: true, data: { updated } });
   } catch (error) {
-    console.error('Error marking notifications read:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to mark notifications as read' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

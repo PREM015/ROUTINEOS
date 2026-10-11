@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { habitContributionService } from '@/server/services/habit-contribution.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -41,10 +42,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching habit contributions:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch habit contributions' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

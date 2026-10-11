@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { wellnessService } from '@/server/services/wellness.service';
 import { logMoodSchema, moodQuerySchema } from '@/schemas/mood.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -48,8 +49,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data, meta, summary });
   } catch (error) {
-    console.error('Error fetching mood logs:', error);
-    return NextResponse.json({ error: 'Failed to fetch mood logs' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -77,10 +77,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: log }, { status: 201 });
   } catch (error) {
-    console.error('Error logging mood:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to log mood' }, { status: 500 });
+    return handleError(error);
   }
 }

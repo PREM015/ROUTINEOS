@@ -1,4 +1,5 @@
 import { auth, signOut } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { AuthService } from '@/server/services/auth.service';
 import { NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -21,15 +22,6 @@ export async function POST() {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error revoking all sessions:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to revoke all sessions' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

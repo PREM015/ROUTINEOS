@@ -423,8 +423,23 @@ export default function NotificationsSettingsPage() {
     );
   }
 
+  /*
+   * Email is absent on purpose.
+   *
+   * This application does not send email, and the transport has been removed
+   * rather than left dormant. Offering the toggle would let a user switch on a
+   * channel that cannot deliver anything, which is worse than not showing it:
+   * the switch would sit there reading "on" and mean nothing.
+   *
+   * The `emailNotifications` column still exists on `UserSettings` — dropping it
+   * is a schema change needing a migration, and it is deliberately left in place
+   * so removing the UI now does not force a data migration later. Nothing reads
+   * or writes it any more.
+   *
+   * SMS is retained: it has its own provider path and was not part of the email
+   * system.
+   */
   const channels: ToggleRow[] = [
-    { key: 'emailNotifications', label: 'Email', description: 'Deliver notifications by email.' },
     { key: 'pushNotifications', label: 'Push notifications', description: 'Deliver real-time notifications to this device.' },
     { key: 'smsNotifications', label: 'SMS', description: 'Deliver notifications by text message.' },
   ];

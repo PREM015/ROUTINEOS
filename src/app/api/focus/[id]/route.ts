@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { updateFocusSessionSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -26,14 +26,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: focusSession });
   } catch (error) {
-    console.error('Error fetching focus session:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to fetch focus session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -68,19 +61,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: focusSession });
   } catch (error) {
-    console.error('Error updating focus session:', error);
-
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to update focus session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -101,18 +82,6 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {
-    console.error('Error deleting focus session:', error);
-
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to delete focus session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

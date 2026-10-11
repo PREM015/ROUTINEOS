@@ -155,6 +155,35 @@ export function apiErrorMessage(json: unknown, fallback: string): string {
   return fallback;
 }
 
+/**
+ * Extract per-field validation messages from a failed request.
+ *
+ * The API error envelope carries `details.fieldErrors` as
+ * `Record<string, string[]>` (see `lib/errors/error-mapper.ts`). A form wants
+ * those keyed to its own inputs, one message each, so it can pass them to an
+ * `Input`'s `error` prop instead of showing one opaque banner. Returns an empty
+ * object when the throwable has no field-level detail (network/500 errors),
+ * which lets the caller fall back to a form-level message.
+ */
+export function extractFieldErrors(throwable: unknown): Record<string, string> {
+  const details =
+    throwable instanceof ApiError
+      ? throwable.details
+      : (throwable as { details?: unknown } | null)?.details;
+
+  if (!details || typeof details !== 'object') return {};
+
+  const fieldErrors = (details as { fieldErrors?: unknown }).fieldErrors;
+  if (!fieldErrors || typeof fieldErrors !== 'object') return {};
+
+  const out: Record<string, string> = {};
+  for (const [field, value] of Object.entries(fieldErrors as Record<string, unknown>)) {
+    const message = Array.isArray(value) ? value[0] : value;
+    if (typeof message === 'string' && message.length > 0) out[field] = message;
+  }
+  return out;
+}
+
 /** Simple fetch wrapper that throws on non-ok responses */
 export async function fetchWithAuth(
   path: string,

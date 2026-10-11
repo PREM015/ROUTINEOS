@@ -113,7 +113,9 @@ export default function MonthlyResetPage() {
           rawGoals.map((g: Record<string, unknown>) => ({
             id: g.id as string,
             title: g.title as string,
-            status: (g.status as string) ?? 'IN_PROGRESS',
+            // Fallback must be a real `GoalStatus`; 'IN_PROGRESS' does not exist
+            // in the enum and rendered as an unknown status.
+            status: (g.status as string) ?? 'ACTIVE',
             progressPercent: typeof g.progressPercent === 'number' ? g.progressPercent : 0,
           }))
         );

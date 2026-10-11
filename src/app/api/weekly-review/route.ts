@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { reviewService } from '@/server/services/review.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -43,11 +44,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error fetching weekly review:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch review' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -79,10 +76,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: review });
   } catch (error) {
-    console.error('Error saving weekly review:', error);
-    return NextResponse.json(
-      { error: 'Failed to save review' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

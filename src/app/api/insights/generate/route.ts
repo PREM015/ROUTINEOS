@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { insightGenerationService } from '@/server/services/insight.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -48,15 +49,6 @@ export async function POST(request: NextRequest) {
       cost: result.cost,
     });
   } catch (error) {
-    console.error('Error generating insight:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to generate insight' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

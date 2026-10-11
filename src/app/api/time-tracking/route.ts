@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { timeTrackingService } from '@/server/services/time-tracking.service';
 import { createTimeEntrySchema, timeTrackingQuerySchema } from '@/schemas/time-tracking.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -55,11 +56,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching time entries:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch time entries' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -100,12 +97,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   } catch (error) {
-    console.error('Error creating time entry:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to create time entry' }, { status: 500 });
+    return handleError(error);
   }
 }

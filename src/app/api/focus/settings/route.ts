@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { focusSettingsPatchSchema } from '@/schemas/focus.schema';
 import { userIdFromSession } from '@/types/ids';
-import { AppError } from '@/lib/errors/app-error';
 
 /**
  * GET /api/focus/settings
@@ -23,8 +23,7 @@ export async function GET() {
     const settings = await focusService.getSettings(userIdFromSession(session));
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {
-    console.error('Error loading focus settings:', error);
-    return NextResponse.json({ error: 'Failed to load focus settings' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -58,10 +57,6 @@ export async function PUT(request: Request) {
     const settings = await focusService.updateSettings(userIdFromSession(session), parsed.data);
     return NextResponse.json({ success: true, data: settings });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('Error updating focus settings:', error);
-    return NextResponse.json({ error: 'Failed to update focus settings' }, { status: 500 });
+    return handleError(error);
   }
 }

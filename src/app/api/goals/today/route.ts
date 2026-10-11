@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
 import { UserService } from '@/server/services/user.service';
 import { getTodayString } from '@/lib/dates';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { toUserId } from '@/types/ids';
 
@@ -68,7 +69,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching today\'s goals:', error);
-    return NextResponse.json({ error: 'Failed to load goals' }, { status: 500 });
+    return handleError(error);
   }
 }

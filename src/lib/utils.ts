@@ -110,6 +110,31 @@ export function accentTint(accent: string): string {
 }
 
 /**
+ * Move focus to the first control marked invalid, after the current render has
+ * committed.
+ *
+ * The shared `Input`/`Textarea`/`Select` set `aria-invalid="true"` whenever an
+ * `error` is passed, so a form that has just called its validator does not need
+ * a ref per field — it can simply call this and the first visibly-wrong control
+ * receives focus (and is scrolled into view). Scheduled on a frame because the
+ * invalid attribute only exists once React has re-rendered with the new errors.
+ *
+ * No-op during SSR and when nothing is invalid.
+ */
+export function focusFirstInvalidField(scope?: ParentNode | null): void {
+  if (typeof window === 'undefined') return;
+  window.requestAnimationFrame(() => {
+    const root = scope ?? document;
+    const el = root.querySelector<HTMLElement>(
+      '[aria-invalid="true"], [data-invalid="true"]'
+    );
+    if (!el) return;
+    el.focus();
+    el.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+/**
  * A solid fill from a user accent, dark enough that **white text on it clears
  * WCAG AA** (4.5:1).
  *

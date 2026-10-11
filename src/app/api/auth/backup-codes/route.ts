@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextResponse } from 'next/server';
 
 const BACKUP_CODES_UNAVAILABLE = 'Two-factor backup codes are not available yet';
@@ -22,11 +23,7 @@ export async function GET() {
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error fetching backup codes:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch backup codes' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -49,10 +46,6 @@ export async function POST() {
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error regenerating backup codes:', error);
-    return NextResponse.json(
-      { error: 'Failed to regenerate backup codes' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

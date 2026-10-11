@@ -6,6 +6,8 @@ import type {
   HabitOverrideType,
   Prisma,
   HabitTier,
+  HabitTrackingType,
+  TimeOfDay,
 } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
 import type { UserId } from '@/types/ids';
@@ -28,6 +30,7 @@ const HABIT_SORT_COLUMNS: Record<string, string> = {
   longestStreak: 'longestStreak',
   completionRate: 'completionRate',
   points: 'points',
+  sortOrder: 'sortOrder',
 };
 
 /**
@@ -49,6 +52,12 @@ export interface HabitFindAllOptions {
   dayTypeId?: string;
   tagId?: string;
   search?: string;
+  trackingType?: HabitTrackingType;
+  timeOfDay?: TimeOfDay;
+  /** Restrict to children of one grouping parent. */
+  parentHabitId?: string;
+  /** Restrict to habits that came from the shared catalogue (or that did not). */
+  definitionId?: string | null;
 }
 
 /**
@@ -203,6 +212,33 @@ export class HabitRepository extends BaseRepository {
     // narrow anything.
     if (options?.tagId) {
       where.tags = { some: { tagId: options.tagId } };
+    }
+
+    // Tracking type / day-part / grouping filters. These narrow the "my habits"
+    // list only; none of them can reach another user because `userId` is the
+    // first key of `where` and is never overridden below.
+    if (options?.trackingType) {
+      where.trackingType = options.trackingType;
+    }
+
+    if (options?.timeOfDay) {
+      where.timeOfDay = options.timeOfDay;
+    }
+
+    if (options?.parentHabitId) {
+      where.parentHabitId = options.parentHabitId;
+    }
+
+    /*
+     * Catalogue provenance.
+     *
+     * `definitionId: null` is a meaningful filter ("my custom habits"), and it
+     * needs `equals: null` rather than being spread with `&&` — the same
+     * `null`-dropping trap documented in `updateHabit`.
+     */
+    if (options?.definitionId !== undefined) {
+      where.definitionId =
+        options.definitionId === null ? { equals: null } : options.definitionId;
     }
 
     /*
@@ -485,7 +521,12 @@ export class HabitRepository extends BaseRepository {
   }
 
   /**
-   * Upsert habit log
+   * Upsert habit log.
+   *
+   * `targetSnapshot` is written on create **and** on update, deliberately.
+   * On update it is only written when the caller supplies one, so editing a
+   * habit's target later does not reach back and re-stamp rows that were already
+   * judged under the old target — which is the whole reason the column exists.
    */
   async upsertLog(
     habitId: string,
@@ -507,6 +548,64 @@ export class HabitRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'upsertLog');
+    }
+  }
+
+  /**
+   * Find one of the user's habits by name.
+   *
+   * Backed by the new `@@unique([userId, name])` index, so this is a single
+   * indexed lookup rather than a filtered scan. It is what makes an idempotent
+   * starter-pack apply possible: the pack is keyed by habit name, and without
+   * this there would be no way to ask "does this user already have it?".
+   */
+  async findByName(userId: UserId, name: string): Promise<Habit | null> {
+    try {
+      return await this.prisma.habit.findUnique({
+        where: { userId_name: { userId, name } },
+      });
+    } catch (error) {
+      this.handleError(error, 'findByName');
+    }
+  }
+
+  /**
+   * Every habit name the user already has, in one query.
+   *
+   * A starter pack applies ~100 habits; asking per habit would be 100 round
+   * trips before a single row was written.
+   */
+  async findExistingNames(userId: UserId, names: string[]): Promise<Set<string>> {
+    if (names.length === 0) return new Set();
+    try {
+      const rows = await this.prisma.habit.findMany({
+        where: { userId, name: { in: names } },
+        select: { name: true },
+      });
+      return new Set(rows.map((r) => r.name));
+    } catch (error) {
+      this.handleError(error, 'findExistingNames');
+    }
+  }
+
+  /**
+   * Create habits in one round trip, skipping any name already taken.
+   *
+   * `skipDuplicates` relies on `@@unique([userId, name])`, so a re-run of the
+   * starter pack is a no-op rather than a duplicate-name crash.
+   */
+  async createManyIgnoreDuplicates(
+    data: Prisma.HabitCreateManyInput[]
+  ): Promise<number> {
+    if (data.length === 0) return 0;
+    try {
+      const result = await this.prisma.habit.createMany({
+        data,
+        skipDuplicates: true,
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'createManyIgnoreDuplicates');
     }
   }
 
@@ -817,6 +916,20 @@ export class HabitRepository extends BaseRepository {
         await tx.timeEntry.updateMany({
           where: { habitId },
           data: { habitId: null },
+        });
+        // Detach rather than delete: a workout session outlives the habit it
+        // was optionally linked to, so `onDelete: SetNull` is the right
+        // behaviour and deleting the session would lose real training history.
+        await tx.workoutSession.updateMany({
+          where: { habitId },
+          data: { habitId: null },
+        });
+        // Children point back at the parent with `onDelete: SetNull`, but
+        // clearing them explicitly keeps the intent readable and does not rely
+        // on the constraint firing.
+        await tx.habit.updateMany({
+          where: { parentHabitId: habitId },
+          data: { parentHabitId: null },
         });
         await tx.habitLog.deleteMany({ where: { habitId } });
         await tx.habitOverride.deleteMany({ where: { habitId } });

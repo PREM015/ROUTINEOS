@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { backupService } from '@/server/services/backup.service';
 import type { ExportFormat } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
@@ -58,15 +59,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error requesting export:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to request export' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

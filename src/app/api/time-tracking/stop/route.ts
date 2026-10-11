@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { timeTrackingService } from '@/server/services/time-tracking.service';
-import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -19,15 +19,6 @@ export async function POST() {
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    console.error('Error stopping time entry:', error);
-
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'No running time entry' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to stop time entry' }, { status: 500 });
+    return handleError(error);
   }
 }

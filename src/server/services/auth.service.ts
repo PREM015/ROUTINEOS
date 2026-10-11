@@ -22,7 +22,7 @@ import {
   loginSchema,
   registerSchema,
   resetPasswordSchema,
-} from '@/lib/validation/auth';
+} from '@/schemas/auth.schema';
 import { toUserId, type UserId } from '@/types/ids';
 
 /**

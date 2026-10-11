@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { SearchService } from '@/server/services/search.service';
 import { globalSearchSchema } from '@/schemas/search.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -40,11 +41,7 @@ export async function GET(request: NextRequest) {
     const results = await searchService.globalSearch(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: results });
-  } catch (error) {
-    console.error('Error performing search:', error);
-    return NextResponse.json(
-      { error: 'Failed to perform search' },
-      { status: 500 }
-    );
+} catch (error) {
+    return handleError(error);
   }
 }

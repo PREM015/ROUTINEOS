@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { UserService } from '@/server/services/user.service';
 import { DeviceType } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
@@ -66,16 +67,7 @@ export async function POST(request: NextRequest) {
       data: { id: record.id, lastActiveAt: record.lastActiveAt },
     });
   } catch (error) {
-    console.error('Error registering device session:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to register device session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -109,10 +101,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: { revoked: Boolean(existing) } });
   } catch (error) {
-    console.error('Error clearing device session:', error);
-    return NextResponse.json(
-      { error: 'Failed to clear device session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

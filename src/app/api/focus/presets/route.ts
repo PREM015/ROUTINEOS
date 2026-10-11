@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { focusPresetInputSchema } from '@/schemas/focus.schema';
 import { userIdFromSession } from '@/types/ids';
-import { AppError } from '@/lib/errors/app-error';
-import { z } from 'zod';
 
 /**
  * GET /api/focus/presets
@@ -24,8 +23,7 @@ export async function GET(request: Request) {
     const presets = await focusService.listPresets(userIdFromSession(session), includeArchived);
     return NextResponse.json({ success: true, data: presets });
   } catch (error) {
-    console.error('Error loading focus presets:', error);
-    return NextResponse.json({ error: 'Failed to load focus presets' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -49,13 +47,6 @@ export async function POST(request: Request) {
     const preset = await focusService.createPreset(userIdFromSession(session), parsed.data);
     return NextResponse.json({ success: true, data: preset }, { status: 201 });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
-    }
-    if (error instanceof AppError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('Error creating focus preset:', error);
-    return NextResponse.json({ error: 'Failed to create focus preset' }, { status: 500 });
+    return handleError(error);
   }
 }

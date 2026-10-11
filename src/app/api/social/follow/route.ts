@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { socialService } from '@/server/services/social.service';
-import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { followUserSchema } from '@/schemas/social.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 /**
@@ -35,19 +35,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error following user:', error);
-    if (error instanceof ConflictError) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to follow user' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

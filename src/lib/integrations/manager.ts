@@ -8,6 +8,7 @@ import type {
   OAuthConfig,
   TokenExchangeResult,
 } from '@/types/integrations';
+import { IntegrationError, IntegrationTokenError } from '@/lib/errors/app-error';
 
 /**
  * Integration connection manager.
@@ -54,22 +55,7 @@ const CLIENT_ID_FALLBACKS: Partial<Record<IntegrationProvider, string>> = {
   SPOTIFY: 'SPOTIFY_CLIENT_ID',
 };
 
-export class IntegrationError extends Error {
-  readonly provider: IntegrationProvider;
-
-  constructor(provider: IntegrationProvider, message: string) {
-    super(message);
-    this.name = 'IntegrationError';
-    this.provider = provider;
-  }
-}
-
-export class IntegrationTokenError extends IntegrationError {
-  constructor(provider: IntegrationProvider, message: string = 'Access token exchange failed') {
-    super(provider, message);
-    this.name = 'IntegrationTokenError';
-  }
-}
+export { IntegrationError, IntegrationTokenError } from '@/lib/errors/app-error';
 
 /**
  * The providers currently enabled in the integration registry.

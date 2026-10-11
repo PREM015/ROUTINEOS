@@ -1,6 +1,7 @@
 import { userService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { handleError } from '@/lib/errors/error-handler';
 import {
   AUTH_RATE_LIMITS,
   checkAuthRateLimit,
@@ -40,15 +41,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: { available: !exists } });
   } catch (error) {
-    console.error('Error checking email availability:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to check email availability' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

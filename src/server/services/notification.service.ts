@@ -5,9 +5,7 @@ import {
   type DeliveryChannels,
 } from '@/server/repositories/notification.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
-import { sendEmail } from '@/lib/email/sender';
 import { ACHIEVEMENTS_PATH, achievementDeepLink } from '@/lib/achievements/links';
-import { renderSimpleHtml } from '@/lib/email/html';
 import { pushService } from '@/server/services/push.service';
 import { toUserIdOptional, toUserId, type UserId  } from '@/types/ids';
 
@@ -600,31 +598,21 @@ export class NotificationService {
       const channels: DeliveryChannels = { email: false, push: false, sms: false };
       const failures: string[] = [];
 
-      if ((settings?.emailNotifications ?? true) && notification.user.email) {
-        try {
-          // `html` is supplied explicitly because the `src/emails` React
-          // templates are Node-only (they use `renderToStaticMarkup`, which
-          // Turbopack rejects in the App Router server graph). `renderSimpleHtml`
-          // is the route-safe equivalent.
-          const email = await sendEmail({
-            to: notification.user.email,
-            subject: notification.title,
-            template: 'habit-reminder',
-            html: renderSimpleHtml({
-              title: notification.title,
-              body: notification.body,
-              actionUrl: notification.actionUrl,
-            }),
-          });
-          if (email.ok) {
-            channels.email = true;
-          } else {
-            failures.push(email.error ?? 'email send rejected');
-          }
-        } catch (error) {
-          failures.push(error instanceof Error ? error.message : 'email threw');
-        }
-      }
+      /*
+       * The email channel is deliberately absent.
+       *
+       * This application does not send email, so the delivery attempt, the
+       * `sendEmail` transport and the `src/emails` React templates have all been
+       * removed rather than left dormant behind a feature flag.
+       *
+       * `channels.email` is still reported as `false` rather than omitted,
+       * because `DeliveryChannels` is part of the stored `NotificationLog`
+       * contract — a row written before this change has a real `email` flag in
+       * it, and dropping the key would make those rows read as "never attempted"
+       * rather than "not applicable any more".
+       *
+       * Push is untouched and remains the only delivery channel.
+       */
 
       if (settings?.pushNotifications ?? true) {
         try {

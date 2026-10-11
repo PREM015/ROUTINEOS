@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { dayTypePlanningService } from '@/server/services/day-type-planning.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -35,10 +36,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error selecting tomorrow day type:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to select day type' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
-import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -37,11 +37,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       meta: { projectId: id, total: goals.length },
     });
   } catch (error) {
-    console.error('Error fetching project goals:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch project goals' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -85,16 +81,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
       meta: { projectId: id, total: goals.length },
     });
   } catch (error) {
-    console.error('Error attaching goal to project:', error);
-
-    if (error instanceof NotFoundError) {
-      // The message distinguishes a missing project from a missing goal.
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to attach goal to project' }, { status: 500 });
+    return handleError(error);
   }
 }

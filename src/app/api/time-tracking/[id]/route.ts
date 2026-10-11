@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { timeTrackingService } from '@/server/services/time-tracking.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { updateTimeEntrySchema } from '@/schemas/time-tracking.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -35,14 +35,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    console.error('Error fetching time entry:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Time entry not found' }, { status: 404 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to fetch time entry' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -76,16 +69,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    console.error('Error updating time entry:', error);
-
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Time entry not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to update time entry' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -105,15 +89,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: deleted });
   } catch (error) {
-    console.error('Error deleting time entry:', error);
-
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Time entry not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to delete time entry' }, { status: 500 });
+    return handleError(error);
   }
 }

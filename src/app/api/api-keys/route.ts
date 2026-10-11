@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { apiKeyService } from '@/server/services/api-key.service';
-import { ValidationError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -19,13 +19,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: keys });
   } catch (error) {
-    console.error('Error fetching API keys:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to fetch API keys' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -53,18 +47,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (error) {
-    console.error('Error creating API key:', error);
-
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { error: error.message, details: error.details },
-        { status: 400 }
-      );
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to create API key' }, { status: 500 });
+    return handleError(error);
   }
 }

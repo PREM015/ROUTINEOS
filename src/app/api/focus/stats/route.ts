@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { focusStatsQuerySchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -47,8 +48,7 @@ export async function GET(request: NextRequest) {
     );
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error computing focus stats:', error);
-    return NextResponse.json({ error: 'Failed to compute focus stats' }, { status: 500 });
+    return handleError(error);
   }
 }
 

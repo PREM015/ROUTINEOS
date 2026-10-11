@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { insightReadService } from '@/server/services/insight.service';
 import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -80,10 +81,6 @@ export async function GET(request: NextRequest) {
       meta: { startDate, endDate, total: insights.length },
     });
   } catch (error) {
-    console.error('Error fetching insight history:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch insight history' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -66,3 +66,11 @@ ERROR.md
 
 # User data exports (written outside public/ so they are not statically served)
 .data/
+page md/BUSINESS_RULES.MD
+01.shop/01. CLOTHING-SHOPPING-README.md
+01.shop/03. GROOMING-SKINCARE-README.md
+01.shop/06. HEALTH-FITNESS-ESSENTIALS-README.md
+01.shop/04. TRAVEL-EVERYDAY-CARRY-README.md
+01.shop/02. SETUP-TECH-README.md
+.gitignore
+01.shop/05. ROOM-DESK-ORGANIZER-README.md

@@ -13,7 +13,7 @@ import {
 } from '@/server/domain/scoring/tier-weights';
 import type { TierWeights } from '@/server/domain/scoring/tier-weights';
 import { CALCULATION_RULES } from '@/config/scoring';
-import { calculateScoreSchema, scoreQuerySchema } from '@/lib/validation/score.schema';
+import { calculateScoreSchema, scoreQuerySchema } from '@/schemas/score.schema';
 import { isHabitScheduledForDate } from '@/lib/habits/scheduling';
 import type {
   CalculateDailyScoreInput,

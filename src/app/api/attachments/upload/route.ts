@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { uploadService } from '@/server/services/upload.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -41,10 +42,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: attachment }, { status: 201 });
   } catch (error) {
-    console.error('Error uploading attachment:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+    return handleError(error);
   }
 }

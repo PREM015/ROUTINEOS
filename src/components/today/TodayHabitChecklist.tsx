@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
 import AddHabitModal from '@/components/habits/AddHabitModal';
+import { HabitNumericEntry } from '@/components/habits/HabitNumericEntry';
 import { runAchievementCheck } from '@/store/achievement.store';
 // `showNotification` is the Web Notifications wrapper in `lib/pwa/notifications`
 // — it is not part of the achievement store, which only owns the celebration
@@ -31,6 +32,11 @@ import { submitOrQueue } from '@/lib/offline/outbox';
 import { cn } from '@/lib/utils';
 import { EASE } from '@/lib/motion';
 import type { HabitTier, HabitLogStatus } from '@/generated/prisma';
+import type {
+  HabitDirection,
+  HabitTrackingType,
+  TimeOfDay,
+} from '@/constants/prisma-enums';
 import { HABIT_TIER_CONFIG, HABIT_TIERS_ORDERED } from '@/constants/habit-tiers';
 import { GlassPanel } from '@/components/today/ui';
 import { actionToast, errorToast, useCelebration } from '@/components/today/celebration';
@@ -43,9 +49,26 @@ interface TodayHabit {
   icon: string | null;
   estimatedDuration: number | null;
   source?: 'SCHEDULED' | 'MANUAL';
+  /**
+   * Numeric-habit fields. All optional because the list endpoint and the
+   * optimistic local rows have to be assignable to one type, and a locally
+   * synthesised row (see the optimistic update above) has none of them yet.
+   *
+   * Every value here belongs to *this* habit row, which the API already scoped
+   * to the session user — so a numeric habit on this checklist is always being
+   * judged against its owner's own target.
+   */
+  trackingType?: HabitTrackingType;
+  direction?: HabitDirection;
+  targetValue?: number | null;
+  unit?: string | null;
+  timeOfDay?: TimeOfDay | null;
+  sortOrder?: number;
+  definitionId?: string | null;
   log: {
     id: string;
     status: HabitLogStatus;
+    quantity?: number | null;
   } | null;
 }
 
@@ -364,6 +387,91 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
     }
   }
 
+  /**
+   * Record a numeric reading for a COUNT or DURATION habit.
+   *
+   * Sends only the `quantity`; the **status is deliberately omitted** so the
+   * server derives it from the habit's own `direction` and `targetValue`
+   * (`statusFromReading` in `lib/habits/completion.ts`). Computing the status
+   * here instead would be a second definition of "done" on the client, and it
+   * would be wrong for every LIMIT and AVOID habit the moment somebody noticed.
+   *
+   * `submitOrQueue` rather than `fetch`, for the same reason `toggleHabit` uses
+   * it: a reading typed on the train should survive losing signal.
+   */
+  async function saveQuantity(habitId: string, quantity: number | null) {
+    setTogglingId(habitId);
+    setError(null);
+
+    const previous = habits;
+
+    // Optimistic: reflect the reading immediately, with the status the same rule
+    // would produce, so the row does not flicker back to "not done" while the
+    // request is in flight.
+    setHabits((prev) =>
+      prev.map((h) => {
+        if (h.id !== habitId) return h;
+        const tracking = h.trackingType ?? 'BOOLEAN';
+        const direction = h.direction ?? 'BUILD';
+        const optimisticStatus =
+          tracking === 'BOOLEAN'
+            ? h.log?.status ?? 'PARTIAL'
+            : direction === 'AVOID'
+              ? quantity === null
+                ? 'COMPLETED'
+                : 'PARTIAL'
+              : quantity !== null &&
+                  (direction === 'LIMIT'
+                    ? quantity <= (h.targetValue ?? Number.POSITIVE_INFINITY)
+                    : quantity >= (h.targetValue ?? 0))
+                ? 'COMPLETED'
+                : 'PARTIAL';
+        return {
+          ...h,
+          log: {
+            id: h.log?.id ?? `local-${habitId}`,
+            status: optimisticStatus,
+            quantity,
+          },
+        };
+      })
+    );
+
+    const name = previous.find((h) => h.id === habitId)?.name ?? 'Habit';
+
+    try {
+      const result = await submitOrQueue({
+        url: `/api/habits/${habitId}/log`,
+        body: {
+          date,
+          quantity,
+          // `PARTIAL` is the neutral starting point; the service replaces it with
+          // the direction-aware result. `statusIsExplicit` is deliberately NOT
+          // set — that flag exists so a client *can* force a literal status, and
+          // this path must not use it.
+          status: quantity === null ? 'PARTIAL' : 'PARTIAL',
+        },
+        label: `${name} — ${quantity ?? 0}`,
+      });
+
+      if (result.queued) {
+        showNotification('Saved for later', {
+          body: `${name} will sync when you are back online.`,
+        });
+        return;
+      }
+
+      await fetchTodayHabits({ background: true });
+    } catch (err) {
+      setHabits(previous);
+      const message = err instanceof Error ? err.message : 'Failed to save';
+      setError(message);
+      errorToast(message);
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
   /** True when every NON_NEGOTIABLE habit in the list is COMPLETED. */
   function allNonNegotiablesComplete(list: TodayHabit[]): boolean {
     const nonNegotiables = list.filter((h) => h.tier === 'NON_NEGOTIABLE');
@@ -474,6 +582,37 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
       const bucket = acc[habit.tier] ?? (acc[habit.tier] = []);
       bucket.push(habit);
     }
+
+    /*
+     * Within a tier: by `sortOrder`, then by the day-part the user assigned.
+     *
+     * `sortOrder` is the explicit control — the one a user actually reaches for.
+     * `timeOfDay` is the fallback for habits that never set one, so the default
+     * order is still morning-first rather than "whatever the database returned",
+     * which was the previous behaviour and read as random.
+     *
+     * Name is the final tiebreak so the order is **total**: two habits with the
+     * same `sortOrder` and no `timeOfDay` would otherwise be in an order that
+     * can change between fetches.
+     */
+    const TIME_RANK: Record<TimeOfDay, number> = {
+      MORNING: 0,
+      AFTERNOON: 1,
+      EVENING: 2,
+      NIGHT: 3,
+      ANYTIME: 4,
+    };
+
+    for (const bucket of Object.values(acc)) {
+      bucket.sort((a, b) => {
+        const bySortOrder = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+        if (bySortOrder !== 0) return bySortOrder;
+        const byTime = TIME_RANK[a.timeOfDay ?? 'ANYTIME'] - TIME_RANK[b.timeOfDay ?? 'ANYTIME'];
+        if (byTime !== 0) return byTime;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
     return acc;
   }, [habits]);
 
@@ -644,6 +783,30 @@ export function TodayHabitChecklist({ date }: TodayHabitChecklistProps) {
                       </motion.div>
 
                       <div className="flex-1 min-w-0">
+                        {/*
+                          A numeric habit gets a number field instead of only a
+                          checkbox.
+
+                          The checkbox stays for every habit — ticking a numeric
+                          habit is still meaningful ("I did the workout", no
+                          measurement) — but the field is what lets the day be
+                          *judged* against a target at all.
+                        */}
+                        {habit.trackingType && habit.trackingType !== 'BOOLEAN' && (
+                          <div className="mb-1.5 mt-1 max-w-xs">
+                            <HabitNumericEntry
+                              habitId={habit.id}
+                              habitName={habit.name}
+                              trackingType={habit.trackingType}
+                              direction={habit.direction ?? 'BUILD'}
+                              targetValue={habit.targetValue ?? null}
+                              unit={habit.unit ?? null}
+                              initialValue={habit.log?.quantity ?? null}
+                              onSave={(quantity) => saveQuantity(habit.id, quantity)}
+                              disabled={togglingId === habit.id}
+                            />
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           {habit.icon && <span aria-hidden="true">{habit.icon}</span>}
                           {isEditing ? (

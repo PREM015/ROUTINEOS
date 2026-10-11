@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
-import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -56,10 +56,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
       },
     });
   } catch (error) {
-    console.error('Error fetching goal history:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch goal history' }, { status: 500 });
+    return handleError(error);
   }
 }

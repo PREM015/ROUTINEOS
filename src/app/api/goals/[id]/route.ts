@@ -26,8 +26,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: goal });
   } catch (error) {
-    console.error('Error fetching goal:', error);
-    return NextResponse.json({ error: 'Failed to fetch goal' }, { status: 500 });
+    return handleError(error);
   }
 }
 

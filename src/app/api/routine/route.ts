@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { slugToDayType } from '@/constants/routine';
 import {
@@ -10,7 +11,7 @@ import {
   createRoutineTemplateRequestSchema,
   updateRoutineTemplateRequestSchema,
   applyTemplateToRangeSchema,
-} from '@/lib/validation/routine.schema';
+} from '@/schemas/routine.schema';
 import { EditWindowError } from '@/lib/routine/edit-window';
 import type { DayType } from '@/generated/prisma';
 import { toUserId, userIdFromSession } from '@/types/ids';
@@ -171,11 +172,7 @@ export async function GET(_request: NextRequest) {
       data,
     });
   } catch (error) {
-    console.error('Error fetching routine templates:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch routine templates' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { healthMetricService } from '@/server/services/health-metric.service';
 import { healthMetricSchema, healthMetricQuerySchema } from '@/schemas/health-metric.schema';
 import { NextRequest, NextResponse } from 'next/server';
@@ -61,8 +62,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching health metrics:', error);
-    return NextResponse.json({ error: 'Failed to fetch health metrics' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -90,10 +90,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: metric }, { status: 201 });
   } catch (error) {
-    console.error('Error creating health metric:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create health metric' }, { status: 500 });
+    return handleError(error);
   }
 }

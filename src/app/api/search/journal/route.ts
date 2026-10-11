@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
-import { AppError } from '@/lib/errors/app-error';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryQuerySchema } from '@/schemas/journal.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -54,13 +54,6 @@ export async function GET(request: NextRequest) {
       meta: { total: results.length, limit: validated.data.limit ?? 20 },
     });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { error: error.message, details: error.details ?? undefined },
-        { status: error.statusCode }
-      );
-    }
-    console.error('Error searching journal entries:', error);
-    return NextResponse.json({ error: 'Failed to search journal entries' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { focusPresetInputSchema } from '@/schemas/focus.schema';
 import { userIdFromSession } from '@/types/ids';
-import { AppError } from '@/lib/errors/app-error';
-import { z } from 'zod';
 
 /**
  * /api/focus/presets/[id]
@@ -43,14 +42,7 @@ export async function PATCH(request: Request, { params }: PresetContext) {
     );
     return NextResponse.json({ success: true, data: preset });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
-    }
-    if (error instanceof AppError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('Error updating focus preset:', error);
-    return NextResponse.json({ error: 'Failed to update focus preset' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -71,10 +63,6 @@ export async function DELETE(_request: Request, { params }: PresetContext) {
     const result = await focusService.deletePreset(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('Error deleting focus preset:', error);
-    return NextResponse.json({ error: 'Failed to delete focus preset' }, { status: 500 });
+    return handleError(error);
   }
 }

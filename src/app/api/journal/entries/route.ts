@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { journalService } from '@/server/services/journal.service';
 import { journalEntryQuerySchema } from '@/schemas/journal.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -90,7 +91,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching journal entries:', error);
-    return NextResponse.json({ error: 'Failed to fetch journal entries' }, { status: 500 });
+    return handleError(error);
   }
 }

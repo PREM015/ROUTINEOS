@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
-import { dayTypeSchema } from '@/lib/validation/routine.schema';
+import { dayTypeSchema } from '@/schemas/routine.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
 
@@ -80,11 +81,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: template }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/routine/templates error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create routine template.' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 

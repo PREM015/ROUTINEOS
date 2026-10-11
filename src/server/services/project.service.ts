@@ -13,6 +13,7 @@ import type {
   MilestoneInput,
   ProjectQueryParams,
 } from '@/schemas/project.schema';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { calculateGoalProgress } from '@/server/domain/goal/goal-tracker';
 import type { UserId } from '@/types/ids';
 
@@ -87,7 +88,7 @@ export class ProjectService {
   async getProject(userId: UserId, projectId: string) {
     const project = await this.projectRepository.findById(userId, projectId);
     if (!project) {
-      throw new Error('Project not found');
+      throw new NotFoundError('Project');
     }
     return project;
   }
@@ -231,7 +232,7 @@ export class ProjectService {
   async deleteMilestone(userId: UserId, milestoneId: string): Promise<void> {
     const count = await this.projectRepository.deleteMilestone(milestoneId, userId);
     if (count === 0) {
-      throw new Error('Milestone not found');
+      throw new NotFoundError('Milestone');
     }
   }
 

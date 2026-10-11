@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { weatherService } from '@/server/services/weather.service';
 import { weatherLogSchema, weatherQuerySchema } from '@/schemas/wellness.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -52,8 +53,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching weather logs:', error);
-    return NextResponse.json({ error: 'Failed to fetch weather logs' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -81,10 +81,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: log });
   } catch (error) {
-    console.error('Error saving weather log:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to save weather log' }, { status: 500 });
+    return handleError(error);
   }
 }

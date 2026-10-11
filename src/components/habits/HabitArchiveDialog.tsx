@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { extractFieldErrors } from '@/lib/api-client';
+import { focusFirstInvalidField } from '@/lib/utils';
 
 interface HabitArchiveDialogProps {
   habitId: string;
@@ -16,10 +18,12 @@ interface HabitArchiveDialogProps {
 export function HabitArchiveDialog({ habitId, habitName, onClose, onArchived }: HabitArchiveDialogProps) {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     setLoading(true);
+    setFieldErrors({});
     setError(null);
     try {
       const res = await fetch(`/api/habits/${habitId}/archive`, {
@@ -27,10 +31,24 @@ export function HabitArchiveDialog({ habitId, habitName, onClose, onArchived }: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),
       });
-      if (!res.ok) throw new Error('Failed to archive habit');
+      if (!res.ok) {
+        const serverFieldErrors = extractFieldErrors(new Error(await res.text()));
+        if (Object.keys(serverFieldErrors).length > 0) {
+          setFieldErrors(serverFieldErrors);
+        } else {
+          throw new Error('Failed to archive habit');
+        }
+        return;
+      }
       onArchived();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Archive failed');
+      const serverFieldErrors = extractFieldErrors(err);
+      if (Object.keys(serverFieldErrors).length > 0) {
+        setFieldErrors(serverFieldErrors);
+        focusFirstInvalidField();
+      } else {
+        setError(err instanceof Error ? err.message : 'Archive failed');
+      }
     } finally {
       setLoading(false);
     }
@@ -50,7 +68,12 @@ export function HabitArchiveDialog({ habitId, habitName, onClose, onArchived }: 
           Archive <strong className="text-foreground">{habitName}</strong>? Your history will be preserved.
         </p>
 
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+        {fieldErrors.reason && (
+        <p role="alert" className="mb-3 text-sm text-red-400">{fieldErrors.reason}</p>
+      )}
+      {error && !fieldErrors.reason && (
+        <p role="alert" className="mb-3 text-sm text-red-400">{error}</p>
+      )}
 
         <label className="block mb-5">
           <span className="block text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">

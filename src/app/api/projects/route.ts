@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { ProjectService } from '@/server/services/project.service';
 import { createProjectSchema, projectQuerySchema } from '@/schemas/project.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -51,13 +52,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching projects:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -101,12 +96,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: project }, { status: 201 });
   } catch (error) {
-    console.error('Error creating project:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
+    return handleError(error);
   }
 }

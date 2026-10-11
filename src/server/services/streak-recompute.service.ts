@@ -176,7 +176,7 @@ export class StreakRecomputeService {
         run = 1;
       }
       if (run > longest) longest = run;
-      previous = date;
+      previous = date
     }
 
     return longest;

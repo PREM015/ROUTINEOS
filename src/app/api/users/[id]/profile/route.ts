@@ -1,7 +1,7 @@
 import { userService } from '@/server/services/user.service';
 import { auth } from '@/lib/auth';
 import { RateLimiter } from '@/lib/middleware/rate-limit';
-import { RateLimitError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { toUserId } from '@/types/ids';
 
@@ -51,18 +51,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    if (error instanceof RateLimitError) {
-      return NextResponse.json({ error: error.message }, { status: 429 });
-    }
-    console.error('Error fetching user profile:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch user profile' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

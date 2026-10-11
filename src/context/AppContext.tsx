@@ -96,7 +96,23 @@ export type HabitTier =
 export type HabitStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'ARCHIVED' | 'COMPLETED';
 export type FrequencyType =
   | 'DAILY' | 'SPECIFIC_WEEKDAYS' | 'WEEKLY_TARGET' | 'MONTHLY_TARGET'
-  | 'YEARLY_TARGET' | 'RANDOM' | 'ONE_TIME' | 'CUSTOM';
+  | 'YEARLY_TARGET' | 'RANDOM' | 'ONE_TIME' | 'CUSTOM' | 'EVERY_N_DAYS';
+
+/**
+ * Client-side mirrors of the numeric-habit enums.
+ *
+ * Declared here as plain unions for the same reason `HabitTier` and
+ * `FrequencyType` above are: this file is a `'use client'` context, and
+ * importing the enums *as values* from `@/generated/prisma` would pull the Node
+ * client entry point into the browser bundle. `src/constants/prisma-enums.ts`
+ * holds the same unions as frozen objects and `tests/lib/enums.test.ts` keeps
+ * the two in sync.
+ */
+export type HabitTrackingType = 'BOOLEAN' | 'COUNT' | 'DURATION';
+export type HabitDirection = 'BUILD' | 'LIMIT' | 'AVOID';
+export type HabitTimeOfDay =
+  | 'MORNING' | 'AFTERNOON' | 'EVENING' | 'NIGHT' | 'ANYTIME';
+
 export type LogStatus = 'COMPLETED' | 'MISSED' | 'SKIPPED' | 'NOT_APPLICABLE' | 'PARTIAL';
 
 /**
@@ -124,6 +140,21 @@ export interface Habit {
   frequencyType: FrequencyType;
   frequencyValue?: string | null;
   targetCount?: number | null;
+  /**
+   * Numeric-habit fields. Optional because this context type is also used for
+   * locally synthesised rows and for shapes trimmed by older callers, so nothing
+   * here can be required without a cast somewhere.
+   */
+  trackingType?: HabitTrackingType;
+  direction?: HabitDirection;
+  targetValue?: number | null;
+  unit?: string | null;
+  timeOfDay?: HabitTimeOfDay | null;
+  sortOrder?: number;
+  /** `null` for a habit the user created themselves. See `HabitOriginBadge`. */
+  definitionId?: string | null;
+  intervalDays?: number | null;
+  parentHabitId?: string | null;
   startDate: string;
   endDate?: string | null;
   reminderTime?: string | null;
@@ -197,6 +228,19 @@ type RawHabit = {
   frequencyType?: FrequencyType;
   frequencyValue?: string | null;
   targetCount?: number | null;
+  // Numeric-habit fields. Absent on rows written before the columns existed, and
+  // absent from any trimmed payload a caller constructs by hand, so every one is
+  // optional and `normalizeHabit` supplies the defaults.
+  trackingType?: HabitTrackingType;
+  direction?: HabitDirection;
+  targetValue?: number | null;
+  unit?: string | null;
+  timeOfDay?: HabitTimeOfDay | null;
+  sortOrder?: number | null;
+  /** Explicitly nullable: `null` is what marks a habit as custom. */
+  definitionId?: string | null;
+  intervalDays?: number | null;
+  parentHabitId?: string | null;
   startDate?: string | Date | null;
   endDate?: string | Date | null;
   reminderTime?: string | null;
@@ -547,6 +591,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     frequencyType: raw.frequencyType ?? 'DAILY',
     frequencyValue: raw.frequencyValue ?? undefined,
     targetCount: raw.targetCount ?? undefined,
+    // Numeric-habit fields. Carried through verbatim so the UI can render a
+    // target and a number input. `??` rather than `||`: a `targetValue` of 0 is
+    // not a value anyone can set (validation rejects it) but the field must not
+    // be silently swapped for a fallback by a falsy check.
+    trackingType: raw.trackingType ?? 'BOOLEAN',
+    direction: raw.direction ?? 'BUILD',
+    targetValue: raw.targetValue ?? null,
+    unit: raw.unit ?? null,
+    timeOfDay: raw.timeOfDay ?? null,
+    sortOrder: raw.sortOrder ?? 0,
+    // `null` is meaningful here: it is what marks a habit as custom. Coercing it
+    // to `undefined` here would lose the distinction on the client.
+    definitionId: raw.definitionId ?? null,
+    intervalDays: raw.intervalDays ?? null,
+    parentHabitId: raw.parentHabitId ?? null,
     startDate: raw.startDate ? String(raw.startDate).slice(0, 10) : today,
     endDate: raw.endDate ? String(raw.endDate).slice(0, 10) : undefined,
     reminderTime: raw.reminderTime ?? undefined,

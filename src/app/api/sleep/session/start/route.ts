@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { sleepSessionService } from '@/server/services/sleep-session.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -17,10 +18,6 @@ export async function POST(_request: NextRequest) {
     const data = await sleepSessionService.startSleep(userIdFromSession(session));
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error starting sleep session:', error);
-    return NextResponse.json(
-      { error: 'Failed to start sleep session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

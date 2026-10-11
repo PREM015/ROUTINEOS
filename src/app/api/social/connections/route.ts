@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { socialService } from '@/server/services/social.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 /**
@@ -40,10 +41,6 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching connections:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch connections' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

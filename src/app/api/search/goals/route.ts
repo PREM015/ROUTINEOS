@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { SearchService } from '@/server/services/search.service';
 import { globalSearchSchema } from '@/schemas/search.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -49,11 +50,7 @@ export async function GET(request: NextRequest) {
         offset: validated.data.offset ?? 0,
       },
     });
-  } catch (error) {
-    console.error('Error searching goals, projects, and tasks:', error);
-    return NextResponse.json(
-      { error: 'Failed to search goals, projects, and tasks' },
-      { status: 500 }
-    );
+} catch (error) {
+    return handleError(error);
   }
 }

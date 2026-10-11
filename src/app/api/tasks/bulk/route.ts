@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { createTaskSchema, updateTaskSchema } from '@/schemas/task.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { toUserId } from '@/types/ids';
 
@@ -86,8 +87,7 @@ export async function POST(request: NextRequest) {
         failed,
       },
     });
-  } catch (error) {
-    console.error('Error in bulk task operation:', error);
-    return NextResponse.json({ error: 'Bulk task operation failed' }, { status: 500 });
+} catch (error) {
+    return handleError(error);
   }
 }

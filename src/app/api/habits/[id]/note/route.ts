@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { HabitService } from '@/server/services/habit.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -51,13 +52,6 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: log });
   } catch (error) {
-    console.error('Error saving habit note:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to save note' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

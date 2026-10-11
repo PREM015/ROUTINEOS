@@ -49,6 +49,8 @@ export interface ContributionHabit {
   status: HabitStatus;
   frequencyType: HabitFrequencyType;
   frequencyValue: string | null;
+  /** For `EVERY_N_DAYS`: the gap in calendar days. `null` for every other type. */
+  intervalDays: number | null;
   appliesEveryDay: boolean;
   /** Calendar day in `DEFAULT_TZ`, precomputed by the caller. */
   startDay: string;
@@ -164,6 +166,19 @@ export function isEligibleOn(
       frequencyType: habit.frequencyType,
       frequencyValue: habit.frequencyValue,
       status: habit.status,
+      /*
+       * `EVERY_N_DAYS` needs both the gap and its anchor. Omitting them here made
+       * `isHabitScheduledForDate` fall back to "daily", so an interval habit
+       * would have been due on every single day of the grid — the mirror
+       * silently disagreeing with `calculateHabitEligibility` in exactly the way
+       * this file exists to prevent.
+       *
+       * The anchor is the precomputed `startDay` (same `DEFAULT_TZ` pinning as
+       * the bounds above, and the same string `calendarDayOf` reads back out),
+       * so no timezone conversion happens twice.
+       */
+      intervalDays: habit.intervalDays,
+      startDate: habit.startDay,
     },
     date
   );
@@ -196,6 +211,7 @@ export function toContributionHabit(habit: {
   status: HabitStatus;
   frequencyType: HabitFrequencyType;
   frequencyValue: string | null;
+  intervalDays?: number | null;
   appliesEveryDay: boolean;
   startDate: Date;
   endDate: Date | null;
@@ -212,6 +228,7 @@ export function toContributionHabit(habit: {
     status: habit.status,
     frequencyType: habit.frequencyType,
     frequencyValue: habit.frequencyValue,
+    intervalDays: habit.intervalDays ?? null,
     appliesEveryDay: habit.appliesEveryDay,
     startDay: format(toZonedTime(habit.startDate, DEFAULT_TZ), 'yyyy-MM-dd'),
     endDay: habit.endDate ? format(toZonedTime(habit.endDate, DEFAULT_TZ), 'yyyy-MM-dd') : null,

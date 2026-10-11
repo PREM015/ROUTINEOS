@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -30,16 +31,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: sessions });
   } catch (error) {
-    console.error('Error fetching sessions:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to fetch sessions' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -71,15 +63,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error revoking session:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to revoke session' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

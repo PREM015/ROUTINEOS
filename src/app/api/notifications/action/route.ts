@@ -2,11 +2,7 @@ import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { notificationService } from '@/server/services/notification.service';
-import {
-  ConflictError,
-  NotFoundError,
-  ValidationError,
-} from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { toUserId } from '@/types/ids';
 
 const bodySchema = z.object({
@@ -79,31 +75,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('[NOTIFY] action failed:', error);
-
-    // The row is fetched scoped to the caller, so a guessed or stale
-    // `notificationId` cannot reach another account.
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { success: false, error: 'Notification not found' },
-        { status: 404 }
-      );
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 400 }
-      );
-    }
-    if (error instanceof ConflictError) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 409 }
-      );
-    }
-    return NextResponse.json(
-      { success: false, error: 'Failed to apply notification action' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

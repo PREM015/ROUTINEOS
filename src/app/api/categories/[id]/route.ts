@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { categoryService } from '@/server/services/category.service';
 import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -45,10 +46,6 @@ export async function DELETE(
 
     return NextResponse.json(successResponse({ deleted: true }));
   } catch (error) {
-    console.error('Error deleting category:', error);
-    return NextResponse.json(
-      errorResponse('Failed to delete category'),
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

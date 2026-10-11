@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { focusEventInputSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
@@ -23,11 +23,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     const events = await focusService.listEvents(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: events });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    console.error('Error listing focus events:', error);
-    return NextResponse.json({ error: 'Failed to list focus events' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -66,13 +62,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     await focusService.logEvent(userIdFromSession(session), id, parsed.data);
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error logging focus event:', error);
-    return NextResponse.json({ error: 'Failed to log focus event' }, { status: 500 });
+    return handleError(error);
   }
 }

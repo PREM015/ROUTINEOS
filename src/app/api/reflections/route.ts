@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { lifeContextService } from '@/server/services/life-context.service';
 import { reflectionSchema } from '@/schemas/reflection.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -29,11 +30,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching reflection:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch reflection' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -65,10 +62,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: reflection });
   } catch (error) {
-    console.error('Error saving reflection:', error);
-    return NextResponse.json(
-      { error: 'Failed to save reflection' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

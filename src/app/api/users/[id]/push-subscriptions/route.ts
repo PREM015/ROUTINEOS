@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
 import { pushSubscriptionService } from '@/server/services/push-subscription.service';
-import { AuthorizationError, ValidationError } from '@/lib/errors/app-error';
 import type { RegisterDeviceInput } from '@/schemas/push-subscription.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -32,14 +32,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: subscriptions });
   } catch (error) {
-    console.error('Error fetching push subscriptions:', error);
-    if (error instanceof AuthorizationError) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch push subscriptions' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -74,17 +67,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: subscription });
   } catch (error) {
-    console.error('Error registering push subscription:', error);
-    if (error instanceof AuthorizationError) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to register push subscription' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -119,13 +102,6 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error unregistering push subscription:', error);
-    if (error instanceof AuthorizationError) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to unregister push subscription' }, { status: 500 });
+    return handleError(error);
   }
 }

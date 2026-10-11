@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { handleError } from '@/lib/errors/error-handler';
 
 export async function DELETE(
   _req: NextRequest,
@@ -41,7 +42,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error removing day type from habit:', error);
-    return NextResponse.json({ error: 'Failed to remove day type' }, { status: 500 });
+    return handleError(error);
   }
 }

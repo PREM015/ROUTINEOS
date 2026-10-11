@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { TaskService } from '@/server/services/task.service';
 import { createTaskSchema, taskQuerySchema } from '@/schemas/task.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -56,14 +57,8 @@ export async function GET(request: NextRequest) {
         offset: validated.data.offset,
       },
     });
-  } catch (error) {
-    console.error('Error fetching tasks:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
+} catch (error) {
+    return handleError(error);
   }
 }
 
@@ -91,13 +86,7 @@ export async function POST(request: NextRequest) {
     const task = await taskService.createTask(userIdFromSession(session), validated.data);
 
     return NextResponse.json({ success: true, data: task }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating task:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+} catch (error) {
+    return handleError(error);
   }
 }

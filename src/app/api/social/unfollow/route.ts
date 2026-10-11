@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { socialService } from '@/server/services/social.service';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { followUserSchema } from '@/schemas/social.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 /**
@@ -29,19 +29,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: { following: false } });
   } catch (error) {
-    console.error('Error unfollowing user:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { error: 'You are not following this user' },
-        { status: 404 }
-      );
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to unfollow user' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { healthMetricService } from '@/server/services/health-metric.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { updateHealthMetricSchema } from '@/schemas/health-metric.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -32,11 +32,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data: metric });
   } catch (error) {
-    console.error('Error fetching health metric:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch health metric' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -68,14 +64,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
     return NextResponse.json({ success: true, data: metric });
   } catch (error) {
-    console.error('Error updating health metric:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update health metric' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -94,12 +83,6 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     await healthMetricService.delete(userIdFromSession(session), paramId);
     return NextResponse.json({ success: true, data: { id: paramId } });
   } catch (error) {
-    console.error('Error deleting health metric:', error);
-    // Previously unmapped, so a metric deleted between the existence check and
-    // the delete surfaced as a 500 instead of the 404 the other two verbs return.
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Health metric not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to delete health metric' }, { status: 500 });
+    return handleError(error);
   }
 }

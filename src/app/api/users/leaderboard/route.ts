@@ -1,3 +1,4 @@
+import { handleError } from '@/lib/errors/error-handler';
 import { auth } from '@/lib/auth';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
@@ -47,12 +48,8 @@ export async function GET(request: NextRequest) {
       meta: { total: rows.length, limit, windowDays },
     });
   } catch (error) {
-    console.error('Error loading leaderboard:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ error: 'Failed to load leaderboard' }, { status: 500 });
+    // Unexpected failures: generic 500, no raw `error.message`. `handleError`
+    // logs the cause server-side with sensitive keys redacted.
+    return handleError(error);
   }
 }

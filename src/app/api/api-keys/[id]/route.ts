@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { apiKeyService } from '@/server/services/api-key.service';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import type { APIKey } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -61,11 +61,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: toSafeKey(key) });
   } catch (error) {
-    console.error('Error fetching API key:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch API key' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -86,17 +82,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: toSafeKey(updated) });
   } catch (error) {
-    console.error('Error updating API key:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update API key' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -115,13 +101,6 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     const result = await apiKeyService.remove(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error deleting API key:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to delete API key' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { generateWeeklyRecap } from '@/server/recap/weekly';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -35,10 +36,6 @@ export async function GET(request: NextRequest) {
       data: recap,
     });
   } catch (error) {
-    console.error('Error generating weekly recap:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate recap' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

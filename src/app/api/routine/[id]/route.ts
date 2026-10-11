@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
-import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
 
@@ -54,8 +54,7 @@ export async function GET(
     }
     return NextResponse.json({ success: true, data: template });
   } catch (error) {
-    console.error('Error fetching routine template:', error);
-    return NextResponse.json({ error: 'Failed to fetch template' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -79,21 +78,7 @@ export async function PUT(
     const template = await routineService.updateTemplateForUser(userIdFromSession(session), id, data);
     return NextResponse.json({ success: true, data: template });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.flatten() },
-        { status: 400 }
-      );
-    }
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      // Domain rule violations (e.g. duplicate default) are client errors.
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error updating routine template:', error);
-    return NextResponse.json({ error: 'Failed to update template' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -125,10 +110,6 @@ export async function DELETE(
     }
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Not Found' }, { status: 404 });
-    }
-    console.error('Error deleting routine template:', error);
-    return NextResponse.json({ error: 'Failed to delete template' }, { status: 500 });
+    return handleError(error);
   }
 }

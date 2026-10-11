@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { backupService } from '@/server/services/backup.service';
 import { ExportFormat, ExportStatus, type DataExport } from '@/generated/prisma';
 import { promises as fs } from 'node:fs';
@@ -103,15 +104,6 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       },
     });
   } catch (error) {
-    console.error('Error downloading export:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to download export' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

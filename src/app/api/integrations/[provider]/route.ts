@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { integrationService } from '@/server/services/integration.service';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { integrationUpdateSchema } from '@/schemas/integration.schema';
 import { userIdFromSession } from '@/types/ids';
 
@@ -36,14 +36,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error fetching integration:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch integration' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -78,16 +71,6 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error updating integration:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Integration not connected' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to update integration' }, { status: 500 });
+    return handleError(error);
   }
 }

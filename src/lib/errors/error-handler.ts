@@ -1,121 +1,76 @@
 import { NextResponse } from 'next/server';
-import { AppError } from './app-error';
-import { Prisma } from '@/generated/prisma';
-import { ZodError } from 'zod';
+import { mapError } from './error-mapper';
 
 /**
- * Global Error Handler
+ * Central API error handler.
+ *
+ * Converts any thrown value into the project's canonical error envelope:
+ *
+ *   { success: false, error: string, code: string, details?: unknown }
+ *
+ * The raw throwable is logged server-side and never serialised, so a stack
+ * trace, SQL fragment, connection string or other internal detail cannot leak
+ * to a client. The previous implementation returned `error.message` verbatim in
+ * non-production and echoed Prisma `meta`, both of which could expose internals.
+ *
+ * Status mapping (see `error-mapper.ts` for the full table):
+ *   AppError            → its own `statusCode` / `code` / safe `message`
+ *   ZodError            → 400 VALIDATION_ERROR with `details.fieldErrors`
+ *   Prisma P2002/P2025/P2003 → 409 / 404 / 400 with safe copy
+ *   anything else       → 500 INTERNAL_ERROR with a generic message
  */
-
 export function handleApiError(error: unknown): NextResponse {
   return handleError(error);
 }
 
 export function handleError(error: unknown): NextResponse {
-  console.error('Error occurred:', error);
+  const mapped = mapError(error);
 
-  // App errors
-  if (error instanceof AppError) {
-    return NextResponse.json(error.toJSON(), { status: error.statusCode });
-  }
+  logError(mapped.cause, { code: mapped.body.code, status: mapped.status });
 
-  // Zod validation errors
-  if (error instanceof ZodError) {
-    return NextResponse.json(
-      {
-        error: 'Validation failed',
-        code: 'VALIDATION_ERROR',
-        details: error.flatten(),
-      },
-      { status: 400 }
-    );
-  }
-
-  // Prisma errors
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return handlePrismaError(error);
-  }
-
-  // Generic errors
-  if (error instanceof Error) {
-    return NextResponse.json(
-      {
-        error: process.env.NODE_ENV === 'production' 
-          ? 'Internal server error' 
-          : error.message,
-        code: 'INTERNAL_ERROR',
-      },
-      { status: 500 }
-    );
-  }
-
-  // Unknown errors
-  return NextResponse.json(
-    {
-      error: 'An unexpected error occurred',
-      code: 'UNKNOWN_ERROR',
-    },
-    { status: 500 }
-  );
+  return NextResponse.json(mapped.body, { status: mapped.status });
 }
 
-function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextResponse {
-  switch (error.code) {
-    case 'P2002':
-      // Unique constraint violation
-      return NextResponse.json(
-        {
-          error: 'A record with this value already exists',
-          code: 'DUPLICATE_RECORD',
-          details: error.meta,
-        },
-        { status: 409 }
-      );
+const REDACTED = '[redacted]';
+const SENSITIVE_KEY = /password|passwd|secret|token|authorization|cookie|api[-_]?key|keyhash|signature|credential/i;
+const MAX_LOG_DEPTH = 4;
 
-    case 'P2025':
-      // Record not found
-      return NextResponse.json(
-        {
-          error: 'Record not found',
-          code: 'NOT_FOUND',
-        },
-        { status: 404 }
-      );
+/**
+ * Deep-clone a value for logging with sensitive keys redacted.
+ *
+ * Bounded by `MAX_LOG_DEPTH` and cycle-safe so logging a pathological error
+ * payload cannot throw or blow the stack — a logger that fails is worse than no
+ * logger, because it hides the original failure.
+ */
+function redact(value: unknown, depth = 0, seen = new WeakSet<object>()): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  if (depth >= MAX_LOG_DEPTH) return '[truncated]';
+  if (seen.has(value)) return '[circular]';
+  seen.add(value);
 
-    case 'P2003':
-      // Foreign key constraint violation
-      return NextResponse.json(
-        {
-          error: 'Related record not found',
-          code: 'FOREIGN_KEY_ERROR',
-          details: error.meta,
-        },
-        { status: 400 }
-      );
-
-    default:
-      return NextResponse.json(
-        {
-          error: 'Database operation failed',
-          code: 'DATABASE_ERROR',
-        },
-        { status: 500 }
-      );
+  if (Array.isArray(value)) {
+    return value.map((item) => redact(item, depth + 1, seen));
   }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    result[key] = SENSITIVE_KEY.test(key) ? REDACTED : redact(val, depth + 1, seen);
+  }
+  return result;
 }
 
 /**
- * Error logger for monitoring
+ * Log a diagnostic for a failure. Never throws.
  */
-export function logError(error: unknown, context?: Record<string, any>) {
-  // In production, send to monitoring service (Sentry, DataDog, etc.)
-  console.error('ERROR:', {
+export function logError(error: unknown, context?: Record<string, unknown>): void {
+  const detail =
+    error instanceof Error
+      ? { name: error.name, message: error.message, stack: error.stack }
+      : error;
+
+  console.error('API error', {
     timestamp: new Date().toISOString(),
-    error: error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    } : error,
-    context,
+    ...(context ? { context: redact(context) } : {}),
+    error: redact(detail),
   });
 }

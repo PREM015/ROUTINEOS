@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { NextResponse } from 'next/server';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
@@ -30,13 +30,6 @@ export async function POST(_request: Request, { params }: RouteContext) {
     const resumed = await focusService.resumeSession(userIdFromSession(session), id);
     return NextResponse.json({ success: true, data: resumed });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error resuming focus session:', error);
-    return NextResponse.json({ error: 'Failed to resume focus session' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -6,6 +6,7 @@ import {
   journalEntryIdSchema,
   updateJournalEntrySchema,
 } from '@/schemas/journal.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -39,8 +40,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    console.error('Error fetching journal entry:', error);
-    return NextResponse.json({ error: 'Failed to fetch journal entry' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -132,14 +132,6 @@ export async function DELETE(
     const entry = await journalService.softDelete(userIdFromSession(session), parsedParams.data.id);
     return NextResponse.json({ success: true, data: entry });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { error: error.message, details: error.details ?? undefined },
-        { status: error.statusCode }
-      );
-    }
-
-    console.error('Error deleting journal entry:', error);
-    return NextResponse.json({ error: 'Failed to delete journal entry' }, { status: 500 });
+    return handleError(error);
   }
 }

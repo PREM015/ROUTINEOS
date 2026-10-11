@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { dayTypePlanningService } from '@/server/services/day-type-planning.service';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -25,10 +26,6 @@ export async function GET(_req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error getting tomorrow plan:', error);
-    return NextResponse.json(
-      { error: 'Failed to get tomorrow plan' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

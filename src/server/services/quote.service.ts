@@ -1,5 +1,6 @@
 import { QuoteRepository } from '@/server/repositories/quote.repository';
 import type { Quote } from '@/generated/prisma';
+import { ForbiddenError } from '@/lib/errors/app-error';
 import type { UserId } from '@/types/ids';
 
 /**
@@ -89,7 +90,7 @@ export class QuoteService {
   async updateQuote(userId: UserId, quoteId: string, input: QuoteInput) {
     const existing = await this.quoteRepository.findById(quoteId);
     if (!existing || existing.userId !== userId) {
-      throw new Error('You can only edit your own quotes.');
+      throw new ForbiddenError('You can only edit your own quotes.');
     }
 
     const quote = await this.quoteRepository.update(quoteId, {
@@ -107,7 +108,7 @@ export class QuoteService {
   async deleteQuote(userId: UserId, quoteId: string) {
     const existing = await this.quoteRepository.findById(quoteId);
     if (!existing || existing.userId !== userId) {
-      throw new Error('You can only delete your own quotes.');
+      throw new ForbiddenError('You can only delete your own quotes.');
     }
 
     await this.quoteRepository.delete(quoteId);

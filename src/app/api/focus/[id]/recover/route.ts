@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { focusService } from '@/server/services/focus.service';
 import { focusRecoveryChoiceSchema } from '@/schemas/focus.schema';
 import { NextRequest, NextResponse } from 'next/server';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
@@ -59,13 +59,6 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Focus session not found' }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error recovering focus session:', error);
-    return NextResponse.json({ error: 'Failed to recover focus session' }, { status: 500 });
+    return handleError(error);
   }
 }

@@ -3,9 +3,10 @@ import { RoutineService } from '@/server/services/routine.service';
 import { getTodayString } from '@/lib/dates';
 import { UserService } from '@/server/services/user.service';
 import { NextRequest, NextResponse } from 'next/server';
-import { logRoutineBlockTodaySchema, calendarDateSchema } from '@/lib/validation/routine.schema';
+import { logRoutineBlockTodaySchema, calendarDateSchema } from '@/schemas/routine.schema';
 import { EditWindowError } from '@/lib/routine/edit-window';
 import { ValidationError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { toUserId, userIdFromSession } from '@/types/ids';
 
 /**
@@ -53,11 +54,7 @@ export async function GET(request: NextRequest) {
       data: routine,
     });
   } catch (error) {
-    console.error("Error fetching today's routine:", error);
-    return NextResponse.json(
-      { error: 'Failed to fetch routine' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -113,10 +110,6 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   } catch (error) {
-    console.error('Error logging routine block:', error);
-    return NextResponse.json(
-      { error: 'Failed to log routine block' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

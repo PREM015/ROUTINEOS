@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { automationService } from '@/server/services/automation.service';
 import { automationQuerySchema } from '@/schemas/automation.schema';
-import { ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -53,8 +53,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching automations:', error);
-    return NextResponse.json({ error: 'Failed to fetch automations' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -73,13 +72,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: rule }, { status: 201 });
   } catch (error) {
-    console.error('Error creating automation:', error);
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message, details: error.details }, { status: 400 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create automation' }, { status: 500 });
+    return handleError(error);
   }
 }

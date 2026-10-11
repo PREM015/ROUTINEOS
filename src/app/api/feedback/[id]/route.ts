@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { feedbackService } from '@/server/services/feedback.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import { updateFeedbackSchema } from '@/schemas/feedback.schema';
 import { userIdFromSession } from '@/types/ids';
 
@@ -32,14 +32,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: feedback });
   } catch (error) {
-    console.error('Error fetching feedback:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to fetch feedback' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }
 
@@ -79,13 +72,6 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.error('Error updating feedback:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
-    }
-    return NextResponse.json(
-      { error: 'Failed to update feedback' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

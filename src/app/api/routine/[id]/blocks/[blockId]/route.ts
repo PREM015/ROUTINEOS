@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { RoutineService } from '@/server/services/routine.service';
 import { z } from 'zod';
-import { energyLevelSchema, timeSchema } from '@/lib/validation/routine.schema';
+import { energyLevelSchema, timeSchema } from '@/schemas/routine.schema';
 import { NotFoundError } from '@/lib/errors/app-error';
 import { userIdFromSession } from '@/types/ids';
 

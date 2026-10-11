@@ -3,6 +3,7 @@ import { AppError } from '@/lib/errors/app-error';
 import { ForeignTagError } from '@/lib/journal/policy';
 import { journalService } from '@/server/services/journal.service';
 import { setJournalTagsSchema } from '@/schemas/journal.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -26,14 +27,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: tags });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json(
-        { error: error.message, details: error.details ?? undefined },
-        { status: error.statusCode }
-      );
-    }
-    console.error('Error fetching journal entry tags:', error);
-    return NextResponse.json({ error: 'Failed to fetch journal entry tags' }, { status: 500 });
+    return handleError(error);
   }
 }
 

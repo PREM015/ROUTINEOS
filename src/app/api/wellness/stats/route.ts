@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { wellnessService } from '@/server/services/wellness.service';
 import { wellnessQuerySchema } from '@/schemas/wellness.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -39,7 +40,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error computing wellness stats:', error);
-    return NextResponse.json({ error: 'Failed to compute wellness stats' }, { status: 500 });
+    return handleError(error);
   }
 }

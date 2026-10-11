@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { QuoteService } from '@/server/services/quote.service';
 import { z } from 'zod';
 import { userIdFromSession } from '@/types/ids';
@@ -33,8 +34,7 @@ export async function GET() {
     const quotes = await quoteService.listQuotes(userIdFromSession(session));
     return NextResponse.json({ success: true, data: quotes });
   } catch (error) {
-    console.error('GET /api/quotes error:', error);
-    return NextResponse.json({ error: 'Failed to load quotes' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -60,8 +60,7 @@ export async function POST(request: Request) {
     const result = await quoteService.createQuote(userIdFromSession(session), validated.data);
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {
-    console.error('POST /api/quotes error:', error);
-    return NextResponse.json({ error: 'Failed to save quote' }, { status: 500 });
+    return handleError(error);
   }
 }
 

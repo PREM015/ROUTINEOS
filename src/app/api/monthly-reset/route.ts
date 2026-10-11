@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { reviewService } from '@/server/services/review.service';
-import { createMonthlyResetSchema } from '@/lib/validation/review.schema';
+import { createMonthlyResetSchema } from '@/schemas/review.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -37,10 +38,6 @@ export async function POST(request: NextRequest) {
       data: reset,
     });
   } catch (error) {
-    console.error('Error creating monthly reset:', error);
-    return NextResponse.json(
-      { error: 'Failed to create monthly reset' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

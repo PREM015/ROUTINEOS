@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { integrationService } from '@/server/services/integration.service';
-import { NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { userIdFromSession } from '@/types/ids';
 
 /**
@@ -31,19 +31,6 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error('Error syncing integration:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { error: 'Integration is not connected or is inactive' },
-        { status: 404 }
-      );
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to sync integration' }, { status: 500 });
+    return handleError(error);
   }
 }

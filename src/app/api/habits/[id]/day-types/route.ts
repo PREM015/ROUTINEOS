@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { handleError } from '@/lib/errors/error-handler';
 import { z } from 'zod';
 
 const assignDayTypesSchema = z.object({
@@ -60,11 +61,7 @@ export async function POST(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
-    }
-    console.error('Error assigning day types to habit:', error);
-    return NextResponse.json({ error: 'Failed to assign day types' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -101,8 +98,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error fetching habit day types:', error);
-    return NextResponse.json({ error: 'Failed to fetch day types' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -135,10 +131,6 @@ export async function PUT(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input', details: error.flatten() }, { status: 400 });
-    }
-    console.error('Error updating habit appliesEveryDay:', error);
-    return NextResponse.json({ error: 'Failed to update habit' }, { status: 500 });
+    return handleError(error);
   }
 }

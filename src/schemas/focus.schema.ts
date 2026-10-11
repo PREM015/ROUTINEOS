@@ -1,8 +1,15 @@
 import { z } from 'zod';
+import { BreakType } from '@/constants/prisma-enums';
 
 /**
  * Focus & Break Validation Schemas
  */
+
+/**
+ * Every `BreakType` member, derived from the client-safe mirror rather than
+ * retyped. The local literal was already missing `STRETCH`.
+ */
+const breakTypeValues = Object.values(BreakType) as [BreakType, ...BreakType[]];
 
 /**
  * Coerce ISO-8601 strings into `Date` instances. `null` is rejected instead of
@@ -279,9 +286,7 @@ export const focusQuerySchema = z.object({
 
 export const createBreakSchema = z.object({
   focusSessionId: z.string().min(1).optional(),
-  breakType: z
-    .enum(['SHORT', 'LONG', 'MEAL', 'WALK', 'REST', 'CUSTOM'])
-    .optional(),
+  breakType: z.enum(breakTypeValues).optional(),
   startedAt: optionalDateSchema,
   endedAt: optionalDateSchema,
   durationMinutes: z.number().int().positive().optional(),
@@ -292,9 +297,7 @@ export const createBreakSchema = z.object({
 export const breakQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
-  breakType: z
-    .enum(['SHORT', 'LONG', 'MEAL', 'WALK', 'REST', 'CUSTOM'])
-    .optional(),
+  breakType: z.enum(breakTypeValues).optional(),
   limit: z.number().int().min(1).max(100).optional(),
   offset: z.number().int().min(0).optional(),
 });

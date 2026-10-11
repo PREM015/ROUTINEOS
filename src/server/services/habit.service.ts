@@ -1,12 +1,26 @@
-import type { Prisma, HabitLog } from '@/generated/prisma';
+import type { Prisma, HabitLog, HabitLogStatus } from '@/generated/prisma';
 import { format, parseISO, subDays } from 'date-fns';
 import { getTodayString, DEFAULT_TZ, calendarDaysBetween, previousCalendarDay } from '@/lib/dates';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { StreakRepository } from '@/server/repositories/streak.repository';
-import { ValidationError } from '@/lib/errors/app-error';
-import type { HabitWithRelations, CreateHabitInput, UpdateHabitInput, LogHabitInput } from '@/types/habit';
+import {
+  ValidationError,
+  ConflictError,
+  NotFoundError,
+} from '@/lib/errors/app-error';
+import type {
+  HabitWithRelations,
+  CreateHabitInput,
+  UpdateHabitInput,
+  LogHabitInput,
+} from '@/types/habit';
+import type { HabitDirection, HabitTrackingType } from '@/generated/prisma';
 import { HABIT_TIER_CONFIG } from '@/constants/habit-tiers';
 import { calculateHabitEligibility } from '@/lib/habits/eligibility';
+import {
+  isValidTarget,
+  statusFromReading,
+} from '@/lib/habits/completion';
 import { calculateStreak, recordStreakMilestone } from '@/lib/streaks/calculate-streak';
 import { AuditRepository } from '@/server/repositories/audit.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
@@ -120,6 +134,19 @@ export class HabitService {
     return this.habitRepository.countAll(userId, filters);
   }
 
+  /**
+   * Does this user already have a habit by this name?
+   *
+   * Backed by the `@@unique([userId, name])` index, so it is a single indexed
+   * lookup. Exposed because "add this catalogue habit" needs to answer it
+   * before creating, and the alternative — loading the user's whole habit list
+   * and scanning it in JavaScript — turns a constant-time check into a query
+   * that grows with their account.
+   */
+  async findByName(userId: UserId, name: string) {
+    return this.habitRepository.findByName(userId, name);
+  }
+
 
   /**
    * Today's eligible habits with their completion state.
@@ -165,6 +192,25 @@ export class HabitService {
           estimatedDuration: habit.estimatedDuration,
           targetCount: habit.targetCount,
           category: habit.category,
+          /*
+           * The numeric-entry fields.
+           *
+           * Sent so `/today` can render a number input for a COUNT/DURATION
+           * habit instead of a bare checkbox, and compute whether that number
+           * already clears the bar before the user submits anything.
+           *
+           * Read from **this habit row**, which is already scoped to `userId`
+           * above — so two people seeing "Daily Steps" on their own dashboards
+           * are always looking at their own two targets.
+           */
+          trackingType: habit.trackingType,
+          direction: habit.direction,
+          targetValue: habit.targetValue,
+          unit: habit.unit,
+          timeOfDay: habit.timeOfDay,
+          sortOrder: habit.sortOrder,
+          parentHabitId: habit.parentHabitId,
+          definitionId: habit.definitionId,
           isEligible: eligibility.isEligible,
           eligibilityReason: eligibility.isEligible ? undefined : eligibility.reason,
           source: eligibility.source,
@@ -177,7 +223,12 @@ export class HabitService {
   }
 
   /**
-   * Create new habit
+   * Create new habit.
+   *
+   * A habit with no `definitionId` is a **custom habit** and is the normal case:
+   * nothing about creation requires a catalogue entry, and none of the behaviour
+   * below reads one. `definitionId` is provenance for a badge and nothing else,
+   * which is why it is stored but never consulted afterwards.
    */
   async createHabit(
     userId: UserId,
@@ -192,11 +243,51 @@ export class HabitService {
       throw new ValidationError('Habit name must be 100 characters or less');
     }
 
+    /*
+     * The name must be unique per user, not globally.
+     *
+     * `@@unique([userId, name])` makes the database the final authority, but a
+     * raw P2002 would surface as a 500. Two users both having "Daily Steps" is
+     * the whole premise of this feature, so the conflict is specifically a
+     * *self* conflict and worth a clear 409 — and it is checked here rather than
+     * left to the constraint so the message names the habit.
+     */
+    const duplicate = await this.habitRepository.findByName(userId, input.name);
+    if (duplicate) {
+      throw new ConflictError(
+        `You already have a habit named "${input.name}". Rename it or edit the existing one.`
+      );
+    }
+
     // Set default tier weight if not provided
     const points = input.points || HABIT_TIER_CONFIG[input.tier].defaultPoints;
 
     // Create habit
     const { appliesEveryDay, dayTypeIds, tagIds, ...habitData } = input;
+
+    /*
+     * A COUNT/DURATION habit needs a target or `evaluateCompletion` has nothing
+     * to compare against and the habit can never complete. Rejected here with a
+     * named field rather than failing later as a permanently-unchecked row.
+     */
+    this.assertTargetIsUsable(habitData);
+
+    /*
+     * `parentHabitId` is user-supplied, so it is verified against the caller's
+     * own habits before it is written. Without this, a client could file their
+     * habit under another user's grouping parent; the FK would accept it and the
+     * daily checklist would render a stranger's habit inside this user's group.
+     */
+    if (habitData.parentHabitId) {
+      const parent = await this.habitRepository.findById(
+        habitData.parentHabitId,
+        userId
+      );
+      if (!parent) {
+        throw new NotFoundError('Parent habit');
+      }
+    }
+
     const habit = await this.habitRepository.create({
       user: { connect: { id: userId } },
       name: habitData.name,
@@ -211,6 +302,16 @@ export class HabitService {
       frequencyType: habitData.frequencyType,
       frequencyValue: habitData.frequencyValue,
       targetCount: habitData.targetCount,
+      definitionId: habitData.definitionId ?? null,
+      trackingType: habitData.trackingType ?? 'BOOLEAN',
+      direction: habitData.direction ?? 'BUILD',
+      targetValue: habitData.targetValue ?? null,
+      unit: habitData.unit ?? null,
+      timeOfDay: habitData.timeOfDay ?? null,
+      sortOrder: habitData.sortOrder ?? 0,
+      linkedMetricType: habitData.linkedMetricType ?? null,
+      intervalDays: habitData.intervalDays ?? null,
+      parentHabitId: habitData.parentHabitId ?? null,
       startDate: habitData.startDate || new Date(),
       endDate: habitData.endDate,
       reminderTime: habitData.reminderTime,
@@ -230,13 +331,35 @@ export class HabitService {
       await this.habitRepository.addDayTypeAssignments(habit.id, dayTypeIds ?? []);
     }
 
-    // Invalidate dashboard cache
-
     // Return habit with relations
     return (await this.habitRepository.findWithRelations(
       habit.id,
       userId
     )) as HabitWithRelations;
+  }
+
+  /**
+   * Reject a numeric habit that could never be judged.
+   *
+   * `AVOID` is exempt on purpose: its rule is "no reading", so a target would be
+   * meaningless. A `COUNT`/`DURATION` habit with no target would sit on the
+   * checklist forever reading 0%, which is a far more confusing failure than a
+   * 400 at creation time.
+   */
+  private assertTargetIsUsable(habit: {
+    trackingType?: HabitTrackingType;
+    direction?: HabitDirection;
+    targetValue?: number | null;
+  }) {
+    const trackingType = habit.trackingType ?? 'BOOLEAN';
+    if (trackingType === 'BOOLEAN') return;
+    if (habit.direction === 'AVOID') return;
+
+    if (!isValidTarget(habit.targetValue ?? null)) {
+      throw new ValidationError(
+        'A positive target is required for COUNT and DURATION habits'
+      );
+    }
   }
 
   /**
@@ -250,7 +373,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     // Validate name if provided
@@ -258,7 +381,60 @@ export class HabitService {
       throw new ValidationError('Habit name must be 100 characters or less');
     }
 
+    /*
+     * Renaming must not collide with another of *this user's* habits.
+     *
+     * Checked against the caller only: another user having the same name is not
+     * a conflict, and treating it as one would make the catalogue premise
+     * impossible.
+     */
+    if (input.name !== undefined && input.name !== habit.name) {
+      const clash = await this.habitRepository.findByName(userId, input.name);
+      if (clash) {
+        throw new ConflictError(
+          `You already have a habit named "${input.name}".`
+        );
+      }
+    }
+
     const { appliesEveryDay, dayTypeIds, tagIds, ...updateData } = input;
+
+    /*
+     * Validate the *resulting* habit, not just the patch.
+     *
+     * The patch alone is not enough to tell whether the habit is still
+     * judgeable: switching `trackingType` from `BOOLEAN` to `COUNT` without
+     * sending a target would leave a numeric habit that can never complete, and
+     * a check that only looked at `input.targetValue` would wave it through.
+     */
+    this.assertTargetIsUsable({
+      trackingType: updateData.trackingType ?? habit.trackingType,
+      direction: updateData.direction ?? habit.direction,
+      targetValue:
+        updateData.targetValue !== undefined
+          ? updateData.targetValue
+          : habit.targetValue,
+    });
+
+    /*
+     * Re-parenting is verified against the caller's own habits, and a habit
+     * cannot become its own ancestor — the schema's `onDelete: SetNull` would
+     * otherwise let a chain form that `deleteCascade` walks forever.
+     */
+    if (updateData.parentHabitId !== undefined) {
+      if (updateData.parentHabitId === habitId) {
+        throw new ValidationError('A habit cannot be its own parent');
+      }
+      if (updateData.parentHabitId !== null) {
+        const parent = await this.habitRepository.findById(
+          updateData.parentHabitId,
+          userId
+        );
+        if (!parent) {
+          throw new NotFoundError('Parent habit');
+        }
+      }
+    }
 
     // Update habit.
     //
@@ -283,6 +459,19 @@ export class HabitService {
       ...(updateData.frequencyType !== undefined && { frequencyType: updateData.frequencyType }),
       ...(updateData.frequencyValue !== undefined && { frequencyValue: updateData.frequencyValue }),
       ...(updateData.targetCount !== undefined && { targetCount: updateData.targetCount }),
+      ...(updateData.definitionId !== undefined && { definitionId: updateData.definitionId }),
+      ...(updateData.trackingType !== undefined && { trackingType: updateData.trackingType }),
+      ...(updateData.direction !== undefined && { direction: updateData.direction }),
+      ...(updateData.targetValue !== undefined && { targetValue: updateData.targetValue }),
+      ...(updateData.unit !== undefined && { unit: updateData.unit }),
+      ...(updateData.timeOfDay !== undefined && { timeOfDay: updateData.timeOfDay }),
+      ...(updateData.sortOrder !== undefined && { sortOrder: updateData.sortOrder }),
+      ...(updateData.linkedMetricType !== undefined && {
+        linkedMetricType: updateData.linkedMetricType,
+      }),
+      ...(updateData.parentHabitId !== undefined && {
+        parentHabitId: updateData.parentHabitId,
+      }),
       // Declared on `createHabitSchema`, so they are legal input here, but they
       // were never forwarded. Editing them answered 200 and reverted.
       //
@@ -302,6 +491,37 @@ export class HabitService {
       ...(updateData.isPublic !== undefined && { isPublic: updateData.isPublic }),
       ...(appliesEveryDay !== undefined && { appliesEveryDay }),
     });
+
+    /*
+     * `intervalDays` is written **after** `frequencyType` and only when the
+     * habit actually ends up on an interval schedule.
+     *
+     * Two reasons it is not in the object above: `frequencyType` and
+     * `intervalDays` are set by the same request, and the decision of which to
+     * keep depends on the final combination rather than on either key alone. A
+     * gap left on a DAILY habit is dead data that looks meaningful in the UI.
+     */
+    const effectiveFrequencyType =
+      updateData.frequencyType ?? habit.frequencyType;
+    if (effectiveFrequencyType === 'EVERY_N_DAYS') {
+      if (updateData.intervalDays !== undefined) {
+        if (
+          updateData.intervalDays !== null &&
+          updateData.intervalDays < 1
+        ) {
+          throw new ValidationError('intervalDays must be at least 1');
+        }
+        await this.habitRepository.update(habitId, userId, {
+          intervalDays: updateData.intervalDays,
+        });
+      } else if (!habit.intervalDays) {
+        throw new ValidationError(
+          'intervalDays is required for EVERY_N_DAYS habits'
+        );
+      }
+    } else if (updateData.intervalDays !== undefined || habit.intervalDays) {
+      await this.habitRepository.update(habitId, userId, { intervalDays: null });
+    }
 
     // Update tags if provided
     if (tagIds) {
@@ -324,7 +544,13 @@ export class HabitService {
   }
 
   /**
-   * Log habit completion
+   * Log habit completion.
+   *
+   * Everything here is judged against **this** habit's own
+   * `trackingType`/`direction`/`targetValue`. There is no global target and no
+   * path by which another user's habit row could be reached: `findById` is
+   * keyed on `{ id: habitId, userId }`, so a foreign id fails the lookup before
+   * anything is read.
    */
   async logHabit(
     userId: UserId,
@@ -334,13 +560,44 @@ export class HabitService {
     streakUpdated: boolean;
     newStreak?: number;
   }> {
-    const { habitId, date, status, completedAt, note } = input;
+    const { habitId, date, completedAt, note } = input;
 
     // Verify habit ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
+
+    /*
+     * The status actually stored.
+     *
+     * A numeric habit's status is *derived* from the reading against its own
+     * direction, rather than trusted from the client:
+     *
+     *   BUILD + 12400/15000 -> COMPLETED
+     *   BUILD +  8000/15000 -> PARTIAL   (not MISSED: the day was recorded)
+     *   LIMIT +  180/200min -> COMPLETED
+     *   LIMIT +  340/200min -> PARTIAL
+     *   AVOID  + no reading -> COMPLETED (the win condition is the absence)
+     *   AVOID  +  2 smokes  -> PARTIAL
+     *
+     * Without this, a client could post `{ status: 'COMPLETED', quantity: 0 }`
+     * and permanently mark 12,000 steps as done. The client's status is honoured
+     * only when `statusIsExplicit` is set, which is how a genuine partial day is
+     * recorded deliberately.
+     */
+    const reading = input.quantity ?? null;
+    const derived = statusFromReading(
+      {
+        trackingType: habit.trackingType,
+        direction: habit.direction,
+        targetValue: habit.targetValue,
+      },
+      reading
+    );
+
+    const status: HabitLogStatus =
+      input.statusIsExplicit || derived === null ? input.status : derived;
 
     // Check if habit is eligible for this date
     const eligibility = await calculateHabitEligibility(habitId, userId, date);
@@ -366,7 +623,16 @@ export class HabitService {
       }
     }
 
-    // Create or update log
+    /*
+     * The target snapshot is stamped **at log time**, from the habit row read
+     * above — i.e. this user's own target.
+     *
+     * This is what makes "changing a target never rewrites history" true: a day
+     * logged against 8,000 keeps its 8,000, so raising the habit to 15,000
+     * tomorrow cannot retroactively turn those completions into misses. A
+     * re-log of the same day re-stamps it, which is correct — that day is being
+     * re-judged now and should reflect what the user means now.
+     */
     const log = await this.habitRepository.upsertLog(
       habitId,
       userId,
@@ -379,7 +645,9 @@ export class HabitService {
         completedAt,
         note,
         durationMinutes: input.durationMinutes,
-        quantity: input.quantity,
+        quantity: reading,
+        targetSnapshot: habit.targetValue,
+        unitSnapshot: habit.unit,
         difficulty: input.difficulty,
         energyLevel: input.energyLevel,
         moodBefore: input.moodBefore,
@@ -472,7 +740,7 @@ export class HabitService {
   ): Promise<HabitLog> {
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
     return this.habitRepository.setLogNote(habitId, userId, date, note);
   }
@@ -488,7 +756,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     await this.habitRepository.archive(habitId, userId);
@@ -516,7 +784,7 @@ export class HabitService {
   async restoreHabit(userId: UserId, habitId: string) {
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     if (habit.status !== 'ARCHIVED') {
@@ -549,7 +817,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     // Update status
@@ -586,7 +854,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     if (habit.status !== 'PAUSED') {
@@ -734,7 +1002,7 @@ export class HabitService {
     // Verify ownership + active status
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
     if (habit.status !== 'ACTIVE') {
       throw new ValidationError('Only active habits can be added to today');
@@ -794,7 +1062,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     // Skipping one day must skip exactly one day.
@@ -845,7 +1113,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     // Cascade delete of logs/overrides/tags/day-types is owned by the repository.
@@ -873,7 +1141,7 @@ export class HabitService {
     // Verify ownership
     const habit = await this.habitRepository.findById(habitId, userId);
     if (!habit) {
-      throw new ValidationError('Habit not found');
+      throw new NotFoundError('Habit');
     }
 
     // Get logs for range

@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { startFocusSessionSchema } from '@/schemas/focus.schema';
-import { ConflictError, NotFoundError, ValidationError } from '@/lib/errors/app-error';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -45,18 +45,6 @@ export async function POST(request: NextRequest) {
     const started = await focusService.startSession(userIdFromSession(session), parsed.data);
     return NextResponse.json({ success: true, data: started }, { status: 201 });
   } catch (error) {
-    if (error instanceof ConflictError) {
-      // A specific status rather than a generic 400, because the client has a real
-      // decision to make here: take over the running session, or end it first.
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    console.error('Error starting focus session:', error);
-    return NextResponse.json({ error: 'Failed to start focus session' }, { status: 500 });
+    return handleError(error);
   }
 }

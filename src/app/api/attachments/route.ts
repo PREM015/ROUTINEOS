@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { attachmentService } from '@/server/services/attachment.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -32,7 +33,6 @@ export async function GET(request: NextRequest) {
       meta: { total, limit, offset },
     });
   } catch (error) {
-    console.error('Error fetching attachments:', error);
-    return NextResponse.json({ error: 'Failed to fetch attachments' }, { status: 500 });
+    return handleError(error);
   }
 }

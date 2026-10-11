@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { challengeService } from '@/server/services/challenge.service';
-import { ConflictError, NotFoundError } from '@/lib/errors/app-error';
 import { userIdFromSession } from '@/types/ids';
 
 interface RouteContext {
@@ -34,21 +34,6 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error joining challenge:', error);
-
-    if (error instanceof ConflictError) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to join challenge' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

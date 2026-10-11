@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { AuthService } from '@/server/services/auth.service';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -50,15 +51,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error verifying two-factor code:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to verify two-factor code' },
-      { status: 500 }
-    );
+    return handleError(error);
   }
 }

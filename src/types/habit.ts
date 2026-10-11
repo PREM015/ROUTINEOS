@@ -7,6 +7,9 @@ import type {
   HabitLogStatus,
   HabitFrequencyType,
   HabitOverrideType,
+  HabitTrackingType,
+  HabitDirection,
+  TimeOfDay,
   Category,
   Tag,
 } from '@/generated/prisma';
@@ -20,6 +23,10 @@ export type {
   HabitLogStatus,
   HabitFrequencyType,
   HabitOverrideType,
+  HabitTrackingType,
+  HabitDirection,
+  TimeOfDay,
+  HabitDefinition,
   Category,
   Tag,
 } from '@/generated/prisma';
@@ -55,6 +62,15 @@ export interface HabitListItem {
   frequencyType: HabitFrequencyType;
   frequencyValue: string | null;
   targetCount: number | null;
+  /** Provenance: non-null means this habit came from the shared catalogue. */
+  definitionId: string | null;
+  trackingType: HabitTrackingType;
+  direction: HabitDirection;
+  targetValue: number | null;
+  unit: string | null;
+  timeOfDay: TimeOfDay | null;
+  sortOrder: number;
+  parentHabitId: string | null;
   category: {
     id: string;
     name: string;
@@ -85,6 +101,17 @@ export interface CreateHabitInput {
   frequencyType: HabitFrequencyType;
   frequencyValue?: string | null;
   targetCount?: number | null;
+  /** Catalogue provenance. `null` for a custom habit, which is fully supported. */
+  definitionId?: string | null;
+  trackingType?: HabitTrackingType;
+  direction?: HabitDirection;
+  targetValue?: number | null;
+  unit?: string | null;
+  timeOfDay?: TimeOfDay | null;
+  sortOrder?: number;
+  linkedMetricType?: string | null;
+  intervalDays?: number | null;
+  parentHabitId?: string | null;
   startDate?: Date | null;
   endDate?: Date | null;
   reminderTime?: string | null;
@@ -110,6 +137,16 @@ export interface UpdateHabitInput {
   frequencyType?: HabitFrequencyType;
   frequencyValue?: string | null;
   targetCount?: number | null;
+  definitionId?: string | null;
+  trackingType?: HabitTrackingType;
+  direction?: HabitDirection;
+  targetValue?: number | null;
+  unit?: string | null;
+  timeOfDay?: TimeOfDay | null;
+  sortOrder?: number;
+  linkedMetricType?: string | null;
+  intervalDays?: number | null;
+  parentHabitId?: string | null;
   startDate?: Date | null;
   endDate?: Date | null;
   reminderTime?: string | null;
@@ -121,6 +158,99 @@ export interface UpdateHabitInput {
   tagIds?: string[];
   appliesEveryDay?: boolean;
   dayTypeIds?: string[];
+}
+
+// ============================================================================
+// Shared Catalogue
+// ============================================================================
+
+/**
+ * What the user is allowed to change when adding a catalogue habit.
+ *
+ * Deliberately excludes `definitionId`, `userId` and `status`: the first is
+ * decided by the caller, the second never comes from a client at all, and the
+ * third is only ever set through the pause/resume/archive actions.
+ */
+export interface AddFromDefinitionOverrides {
+  name?: string;
+  description?: string | null;
+  tier?: HabitTier;
+  categoryId?: string | null;
+  trackingType?: HabitTrackingType;
+  direction?: HabitDirection;
+  targetValue?: number | null;
+  unit?: string | null;
+  targetCount?: number | null;
+  frequencyType?: HabitFrequencyType;
+  frequencyValue?: string | null;
+  intervalDays?: number | null;
+  timeOfDay?: TimeOfDay | null;
+  icon?: string | null;
+  color?: string | null;
+  sortOrder?: number;
+  startDate?: Date | null;
+  reminderTime?: string | null;
+}
+
+/**
+ * A catalogue entry as the browse screen sees it.
+ *
+ * Carries only the *suggestion*. No user id, no counts of who uses it, nothing
+ * derived from anyone's personal habits — a catalogue read must be incapable of
+ * leaking one user's target or history to another.
+ */
+export interface HabitDefinitionCard {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  tier: HabitTier;
+  frequencyType: HabitFrequencyType;
+  frequencyValue: string | null;
+  targetValue: number | null;
+  unit: string | null;
+  targetCount: number | null;
+  intervalDays: number | null;
+  trackingType: HabitTrackingType;
+  direction: HabitDirection;
+  timeOfDay: TimeOfDay | null;
+  linkedMetricType: string | null;
+  icon: string | null;
+  color: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  /** True when the signed-in user already has a personal copy. Purely a UI hint. */
+  alreadyAdded?: boolean;
+}
+
+/** One habit a starter pack would create, as shown in the confirmation preview. */
+export interface StarterPackHabitPreview {
+  name: string;
+  description: string | null;
+  category: string | null;
+  tier: HabitTier;
+  frequencyType: HabitFrequencyType;
+  frequencyValue: string | null;
+  trackingType: HabitTrackingType;
+  direction: HabitDirection;
+  targetValue: number | null;
+  unit: string | null;
+  intervalDays: number | null;
+  timeOfDay: TimeOfDay | null;
+  /** Absolute date this habit would start on, already offset for tier 2. */
+  startDate: string;
+  /** True when the user already has a habit by this name; it will not be touched. */
+  alreadyExists: boolean;
+  definitionId: string | null;
+}
+
+export interface StarterPackPreview {
+  templateId: string | null;
+  templateName: string;
+  grouped: Array<{ tier: HabitTier; habits: StarterPackHabitPreview[] }>;
+  totalHabits: number;
+  skippedAsExisting: number;
 }
 
 export interface CreateHabitResponse {
@@ -146,12 +276,23 @@ export interface LogHabitInput {
   /** Nullable: an explicit null clears the column. `z.coerce.date()` would coerce null to 1970-01-01. */
   completedAt?: Date | null;
   durationMinutes?: number;
+  /**
+   * A float reading. The service decides the effective status from it against
+   * the habit's own `trackingType`/`direction`/`targetValue` when the caller
+   * sends `PARTIAL` or omits an explicit status.
+   */
   quantity?: number;
   difficulty?: number;
   energyLevel?: number;
   moodBefore?: number;
   moodAfter?: number;
   note?: string | null;
+  /**
+   * Skip the direction-aware status derivation and store `status` verbatim.
+   * Needed for a genuine partial day ("6000 of 15000") that must not be stored
+   * as a completion.
+   */
+  statusIsExplicit?: boolean;
 }
 
 export interface LogHabitResponse {

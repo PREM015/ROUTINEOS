@@ -10,6 +10,8 @@
  * Vitest `node` run can import them directly.
  */
 
+export { ForeignTagError } from '@/lib/errors/app-error';
+
 /**
  * Ceiling on a single export.
  *
@@ -27,25 +29,3 @@ export const EXPORT_MAX_ENTRIES = 2000;
  * otherwise send hundreds of full copies of its content to open a dialog.
  */
 export const MAX_REVISIONS_PER_ENTRY = 50;
-
-/**
- * Raised when a tag batch names ids the caller does not own.
- *
- * A dedicated type rather than a generic `Error` because the service has to map
- * this to 403 while every other repository failure maps to 500 or 400. The
- * repository stays free of HTTP concerns; it names the condition and the
- * service decides what it means.
- *
- * `JournalEntryTag` carries no `userId`, so the database cannot enforce this
- * ownership rule itself — which is why it is checked on the write path rather
- * than trusted.
- */
-export class ForeignTagError extends Error {
-  readonly tagIds: readonly string[];
-
-  constructor(tagIds: readonly string[]) {
-    super('One or more tags do not belong to this user');
-    this.name = 'ForeignTagError';
-    this.tagIds = tagIds;
-  }
-}

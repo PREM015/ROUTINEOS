@@ -15,6 +15,7 @@ import { NotificationRepository } from '@/server/repositories/notification.repos
 import { notificationService } from '@/server/services/notification.service';
 import { pushService } from '@/server/services/push.service';
 import { getTodayString, formatMinutes, DEFAULT_TZ } from '@/lib/dates';
+import { NotFoundError } from '@/lib/errors/app-error';
 import { toUserId, type UserId } from '@/types/ids';
 
 /**
@@ -760,7 +761,7 @@ body: `Sleep session started at ${formatInTimeZone(startedAt, timezone, 'HH:mm')
   ): Promise<StopSleepResult> {
     const active = await this.sessionRepository.findActive(userId);
     if (!active) {
-      throw new Error('No active sleep session');
+      throw new NotFoundError('Sleep session');
     }
 
     const timezone = await this.getTimezone(userId);

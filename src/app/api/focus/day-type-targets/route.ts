@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { focusService } from '@/server/services/focus.service';
 import { focusDayTypeTargetSchema } from '@/schemas/focus.schema';
 import { userIdFromSession } from '@/types/ids';
-import { AppError } from '@/lib/errors/app-error';
 
 /**
  * GET /api/focus/day-type-targets
@@ -24,8 +24,7 @@ export async function GET() {
       data: Object.fromEntries(targets),
     });
   } catch (error) {
-    console.error('Error loading focus day-type targets:', error);
-    return NextResponse.json({ error: 'Failed to load day-type targets' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -60,10 +59,6 @@ export async function PUT(request: Request) {
     );
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
-    }
-    console.error('Error updating focus day-type target:', error);
-    return NextResponse.json({ error: 'Failed to update day-type target' }, { status: 500 });
+    return handleError(error);
   }
 }

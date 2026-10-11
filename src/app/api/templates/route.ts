@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { templateService } from '@/server/services/template.service';
 import { createTemplateSchema, templateQuerySchema } from '@/schemas/template.schema';
+import { handleError } from '@/lib/errors/error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -56,8 +57,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching templates:', error);
-    return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -94,10 +94,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: template }, { status: 201 });
   } catch (error) {
-    console.error('Error creating template:', error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to create template' }, { status: 500 });
+    return handleError(error);
   }
 }

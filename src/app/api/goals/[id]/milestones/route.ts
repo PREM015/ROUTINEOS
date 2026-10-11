@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
 import { GoalService } from '@/server/services/goal.service';
-import { NotFoundError } from '@/lib/errors/app-error';
+import { handleError } from '@/lib/errors/error-handler';
 import { milestoneSchema } from '@/schemas/project.schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -33,11 +33,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       meta: { goalId: id, total: milestones.length },
     });
   } catch (error) {
-    console.error('Error fetching goal milestones:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-    return NextResponse.json({ error: 'Failed to fetch goal milestones' }, { status: 500 });
+    return handleError(error);
   }
 }
 
@@ -74,15 +70,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: milestone }, { status: 201 });
   } catch (error) {
-    console.error('Error creating goal milestone:', error);
-
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: 'Goal not found' }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json({ error: 'Failed to create goal milestone' }, { status: 500 });
+    return handleError(error);
   }
 }

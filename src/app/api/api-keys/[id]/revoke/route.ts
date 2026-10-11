@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth';
+import { handleError } from '@/lib/errors/error-handler';
 import { apiKeyService } from '@/server/services/api-key.service';
-import { NotFoundError } from '@/lib/errors/app-error';
 import type { APIKey } from '@/generated/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
@@ -38,13 +38,6 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       },
     });
   } catch (error) {
-    console.error('Error revoking API key:', error);
-    if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: 404 });
-    }
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to revoke API key' }, { status: 500 });
+    return handleError(error);
   }
 }

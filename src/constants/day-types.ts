@@ -207,3 +207,9 @@ export const DAY_TYPES_ORDERED: readonly DayType[] = [
 export function isDayType(value: unknown): value is DayType {
   return typeof value === 'string' && (DAY_TYPES_ORDERED as readonly string[]).includes(value);
 }
+
+/** Alias for `enumValueForSlug` — preferred name for callers outside this module. */
+export const slugToDayType = enumValueForSlug;
+
+/** Alias for `ENUM_VALUE_TO_DAY_TYPE_SLUG` — preferred name for callers outside this module. */
+export const ENUM_TO_SLUG = ENUM_VALUE_TO_DAY_TYPE_SLUG;

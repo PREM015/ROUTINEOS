@@ -8,7 +8,7 @@ import type {
   Habit,
   Goal,
 } from '@/generated/prisma';
-import { FOCUS_END_REASON_LABELS as END_REASON_LABELS } from '@/constants/prisma-enums';
+import { FOCUS_END_REASON_LABELS as END_REASON_LABELS, BreakType as BREAK_TYPE_VALUES } from '@/constants/prisma-enums';
 
 /**
  * Re-exported so a client component can label an end reason without importing a
@@ -255,7 +255,11 @@ export interface FocusTimerSnapshot {
 // Breaks
 // ============================================================================
 
-export type BreakType = 'SHORT' | 'LONG' | 'MEAL' | 'WALK' | 'REST' | 'CUSTOM';
+/**
+ * Mirrors the Prisma `BreakType` enum via the client-safe constant, so this
+ * union cannot drift from the schema (it was previously missing `STRETCH`).
+ */
+export type BreakType = (typeof BREAK_TYPE_VALUES)[keyof typeof BREAK_TYPE_VALUES];
 
 export interface StartBreakInput {
   focusSessionId?: string;
@@ -545,7 +549,7 @@ export function isFocusSessionWithRelations(session: unknown): session is FocusS
 export function isBreakType(value: unknown): value is BreakType {
   return (
     typeof value === 'string' &&
-    ['SHORT', 'LONG', 'MEAL', 'WALK', 'REST', 'CUSTOM'].includes(value)
+    (Object.values(BREAK_TYPE_VALUES) as string[]).includes(value)
   );
 }
 

@@ -13,6 +13,8 @@ import {
   type GoalTypeValue,
 } from '@/constants/goals';
 import { addDays } from '@/lib/goals/goal-metrics';
+import { extractFieldErrors } from '@/lib/api-client';
+import { focusFirstInvalidField } from '@/lib/utils';
 import type { Goal } from '@/context/AppContext';
 
 /**
@@ -178,6 +180,7 @@ export function GoalFormModal({
     }
 
     setErrors(next);
+    if (Object.keys(next).length > 0) focusFirstInvalidField();
     return Object.keys(next).length === 0;
   };
 
@@ -208,9 +211,17 @@ export function GoalFormModal({
       });
       onClose();
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'Could not save this goal'
-      );
+      // A 400 from Zod arrives as `details.fieldErrors`; attach those to the
+      // matching inputs rather than collapsing them into one banner.
+      const fieldErrors = extractFieldErrors(error);
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+        focusFirstInvalidField();
+      } else {
+        setSubmitError(
+          error instanceof Error ? error.message : 'Could not save this goal'
+        );
+      }
     } finally {
       setSubmitting(false);
     }
