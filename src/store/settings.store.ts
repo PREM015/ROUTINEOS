@@ -26,6 +26,7 @@
 
 import { create } from 'zustand';
 import { apiRequest, ApiError } from '@/lib/api-client';
+import { notifySettingsChanged } from '@/lib/app-events';
 import type { UserSettings } from '@/generated/prisma';
 
 export type SettingsStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -140,6 +141,10 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       });
       set({ settings: updated, saving: false });
       applyAppearance(updated);
+      // The offline scheduler derives its projection from this row, so a
+      // settings write has to invalidate it or the worker keeps the previous
+      // quiet hours and prompt toggles until the next periodic mirror.
+      notifySettingsChanged();
       return updated;
     } catch (err) {
       set({

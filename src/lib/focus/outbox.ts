@@ -94,6 +94,11 @@ export async function loadOutbox(): Promise<OutboxItem[]> {
     const live: OutboxItem[] = [];
 
     for (const row of rows) {
+      // This store is shared with the generic mutation outbox
+      // (`src/lib/offline/outbox.ts`). Only focus-lifecycle rows belong here; a
+      // mutation row has no `kind`/`sessionId` and would otherwise be replayed by
+      // `FocusRuntime.drainQueue` as a focus transition.
+      if (!isFocusItem(row)) continue;
       const queuedAt = Date.parse(row.queuedAt);
       if (!Number.isFinite(queuedAt) || queuedAt < cutoff) {
         if (typeof row.localId === 'number') await idbDelete(STORE_OUTBOX, row.localId);
@@ -109,6 +114,14 @@ export async function loadOutbox(): Promise<OutboxItem[]> {
   } catch {
     return [];
   }
+}
+
+const FOCUS_KINDS: ReadonlySet<string> = new Set(['pause', 'resume', 'end', 'distraction']);
+
+function isFocusItem(row: unknown): row is OutboxItem {
+  if (!row || typeof row !== 'object') return false;
+  const candidate = row as { sessionId?: unknown; kind?: unknown };
+  return typeof candidate.sessionId === 'string' && FOCUS_KINDS.has(String(candidate.kind));
 }
 
 export async function removeFromOutbox(localId: number): Promise<void> {

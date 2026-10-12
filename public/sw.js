@@ -225,10 +225,14 @@ self.addEventListener('fetch', (event) => {
 // Two stores:
 //   `outbox`   user mutations captured while offline, replayed on reconnect
 //   `schedule` notifications mirrored from the server, fired locally when due
+// `DB_VERSION` must stay in lockstep with `OFFLINE_DB_VERSION` in
+// `src/lib/offline/idb.ts`. A mismatch makes one side's `indexedDB.open` reject
+// with a VersionError and the whole offline layer goes quiet.
 const DB_NAME = 'routineos-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_OUTBOX = 'outbox';
 const STORE_SCHEDULE = 'schedule';
+const STORE_CACHE = 'cache';
 
 let dbPromise = null;
 
@@ -245,6 +249,9 @@ function openDb() {
       }
       if (!db.objectStoreNames.contains(STORE_SCHEDULE)) {
         db.createObjectStore(STORE_SCHEDULE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORE_CACHE)) {
+        db.createObjectStore(STORE_CACHE, { keyPath: 'id' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -509,13 +516,22 @@ function registerSync(tag) {
  * naturally idempotent — without this, a reconnect storm duplicates writes).
  */
 async function flushOutbox() {
-  const items = await getAll(STORE_OUTBOX);
+  const all = await getAll(STORE_OUTBOX);
+  // Only HTTP-shaped mutation rows belong to this flush. `src/lib/focus/outbox.ts`
+  // also writes to this store, but its rows are `{sessionId, kind, ...}` with no
+  // `url` — the FocusRuntime drains those itself. Without this filter the loop
+  // below called `fetch(undefined)`, threw, and `break`-ed, wedging every real
+  // mutation behind the first focus row.
+  const items = all.filter((item) => item && typeof item.url === 'string' && item.url.length > 0);
   if (items.length === 0) return { synced: 0, failed: 0 };
 
   let synced = 0;
   let failed = 0;
 
   for (const item of items) {
+    // A row already marked failed by the page is not retried here; it is kept
+    // for diagnostics only.
+    if (item.status === 'failed') continue;
     try {
       const response = await fetch(item.url, {
         method: item.method || 'POST',
@@ -531,10 +547,12 @@ async function flushOutbox() {
         await deleteOne(STORE_OUTBOX, item.localId);
         synced += 1;
       } else if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
-        // A genuine client error will never succeed on replay, so dropping it is
-        // correct — holding it would wedge the queue behind a poison message.
-        console.warn('[sw] dropping unsendable queued action', item.url, response.status);
-        await deleteOne(STORE_OUTBOX, item.localId);
+        // A genuine client error will never succeed on replay. Keep it (with a
+        // diagnostic) rather than silently dropping the user's action.
+        await tx(STORE_OUTBOX, 'readwrite', (store) => {
+          store.put({ ...item, status: 'failed', lastError: `HTTP ${response.status}` });
+          return undefined;
+        });
         failed += 1;
       } else {
         // Server error or still offline — keep for the next attempt.

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiRequest, ApiError, apiErrorMessage } from '@/lib/api-client';
+import { submitOrQueue } from '@/lib/offline/outbox';
 import type { RoutineLogStatus } from '@/generated/prisma';
 import type {
   ResolvedDailyRoutine,
@@ -157,19 +158,33 @@ const load = useCallback(async () => {
       );
 
       try {
-        // `setLog` is the write that must distinguish the three outcomes: saved,
-        // refused (a closed retroactive window), or offline. It returns a
-        // boolean rather than throwing so the optimistic rollback happens in
-        // exactly one place.
-        await apiRequest('/api/routine/today', {
+        // `submitOrQueue` is the write that must distinguish the three outcomes:
+        // saved, refused (a closed retroactive window), or offline. It returns an
+        // outcome object rather than throwing so the optimistic rollback happens
+        // in exactly one place. When offline the log is persisted to the IndexedDB
+        // outbox and replayed on reconnect; the endpoint upserts on
+        // `(userId, blockId, date)`, so a replay cannot double-write.
+        const result = await submitOrQueue({
+          url: '/api/routine/today',
           method: 'POST',
           body: { blockId, date, ...input },
+          label: 'Routine log',
         });
 
+        if (result.delivered || result.queued) {
+          setData((current) =>
+            current ? { ...current, blocks: replaceLog(current.blocks, blockId, optimisticLog) } : current
+          );
+          return true;
+        }
+
+        // Neither delivered nor queued: a validation refusal or a closed edit
+        // window. Roll the optimistic write back.
         setData((current) =>
-          current ? { ...current, blocks: replaceLog(current.blocks, blockId, optimisticLog) } : current
+          current ? { ...current, blocks: replaceLog(current.blocks, blockId, previousLog) } : current
         );
-        return true;
+        setError('Not saved');
+        return false;
       } catch (caught) {
         setData((current) =>
           current ? { ...current, blocks: replaceLog(current.blocks, blockId, previousLog) } : current

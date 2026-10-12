@@ -5,6 +5,8 @@ import { UserService } from '@/server/services/user.service';
 import { resolveDayTypeForDate, resolveNaturalDayType } from '@/lib/scheduling/resolve-routine';
 import { DEFAULT_TZ } from '@/lib/dates';
 import { ValidationError } from '@/lib/errors/app-error';
+import { scheduleNotification } from '@/server/notifications/scheduler';
+import { NotificationType } from '@/generated/prisma';
 import type { DayType } from '@/generated/prisma';
 import type { UserId } from '@/types/ids';
 
@@ -140,11 +142,19 @@ export class DayModeService {
         growthScore: null,
         bonusScore: null,
       });
+      await this.notifyDayModeChanged(userId, date, {
+        title: 'Rest day set',
+        body: `${date} is now a rest day — nothing is expected of you.`,
+      });
       return { mode: 'REST' };
     }
 
     if (mode === 'CLEAR') {
       await this.routineService.clearException(userId, date);
+      await this.notifyDayModeChanged(userId, date, {
+        title: 'Back to the natural schedule',
+        body: `${date} now follows its natural day-type pattern.`,
+      });
       return { mode: 'CLEAR', dayType: null, dayTypeId: null, exception: null };
     }
 
@@ -174,6 +184,15 @@ export class DayModeService {
       note: reason ?? null,
     });
 
+    const dayTypeName =
+      exception.dayTypeDef?.name ??
+      (dayType === 'CUSTOM' ? 'a custom day type' : dayType.toLowerCase().replace(/_/g, ' '));
+
+    await this.notifyDayModeChanged(userId, date, {
+      title: 'Day type changed',
+      body: `${date} is now set as a ${dayTypeName} day.`,
+    });
+
     return {
       mode: 'DAY_TYPE',
       dayType,
@@ -189,6 +208,24 @@ export class DayModeService {
         reason: exception.reason,
       },
     };
+  }
+
+  /**
+   * Queue a "your day's mode changed" notification so the change is visible in
+   * the bell even if nothing pushed. `scheduledFor: now` makes it due
+   * immediately.
+   */
+  private async notifyDayModeChanged(
+    userId: UserId,
+    date: string,
+    detail: { title: string; body: string }
+  ): Promise<void> {
+    await scheduleNotification(userId, NotificationType.SYSTEM_UPDATE, new Date(), {
+      title: detail.title,
+      body: detail.body,
+      actionUrl: `/routine?date=${date}`,
+      relatedEntityId: `day-mode:${date}`,
+    });
   }
 }
 

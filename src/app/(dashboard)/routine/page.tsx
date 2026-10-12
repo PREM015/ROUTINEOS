@@ -112,6 +112,8 @@ const dayTypes = useDayTypes();
   const [dayModeOpen, setDayModeOpen] = useState(false);
   const [applyRangeOpen, setApplyRangeOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<ResolvedRoutineBlock | null>(null);
+  /** A day-type tab the user offered to *apply* to the current date. */
+  const [confirmDayType, setConfirmDayType] = useState<DayTypeTab | null>(null);
 
   // Block counts for all day types (fetched on mount and when day types change)
   const [blockCounts, setBlockCounts] = useState<Map<string, number>>(new Map());
@@ -525,6 +527,36 @@ const dayTypes = useDayTypes();
     }
   }, [pendingDelete, refetch, date, notifyRoutineChanged]);
 
+  /** Apply the previewed day type to the date, with the confirmation shown. */
+  const applyTabDayType = useCallback(async () => {
+    if (!confirmDayType?.dayTypeId) return;
+    const tab = confirmDayType;
+    setConfirmDayType(null);
+    try {
+      await apiRequest('/api/day-mode', {
+        method: 'POST',
+        body: {
+          date,
+          mode: 'DAY_TYPE',
+          // The tab's definition is always custom (the strip holds the user's
+          // own day types), matching what `DayModeDialog` sends.
+          dayType: 'CUSTOM' as const,
+          dayTypeId: tab.dayTypeId,
+        },
+      });
+      toast.success(`Day type changed — ${date} is now a ${tab.label} day`);
+      void refetch();
+      notifyRoutineChanged();
+    } catch (caught) {
+      setConfirmDayType(tab);
+      toast.error(
+        caught instanceof ApiError
+          ? apiErrorMessage({ error: caught.message }, 'Could not change this day')
+          : 'Could not change this day'
+      );
+    }
+  }, [date, confirmDayType, refetch, notifyRoutineChanged]);
+
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -858,9 +890,24 @@ const dayTypes = useDayTypes();
         )}
         {allDone && !showRestDay && <DayCompleteBanner />}
         {viewingOtherDayType && (
-          <p role="status" className="text-sm text-muted-foreground">
-            Showing <strong className="text-foreground">{activeTab?.label}</strong>. This
-            date resolves to <strong className="text-foreground">{data?.dayTypeName ?? 'its natural type'}</strong>.
+          <p
+            role="status"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground"
+          >
+            <span>
+              Showing <strong className="text-foreground">{activeTab?.label}</strong>. This
+              date resolves to <strong className="text-foreground">{data?.dayTypeName ?? 'its natural type'}</strong>.
+            </span>
+            {!readOnly && activeTab?.dayTypeId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmDayType(activeTab)}
+                className="shrink-0"
+              >
+                Use {activeTab.label} for this day
+              </Button>
+            )}
           </p>
         )}
 
@@ -1238,6 +1285,15 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
         }}
       />
 
+      <ConfirmDayTypeDialog
+        open={confirmDayType !== null}
+        tab={confirmDayType}
+        date={date}
+        currentDayTypeName={data?.dayTypeName ?? null}
+        onCancel={() => setConfirmDayType(null)}
+        onApply={() => void applyTabDayType()}
+      />
+
       <Modal
         isOpen={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
@@ -1284,6 +1340,64 @@ scoreRoutineRate={data?.score.routineCompletionRate ?? 0}
       />
       </div>
     </div>
+  );
+}
+
+/**
+ * Confirm before a previewed day type is applied to the date.
+ *
+ * Switching tabs on `/routine` is only ever a *preview* — the date keeps its
+ * own resolved day type until the user explicitly applies the one they are
+ * looking at. This dialog is that step: it states exactly what will change
+ * (the resolved type -> the selected type) so switching never happens by
+ * accident, and `DayModeService` writes the same `RoutineException` the
+ * "Change this day's type" dialog writes, so both pages agree.
+ */
+function ConfirmDayTypeDialog({
+  open,
+  tab,
+  date,
+  currentDayTypeName,
+  onCancel,
+  onApply,
+}: {
+  open: boolean;
+  tab: DayTypeTab | null;
+  date: string;
+  currentDayTypeName: string | null;
+  onCancel: () => void;
+  onApply: () => void;
+}) {
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onCancel}
+      title="Change this day's type?"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={onApply}>
+            Yes — use {tab?.label}
+          </Button>
+        </>
+      }
+    >
+      {tab && (
+        <div className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            <strong className="text-foreground">{date}</strong> currently resolves to{' '}
+            <strong className="text-foreground">{currentDayTypeName ?? 'its natural type'}</strong>.
+          </p>
+          <p className="text-muted-foreground">
+            Switching applies <strong className="text-foreground">{tab.label}</strong> as this
+            day&apos;s day type — its schedule replaces what is planned. You&apos;ll get a
+            confirmation notification once it changes.
+          </p>
+        </div>
+      )}
+    </Modal>
   );
 }
 

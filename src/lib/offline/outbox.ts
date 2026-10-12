@@ -3,16 +3,24 @@ import { STORE_OUTBOX, idbGetAll, idbPutAll } from '@/lib/offline/idb';
 /**
  * Captures user input while offline and replays it on reconnect.
  *
- * ## Why not the existing `queue.ts`
+ * ## Why IndexedDB and not `localStorage`
  *
- * `src/lib/offline/queue.ts` queues into `localStorage`, which a service worker
- * cannot read — so its companion `sync` handler could never flush anything — and
- * `queueAction` had **zero call sites**, so the queue was always empty. The
- * offline banner's "changes will be synced when you reconnect" was a promise
- * nothing honoured.
+ * An earlier `localStorage` queue could not be read by the service worker — so
+ * its flush handler could never send anything, and its `queueAction` had **zero
+ * call sites**, so the queue was always empty. The offline banner's "changes
+ * will be synced when you reconnect" was a promise nothing honoured.
  *
  * This module uses IndexedDB (shared with `public/sw.js`) so the queued writes
  * survive a tab close and the worker can replay them itself.
+ *
+ * ## One store, three writers — and why that used to wedge
+ *
+ * `src/lib/focus/outbox.ts` also writes to this store, but its rows are
+ * `{ sessionId, kind, ... }` with no `url`/`idempotencyKey`. {@link flushOutbox}
+ * therefore processes **only** HTTP-shaped mutation rows; anything else is left
+ * for its owner (`FocusRuntime` drains the focus queue itself). Before this
+ * filter, a focus row reached `fetch(item.url)`, threw, and `break`-ed the loop,
+ * so one un-sendable focus transition parked every habit tick behind it.
  *
  * ## Idempotency
  *
@@ -36,10 +44,38 @@ export interface QueuedAction {
   queuedAt: number;
   /** Short label so the UI can say what is pending. */
   label?: string;
+  /** Owning user, so sign-out can purge exactly one account's queue. */
+  userId?: string;
+  /** Attempts made so far, for bounded exponential backoff. */
+  attempts?: number;
+  /** Epoch ms of the last attempt, so backoff can be measured. */
+  lastAttemptAt?: number;
+  /** `failed` rows are retained for diagnostics and never auto-retried. */
+  status?: 'pending' | 'failed';
+  /** Last error message, shown alongside a failed row. */
+  lastError?: string;
 }
 
 interface StoredAction extends QueuedAction {
   localId?: number;
+}
+
+/** Bounded backoff: 1s, 2s, 4s … capped at 60s, plus jitter. */
+const BASE_BACKOFF_MS = 1000;
+const MAX_BACKOFF_MS = 60_000;
+
+function backoffDelay(attempts: number): number {
+  const base = Math.min(BASE_BACKOFF_MS * 2 ** Math.max(0, attempts), MAX_BACKOFF_MS);
+  // Jitter (±25%) stops a reconnect herd from retrying in lockstep.
+  const jitter = base * 0.25 * (Math.random() * 2 - 1);
+  return Math.max(0, Math.round(base + jitter));
+}
+
+/** A row this module owns — an HTTP mutation, not a focus-lifecycle entry. */
+function isMutationRow(row: unknown): row is StoredAction {
+  if (!row || typeof row !== 'object') return false;
+  const candidate = row as { url?: unknown; idempotencyKey?: unknown };
+  return typeof candidate.url === 'string' && candidate.url.length > 0;
 }
 
 function makeKey(): string {
@@ -73,6 +109,9 @@ export async function enqueueAction(
     idempotencyKey: action.idempotencyKey ?? makeKey(),
     queuedAt: Date.now(),
     label: action.label,
+    userId: action.userId,
+    attempts: 0,
+    status: 'pending',
   };
 
   try {
@@ -104,34 +143,57 @@ export async function enqueueAction(
 
 export async function pendingCount(): Promise<number> {
   const items = await idbGetAll<StoredAction>(STORE_OUTBOX).catch(() => []);
-  return items.length;
+  // Every row is a pending user action (mutation or focus transition); failed
+  // rows are excluded so the banner counts work that can still land.
+  return items.filter((item) => item?.status !== 'failed').length;
 }
 
 export async function pendingActions(): Promise<StoredAction[]> {
   const items = await idbGetAll<StoredAction>(STORE_OUTBOX).catch(() => []);
-  return items.sort((a, b) => a.queuedAt - b.queuedAt);
+  return items.sort((a, b) => queueTime(a) - queueTime(b));
+}
+
+/**
+ * `queuedAt` is a number on this module's rows but an ISO string on the focus
+ * outbox's rows. Comparing the two directly produced `NaN` and scrambled the
+ * order, so both are normalised before sorting.
+ */
+function queueTime(item: { queuedAt?: unknown }): number {
+  if (typeof item.queuedAt === 'number') return item.queuedAt;
+  if (typeof item.queuedAt === 'string') return Date.parse(item.queuedAt) || 0;
+  return 0;
 }
 
 export interface FlushResult {
   synced: number;
   dropped: number;
+  failed: number;
   remaining: number;
 }
 
 /**
- * Replay everything queued, oldest first.
+ * Replay every queued mutation, oldest first.
  *
  * Stops at the first network/server failure rather than continuing, so the
  * queue preserves causal order — reordering a habit log against the sleep log
- * would produce worse data than a delay.
+ * would produce worse data than a delay. Validation errors (4xx other than 408 /
+ * 429) are not retried but are **kept** as `failed` with a diagnostic rather than
+ * discarded, so a mis-sent action is recoverable instead of silently gone.
  */
 export async function flushOutbox(): Promise<FlushResult> {
-  const items = await pendingActions();
+  const all = await pendingActions();
+  const items = all.filter(isMutationRow);
   let synced = 0;
   let dropped = 0;
 
   for (const item of items) {
     if (item.localId === undefined) continue;
+    if (item.status === 'failed') continue;
+
+    const attempts = item.attempts ?? 0;
+    if (attempts > 0 && item.lastAttemptAt) {
+      if (Date.now() < item.lastAttemptAt + backoffDelay(attempts)) continue;
+    }
 
     try {
       const response = await fetch(item.url, {
@@ -150,22 +212,31 @@ export async function flushOutbox(): Promise<FlushResult> {
         continue;
       }
 
-      // A 4xx (other than the two "come back later" codes) will never succeed,
-      // so keep it out of the queue rather than wedging everything behind it.
+      // A 4xx (other than the two "come back later" codes) will never succeed on
+      // its own, so it is retired — but retained as `failed` for diagnostics
+      // rather than deleted, and it no longer blocks the rows behind it.
       const retriable = response.status >= 500 || response.status === 408 || response.status === 429;
       if (!retriable) {
-        await deleteQueued(item.localId);
+        await updateQueued(item, { status: 'failed', lastError: `HTTP ${response.status}` });
         dropped += 1;
         continue;
       }
+
+      await updateQueued(item, { attempts: attempts + 1, lastAttemptAt: Date.now() });
       break;
     } catch {
-      // Still offline.
+      await updateQueued(item, { attempts: attempts + 1, lastAttemptAt: Date.now() });
       break;
     }
   }
 
-  return { synced, dropped, remaining: await pendingCount() };
+  const remaining = await pendingCount();
+  return { synced, dropped, failed: dropped, remaining };
+}
+
+async function updateQueued(item: StoredAction, patch: Partial<StoredAction>): Promise<void> {
+  if (item.localId === undefined) return;
+  await idbPutAll(STORE_OUTBOX, [{ ...item, ...patch }]).catch(() => undefined);
 }
 
 async function deleteQueued(localId: number): Promise<void> {
@@ -206,14 +277,17 @@ export function attachOnlineFlush(onFlushed?: (result: FlushResult) => void): ()
  * land later.
  */
 export async function submitOrQueue(
-  action: Omit<QueuedAction, 'idempotencyKey' | 'queuedAt'>
+  action: Omit<QueuedAction, 'idempotencyKey' | 'queuedAt'> & { idempotencyKey?: string }
 ): Promise<{ delivered: boolean; queued: boolean }> {
   if (isOnline()) {
     try {
       const response = await fetch(action.url, {
         method: action.method ?? 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': action.idempotencyKey ?? makeKey(),
+        },
         body: JSON.stringify(action.body ?? {}),
       });
       if (response.ok) return { delivered: true, queued: false };

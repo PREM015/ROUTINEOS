@@ -1,11 +1,23 @@
 version: '3.8'
 
 services:
-  # TODO: Add services
-  # - PostgreSQL database
-  # - Redis cache
-  # - Next.js app
-  
+  app:
+    build: .
+    # The Next.js app listens on port 3000 by default.
+    # Map it to host port 3000 so the PWA is accessible.
+    ports:
+      - "3000:3000"
+    environment:
+      # Database connection from postgres service
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/daily-plan?schema=public"
+      # Offline-first PWA: VAPID keys are not required — notifications use
+      # IndexedDB outbox + service worker `scheduledTime`/`periodicsync`.
+      # CRON_SECRET is only needed if GitHub Actions/Vercel cron is used
+      # (which this project does not use for notification scheduling).
+      # CRON_SECRET: ${CRON_SECRET}
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:15
     environment:
@@ -16,6 +28,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  # PWA service worker registration and offline setup are handled client-side.
+  # No separate service worker container is needed — the browser handles it.
 
 volumes:
   postgres_data:

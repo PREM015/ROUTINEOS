@@ -571,6 +571,25 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/*
+  Smooth scrolling app-wide.
+
+  `scroll-behavior` is inherited, so this also applies to every internal scroll
+  container (`overflow-y-auto` / `overflow-x-auto`), not just the document.
+  Wheel and touch scrolling are unaffected — only programmatic and anchor
+  scrolls glide, which is what makes jumping between tabs, dates and lanes feel
+  continuous instead of teleporting. Turned off under reduced motion.
+*/
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 /* Dropdown/menu entrance (replaces tailwindcss-animate classes). */
 @keyframes menu-in {
   from {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { submitOrQueue } from '@/lib/offline/outbox';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Textarea';
 import { Slider } from '@/components/ui/Slider';
@@ -137,30 +138,39 @@ export function DailyReflection({ date }: DailyReflectionProps) {
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean);
-      const res = await fetch('/api/reflections', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date,
-          energy: formData.energy ?? 3,
-          mood: formData.mood ?? 3,
-          stress: formData.stress ?? 3,
-          focus: formData.focus ?? 3,
-          reflectionText: formData.reflectionText || undefined,
-          biggestWin: formData.biggestWin || undefined,
-          biggestDifficulty: formData.biggestDifficulty || undefined,
-          lessonsLearned: formData.lessonsLearned || undefined,
-          gratitude: formData.gratitude || undefined,
-          improvements: formData.improvements || undefined,
-          tomorrowFocus: formData.tomorrowFocus || undefined,
-          tomorrowPriorities: priorities.length > 0 ? priorities : undefined,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Failed to save reflection');
-      setNotice('Reflection saved.');
-      await fetchReflection();
-      setIsEditing(false);
+      const body = {
+        date,
+        energy: formData.energy ?? 3,
+        mood: formData.mood ?? 3,
+        stress: formData.stress ?? 3,
+        focus: formData.focus ?? 3,
+        reflectionText: formData.reflectionText || undefined,
+        biggestWin: formData.biggestWin || undefined,
+        biggestDifficulty: formData.biggestDifficulty || undefined,
+        lessonsLearned: formData.lessonsLearned || undefined,
+        gratitude: formData.gratitude || undefined,
+        improvements: formData.improvements || undefined,
+        tomorrowFocus: formData.tomorrowFocus || undefined,
+        tomorrowPriorities: priorities.length > 0 ? priorities : undefined,
+      };
+      // `submitOrQueue` persists to the IndexedDB outbox when offline; the
+      // endpoint upserts on `(userId, date)`, so a replay overwrites the same
+      // day's reflection rather than creating a duplicate.
+      const result = await submitOrQueue({ url: '/api/reflections', method: 'POST', body, label: 'Reflection' });
+      if (result.delivered) {
+        setNotice('Reflection saved.');
+        await fetchReflection();
+        setIsEditing(false);
+      } else if (result.queued) {
+        // Offline: keep the local form as the saved copy and skip the refetch,
+        // which would fail and reset the form the user just filled in.
+        setSaved(formData);
+        setHasSaved(true);
+        setNotice('Saved offline — will sync when you reconnect.');
+        setIsEditing(false);
+      } else {
+        throw new Error('Failed to save reflection');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save reflection');
     } finally {

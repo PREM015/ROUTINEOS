@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
         habitRemindersSkipped: result.habitRemindersSkipped,
         goalReminders: result.goalReminders,
         goalRemindersSkipped: result.goalRemindersSkipped,
+        goalCheckins: result.goalCheckins,
+        weeklyReviewReminders: result.weeklyReviewReminders,
         errors: result.errors.length > 0 ? result.errors : undefined,
       },
     });

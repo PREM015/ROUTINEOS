@@ -7,6 +7,7 @@ import { useSettingsLoader } from '@/hooks/useSettings';
 import { DeviceSessionTracker } from '@/components/auth/DeviceSessionTracker';
 import { resetFocusSettings } from '@/hooks/useFocusSettings';
 import { clearOutbox } from '@/lib/focus/outbox';
+import { clearAllOffline } from '@/lib/offline/cache';
 
 function AuthSync() {
   const { status } = useSession();
@@ -31,6 +32,12 @@ function AuthSync() {
        * account signs in on this browser would write to the previous account's row.
        */
       void clearOutbox();
+      /*
+       * The per-user read cache, the notification mirror and the generic mutation
+       * outbox are all cleared as well, so a second account on a shared device can
+       * never read the first account's cached schedule or replay its queued writes.
+       */
+      void clearAllOffline();
     }
   }, [status]);
 

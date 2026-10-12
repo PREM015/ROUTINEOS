@@ -6,6 +6,7 @@ import { fetchWithAuth } from '@/lib/api-client';
 import { nowForUser } from '@/lib/dates';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { apiErrorMessage } from '@/lib/api-client';
+import { submitOrQueue } from '@/lib/offline/outbox';
 import { addDays } from '@/lib/goals/goal-metrics';
 
 /**
@@ -1159,21 +1160,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/habits/${habitId}/log`, {
+      // Queued to the IndexedDB outbox when offline; the endpoint upserts on
+      // `(userId, habitId, date)`, so a replay cannot double-count the tick.
+      const result = await submitOrQueue({
+        url: `/api/habits/${habitId}/log`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, status: statusValue, note }),
+        body: { date, status: statusValue, note },
+        label: 'Habit log',
       });
-      const json = await throwIfNotOk(response, 'Failed to save habit log') as { data?: { log?: { id?: string; status?: LogStatus; note?: string | null; completedAt?: string | Date | null }; id?: string; status?: LogStatus; note?: string | null; completedAt?: string | Date | null } };
-      // The log route nests the record under `data.log`; accept both shapes.
-      const savedLog = json.data?.log ?? json.data;
-      setHabitLogs(prev => prev.map(log => log.habitId === habitId && log.date === date ? {
-        ...log,
-        id: savedLog?.id ?? log.id,
-        status: savedLog?.status ?? statusValue,
-        note: savedLog?.note ?? note,
-        completedAt: savedLog?.completedAt ? String(savedLog.completedAt) : log.completedAt,
-      } : log));
+      if (result.delivered || result.queued) {
+        return;
+      }
+      throw new Error('Failed to save habit log');
     } catch (error) {
       console.error('logHabit failed:', error);
       // Roll back optimistic toggle.
@@ -1358,14 +1356,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const response = await fetch(`/api/goals/${id}/progress`, {
+      // `mode: 'set'` with an absolute clamped value is idempotent: replaying it
+      // overwrites `currentValue` with the same number rather than adding again.
+      // Offline it is queued and the optimistic value is kept.
+      const result = await submitOrQueue({
+        url: `/api/goals/${id}/progress`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: clamped, mode: 'set', note }),
+        body: { value: clamped, mode: 'set', note },
+        label: 'Goal progress',
       });
-      const json = await throwIfNotOk(response, 'Failed to update goal progress') as { data: never };
-      const saved = normalizeGoal(json.data);
-      setGoals(prevList => prevList.map(g => g.id === id ? saved : g));
+
+      if (!result.delivered && !result.queued) {
+        if (prev) setGoals(prevList => prevList.map(g => g.id === id ? prev : g));
+        throw new Error('Failed to update goal progress');
+      }
     } catch (error) {
       console.error('updateGoalProgress failed:', error);
       if (prev) setGoals(prevList => prevList.map(g => g.id === id ? prev : g));

@@ -29,6 +29,13 @@ export const APP_EVENTS = {
   /** Sleep sessions started/stopped/updated. */
   SLEEP_DATA_CHANGED: 'sleep-data-changed',
 
+  /**
+   * UserSettings row saved. Consumed by the offline scheduler: quiet hours,
+   * prompt toggles and the notification window decide which local reminders are
+   * allowed to fire, so a settings write changes the schedule, not just the UI.
+   */
+  SETTINGS_CHANGED: 'settings-changed',
+
   /** Focus sessions started/paused/completed. */
   FOCUS_DATA_CHANGED: 'focus-data-changed',
 
@@ -95,5 +102,6 @@ export const notifyDayModeChanged = () => dispatchAppEvent(APP_EVENTS.DAY_MODE_C
 export const notifyGoalsDataChanged = () => dispatchAppEvent(APP_EVENTS.GOALS_DATA_CHANGED);
 export const notifyHabitsDataChanged = () => dispatchAppEvent(APP_EVENTS.HABITS_DATA_CHANGED);
 export const notifySleepDataChanged = () => dispatchAppEvent(APP_EVENTS.SLEEP_DATA_CHANGED);
+export const notifySettingsChanged = () => dispatchAppEvent(APP_EVENTS.SETTINGS_CHANGED);
 export const notifyFocusDataChanged = () => dispatchAppEvent(APP_EVENTS.FOCUS_DATA_CHANGED);
 export const notifyJournalDataChanged = () => dispatchAppEvent(APP_EVENTS.JOURNAL_DATA_CHANGED);

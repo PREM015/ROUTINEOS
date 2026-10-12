@@ -3,6 +3,7 @@ import { scheduleRoutineBlockNotifications, scheduleDailyReminder } from '@/serv
 import { scheduleHabitReminders } from '@/server/notifications/habit-reminder';
 import { scheduleGoalReminders } from '@/server/notifications/goal-reminder';
 import { scheduleGoalCheckins } from '@/server/notifications/goal-checkin';
+import { scheduleWeeklyReviewReminders } from '@/server/notifications/weekly-review';
 import { toUserId } from '@/types/ids';
 
 export interface ScheduleAllResult {
@@ -14,6 +15,7 @@ export interface ScheduleAllResult {
   goalReminders: number;
   goalRemindersSkipped: number;
   goalCheckins: number;
+  weeklyReviewReminders: number;
   errors: string[];
 }
 
@@ -140,6 +142,16 @@ export async function scheduleAllReminders(now: Date = new Date()): Promise<Sche
     );
   }
 
+  let weeklyReviewReminders = 0;
+  try {
+    const result = await scheduleWeeklyReviewReminders(now);
+    weeklyReviewReminders = result.created;
+  } catch (error) {
+    errors.push(
+      `weekly review: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+
   return {
     usersProcessed: routineUsers.length + dailyUsers.length,
     routineNotificationsScheduled,
@@ -149,6 +161,7 @@ export async function scheduleAllReminders(now: Date = new Date()): Promise<Sche
     goalReminders,
     goalRemindersSkipped,
     goalCheckins,
+    weeklyReviewReminders,
     errors,
   };
 }

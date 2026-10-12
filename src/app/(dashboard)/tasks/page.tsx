@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TaskPriority, TaskStatus } from '@/generated/prisma';
 import { CalendarDays, CheckCircle2, Circle, ListTodo, Plus } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
+import { submitOrQueue } from '@/lib/offline/outbox';
 import { formatDate, cn } from '@/lib/utils';
 import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import type { TaskListItem } from '@/types/projects';
@@ -95,13 +96,22 @@ export default function TasksPage() {
     const next: TaskStatus = task.status === 'COMPLETED' ? 'TODO' : 'COMPLETED';
     setBusyId(task.id);
     try {
-      await apiRequest(`/api/tasks/${task.id}`, { method: 'PATCH', body: { status: next } });
-      setTasks((current) =>
-        (current ?? []).map((item) => (item.id === task.id ? { ...item, status: next } : item)),
-      );
-      notifyGoalsDataChanged();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update task');
+      // Completing goes through the idempotent `/complete` endpoint; reopening is
+      // a plain status set. Either is queued to the offline outbox when there is
+      // no connection, so the tick survives a closed tab.
+      const result =
+        next === 'COMPLETED'
+          ? await submitOrQueue({ url: `/api/tasks/${task.id}/complete`, method: 'POST', body: {}, label: 'Task complete' })
+          : await submitOrQueue({ url: `/api/tasks/${task.id}`, method: 'PATCH', body: { status: next }, label: 'Task update' });
+
+      if (result.delivered || result.queued) {
+        setTasks((current) =>
+          (current ?? []).map((item) => (item.id === task.id ? { ...item, status: next } : item)),
+        );
+        notifyGoalsDataChanged();
+      } else {
+        setError('Failed to update task');
+      }
     } finally {
       setBusyId(null);
     }

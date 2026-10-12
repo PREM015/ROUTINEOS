@@ -7,10 +7,9 @@ import { flushOutbox, pendingCount } from '@/lib/offline/outbox';
 /**
  * Offline status, backed by the queue that actually holds data.
  *
- * This previously imported `syncQueue` from `src/lib/offline/queue.ts`, which
- * queues into `localStorage` and whose `queueAction` had **zero call sites** —
- * so the queue was permanently empty and "changes will be synced when you
- * reconnect" was a promise nothing kept.
+ * This used to read a `localStorage` queue whose `queueAction` had **zero call
+ * sites** — so the queue was permanently empty and "changes will be synced when
+ * you reconnect" was a promise nothing kept.
  *
  * It now reads the IndexedDB outbox, so the pending count shown is the real one
  * and the count drops as items land.
