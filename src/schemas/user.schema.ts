@@ -12,10 +12,14 @@ const timezoneSchema = z
 /**
  * `displayName`, `bio` and `avatarUrl` are nullable so they can be *cleared*.
  *
- * The profile page used to send `undefined` for an emptied field, but
- * `JSON.stringify` drops undefined properties, so the key never reached the
- * server and clearing a bio or display name silently did nothing. Sending `''`
- * was not an option for `avatarUrl` because it fails `.url()`.
+ * Validation rules for avatarUrl:
+ * - Accepts valid absolute http:// or https:// URLs.
+ * - Accepts `null` when the API explicitly sends `null` to clear the avatar.
+ * - Rejects empty strings, whitespace-only values, malformed URLs
+ *   and URLs without an http:// or https:// protocol.
+ * - Omitted fields (undefined) are left unchanged — do not interpret as a
+ *   request to clear the avatar. The API route handles this by only writing
+ *   avatarUrl when it is defined in the parsed data.
  */
 export const updateProfileSchema = z.object({
   name: z
@@ -31,7 +35,7 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(500, 'Bio must be 500 characters or less').nullable().optional(),
   avatarUrl: z
     .string()
-    .url('Avatar URL must be a valid URL')
+    .url('Avatar URL must be a valid http:// or https:// URL')
     .nullable()
     .optional(),
   timezone: timezoneSchema.optional(),
