@@ -31,6 +31,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 
 interface IntegrationRow {
   id: string;
@@ -218,8 +220,8 @@ export default function IntegrationsSettingsPage() {
         </div>
       )}
 
-      <Card>
-        <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+      <Card className={SCROLL_CARD.card}>
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-6 py-4">
           <Link2 className="h-5 w-5 text-primary" aria-hidden="true" />
           <h2 className="text-lg font-bold">Connected services</h2>
         </div>
@@ -235,7 +237,7 @@ export default function IntegrationsSettingsPage() {
             No integrations connected yet. Connect one from the list below.
           </div>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className={cn(SCROLL_CARD.region, 'divide-y divide-border pr-1')}>
             {integrations.map((row) => (
               <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
                 <div>

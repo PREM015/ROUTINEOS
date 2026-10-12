@@ -37,9 +37,13 @@ export async function GET(request: NextRequest) {
       userIdFromSession(session),
       requested
     );
-    // Always return an array with block count, even for missing template
-    // Type assertion needed because service return type doesn't include blocks in signature
-    const blocks = (template as { blocks?: { id: string }[] } | null)?.blocks ?? [];
+    // Return empty array when template not found, so the page can distinguish
+    // "template not found" (show setup) from "template exists but empty" (show add block).
+    // Type assertion needed because service return type doesn't include blocks in signature.
+    if (!template) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+    const blocks = (template as { blocks?: { id: string }[] }).blocks ?? [];
     return NextResponse.json({ success: true, data: [{ blocks, blockCount: blocks.length, dayTypeId: requested }] });
   }
 

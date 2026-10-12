@@ -260,24 +260,20 @@ export class RoutineService {
     // Get template
     let template: RoutineTemplateWithBlocks | null = null;
     if (resolved.templateId) {
+      // Exception explicitly references a template
       template = (await this.routineRepository.findTemplateWithBlocks(
         resolved.templateId,
         userId,
       )) as RoutineTemplateWithBlocks | null;
     } else if (dayTypeId) {
+      // Exception references a day type definition, or natural day matched a definition
       template = (await this.routineRepository.findTemplateByDayTypeId(
         userId,
         dayTypeId,
       )) as RoutineTemplateWithBlocks | null;
-    } else {
-      // Last resort, and only when the slug matched no definition row. The enum
-      // column is the wrong key in general, but a user with legacy rows and no
-      // definitions would otherwise see an empty day.
-      template = (await this.routineRepository.findTemplateByDayType(
-        userId,
-        dayType,
-      )) as RoutineTemplateWithBlocks | null;
     }
+    // No enum-based fallback: if no exception and no matching definition,
+    // template stays null. The user must explicitly assign a day type to the date.
 
     if (!template) {
       return {
@@ -1321,7 +1317,7 @@ async deleteById(
 
   /** The template a day-type preset points at, or `null`. */
   async getTemplateForDayTypeId(userId: UserId, dayTypeId: string) {
-    return this.routineRepository.findTemplateByDayTypeId(toUserId(dayTypeId), userId);
+    return this.routineRepository.findTemplateByDayTypeId(userId, dayTypeId);
   }
 
   /**

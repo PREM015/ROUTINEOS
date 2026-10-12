@@ -73,6 +73,7 @@ export function toSleepLogLike(log: {
   actualWakeTime: string | null;
   quality?: number | null;
   wakeUpCount?: number | null;
+  feltRested?: boolean | null;
 }): SleepLogLike | null {
   if (!log.actualBedtime || !log.actualWakeTime) return null;
   return {
@@ -81,6 +82,7 @@ export function toSleepLogLike(log: {
     actualWakeTime: log.actualWakeTime,
     quality: log.quality,
     wakeUpCount: log.wakeUpCount,
+    feltRested: log.feltRested,
   };
 }
 

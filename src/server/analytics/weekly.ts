@@ -106,6 +106,7 @@ function toSleepLogLike(log: SleepLog): SleepLogLike {
     actualBedtime: log.actualBedtime ?? '00:00',
     actualWakeTime: log.actualWakeTime ?? '00:00',
     quality: log.quality,
+    feltRested: log.feltRested,
   };
 }
 

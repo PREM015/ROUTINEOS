@@ -18,8 +18,14 @@ export async function generateWeeklyRecap(userId: UserId, weekStart: string, wee
   // Get scores for the week
   const scores = await scoreRepository.findByRange(userId, weekStart, weekEnd);
   
-  const averageScore = scores.length > 0
-    ? scores.reduce((sum, s) => sum + (s.totalScore || 0), 0) / scores.length
+  // Average the days that actually carry a score. Dividing by every row in the
+  // range treated an unscored day as a 0, so this week's headline average read
+  // lower than the analytics hero and dashboard for the same week, which both
+  // filter `totalScore !== null`. `0` when nothing is scored, matching those.
+  const scoredScores = scores.filter(s => s.totalScore !== null);
+
+  const averageScore = scoredScores.length > 0
+    ? scoredScores.reduce((sum, s) => sum + (s.totalScore ?? 0), 0) / scoredScores.length
     : 0;
 
   const perfectDays = scores.filter(s => s.totalScore && s.totalScore >= 95).length;
@@ -31,12 +37,19 @@ export async function generateWeeklyRecap(userId: UserId, weekStart: string, wee
     habits.map(async habit => {
       const logs = await habitRepository.findLogsByRange(habit.id, userId, weekStart, weekEnd);
       const completed = logs.filter(l => l.status === 'COMPLETED').length;
+      const missed = logs.filter(l => l.status === 'MISSED').length;
+      const skipped = logs.filter(l => l.status === 'SKIPPED').length;
+      // The days the user was actually asked about — COMPLETED / MISSED /
+      // SKIPPED — matching `getHabitHealth` and the habit detail. `logs.length`
+      // also swept in PARTIAL and NOT_APPLICABLE rows, so simply recording a
+      // reading (or a note) on a day dragged the rate down.
+      const total = completed + missed + skipped;
       return {
         habitId: habit.id,
         habitName: habit.name,
         completed,
-        total: logs.length,
-        rate: logs.length > 0 ? (completed / logs.length) * 100 : 0,
+        total,
+        rate: total > 0 ? (completed / total) * 100 : 0,
       };
     })
   );
@@ -51,14 +64,23 @@ export async function generateWeeklyRecap(userId: UserId, weekStart: string, wee
 
   // Get goals progress
   const goals = await goalRepository.findAll(userId, { status: 'ACTIVE' });
+  // Inclusive of the whole of `weekEnd`: comparing against `new Date(weekEnd)`
+  // (midnight) dropped a goal completed at any time on the final day.
   const goalsCompleted = goals.filter(g => 
     g.completedAt && 
-    new Date(g.completedAt) >= new Date(weekStart) &&
-    new Date(g.completedAt) <= new Date(weekEnd)
+    new Date(g.completedAt) >= new Date(`${weekStart}T00:00:00.000Z`) &&
+    new Date(g.completedAt) <= new Date(`${weekEnd}T23:59:59.999Z`)
   ).length;
 
   // Get streak
   const streak = await streakRepository.findByUserId(userId);
+
+  const totalCompleted = habitStats.reduce((sum, habit) => sum + habit.completed, 0);
+  const totalScheduled = habitStats.reduce((sum, habit) => sum + habit.total, 0);
+  const averageCompletion =
+    habitStats.length > 0 && totalScheduled > 0
+      ? (totalCompleted / totalScheduled) * 100
+      : 0;
 
   return {
     period: {
@@ -78,13 +100,15 @@ export async function generateWeeklyRecap(userId: UserId, weekStart: string, wee
     },
     habits: {
       total: habits.length,
-      totalCompleted: habitStats.reduce((sum, habit) => sum + habit.completed, 0),
-      totalScheduled: habitStats.reduce((sum, habit) => sum + habit.total, 0),
+      totalCompleted,
+      totalScheduled,
       mostConsistent,
       needsWork,
-      averageCompletion: habitStats.length > 0
-        ? habitStats.reduce((sum, h) => sum + h.rate, 0) / habitStats.length
-        : 0,
+      // Pooled, not the mean of per-habit rates. Per-habit, a low-scheduled
+      // habit (1 of 1) is worth as much as a daily habit (5 of 7); pooled, the
+      // denominator is every due day in the week — the same figure
+      // `weeklySummary` reports from `/api/analytics/weekly`.
+      averageCompletion,
     },
     goals: {
       active: goals.length,

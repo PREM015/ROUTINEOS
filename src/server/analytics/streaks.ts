@@ -213,7 +213,12 @@ export async function streakAnalytics(userId: UserId, range: DateRange): Promise
       minimum: streak?.minimumDayStreak ?? longestMinimum,
     },
     longest: {
-      total: Math.max(streak?.longestStreak ?? 0, longest),
+      // Prefer the stored row, exactly as `current.total` does above. Taking
+      // `Math.max(stored, derived)` let `/calendar` report a *longer* best-ever
+      // than the StreakCard / badge, because the derived value is scoped to the
+      // requested range (90 days by default). Both now read the one authoritative
+      // number, so the two surfaces agree.
+      total: streak?.longestStreak ?? longest,
       core: longestCore,
       growth: longestGrowth,
       minimum: longestMinimum,

@@ -37,6 +37,8 @@ import { Select } from '@/components/ui/Select';
 import { Switch } from '@/components/ui/Switch';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 
 interface RoutineTemplateRow {
   id: string;
@@ -263,12 +265,17 @@ try {
         </div>
       )}
 
-      <Card>
-        <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+      <Card className={SCROLL_CARD.card}>
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-6 py-4">
           <Rows3 className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-bold">Templates</h2>
         </div>
-        <div className="p-6">
+        {/*
+          `min-h-0 flex-1` so the list below can actually compress. Without it
+          this padded wrapper is a plain block and the card grows with the
+          template count instead of scrolling.
+        */}
+        <div className="flex min-h-0 flex-1 flex-col p-6">
           {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-14 w-full" />
@@ -279,7 +286,7 @@ try {
               No routine templates yet. Create one below to get started.
             </div>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className={cn(SCROLL_CARD.region, 'divide-y divide-border pr-1')}>
               {templates.map((template) => {
                 const isEditing = editing?.id === template.id;
                 return (

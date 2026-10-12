@@ -6,10 +6,8 @@
  */
 
 import { timeToMinutes } from '@/lib/dates';
-import {
-  sleepDurationMinutes,
-  sleepScoreFromDuration,
-} from '@/utils/sleep';
+import { sleepDurationMinutes } from '@/utils/sleep';
+import { calculateSleepScore } from '@/lib/sleep/calculate-duration';
 
 // ============================================================================
 // Types
@@ -27,6 +25,8 @@ export interface SleepLogLike {
   quality?: number | null;
   /** Wake-up interruption count, nullable. */
   wakeUpCount?: number | null;
+  /** Whether the user reported feeling rested, nullable. */
+  feltRested?: boolean | null;
 }
 
 export interface SleepAnalysisResult {
@@ -146,7 +146,15 @@ export function sleepConsistency(
 // ============================================================================
 
 /**
- * Overall sleep score 0-100 combining duration, quality, and consistency.
+ * Overall sleep score 0-100 for a range of logs.
+ *
+ * This is the mean of the per-night `calculateSleepScore` values — the same
+ * function that produces `DailyScore.sleepScore`. A single-night wellness range
+ * therefore shows exactly the night's sleep score from the `/today` score
+ * breakdown, and a multi-night range shows the average of those nightly scores.
+ * The old formula (duration + quality + consistency weights) produced a *third*
+ * number that agreed with neither the nightly score nor the breakdown.
+ * Regularity stays visible as the separate `consistencyScore` metric.
  * @example
  * sleepScore([{ date:'2026-09-17', actualBedtime:'23:00', actualWakeTime:'06:30', quality: 4 }], 450)
  * // => number 0..100
@@ -154,22 +162,19 @@ export function sleepConsistency(
 export function sleepScore(logs: SleepLogLike[], targetMinutes: number): number {
   if (logs.length === 0) return 0;
 
-  const durations = logs.map((log) => sleepMinutes(log));
-  const durationScore =
-    durations.reduce((sum, d) => sum + sleepScoreFromDuration(d, targetMinutes), 0) /
-    durations.length;
+  const total = logs.reduce(
+    (sum, log) =>
+      sum +
+      calculateSleepScore(
+        sleepMinutes(log),
+        targetMinutes,
+        log.quality ?? null,
+        log.feltRested ?? null,
+      ),
+    0,
+  );
 
-  const rated = logs.filter((log) => log.quality !== null && log.quality !== undefined);
-  const qualityScore =
-    rated.length > 0
-      ? (rated.reduce((sum, log) => sum + (log.quality ?? 0), 0) / rated.length) * 20
-      : 50;
-
-  const consistencyScore = sleepConsistency(logs);
-
-  return Math.max(0, Math.min(100, Math.round(
-    durationScore * 0.5 + qualityScore * 0.3 + consistencyScore * 0.2,
-  )));
+  return Math.round(total / logs.length);
 }
 
 // ============================================================================

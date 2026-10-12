@@ -187,6 +187,10 @@ export const habitQuerySchema = z.object({
   offset: z.number().int().min(0).optional(),
   includeArchived: z.boolean().optional(),
   dayTypeId: z.string().cuid().optional(),
+  // Frequency filter. Declared but missing until now, so "show me my daily /
+  // weekly / monthly / yearly habits" could not be expressed as a query and the
+  // repository had no predicate for it.
+  frequencyType: z.array(frequencyTypeSchema).optional(),
   trackingType: z.enum(['BOOLEAN', 'COUNT', 'DURATION'] as const).optional(),
   timeOfDay: z.enum(['MORNING', 'AFTERNOON', 'EVENING', 'NIGHT', 'ANYTIME'] as const).optional(),
   parentHabitId: z.string().cuid().optional(),

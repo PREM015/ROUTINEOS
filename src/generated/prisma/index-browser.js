@@ -449,6 +449,7 @@ exports.Prisma.HabitDefinitionScalarFieldEnum = {
   color: 'color',
   sortOrder: 'sortOrder',
   isActive: 'isActive',
+  ownerId: 'ownerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

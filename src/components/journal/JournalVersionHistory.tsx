@@ -15,6 +15,7 @@ import { apiRequest } from '@/lib/api-client';
 import { richTextToPlainText } from '@/lib/security/html-sanitizer';
 import type { JournalEntryWithRelations } from '@/types/journal';
 import { Button, Card, Spinner } from '@/components/ui';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import { cn } from '@/lib/utils';
 
 export interface JournalVersionHistoryProps {
@@ -87,15 +88,23 @@ export default function JournalVersionHistory({
   };
 
   return (
-    <Card className={cn('p-5', className)}>
-      <h3 className="mb-1 flex items-center gap-2 text-base font-semibold text-gray-900">
+    <Card className={cn('flex min-h-0 flex-col overflow-hidden p-5', className)}>
+      <h3 className="mb-1 flex shrink-0 items-center gap-2 text-base font-semibold text-gray-900">
         <History className="h-4 w-4 text-gray-500" />
         Version history
       </h3>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 shrink-0 text-sm text-gray-500">
         Every edit keeps the previous version. Restoring saves the current
         content as a new version first.
       </p>
+
+      {/*
+        The revision list is the unbounded part of this panel: every save of an
+        entry adds one, so a long-edited journal produces a list that grows
+        without limit inside an overlay that has a fixed height. The heading and
+        its explanation stay put above it.
+      */}
+      <div className="flex min-h-0 flex-1 flex-col">
 
       {error && (
         <div role="alert" className="mb-4 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -117,7 +126,7 @@ export default function JournalVersionHistory({
             : 'No previous versions yet — they appear here after the first edit.'}
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className={cn(SCROLL_CARD.region, 'space-y-3 pr-1')}>
           {revisions.map((revision) => {
             // Sanitized before previewing: the revision body is stored HTML, and
             // an entry saved before the sanitizer existed can contain markup
@@ -158,6 +167,7 @@ export default function JournalVersionHistory({
           })}
         </ul>
       )}
+      </div>
     </Card>
   );
 }

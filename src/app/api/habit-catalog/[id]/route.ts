@@ -20,7 +20,7 @@ export async function GET(
     if (!auth.ok) return auth.response;
 
     const { id } = await params;
-    const definition = await new HabitCatalogService().getById(id);
+    const definition = await new HabitCatalogService().getById(auth.auth.userId, id);
 
     if (!definition) {
       return NextResponse.json({ error: 'Habit definition not found' }, { status: 404 });

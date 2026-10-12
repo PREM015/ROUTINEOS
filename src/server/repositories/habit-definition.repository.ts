@@ -21,6 +21,15 @@ export interface HabitDefinitionFindAllOptions {
   includeInactive?: boolean;
   limit?: number;
   offset?: number;
+  /**
+   * The caller's user id.
+   *
+   * **Required for every read.** A row with `ownerId = null` is a global
+   * suggestion anyone may see; a row with an owner is visible only to them. The
+   * `null OR you` filter is built here in one place so no caller can forget it —
+   * forgetting it is exactly how a private pack leaks into everyone's browser.
+   */
+  userId: string;
 }
 
 /**
@@ -66,16 +75,38 @@ export class HabitDefinitionRepository extends BaseRepository {
   }
 
   /**
-   * One catalogue entry by id.
+   * One catalogue entry by id, **scoped to its owner or the caller**.
    *
-   * Takes no user id because there is nothing to scope: the row is public to any
-   * signed-in user. Personal data is only ever reached by copying *out* of it.
+   * Uses `findFirst` rather than `findUnique` because visibility is now part of
+   * the lookup: a private entry belonging to someone else must resolve to `null`
+   * — not a 403, and not a leaked row.
    */
-  async findById(id: string): Promise<HabitDefinition | null> {
+  async findById(id: string, userId: string): Promise<HabitDefinition | null> {
+    try {
+      return await this.prisma.habitDefinition.findFirst({
+        where: {
+          id,
+          OR: [{ ownerId: null }, ...(userId ? [{ ownerId: userId }] : [])],
+        },
+      });
+    } catch (error) {
+      this.handleError(error, 'findById');
+    }
+  }
+
+  /**
+   * Un-scoped lookup, for the admin maintenance path only.
+   *
+   * Deliberately separate from `findById` rather than being that method with a
+   * bypass flag: a single method with a "skip the ownership check" parameter is
+   * one careless argument away from being used on a user-facing path, which is
+   * how private entries end up in someone else's browser.
+   */
+  async findByIdForAdmin(id: string): Promise<HabitDefinition | null> {
     try {
       return await this.prisma.habitDefinition.findUnique({ where: { id } });
     } catch (error) {
-      this.handleError(error, 'findById');
+      this.handleError(error, 'findByIdForAdmin');
     }
   }
 
@@ -113,6 +144,25 @@ export class HabitDefinitionRepository extends BaseRepository {
       });
     } catch (error) {
       this.handleError(error, 'findBySlugs');
+    }
+  }
+
+  /**
+   * Re-home every definition matching these slugs onto one owner.
+   *
+   * Used once, to hand a personal set of suggestions to the person they were
+   * written for. Deliberately keyed on slug rather than id so it is idempotent
+   * and independent of row ids.
+   */
+  async assignOwnerBySlugs(slugs: string[], ownerId: string): Promise<number> {
+    try {
+      const result = await this.prisma.habitDefinition.updateMany({
+        where: { slug: { in: slugs } },
+        data: { ownerId },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'assignOwnerBySlugs');
     }
   }
 
@@ -251,12 +301,25 @@ export class HabitDefinitionRepository extends BaseRepository {
   private buildWhere(
     options?: HabitDefinitionFindAllOptions
   ): Prisma.HabitDefinitionWhereInput {
-    const where: Prisma.HabitDefinitionWhereInput = {};
+    /*
+     * Ownership filter, applied first and unconditionally.
+     *
+     * `OR: [{ ownerId: null }, { ownerId: userId }]` is the whole visibility
+     * rule: global suggestions are shared, private ones are not. A caller that
+     * somehow passed no `userId` gets **no rows at all** rather than everything —
+     * failing closed is the only safe direction for an ownership filter.
+     */
+    const where: Prisma.HabitDefinitionWhereInput = {
+      OR: [{ ownerId: null }, ...(options?.userId ? [{ ownerId: options.userId }] : [])],
+    };
 
     if (!options?.includeInactive) {
       where.isActive = true;
     }
 
+    // The ownership `OR` and the search `OR` must be ANDed together, not merged.
+    // Putting both under a single `OR` would make "owned by me OR name contains
+    // water" true — letting anyone see every private entry whose text matched.
     if (options?.category) {
       where.category = options.category;
     }
@@ -267,10 +330,14 @@ export class HabitDefinitionRepository extends BaseRepository {
 
     const search = options?.search?.trim();
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { category: { contains: search, mode: 'insensitive' } },
+      where.AND = [
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { description: { contains: search, mode: 'insensitive' } },
+            { category: { contains: search, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 

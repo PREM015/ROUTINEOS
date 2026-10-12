@@ -3,6 +3,39 @@
  * Calculate habit frequency patterns and metadata
  */
 
+import type { HabitFrequencyType } from '@/generated/prisma';
+
+/**
+ * Where the per-period count lives, for the label.
+ *
+ * Two columns hold it because two writers disagree: `AddHabitModal` and the
+ * catalogue / starter-pack constants write the number into `frequencyValue`
+ * (`"2"` for twice a week), while `HabitScheduleEditor` writes
+ * `frequencyValue: null` and keeps the number in `targetCount`. Reading only
+ * one column made the other's rows print a label with no number at all —
+ * "Weekly target" instead of "4x per week" — so a habit saved from the
+ * Schedule tab looked as though it had lost its target.
+ *
+ * `frequencyValue` wins when it parses, so the explicit per-row value still
+ * overrides a later change of mind; `targetCount` (or `intervalDays`) is the
+ * fallback rather than a competing spelling.
+ */
+export function resolvePerPeriodCount(
+  frequencyValue?: string | null,
+  fallback?: number | null
+): number | null {
+  const raw = frequencyValue?.trim();
+  // Anchored, so a comma-joined weekday list ("1,3,5") or a JSON blob is not
+  // silently read as "1". `parseInt("1,3,5")` is 1, which is exactly how a
+  // SPECIFIC_WEEKDAYS row could end up labelled "1x per week".
+  if (raw && /^\d+$/.test(raw)) {
+    const n = parseInt(raw, 10);
+    if (n > 0) return n;
+  }
+  if (fallback != null && fallback > 0) return fallback;
+  return null;
+}
+
 export interface FrequencyConfig {
   daysOfWeek?: number[];
   exactDates?: string[];
@@ -36,15 +69,33 @@ export function parseFrequencyConfig(configStr?: string | null): FrequencyConfig
   return null;
 }
 
-export function getFrequencyLabel(frequencyType: string, frequencyValue?: string | null): string {
+/**
+ * The label a habit row prints for its cadence.
+ *
+ * Reads the per-period count from whichever column holds it — see
+ * `resolvePerPeriodCount` for why there are two. The fallbacks are `Habit` /
+ * `HabitDefinition` columns, not a second spelling of the same thing, so a row
+ * saved by the Schedule editor ("frequencyValue is null, targetCount is 4")
+ * labelled "Weekly target" for as long as the label only looked at
+ * `frequencyValue`.
+ */
+export function getFrequencyLabel(
+  frequencyType: HabitFrequencyType | string,
+  frequencyValue?: string | null,
+  counts?: { targetCount?: number | null; intervalDays?: number | null }
+): string {
+  const perPeriod = resolvePerPeriodCount(
+    frequencyValue,
+    counts?.targetCount ?? counts?.intervalDays
+  );
+
   switch (frequencyType) {
     case 'DAILY':
       return 'Every day';
 
     case 'EVERY_N_DAYS': {
-      const config = parseFrequencyConfig(frequencyValue);
-      const gap = config?.intervalDays;
-      if (!gap || gap < 1) return 'Every N days';
+      const gap = perPeriod;
+      if (gap === null) return 'Every N days';
       if (gap === 1) return 'Every day';
       if (gap % 7 === 0) {
         const weeks = gap / 7;
@@ -57,19 +108,13 @@ export function getFrequencyLabel(frequencyType: string, frequencyValue?: string
       return formatWeekdays(frequencyValue);
 
     case 'WEEKLY_TARGET':
-      if (!frequencyValue) return 'Weekly target';
-      const perWeek = parseInt(frequencyValue);
-      return `${perWeek}x per week`;
+      return perPeriod === null ? 'Weekly target' : `${perPeriod}x per week`;
 
     case 'MONTHLY_TARGET':
-      if (!frequencyValue) return 'Monthly target';
-      const perMonth = parseInt(frequencyValue);
-      return `${perMonth}x per month`;
+      return perPeriod === null ? 'Monthly target' : `${perPeriod}x per month`;
 
     case 'YEARLY_TARGET':
-      if (!frequencyValue) return 'Yearly target';
-      const perYear = parseInt(frequencyValue);
-      return `${perYear}x per year`;
+      return perPeriod === null ? 'Yearly target' : `${perPeriod}x per year`;
 
     case 'RANDOM':
       return 'Whenever you want';

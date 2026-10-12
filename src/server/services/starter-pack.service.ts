@@ -81,14 +81,15 @@ export class StarterPackService {
   }
 
   /**
-   * The official packs available to everyone.
+   * The packs available to this caller: their **own** packs, plus system ones.
    *
-   * `findBySystem` is the one read that ignores the caller entirely and returns
-   * only `userId = null` rows, so a private template one user made for
-   * themselves can never appear as a system pack to somebody else.
+   * Ownership is resolved from the caller's id, so a pack created by one user is
+   * invisible to everyone else. Passing `null` here — as an earlier version did —
+   * meant only system templates were ever reachable, which made a user's own
+   * pack unopenable by its author.
    */
-  async listPacks() {
-    const templates = await this.templateRepository.findBySystem();
+  async listPacks(userId: UserId) {
+    const templates = await this.templateRepository.findAll(userId);
     return templates
       .filter((t) => t.type === 'HABIT_SET')
       .map((t) => ({
@@ -97,6 +98,8 @@ export class StarterPackService {
         description: t.description,
         category: t.category,
         usageCount: t.usageCount,
+        /** `true` for a pack that belongs to the caller rather than the system. */
+        isOwn: t.userId === userId,
       }));
   }
 
@@ -114,7 +117,7 @@ export class StarterPackService {
     overrides: Record<string, StarterPackOverride> = {},
     tier2StartDelayDays: number = DEFAULT_TIER2_START_DELAY_DAYS
   ): Promise<StarterPackPreview> {
-    const { templateName, entries } = await this.loadPack(templateId);
+    const { templateName, entries } = await this.loadPack(userId, templateId);
     const plan = await this.buildPlan(
       userId,
       entries,
@@ -151,7 +154,7 @@ export class StarterPackService {
     overrides: Record<string, StarterPackOverride> = {},
     tier2StartDelayDays: number = DEFAULT_TIER2_START_DELAY_DAYS
   ) {
-    const { entries } = await this.loadPack(templateId);
+    const { entries } = await this.loadPack(userId, templateId);
     const plan = await this.buildPlan(
       userId,
       entries,
@@ -330,26 +333,32 @@ export class StarterPackService {
   }
 
   /**
-   * Load a pack's entries.
+   * Load a pack's entries, resolving ownership against the caller.
    *
-   * Accepts an explicit `templateId` (so any pack can be applied) or falls back
-   * to the single official pack. Entries carry a `definitionId` when they came
-   * from the catalogue, which is recorded as provenance and nothing more — the
-   * row created is already an independent copy.
+   * Two things matter here, and both come down to passing the caller's `userId`
+   * rather than `null`:
+   *
+   *  - an explicit `templateId` resolves through `findById(userId, id)`, which
+   *    matches `{ id, OR: [{ userId }, { userId: null }] }` — the caller's own
+   *    pack or a system one, never someone else's;
+   *  - with no `templateId`, the caller's **own** pack is preferred over a
+   *    system pack, so someone with a personal pack opens theirs rather than the
+   *    generic one.
+   *
+   * A pack belonging to a different user is a 404, identical to one that does not
+   * exist.
    */
-  private async loadPack(templateId?: string) {
+  private async loadPack(userId: UserId, templateId?: string) {
     let template;
     if (templateId) {
-      /*
-       * `null` as the userId makes `findById` resolve to
-       * `{ id, userId: null }` — system templates only. A pack is a shared
-       * bundle, so a user-authored template is not addressable here even by id.
-       */
-      template = await this.templateRepository.findById(null, templateId);
+      template = await this.templateRepository.findById(userId, templateId);
       if (!template) throw new NotFoundError('Starter pack');
     } else {
-      const templates = await this.templateRepository.findBySystem();
-      template = templates.find((t) => t.type === 'HABIT_SET');
+      const templates = await this.templateRepository.findAll(userId);
+      const packs = templates.filter((t) => t.type === 'HABIT_SET');
+      template =
+        packs.find((t) => t.userId === userId) ??
+        packs.find((t) => t.userId === null);
       if (!template) {
         throw new NotFoundError('Starter pack');
       }

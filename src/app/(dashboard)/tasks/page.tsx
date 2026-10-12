@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TaskPriority, TaskStatus } from '@/generated/prisma';
 import { CalendarDays, CheckCircle2, Circle, ListTodo, Plus } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
-import { formatDate } from '@/lib/utils';
+import { formatDate, cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import type { TaskListItem } from '@/types/projects';
 import { notifyGoalsDataChanged } from '@/lib/app-events';
 import { Badge, Button, Card, EmptyState, Input, Select, Spinner } from '@/components/ui';
@@ -181,7 +182,13 @@ export default function TasksPage() {
           action={{ label: 'New task', onClick: () => setDialogOpen(true) }}
         />
       ) : (
-        <Card className="glass-panel divide-y divide-border p-0 shadow-soft">
+        <Card className={cn('glass-panel divide-y divide-border p-0 shadow-soft', SCROLL_CARD.card)}>
+            {/*
+              The task list is user-controlled and unbounded, and this Card is
+              the whole panel — so the list is its own scroll region rather than
+              the page growing without limit.
+            */}
+            <div className={cn(SCROLL_CARD.region, 'pr-1')}>
             {filtered.map((task) => {
             const done = task.status === 'COMPLETED';
             return (
@@ -218,6 +225,7 @@ export default function TasksPage() {
               </div>
             );
           })}
+            </div>
         </Card>
       )}
 

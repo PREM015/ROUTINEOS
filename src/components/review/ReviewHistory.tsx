@@ -1,5 +1,7 @@
 'use client';
 import React from 'react';
+import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 
 interface ReviewHistoryProps {
   reviews: Array<{
@@ -13,15 +15,15 @@ interface ReviewHistoryProps {
 
 export const ReviewHistory: React.FC<ReviewHistoryProps> = ({ reviews, onSelect }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 max-w-2xl mx-auto w-full">
-      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
+    <div className={cn('flex min-h-0 flex-col overflow-hidden p-6 max-w-2xl mx-auto w-full', SCROLL_CARD.card)}>
+      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700 shrink-0">
         Past Reviews
       </h3>
       
       {reviews.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-center py-4">No past reviews found.</p>
       ) : (
-        <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+        <ul className={cn(SCROLL_CARD.region, 'divide-y divide-gray-100 dark:divide-gray-700 pr-1')}>
           {reviews.map((review) => (
             <li key={review.id}>
               <button
@@ -53,3 +55,5 @@ export const ReviewHistory: React.FC<ReviewHistoryProps> = ({ reviews, onSelect 
     </div>
   );
 };
+
+export default ReviewHistory;

@@ -1,6 +1,9 @@
 import { auth } from '@/lib/auth';
 import { generateWeeklyRecap } from '@/server/recap/weekly';
+import { userService } from '@/server/services/user.service';
 import { handleError } from '@/lib/errors/error-handler';
+import { DEFAULT_TZ, getTodayString, getWeekRange } from '@/lib/dates';
+import { resolveWeekStartsOn } from '@/lib/period-range';
 import { NextRequest, NextResponse } from 'next/server';
 import { userIdFromSession } from '@/types/ids';
 
@@ -11,25 +14,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = userIdFromSession(session);
     const { searchParams } = new URL(request.url);
     let weekStart = searchParams.get('weekStart');
     let weekEnd = searchParams.get('weekEnd');
 
-    // Default to current week
+    // Default to the current week in the user's timezone, honouring their
+    // `weekStartsOn`. The previous default built the week from the server's
+    // local date and forced a Monday start, so it disagreed with the week the
+    // rest of the app (recap, analytics) shows the user.
     if (!weekStart || !weekEnd) {
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      
-      const monday = new Date(now.setDate(diff));
-      const sunday = new Date(monday);
-      sunday.setDate(sunday.getDate() + 6);
-
-      weekStart = monday.toISOString().slice(0, 10);
-      weekEnd = sunday.toISOString().slice(0, 10);
+      const settings = await userService.getSettings(userId);
+      const timezone = settings.timezone || DEFAULT_TZ;
+      const { start, end } = getWeekRange(
+        getTodayString(timezone),
+        resolveWeekStartsOn(settings.weekStartsOn)
+      );
+      weekStart = weekStart ?? start;
+      weekEnd = weekEnd ?? end;
     }
 
-    const recap = await generateWeeklyRecap(userIdFromSession(session), weekStart, weekEnd);
+    const recap = await generateWeeklyRecap(userId, weekStart, weekEnd);
 
     return NextResponse.json({
       success: true,

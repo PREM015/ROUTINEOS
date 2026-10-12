@@ -39,7 +39,10 @@ export async function POST(request: NextRequest) {
     const { definitionId, overrides } = parsed.data;
     const habitService = new HabitService();
 
-    const definition = await new HabitCatalogService().getById(definitionId);
+    const definition = await new HabitCatalogService().getById(
+      auth.auth.userId,
+      definitionId
+    );
     if (!definition) {
       // 404 for both "no such entry" and "inactive entry". A non-admin must not
       // be able to tell them apart.

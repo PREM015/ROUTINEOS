@@ -715,12 +715,51 @@ export class HabitService {
       console.error('Failed to check achievements after habit log:', err);
     });
 
+    // Keep the denormalised per-habit streak columns in step with the logs.
+    // Every status can move the streak — a MISSED log breaks the run — so this
+    // runs on each write, not only on COMPLETED. Nothing previously called
+    // `updateStreak`, so the columns stayed at 0 while the habit list badge, the
+    // AI aggregator, the exporter and the daily analytics all read them.
+    await this.refreshHabitStreak(habitId, userId);
 
     return {
       log,
       streakUpdated,
       newStreak,
     };
+  }
+
+  /**
+   * Rewrite `Habit.streakCount` / `longestStreak` / `lastCompletedDate` from the
+   * completion history.
+   *
+   * Uses the same `deriveHabitStreak` rule `getHabitHealth` derives with, so the
+   * cached column and the derived health read cannot disagree. `longestStreak`
+   * only moves up. The 730-day lookback matches the health window and the
+   * user-level recompute.
+   */
+  private async refreshHabitStreak(habitId: string, userId: UserId): Promise<void> {
+    const settings = await new UserRepository().getSettings(userId).catch(() => null);
+    const timezone = settings?.timezone || DEFAULT_TZ;
+    const today = getTodayString(timezone);
+    const start = format(subDays(parseISO(today), 730), 'yyyy-MM-dd');
+
+    const [completionDates, habit] = await Promise.all([
+      this.habitRepository.findCompletionDatesByHabit(userId, start, today),
+      this.habitRepository.findById(habitId, userId),
+    ]);
+    if (!habit) return;
+
+    const dates = (completionDates.get(habitId) ?? []).slice().sort();
+    const streak = deriveHabitStreak(dates, today);
+    const lastCompletedDate =
+      dates.length > 0 ? (dates[dates.length - 1] as string) : (habit.lastCompletedDate ?? today);
+
+    await this.habitRepository.updateStreak(habitId, userId, {
+      streakCount: streak.currentStreak,
+      longestStreak: Math.max(streak.longestStreak, habit.longestStreak ?? 0),
+      lastCompletedDate,
+    });
   }
 
   /**

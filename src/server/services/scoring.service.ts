@@ -14,6 +14,7 @@ import {
 import type { TierWeights } from '@/server/domain/scoring/tier-weights';
 import { CALCULATION_RULES } from '@/config/scoring';
 import { calculateScoreSchema, scoreQuerySchema } from '@/schemas/score.schema';
+import { getTodayString, DEFAULT_TZ } from '@/lib/dates';
 import { isHabitScheduledForDate } from '@/lib/habits/scheduling';
 import type {
   CalculateDailyScoreInput,
@@ -408,7 +409,11 @@ export class ScoringService {
     } = {},
   ): Promise<ScoreHistoryRange> {
     const parsed = scoreQuerySchema.parse(query);
-    const endDate = parsed.endDate ?? new Date().toISOString().slice(0, 10);
+    // Default the window to the user's own "today" rather than the server's UTC
+    // date. With the UTC slice, a user west of UTC could not retrieve scores
+    // recorded in their local day that had not yet rolled over in UTC.
+    const settings = await this.userRepository.getSettings(userId);
+    const endDate = parsed.endDate ?? getTodayString(settings?.timezone ?? DEFAULT_TZ);
     const startDate = parsed.startDate ?? endDate;
 
     const scores = await this.scoreRepository.findByRange(userId, startDate, endDate);

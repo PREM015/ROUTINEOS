@@ -52,6 +52,7 @@ import { rarityInk } from '@/lib/constants/achievements';
 import { cn } from '@/lib/utils';
 import { AchievementBadge } from './AchievementBadge';
 import { FamilyLadderCard } from './FamilyLadderCard';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 
 export interface AchievementListProps {
   tiles: readonly AchievementTile[];
@@ -164,8 +165,15 @@ export function AchievementList({
   const shelves = groupByCategory(remainder);
 
   return (
-    <div className={cn('space-y-8', className)}>
+    /*
+      Capped and scrolling: the ladder section plus one shelf per category is a
+      list that grows with the catalogue, and this is the page's only column, so
+      without a ceiling the whole /achievements page becomes a single long scroll
+      with the filters stranded at the top.
+    */
+    <div className={cn(SCROLL_CARD.card, 'gap-8', className)}>
       {ladderSection}
+      <div className={cn(SCROLL_CARD.region, 'space-y-8 pr-1')}>
       {shelves.map(([category, categoryTiles]) => {
         const config = ACHIEVEMENT_CATEGORIES[category];
         const earned = categoryTiles.filter((t) => t.unlocked).length;
@@ -220,6 +228,7 @@ export function AchievementList({
           </section>
         );
       })}
+      </div>
     </div>
   );
 }

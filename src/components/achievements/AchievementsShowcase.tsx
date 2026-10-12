@@ -43,6 +43,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, ArrowRight, Lock, RefreshCw, Sparkles, Trophy } from 'lucide-react';
 import { Panel } from '@/components/dashboard-ui';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import { apiRequest } from '@/lib/api-client';
 import {
   ACHIEVEMENT_CATEGORIES,
@@ -261,6 +262,16 @@ export function AchievementsShowcase() {
       // case the brief names.
       hue="var(--accent-gold)"
       minHeightClass="min-h-[14rem] h-full"
+      /*
+        Shared with the Habit Health card beside it.
+
+        This rail used to fill whatever height the row had, which was correct
+        until the habit list next to it grew without bound and took the row with
+        it. Both cards now carry the same ceiling, so the row is bounded and the
+        two still line up: the rail fills the space it is given and scrolls past
+        it, rather than being what sets the height.
+      */
+      className={SCROLL_CARD.maxH}
       loading={loading}
       loadingRows={2}
       isEmpty={!loading && isEmpty}
@@ -273,22 +284,24 @@ export function AchievementsShowcase() {
       action={headerAction(true)}
     >
       {/*
-        Fills the card, not a fixed 420px.
+        Fills the card, not a fixed height.
 
         The row is stretched by the grid and this card is its only child, so
-        `flex-1 min-h-0` makes the rail take whatever height the adjacent habit
-        table sets and scroll internally. The previous `max-h-[420px]` capped it,
-        so a tall table left the card short with black space under it - the card
-        was the wrong height rather than the row failing to stretch.
+        `flex-1 min-h-0` makes the rail take whatever height is available and
+        scroll internally. The card itself is now capped by `SCROLL_CARD.maxH`,
+        which is what stops this rail — or its neighbour — from setting the
+        height of the row.
 
-        `max-h-[420px]` survives as a `max-` cap for the SINGLE-column layout,
-        where there is no table to match and a 900px rail would just be a very
-        long page. `min-h-0` on the flex child is what actually permits the
-        shrink; without it `overflow-y-auto` does nothing.
+        `min-h-0` on the flex child is what actually permits the shrink; without
+        it `overflow-y-auto` does nothing.
+
+        `overscroll-contain` keeps the wheel in this rail once it reaches the end.
       */}
       <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
         <div
-          className="achievement-rail -mr-2 min-h-0 max-h-[420px] flex-1 overflow-y-auto pr-2 md:max-h-none"
+          className={cn(
+            'achievement-rail -mr-2 min-h-0 flex-1 overflow-y-auto pr-2'
+          )}
           tabIndex={0}
           role="group"
           aria-label="Achievements list"

@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, Check } from 'lucide-react';
 import { Button, Modal } from '@/components/ui';
 import { fetchWithAuth } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import type { StarterPackPreview } from '@/types/habit';
 
 /**
@@ -152,7 +153,13 @@ export function StarterPackDialog({
               </p>
             )}
 
-            <div className="space-y-4">
+            {/*
+              The whole pack is 167 habits across three tiers, so this is the
+              unbounded part of the dialog. The header, the explanation and the
+              "you already have N of these" notice all sit above this element and
+              stay put; only the tier sections scroll.
+            */}
+            <div className={cn('space-y-4 pr-1', SCROLL_CARD.region)}>
               {preview.grouped.map((group) => (
                 <section key={group.tier}>
                   <h3 className="mb-2 flex flex-wrap items-baseline gap-2 text-sm font-semibold text-foreground">

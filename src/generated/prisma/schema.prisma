@@ -64,6 +64,7 @@ model User {
   habits                  Habit[]
   habitLogs               HabitLog[]
   habitOverrides          HabitOverride[]
+  habitDefinitions        HabitDefinition[]
   healthMetrics           HealthMetric[]
   integrations            Integration[]
   jobApplications         JobApplication[]
@@ -576,6 +577,19 @@ model HabitDefinition {
   sortOrder Int     @default(0)
   isActive  Boolean @default(true)
 
+  /// Restricts a catalogue entry to one user.
+  ///
+  /// `null` = a global suggestion every user may browse. A non-null value means
+  /// the entry belongs to that user alone and is invisible to everyone else.
+  ///
+  /// This is data-level ownership, not an authorisation special case: no code
+  /// anywhere names a particular account, and the visibility rule is the same
+  /// `null OR you` shape used everywhere else in the schema. It exists because
+  /// "this pack was written for one person's life" is a real thing to express —
+  /// a private pack should not leak into everyone's "add a habit" screen.
+  ownerId String?
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -583,6 +597,7 @@ model HabitDefinition {
 
   @@index([isActive, sortOrder])
   @@index([category])
+  @@index([ownerId])
 }
 
 model HabitLog {

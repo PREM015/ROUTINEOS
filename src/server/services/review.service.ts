@@ -2,6 +2,7 @@ import { ReviewRepository } from '@/server/repositories/review.repository';
 import { HabitRepository } from '@/server/repositories/habit.repository';
 import { GoalRepository } from '@/server/repositories/goal.repository';
 import { generateWeeklyRecap } from '@/server/recap/weekly';
+import { shiftCalendarDay } from '@/lib/dates';
 import { addMonths, endOfMonth, parse } from 'date-fns';
 import type { MonthlyReset, Prisma, WeeklyReview } from '@/generated/prisma';
 import type { UserId } from '@/types/ids';
@@ -116,12 +117,14 @@ export class ReviewService {
     }
 
     // No review yet: return live recap data so the page has something to show.
-    const weekEndDate = new Date(weekStart);
-    weekEndDate.setDate(weekEndDate.getDate() + 6);
+    // `shiftCalendarDay` steps the `YYYY-MM-DD` label as a calendar date. The
+    // previous `new Date(weekStart)` + `setDate` + `toISOString` parsed the date
+    // as UTC midnight, read the day in the host's zone and re-anchored to UTC, so
+    // on any host west of UTC the week ended a day early.
     const recap = await generateWeeklyRecap(
       userId,
       weekStart,
-      weekEndDate.toISOString().slice(0, 10)
+      shiftCalendarDay(weekStart, 6)
     );
 
     return { review: null, recap };

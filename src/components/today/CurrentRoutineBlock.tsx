@@ -97,7 +97,7 @@ export function CurrentRoutineBlock({ timezone }: { timezone?: string }) {
    * memo can depend on the value that produced it.
    */
   const wallClock = useCallback(
-    (now: number): string => {
+    (): string => {
       if (typeof window === 'undefined') return '00:00';
       try {
         return new Intl.DateTimeFormat('en-GB', {
@@ -105,14 +105,14 @@ export function CurrentRoutineBlock({ timezone }: { timezone?: string }) {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false,
-        }).format(new Date(now));
+        }).format(new Date());
       } catch {
         // An invalid IANA zone in settings must not break the page.
         return new Intl.DateTimeFormat('en-GB', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false,
-        }).format(new Date(now));
+        }).format(new Date());
       }
     },
     [timezone]
@@ -120,18 +120,11 @@ export function CurrentRoutineBlock({ timezone }: { timezone?: string }) {
 
   const { current, next } = useMemo(() => {
     /*
-      `tick` is what the clock depends on, and it has to be an ARGUMENT.
-
-      It was listed as a dependency with a comment saying so, but `wallClock`
-      takes no parameters and reads `new Date()` internally — so the linter was
-      right that `tick` was unused. The consequence: the memo recomputed only when
-      `blocks` or `timezone` changed, so the "Right now" card could sit on a block
-      that had already ended until something else re-rendered the page. The
-      countdown beside it kept moving while the block underneath it did not.
-
-      Passing `tick` in makes the dependency real and the rollover work.
+      `tick` triggers re-evaluation every 30s so the current block rolls over
+      at a boundary without a refetch. `wallClock` now reads the actual time
+      internally via `Date.now()`.
     */
-    const now = wallClock(tick);
+    const now = wallClock();
     const currentBlock = getCurrentBlock(blocks, now) as Block | null;
     if (!currentBlock) return { current: null, next: null };
     // `getNextBlock` already exists in lib/routine/duration and was unused —
@@ -190,9 +183,9 @@ export function CurrentRoutineBlock({ timezone }: { timezone?: string }) {
   const progress = calculateBlockProgress(
     current.startTime,
     current.endTime,
-    // Same `tick` as the block selection above, so the ring and the "Right now"
+    // Same clock as the block selection above, so the ring and the "Right now"
     // card cannot disagree about which minute it is.
-    wallClock(tick)
+    wallClock()
   );
   const pct = Math.max(0, Math.min(100, progress.percentage));
   const offset = CIRC * (1 - pct / 100);

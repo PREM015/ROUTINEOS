@@ -25,6 +25,7 @@
 
 import { Panel, PanelEmpty } from '@/components/dashboard-ui';
 import { DOMAIN_ACCENT, accentRing } from '@/components/dashboard-ui/accent';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import { useDashboardOverview } from '@/components/dashboard/useDashboardOverview';
 import { cn } from '@/lib/utils';
 
@@ -50,6 +51,19 @@ export function DayTypePerformance() {
       loading={loading}
       loadingRows={3}
       minHeightClass="min-h-[13rem]"
+      /*
+        Capped, like Habit Health and Achievements.
+
+        Both the ranked rows and the "not enough data yet" rows are rendered from
+        `buckets`, which is every day type the user has. That is usually five or
+        six, but it is a user-controlled list, so it is the same unbounded-growth
+        shape as the other two cards and gets the same treatment.
+
+        It also balances the row: this card sits beside `RoutineAdherence`, which
+        is exactly seven rows tall, so both cards in that pair now stop at the
+        same ceiling instead of one growing under the other.
+      */
+      className={SCROLL_CARD.maxH}
       error={error}
       onRetry={() => void reload()}
       isEmpty={!loading && buckets.length === 0}
@@ -60,7 +74,7 @@ export function DayTypePerformance() {
         />
       }
     >
-      <div className="flex flex-1 flex-col gap-3 px-5 pb-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 px-5 pb-5">
         {/*
           The headline read. Only rendered when there are at least two usable
           types, because "you are 30 points worse on weekends" is a claim about a
@@ -75,8 +89,18 @@ export function DayTypePerformance() {
           </p>
         )}
 
-        <ul className="space-y-2.5">
-          {ranked.map((bucket) => {
+        {/*
+          ONE scrolling region holding both lists.
+
+          `ranked` and `thin` are two separate `<ul>`s and were two separate
+          scroll areas. Only the first was capped, so the "not enough data yet"
+          rows — which come straight from the same user-controlled `buckets` list
+          — stayed outside the cap and still grew the card. One region keeps the
+          ceiling honest whichever of the two is long.
+        */}
+        <div className={cn(SCROLL_CARD.region, 'pr-1')}>
+          <ul className="space-y-2.5">
+            {ranked.map((bucket) => {
             const value = bucket.averageScore;
             return (
               <li key={bucket.dayTypeName} className="flex items-center gap-3">
@@ -101,26 +125,27 @@ export function DayTypePerformance() {
               </li>
             );
           })}
-        </ul>
-
-        {thin.length > 0 && (
-          <ul className="space-y-1 border-t border-border/60 pt-2.5">
-            {thin.map((bucket) => (
-              <li
-                key={bucket.dayTypeName}
-                className={cn(
-                  'flex items-center justify-between gap-3 text-[11px] text-muted-foreground/70'
-                )}
-              >
-                <span className="truncate">{bucket.dayTypeName}</span>
-                <span className="shrink-0">
-                  {bucket.scoredDays === 1 ? '1 day' : `${bucket.scoredDays} days`} &middot; not
-                  enough data yet
-                </span>
-              </li>
-            ))}
           </ul>
-        )}
+
+          {thin.length > 0 && (
+            <ul className="mt-2.5 space-y-1 border-t border-border/60 pt-2.5">
+              {thin.map((bucket) => (
+                <li
+                  key={bucket.dayTypeName}
+                  className={cn(
+                    'flex items-center justify-between gap-3 text-[11px] text-muted-foreground/70'
+                  )}
+                >
+                  <span className="truncate">{bucket.dayTypeName}</span>
+                  <span className="shrink-0">
+                    {bucket.scoredDays === 1 ? '1 day' : `${bucket.scoredDays} days`} &middot; not
+                    enough data yet
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </Panel>
   );

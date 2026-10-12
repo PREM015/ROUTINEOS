@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const queryData = {
       status: list('status'),
       tier: list('tier'),
+      frequencyType: list('frequencyType'),
       categoryId: searchParams.get('categoryId') || undefined,
       search: searchParams.get('search') || undefined,
       sortBy: (searchParams.get('sortBy') || 'createdAt') as

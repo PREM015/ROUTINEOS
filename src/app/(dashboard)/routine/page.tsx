@@ -207,12 +207,6 @@ const dayTypes = useDayTypes();
     return tabs[0] ?? null;
   }, [tabs, selection, resolvedDayTypeId]);
 
-  /** True when the tab on screen differs from the day type the date resolves to. */
-  const viewingOtherDayType = useMemo(
-    () => Boolean(selection && activeTab && routineTabKey(activeTab) !== selection),
-    [selection, activeTab]
-  );
-
   /*
     The switched-to tab's blocks, fetched on demand.
 
@@ -224,12 +218,23 @@ const dayTypes = useDayTypes();
   */
   const [preview, setPreview] = useState<{
     dayTypeId: string;
-    blocks: ResolvedRoutineBlock[];
+    blocks: ResolvedRoutineBlock[] | null;
   } | null>(null);
   const previewDayTypeId = preview?.dayTypeId ?? null;
   const previewBlocks = preview?.blocks ?? null;
 
-  const previewKey = viewingOtherDayType ? activeTab?.dayTypeId ?? null : null;
+  /**
+   * The day type whose template we need to preview.
+   *
+   * We fetch a preview whenever the active tab differs from the resolved day
+   * type. This replaces the old `viewingOtherDayType` guard which became false
+   * as soon as the URL updated to match the selected tab, cancelling the fetch
+   * before it could complete.
+   */
+  const previewKey =
+    activeTab?.dayTypeId && activeTab.dayTypeId !== resolvedDayTypeId
+      ? activeTab.dayTypeId
+      : null;
 
   /*
     In flight, derived rather than stored.
@@ -251,11 +256,16 @@ const dayTypes = useDayTypes();
           `/api/routine/templates?dayTypeId=${encodeURIComponent(previewKey)}`
         );
         if (cancelled) return;
-        const template = list?.[0];
-        const templateBlocks = Array.isArray(template?.blocks) ? template.blocks : [];
-        // Only paint if this is still the tab we asked for.
-        if (cancelled) return;
-        setPreview({ dayTypeId: previewKey, blocks: templateBlocks });
+        // API returns [] when template not found, [{ blocks, blockCount, dayTypeId }] when found.
+        if (list.length === 0) {
+          // Template not found for this day type.
+          setPreview({ dayTypeId: previewKey, blocks: null });
+        } else {
+          const templateBlocks = Array.isArray(list[0]?.blocks) ? list[0].blocks : [];
+          // Only paint if this is still the tab we asked for.
+          if (cancelled) return;
+          setPreview({ dayTypeId: previewKey, blocks: templateBlocks });
+        }
       } catch {
         // A failed preview leaves the empty state, which is honest: we could not
         // load that day type, so we do not claim it is empty.
@@ -277,19 +287,17 @@ const dayTypes = useDayTypes();
    *  - for a tab the user deliberately switched to, that tab's own template,
    *    fetched on demand.
    *
-   * The second source did not exist. Every non-resolved tab rendered "no blocks"
-   * unconditionally, which meant a user who set Friday to Placement, then clicked
-   * "College" on the strip, was told College was empty while College sat in the
-   * URL as a deep link that could never resolve. The page was honest about what
-   * it had loaded and useless for what it implied: the strip is clickable, so a
-   * click has to show something.
-   *
-   * Only the CLICKED tab is fetched, so this is one extra request on a deliberate
-   * switch — not the all-templates request the single-request design removed.
+   * The preview is fetched whenever the active tab differs from the resolved
+   * day type (see `previewKey`), not based on `viewingOtherDayType` which
+   * becomes false as soon as the URL updates.
    */
+  const viewingOtherDayType = activeTab != null && activeTab.dayTypeId !== null && activeTab.dayTypeId !== resolvedDayTypeId;
+
   const visibleBlocks = useMemo(() => {
     if (!activeTab) return [];
+    // Resolved day type: use the blocks we already loaded
     if (activeTab.dayTypeId && activeTab.dayTypeId === resolvedDayTypeId) return blocks;
+    // Different day type: use the preview fetch
     if (viewingOtherDayType) {
       const fetched = previewBlocks;
       // Guard on identity: the preview belongs to the day type it was fetched
@@ -304,8 +312,7 @@ const dayTypes = useDayTypes();
       }
       return [];
     }
-    // The whole payload belongs to one template, so the identity that matters is
-    // the template's own — a per-block field the resolver does not return.
+    // Fallback (should not be reached with current logic, but kept for safety)
     const identity = {
       dayType: data?.dayType ?? null,
       dayTypeId: data?.template?.dayTypeId ?? null,
@@ -924,61 +931,81 @@ const dayTypes = useDayTypes();
                 <RoutineErrorState message={error} onRetry={() => void refetch()} />
               ) : isLoading && !data ? (
                 <RoutineLoadingState />
-              ) : !data ? null : !data.template && data.templateIsActive !== false ? (
-                <NoTemplateState
-                  dayTypeName={activeTab?.label ?? 'This day type'}
-                  onSetUp={() => setEditor({ mode: 'create' })}
-                />
-              ) : visibleBlocks.length === 0 ? (
-                viewingOtherDayType ? (
-                  /*
-                    Three states, not one. The old copy claimed "no blocks are
-                    loaded" for a tab that simply had not been fetched yet, which
-                    is how a College day with a full template got reported as
-                    empty.
+              ) : !data ? null : (() => {
+                // Determine template existence and block count for the active tab
+                const isResolvedTab = activeTab?.dayTypeId === resolvedDayTypeId;
+                let hasTemplate: boolean;
+                let blockCount: number;
 
-                    `previewBlocks === null` is still in flight, so saying
-                    anything about emptiness would be a guess. Only once the
-                    request has resolved with nothing do we say it is empty.
-                  */
-                  previewInFlight ? (
-                    <div
-                      className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"
-                      aria-busy="true"
-                    >
-                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground/70 motion-reduce:animate-none" />
-                      Loading {activeTab?.label}…
-                    </div>
-                  ) : (
+                if (isResolvedTab) {
+                  // Resolved day type: use data from the main fetch
+                  hasTemplate = data.template !== null;
+                  blockCount = visibleBlocks.length;
+                } else {
+                  // Other day type: use preview fetch results
+                  // previewBlocks === null AND !previewInFlight means template not found
+                  // previewBlocks === [] means template exists but empty
+                  // previewBlocks.length > 0 means template has blocks
+                  if (previewInFlight) {
+                    // Still loading the preview
+                    return (
+                      <div
+                        className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground"
+                        aria-busy="true"
+                      >
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-foreground/70 motion-reduce:animate-none" />
+                        Loading {activeTab?.label}…
+                      </div>
+                    );
+                  }
+                  if (previewBlocks === null) {
+                    // Template not found for this day type
+                    hasTemplate = false;
+                    blockCount = 0;
+                  } else {
+                    // Template found (empty or with blocks)
+                    hasTemplate = true;
+                    blockCount = previewBlocks.length;
+                  }
+                }
+
+                if (!hasTemplate) {
+                  return (
+                    <NoTemplateState
+                      dayTypeName={activeTab?.label ?? 'This day type'}
+                      onSetUp={() => setEditor({ mode: 'create' })}
+                    />
+                  );
+                }
+
+                if (blockCount === 0) {
+                  return (
                     <EmptyBlocksState
                       dayTypeName={activeTab?.label ?? 'This day type'}
                       onAdd={() => setEditor({ mode: 'create' })}
                     />
-                  )
-                ) : (
-                  <EmptyBlocksState
-                    dayTypeName={activeTab?.label ?? 'This day type'}
-                    onAdd={() => setEditor({ mode: 'create' })}
+                  );
+                }
+
+                return (
+                  <RoutineTimeline
+                    blocks={visibleBlocks}
+                    nowMinutes={nowMinutes}
+                    isToday={isToday}
+                    timeFormat24h={timeFormat24h}
+                    readOnly={readOnly}
+                    busyBlockIds={pendingBlockIds}
+                    onToggleDone={(block) => void toggleDone(block)}
+                    onStart={(block) => void startBlock(block)}
+                    onDetails={setCompletionBlock}
+                    onEdit={(block) => setEditor({ mode: 'edit', block })}
+                    onDuplicate={(block) => void duplicate(block)}
+                    onNudge={(block, delta) => void nudge(block, delta)}
+                    onDelete={setPendingDelete}
+                    onFillGap={(start, end) => setEditor({ mode: 'create', start, end })}
                   />
-                )
-              ) : (
-                <RoutineTimeline
-                  blocks={visibleBlocks}
-                  nowMinutes={nowMinutes}
-                  isToday={isToday}
-                  timeFormat24h={timeFormat24h}
-                  readOnly={readOnly}
-                  busyBlockIds={pendingBlockIds}
-                  onToggleDone={(block) => void toggleDone(block)}
-                  onStart={(block) => void startBlock(block)}
-                  onDetails={setCompletionBlock}
-                  onEdit={(block) => setEditor({ mode: 'edit', block })}
-                  onDuplicate={(block) => void duplicate(block)}
-                  onNudge={(block, delta) => void nudge(block, delta)}
-                  onDelete={setPendingDelete}
-                  onFillGap={(start, end) => setEditor({ mode: 'create', start, end })}
-                />
-              )}
+                );
+              })()}
             </div>
 
             {/* Floating add, clear of the mobile nav's safe area. */}

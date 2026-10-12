@@ -64,9 +64,10 @@ export class HabitCatalogService {
    * only user-shaped part of the response; it never counts anybody else's usage.
    */
   async browse(userId: UserId, options: CatalogBrowseOptions = {}) {
+    const scoped = { ...options, userId };
     const [rows, total] = await Promise.all([
-      this.repository.findAll(options),
-      this.repository.countAll(options),
+      this.repository.findAll(scoped),
+      this.repository.countAll(scoped),
     ]);
 
     const usedIds = await this.repository.findIdsUsedByUser(
@@ -107,20 +108,34 @@ export class HabitCatalogService {
     };
   }
 
-  /** A single entry. `null` when it does not exist or is inactive. */
-  async getById(id: string) {
-    const row = await this.repository.findById(id);
+  /** A single entry. `null` when it does not exist, is inactive, or is someone
+   *  else's private suggestion — all three are indistinguishable from outside. */
+  async getById(userId: UserId, id: string) {
+    const row = await this.repository.findById(id, userId);
     if (!row || !row.isActive) return null;
     return row;
   }
 
-  /** Admin-only catalogue write. */
+  /**
+   * Admin-only catalogue write.
+   *
+   * `ownerId` is **not** writable from the request body. Creating a private
+   * suggestion is a deliberate act, and letting a body field set it would make
+   * "who can see this" a client-supplied value — the same trust mistake as
+   * accepting a `userId` from a client. Entries created here are global
+   * (`ownerId = null`); re-homing an existing one is a separate, explicit action.
+   */
   async createDefinition(
     role: Role | undefined,
     input: Prisma.HabitDefinitionCreateInput
   ) {
     this.assertAdmin(role);
-    return this.repository.create(input);
+    const { ownerId: _ignored, owner: _ignoredRel, ...rest } = input as Prisma.HabitDefinitionCreateInput & {
+      ownerId?: string | null;
+      owner?: unknown;
+    };
+    // Global by construction: a newly created suggestion is visible to everyone.
+    return this.repository.create({ ...rest, ownerId: null } as Prisma.HabitDefinitionCreateInput);
   }
 
   async updateDefinition(
@@ -129,9 +144,15 @@ export class HabitCatalogService {
     input: Prisma.HabitDefinitionUpdateInput
   ) {
     this.assertAdmin(role);
-    const existing = await this.repository.findById(id);
+    // An admin reaching for the maintenance endpoints must not be blocked by
+    // their own ownership filter, so the lookup runs un-scoped by design. The
+    // admin guard above is what authorises it.
+    const existing = await this.repository.findByIdForAdmin(id);
     if (!existing) return null;
-    return this.repository.update(id, input);
+    const { ownerId: _ignored, ...rest } = input as Prisma.HabitDefinitionUpdateInput & {
+      ownerId?: string | null;
+    };
+    return this.repository.update(id, rest);
   }
 
   /**
@@ -143,7 +164,7 @@ export class HabitCatalogService {
    */
   async deactivateDefinition(role: Role | undefined, id: string) {
     this.assertAdmin(role);
-    const existing = await this.repository.findById(id);
+    const existing = await this.repository.findByIdForAdmin(id);
     if (!existing) return null;
     return this.repository.deactivate(id);
   }

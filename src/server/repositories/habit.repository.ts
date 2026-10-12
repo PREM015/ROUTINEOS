@@ -7,6 +7,7 @@ import type {
   Prisma,
   HabitTier,
   HabitTrackingType,
+  HabitFrequencyType,
   TimeOfDay,
 } from '@/generated/prisma';
 import { BaseRepository } from './base.repository';
@@ -53,6 +54,8 @@ export interface HabitFindAllOptions {
   tagId?: string;
   search?: string;
   trackingType?: HabitTrackingType;
+  /** One cadence, or several (e.g. everything daily-or-weekly). */
+  frequencyType?: HabitFrequencyType | HabitFrequencyType[];
   timeOfDay?: TimeOfDay;
   /** Restrict to children of one grouping parent. */
   parentHabitId?: string;
@@ -219,6 +222,12 @@ export class HabitRepository extends BaseRepository {
     // first key of `where` and is never overridden below.
     if (options?.trackingType) {
       where.trackingType = options.trackingType;
+    }
+
+    if (options?.frequencyType) {
+      where.frequencyType = Array.isArray(options.frequencyType)
+        ? { in: options.frequencyType }
+        : options.frequencyType;
     }
 
     if (options?.timeOfDay) {

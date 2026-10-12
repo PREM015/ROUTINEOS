@@ -5,6 +5,7 @@ import { Search, Check, Loader2, AlertCircle } from 'lucide-react';
 import { Badge, Button, Card, EmptyState, Input } from '@/components/ui';
 import { fetchWithAuth } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import { getFrequencyLabel } from '@/lib/habits/frequency';
 import type { HabitDefinitionCard } from '@/types/habit';
 import type {
@@ -124,7 +125,12 @@ export function HabitCatalogBrowser({
   }, [definitions]);
 
   return (
-    <div className={cn('space-y-4', className)}>
+    /*
+      `SCROLL_CARD.card` on the wrapper so the search box and the result count
+      stay put while only the grid below scrolls. The grid itself is a
+      `SCROLL_CARD.region`, which needs this flex parent to be able to shrink.
+    */
+    <div className={cn('flex min-h-0 flex-col gap-4 overflow-hidden', SCROLL_CARD.card, className)}>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Input
           value={search}
@@ -185,7 +191,21 @@ export function HabitCatalogBrowser({
             tier before saving.
           </p>
 
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/*
+            A capped, scrollable grid.
+
+            The catalogue is a user-controlled list and grows without limit — at
+            164 entries this rendered a 55-row page and pushed the "add" action
+            for every card below the fold. The count line above stays outside the
+            scroll so the total remains visible.
+          */}
+          <ul
+            className={cn(
+              'grid gap-3 pr-1 sm:grid-cols-2 lg:grid-cols-3',
+              SCROLL_CARD.region,
+              'content-start'
+            )}
+          >
             {filtered.map((definition) => (
               <CatalogCard
                 key={definition.id}
@@ -244,7 +264,10 @@ function CatalogCard({
         )}
         <Badge variant="primary">{definition.tier.replace(/_/g, ' ')}</Badge>
         <Badge variant="default">
-          {getFrequencyLabel(definition.frequencyType, definition.frequencyValue)}
+          {getFrequencyLabel(definition.frequencyType, definition.frequencyValue, {
+            targetCount: definition.targetCount,
+            intervalDays: definition.intervalDays,
+          })}
         </Badge>
         {definition.timeOfDay && (
           <Badge variant="default">{TIME_OF_DAY_LABELS[definition.timeOfDay]}</Badge>

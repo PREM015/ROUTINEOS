@@ -255,6 +255,58 @@ export const ELEVATION = {
   floating: 'shadow-floating',
 } as const;
 
+/**
+ * Height ceiling for cards whose content is a variable-length list.
+ *
+ * ## Why a cap rather than a fixed height
+ *
+ * A card with three items and a card with thirty need different heights, and a
+ * fixed height leaves the first one mostly empty. A `max-h` lets a short card
+ * keep its natural height and only bounds the ones that would otherwise run for
+ * a screen and a half — while the grid's default `items-stretch` still pulls
+ * two capped cards in the same row to the same height, which is what makes
+ * Habit Health and Achievements line up.
+ *
+ * ## Why it is one shared value
+ *
+ * Two cards sitting side by side that scroll independently but are capped at
+ * different heights look like a mistake even when each is individually correct.
+ * Cards that scroll share this token so the row reads as one system.
+ *
+ * ## The breakpoints
+ *
+ * `lg:` is the two-column desktop layout where alignment matters. Below it the
+ * cards stack full-width, so the cap only exists to stop a single card becoming
+ * taller than the viewport, and it is deliberately lower on mobile where that
+ * risk is highest.
+ */
+export const SCROLL_CARD = {
+  /** Apply to the `Panel` itself. */
+  maxH: 'max-h-[420px] lg:max-h-[560px]',
+  /**
+   * Apply to the **container** of a scrolling list when that container is a
+   * plain `Card` rather than a `Panel`.
+   *
+   * `Panel` already supplies `flex flex-col overflow-hidden` internally, so on
+   * the dashboard only `maxH` is needed. A bare `Card` supplies none of it, so
+   * it needs all three plus `min-h-0` before the child `region` can shrink.
+   */
+  card: 'flex min-h-0 flex-col overflow-hidden max-h-[420px] lg:max-h-[560px]',
+  /**
+   * Apply to the scrolling list inside the card.
+   *
+   * `min-h-0` is load-bearing, not decorative: a flex child defaults to
+   * `min-height: auto`, so without it the list refuses to shrink below its
+   * content and `overflow-y-auto` silently does nothing — the card grows instead
+   * of scrolling, which is the exact bug this replaces.
+   *
+   * `overscroll-contain` stops the wheel from chaining out to the page once the
+   * list reaches its end, so scrolling one card does not appear to scroll the
+   * whole page.
+   */
+  region: 'slim-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain',
+} as const;
+
 /** "200–350ms, cubic-bezier(0.16,1,0.3,1)" — one duration scale, not ad-hoc. */
 export const MOTION = {
   fast: 'duration-200',

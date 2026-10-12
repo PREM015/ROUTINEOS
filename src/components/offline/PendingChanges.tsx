@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 
 const PENDING_KEY = 'pendingChanges';
 
@@ -161,9 +162,17 @@ export function PendingChanges({ className }: PendingChangesProps) {
   }
 
   return (
-    <Card className={className}>
-      <div className="p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <Card className={cn('flex min-h-0 flex-col overflow-hidden', className)}>
+      <div className="flex min-h-0 flex-1 flex-col p-6">
+        {/*
+          Header stays put; only the queue scrolls.
+
+          The outbox is unbounded by nature — a user offline for a long
+          afternoon comes back to a queue of every habit they ticked, and the
+          card grew to match. Capping it here keeps the "Sync all" button and the
+          count visible while the list moves under them.
+        */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <CloudUpload className="h-5 w-5 text-amber-500" />
             <h2 className="text-lg font-bold text-gray-900">Pending Changes</h2>
@@ -179,7 +188,7 @@ export function PendingChanges({ className }: PendingChangesProps) {
           </Button>
         </div>
 
-        <div className="mt-4 space-y-2">
+        <div className={cn(SCROLL_CARD.region, 'mt-4 space-y-2 pr-1')}>
           {items.map((item) => {
             const syncing = syncingIds.has(item.id);
             return (

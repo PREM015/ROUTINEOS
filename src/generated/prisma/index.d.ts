@@ -9009,6 +9009,7 @@ export namespace Prisma {
     habits: number
     habitLogs: number
     habitOverrides: number
+    habitDefinitions: number
     healthMetrics: number
     integrations: number
     jobApplications: number
@@ -9076,6 +9077,7 @@ export namespace Prisma {
     habits?: boolean | UserCountOutputTypeCountHabitsArgs
     habitLogs?: boolean | UserCountOutputTypeCountHabitLogsArgs
     habitOverrides?: boolean | UserCountOutputTypeCountHabitOverridesArgs
+    habitDefinitions?: boolean | UserCountOutputTypeCountHabitDefinitionsArgs
     healthMetrics?: boolean | UserCountOutputTypeCountHealthMetricsArgs
     integrations?: boolean | UserCountOutputTypeCountIntegrationsArgs
     jobApplications?: boolean | UserCountOutputTypeCountJobApplicationsArgs
@@ -9331,6 +9333,13 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountHabitOverridesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: HabitOverrideWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountHabitDefinitionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: HabitDefinitionWhereInput
   }
 
   /**
@@ -10829,6 +10838,7 @@ export namespace Prisma {
     habits?: boolean | User$habitsArgs<ExtArgs>
     habitLogs?: boolean | User$habitLogsArgs<ExtArgs>
     habitOverrides?: boolean | User$habitOverridesArgs<ExtArgs>
+    habitDefinitions?: boolean | User$habitDefinitionsArgs<ExtArgs>
     healthMetrics?: boolean | User$healthMetricsArgs<ExtArgs>
     integrations?: boolean | User$integrationsArgs<ExtArgs>
     jobApplications?: boolean | User$jobApplicationsArgs<ExtArgs>
@@ -10986,6 +10996,7 @@ export namespace Prisma {
     habits?: boolean | User$habitsArgs<ExtArgs>
     habitLogs?: boolean | User$habitLogsArgs<ExtArgs>
     habitOverrides?: boolean | User$habitOverridesArgs<ExtArgs>
+    habitDefinitions?: boolean | User$habitDefinitionsArgs<ExtArgs>
     healthMetrics?: boolean | User$healthMetricsArgs<ExtArgs>
     integrations?: boolean | User$integrationsArgs<ExtArgs>
     jobApplications?: boolean | User$jobApplicationsArgs<ExtArgs>
@@ -11062,6 +11073,7 @@ export namespace Prisma {
       habits: Prisma.$HabitPayload<ExtArgs>[]
       habitLogs: Prisma.$HabitLogPayload<ExtArgs>[]
       habitOverrides: Prisma.$HabitOverridePayload<ExtArgs>[]
+      habitDefinitions: Prisma.$HabitDefinitionPayload<ExtArgs>[]
       healthMetrics: Prisma.$HealthMetricPayload<ExtArgs>[]
       integrations: Prisma.$IntegrationPayload<ExtArgs>[]
       jobApplications: Prisma.$JobApplicationPayload<ExtArgs>[]
@@ -11551,6 +11563,7 @@ export namespace Prisma {
     habits<T extends User$habitsArgs<ExtArgs> = {}>(args?: Subset<T, User$habitsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     habitLogs<T extends User$habitLogsArgs<ExtArgs> = {}>(args?: Subset<T, User$habitLogsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     habitOverrides<T extends User$habitOverridesArgs<ExtArgs> = {}>(args?: Subset<T, User$habitOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    habitDefinitions<T extends User$habitDefinitionsArgs<ExtArgs> = {}>(args?: Subset<T, User$habitDefinitionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitDefinitionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     healthMetrics<T extends User$healthMetricsArgs<ExtArgs> = {}>(args?: Subset<T, User$healthMetricsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HealthMetricPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     integrations<T extends User$integrationsArgs<ExtArgs> = {}>(args?: Subset<T, User$integrationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$IntegrationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     jobApplications<T extends User$jobApplicationsArgs<ExtArgs> = {}>(args?: Subset<T, User$jobApplicationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$JobApplicationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -12771,6 +12784,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: HabitOverrideScalarFieldEnum | HabitOverrideScalarFieldEnum[]
+  }
+
+  /**
+   * User.habitDefinitions
+   */
+  export type User$habitDefinitionsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the HabitDefinition
+     */
+    select?: HabitDefinitionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the HabitDefinition
+     */
+    omit?: HabitDefinitionOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDefinitionInclude<ExtArgs> | null
+    where?: HabitDefinitionWhereInput
+    orderBy?: HabitDefinitionOrderByWithRelationInput | HabitDefinitionOrderByWithRelationInput[]
+    cursor?: HabitDefinitionWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: HabitDefinitionScalarFieldEnum | HabitDefinitionScalarFieldEnum[]
   }
 
   /**
@@ -34899,6 +34936,7 @@ export namespace Prisma {
     color: string | null
     sortOrder: number | null
     isActive: boolean | null
+    ownerId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -34924,6 +34962,7 @@ export namespace Prisma {
     color: string | null
     sortOrder: number | null
     isActive: boolean | null
+    ownerId: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -34949,6 +34988,7 @@ export namespace Prisma {
     color: number
     sortOrder: number
     isActive: number
+    ownerId: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -34990,6 +35030,7 @@ export namespace Prisma {
     color?: true
     sortOrder?: true
     isActive?: true
+    ownerId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -35015,6 +35056,7 @@ export namespace Prisma {
     color?: true
     sortOrder?: true
     isActive?: true
+    ownerId?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -35040,6 +35082,7 @@ export namespace Prisma {
     color?: true
     sortOrder?: true
     isActive?: true
+    ownerId?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -35152,6 +35195,7 @@ export namespace Prisma {
     color: string | null
     sortOrder: number
     isActive: boolean
+    ownerId: string | null
     createdAt: Date
     updatedAt: Date
     _count: HabitDefinitionCountAggregateOutputType | null
@@ -35196,8 +35240,10 @@ export namespace Prisma {
     color?: boolean
     sortOrder?: boolean
     isActive?: boolean
+    ownerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    owner?: boolean | HabitDefinition$ownerArgs<ExtArgs>
     habits?: boolean | HabitDefinition$habitsArgs<ExtArgs>
     _count?: boolean | HabitDefinitionCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["habitDefinition"]>
@@ -35223,8 +35269,10 @@ export namespace Prisma {
     color?: boolean
     sortOrder?: boolean
     isActive?: boolean
+    ownerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    owner?: boolean | HabitDefinition$ownerArgs<ExtArgs>
   }, ExtArgs["result"]["habitDefinition"]>
 
   export type HabitDefinitionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -35248,8 +35296,10 @@ export namespace Prisma {
     color?: boolean
     sortOrder?: boolean
     isActive?: boolean
+    ownerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    owner?: boolean | HabitDefinition$ownerArgs<ExtArgs>
   }, ExtArgs["result"]["habitDefinition"]>
 
   export type HabitDefinitionSelectScalar = {
@@ -35273,21 +35323,28 @@ export namespace Prisma {
     color?: boolean
     sortOrder?: boolean
     isActive?: boolean
+    ownerId?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type HabitDefinitionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "name" | "description" | "category" | "tier" | "frequencyType" | "frequencyValue" | "targetValue" | "unit" | "targetCount" | "intervalDays" | "trackingType" | "direction" | "timeOfDay" | "linkedMetricType" | "icon" | "color" | "sortOrder" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["habitDefinition"]>
+  export type HabitDefinitionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "slug" | "name" | "description" | "category" | "tier" | "frequencyType" | "frequencyValue" | "targetValue" | "unit" | "targetCount" | "intervalDays" | "trackingType" | "direction" | "timeOfDay" | "linkedMetricType" | "icon" | "color" | "sortOrder" | "isActive" | "ownerId" | "createdAt" | "updatedAt", ExtArgs["result"]["habitDefinition"]>
   export type HabitDefinitionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    owner?: boolean | HabitDefinition$ownerArgs<ExtArgs>
     habits?: boolean | HabitDefinition$habitsArgs<ExtArgs>
     _count?: boolean | HabitDefinitionCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type HabitDefinitionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-  export type HabitDefinitionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  export type HabitDefinitionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    owner?: boolean | HabitDefinition$ownerArgs<ExtArgs>
+  }
+  export type HabitDefinitionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    owner?: boolean | HabitDefinition$ownerArgs<ExtArgs>
+  }
 
   export type $HabitDefinitionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "HabitDefinition"
     objects: {
+      owner: Prisma.$UserPayload<ExtArgs> | null
       habits: Prisma.$HabitPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -35319,6 +35376,19 @@ export namespace Prisma {
       color: string | null
       sortOrder: number
       isActive: boolean
+      /**
+       * Restricts a catalogue entry to one user.
+       * 
+       * `null` = a global suggestion every user may browse. A non-null value means
+       * the entry belongs to that user alone and is invisible to everyone else.
+       * 
+       * This is data-level ownership, not an authorisation special case: no code
+       * anywhere names a particular account, and the visibility rule is the same
+       * `null OR you` shape used everywhere else in the schema. It exists because
+       * "this pack was written for one person's life" is a real thing to express —
+       * a private pack should not leak into everyone's "add a habit" screen.
+       */
+      ownerId: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["habitDefinition"]>
@@ -35715,6 +35785,7 @@ export namespace Prisma {
    */
   export interface Prisma__HabitDefinitionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
+    owner<T extends HabitDefinition$ownerArgs<ExtArgs> = {}>(args?: Subset<T, HabitDefinition$ownerArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     habits<T extends HabitDefinition$habitsArgs<ExtArgs> = {}>(args?: Subset<T, HabitDefinition$habitsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HabitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -35765,6 +35836,7 @@ export namespace Prisma {
     readonly color: FieldRef<"HabitDefinition", 'String'>
     readonly sortOrder: FieldRef<"HabitDefinition", 'Int'>
     readonly isActive: FieldRef<"HabitDefinition", 'Boolean'>
+    readonly ownerId: FieldRef<"HabitDefinition", 'String'>
     readonly createdAt: FieldRef<"HabitDefinition", 'DateTime'>
     readonly updatedAt: FieldRef<"HabitDefinition", 'DateTime'>
   }
@@ -36021,6 +36093,10 @@ export namespace Prisma {
      */
     data: HabitDefinitionCreateManyInput | HabitDefinitionCreateManyInput[]
     skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDefinitionIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -36091,6 +36167,10 @@ export namespace Prisma {
      * Limit how many HabitDefinitions to update.
      */
     limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: HabitDefinitionIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -36157,6 +36237,25 @@ export namespace Prisma {
      * Limit how many HabitDefinitions to delete.
      */
     limit?: number
+  }
+
+  /**
+   * HabitDefinition.owner
+   */
+  export type HabitDefinition$ownerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
   }
 
   /**
@@ -112093,6 +112192,7 @@ export namespace Prisma {
     color: 'color',
     sortOrder: 'sortOrder',
     isActive: 'isActive',
+    ownerId: 'ownerId',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -114018,6 +114118,7 @@ export namespace Prisma {
     habits?: HabitListRelationFilter
     habitLogs?: HabitLogListRelationFilter
     habitOverrides?: HabitOverrideListRelationFilter
+    habitDefinitions?: HabitDefinitionListRelationFilter
     healthMetrics?: HealthMetricListRelationFilter
     integrations?: IntegrationListRelationFilter
     jobApplications?: JobApplicationListRelationFilter
@@ -114114,6 +114215,7 @@ export namespace Prisma {
     habits?: HabitOrderByRelationAggregateInput
     habitLogs?: HabitLogOrderByRelationAggregateInput
     habitOverrides?: HabitOverrideOrderByRelationAggregateInput
+    habitDefinitions?: HabitDefinitionOrderByRelationAggregateInput
     healthMetrics?: HealthMetricOrderByRelationAggregateInput
     integrations?: IntegrationOrderByRelationAggregateInput
     jobApplications?: JobApplicationOrderByRelationAggregateInput
@@ -114213,6 +114315,7 @@ export namespace Prisma {
     habits?: HabitListRelationFilter
     habitLogs?: HabitLogListRelationFilter
     habitOverrides?: HabitOverrideListRelationFilter
+    habitDefinitions?: HabitDefinitionListRelationFilter
     healthMetrics?: HealthMetricListRelationFilter
     integrations?: IntegrationListRelationFilter
     jobApplications?: JobApplicationListRelationFilter
@@ -116126,8 +116229,10 @@ export namespace Prisma {
     color?: StringNullableFilter<"HabitDefinition"> | string | null
     sortOrder?: IntFilter<"HabitDefinition"> | number
     isActive?: BoolFilter<"HabitDefinition"> | boolean
+    ownerId?: StringNullableFilter<"HabitDefinition"> | string | null
     createdAt?: DateTimeFilter<"HabitDefinition"> | Date | string
     updatedAt?: DateTimeFilter<"HabitDefinition"> | Date | string
+    owner?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     habits?: HabitListRelationFilter
   }
 
@@ -116152,8 +116257,10 @@ export namespace Prisma {
     color?: SortOrderInput | SortOrder
     sortOrder?: SortOrder
     isActive?: SortOrder
+    ownerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    owner?: UserOrderByWithRelationInput
     habits?: HabitOrderByRelationAggregateInput
   }
 
@@ -116181,8 +116288,10 @@ export namespace Prisma {
     color?: StringNullableFilter<"HabitDefinition"> | string | null
     sortOrder?: IntFilter<"HabitDefinition"> | number
     isActive?: BoolFilter<"HabitDefinition"> | boolean
+    ownerId?: StringNullableFilter<"HabitDefinition"> | string | null
     createdAt?: DateTimeFilter<"HabitDefinition"> | Date | string
     updatedAt?: DateTimeFilter<"HabitDefinition"> | Date | string
+    owner?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     habits?: HabitListRelationFilter
   }, "id" | "slug">
 
@@ -116207,6 +116316,7 @@ export namespace Prisma {
     color?: SortOrderInput | SortOrder
     sortOrder?: SortOrder
     isActive?: SortOrder
+    ownerId?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: HabitDefinitionCountOrderByAggregateInput
@@ -116240,6 +116350,7 @@ export namespace Prisma {
     color?: StringNullableWithAggregatesFilter<"HabitDefinition"> | string | null
     sortOrder?: IntWithAggregatesFilter<"HabitDefinition"> | number
     isActive?: BoolWithAggregatesFilter<"HabitDefinition"> | boolean
+    ownerId?: StringNullableWithAggregatesFilter<"HabitDefinition"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"HabitDefinition"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"HabitDefinition"> | Date | string
   }
@@ -122337,6 +122448,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -122433,6 +122545,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -122529,6 +122642,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -122625,6 +122739,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -124788,6 +124903,7 @@ export namespace Prisma {
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
+    owner?: UserCreateNestedOneWithoutHabitDefinitionsInput
     habits?: HabitCreateNestedManyWithoutDefinitionInput
   }
 
@@ -124812,6 +124928,7 @@ export namespace Prisma {
     color?: string | null
     sortOrder?: number
     isActive?: boolean
+    ownerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     habits?: HabitUncheckedCreateNestedManyWithoutDefinitionInput
@@ -124840,6 +124957,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    owner?: UserUpdateOneWithoutHabitDefinitionsNestedInput
     habits?: HabitUpdateManyWithoutDefinitionNestedInput
   }
 
@@ -124864,6 +124982,7 @@ export namespace Prisma {
     color?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    ownerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     habits?: HabitUncheckedUpdateManyWithoutDefinitionNestedInput
@@ -124890,6 +125009,7 @@ export namespace Prisma {
     color?: string | null
     sortOrder?: number
     isActive?: boolean
+    ownerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -124940,6 +125060,7 @@ export namespace Prisma {
     color?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    ownerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -131964,6 +132085,12 @@ export namespace Prisma {
     none?: HabitOverrideWhereInput
   }
 
+  export type HabitDefinitionListRelationFilter = {
+    every?: HabitDefinitionWhereInput
+    some?: HabitDefinitionWhereInput
+    none?: HabitDefinitionWhereInput
+  }
+
   export type HealthMetricListRelationFilter = {
     every?: HealthMetricWhereInput
     some?: HealthMetricWhereInput
@@ -132299,6 +132426,10 @@ export namespace Prisma {
   }
 
   export type HabitOverrideOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type HabitDefinitionOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -134024,6 +134155,11 @@ export namespace Prisma {
     _max?: NestedEnumTimeOfDayNullableFilter<$PrismaModel>
   }
 
+  export type UserNullableScalarRelationFilter = {
+    is?: UserWhereInput | null
+    isNot?: UserWhereInput | null
+  }
+
   export type HabitDefinitionCountOrderByAggregateInput = {
     id?: SortOrder
     slug?: SortOrder
@@ -134045,6 +134181,7 @@ export namespace Prisma {
     color?: SortOrder
     sortOrder?: SortOrder
     isActive?: SortOrder
+    ownerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -134077,6 +134214,7 @@ export namespace Prisma {
     color?: SortOrder
     sortOrder?: SortOrder
     isActive?: SortOrder
+    ownerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -134102,6 +134240,7 @@ export namespace Prisma {
     color?: SortOrder
     sortOrder?: SortOrder
     isActive?: SortOrder
+    ownerId?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -137341,11 +137480,6 @@ export namespace Prisma {
     not?: NestedEnumTemplateTypeFilter<$PrismaModel> | $Enums.TemplateType
   }
 
-  export type UserNullableScalarRelationFilter = {
-    is?: UserWhereInput | null
-    isNot?: UserWhereInput | null
-  }
-
   export type TemplateCountOrderByAggregateInput = {
     id?: SortOrder
     userId?: SortOrder
@@ -138562,6 +138696,13 @@ export namespace Prisma {
     connect?: HabitOverrideWhereUniqueInput | HabitOverrideWhereUniqueInput[]
   }
 
+  export type HabitDefinitionCreateNestedManyWithoutOwnerInput = {
+    create?: XOR<HabitDefinitionCreateWithoutOwnerInput, HabitDefinitionUncheckedCreateWithoutOwnerInput> | HabitDefinitionCreateWithoutOwnerInput[] | HabitDefinitionUncheckedCreateWithoutOwnerInput[]
+    connectOrCreate?: HabitDefinitionCreateOrConnectWithoutOwnerInput | HabitDefinitionCreateOrConnectWithoutOwnerInput[]
+    createMany?: HabitDefinitionCreateManyOwnerInputEnvelope
+    connect?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+  }
+
   export type HealthMetricCreateNestedManyWithoutUserInput = {
     create?: XOR<HealthMetricCreateWithoutUserInput, HealthMetricUncheckedCreateWithoutUserInput> | HealthMetricCreateWithoutUserInput[] | HealthMetricUncheckedCreateWithoutUserInput[]
     connectOrCreate?: HealthMetricCreateOrConnectWithoutUserInput | HealthMetricCreateOrConnectWithoutUserInput[]
@@ -139032,6 +139173,13 @@ export namespace Prisma {
     connectOrCreate?: HabitOverrideCreateOrConnectWithoutUserInput | HabitOverrideCreateOrConnectWithoutUserInput[]
     createMany?: HabitOverrideCreateManyUserInputEnvelope
     connect?: HabitOverrideWhereUniqueInput | HabitOverrideWhereUniqueInput[]
+  }
+
+  export type HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput = {
+    create?: XOR<HabitDefinitionCreateWithoutOwnerInput, HabitDefinitionUncheckedCreateWithoutOwnerInput> | HabitDefinitionCreateWithoutOwnerInput[] | HabitDefinitionUncheckedCreateWithoutOwnerInput[]
+    connectOrCreate?: HabitDefinitionCreateOrConnectWithoutOwnerInput | HabitDefinitionCreateOrConnectWithoutOwnerInput[]
+    createMany?: HabitDefinitionCreateManyOwnerInputEnvelope
+    connect?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
   }
 
   export type HealthMetricUncheckedCreateNestedManyWithoutUserInput = {
@@ -139750,6 +139898,20 @@ export namespace Prisma {
     update?: HabitOverrideUpdateWithWhereUniqueWithoutUserInput | HabitOverrideUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: HabitOverrideUpdateManyWithWhereWithoutUserInput | HabitOverrideUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: HabitOverrideScalarWhereInput | HabitOverrideScalarWhereInput[]
+  }
+
+  export type HabitDefinitionUpdateManyWithoutOwnerNestedInput = {
+    create?: XOR<HabitDefinitionCreateWithoutOwnerInput, HabitDefinitionUncheckedCreateWithoutOwnerInput> | HabitDefinitionCreateWithoutOwnerInput[] | HabitDefinitionUncheckedCreateWithoutOwnerInput[]
+    connectOrCreate?: HabitDefinitionCreateOrConnectWithoutOwnerInput | HabitDefinitionCreateOrConnectWithoutOwnerInput[]
+    upsert?: HabitDefinitionUpsertWithWhereUniqueWithoutOwnerInput | HabitDefinitionUpsertWithWhereUniqueWithoutOwnerInput[]
+    createMany?: HabitDefinitionCreateManyOwnerInputEnvelope
+    set?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    disconnect?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    delete?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    connect?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    update?: HabitDefinitionUpdateWithWhereUniqueWithoutOwnerInput | HabitDefinitionUpdateWithWhereUniqueWithoutOwnerInput[]
+    updateMany?: HabitDefinitionUpdateManyWithWhereWithoutOwnerInput | HabitDefinitionUpdateManyWithWhereWithoutOwnerInput[]
+    deleteMany?: HabitDefinitionScalarWhereInput | HabitDefinitionScalarWhereInput[]
   }
 
   export type HealthMetricUpdateManyWithoutUserNestedInput = {
@@ -140686,6 +140848,20 @@ export namespace Prisma {
     update?: HabitOverrideUpdateWithWhereUniqueWithoutUserInput | HabitOverrideUpdateWithWhereUniqueWithoutUserInput[]
     updateMany?: HabitOverrideUpdateManyWithWhereWithoutUserInput | HabitOverrideUpdateManyWithWhereWithoutUserInput[]
     deleteMany?: HabitOverrideScalarWhereInput | HabitOverrideScalarWhereInput[]
+  }
+
+  export type HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput = {
+    create?: XOR<HabitDefinitionCreateWithoutOwnerInput, HabitDefinitionUncheckedCreateWithoutOwnerInput> | HabitDefinitionCreateWithoutOwnerInput[] | HabitDefinitionUncheckedCreateWithoutOwnerInput[]
+    connectOrCreate?: HabitDefinitionCreateOrConnectWithoutOwnerInput | HabitDefinitionCreateOrConnectWithoutOwnerInput[]
+    upsert?: HabitDefinitionUpsertWithWhereUniqueWithoutOwnerInput | HabitDefinitionUpsertWithWhereUniqueWithoutOwnerInput[]
+    createMany?: HabitDefinitionCreateManyOwnerInputEnvelope
+    set?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    disconnect?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    delete?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    connect?: HabitDefinitionWhereUniqueInput | HabitDefinitionWhereUniqueInput[]
+    update?: HabitDefinitionUpdateWithWhereUniqueWithoutOwnerInput | HabitDefinitionUpdateWithWhereUniqueWithoutOwnerInput[]
+    updateMany?: HabitDefinitionUpdateManyWithWhereWithoutOwnerInput | HabitDefinitionUpdateManyWithWhereWithoutOwnerInput[]
+    deleteMany?: HabitDefinitionScalarWhereInput | HabitDefinitionScalarWhereInput[]
   }
 
   export type HealthMetricUncheckedUpdateManyWithoutUserNestedInput = {
@@ -142638,6 +142814,12 @@ export namespace Prisma {
     deleteMany?: WorkoutSessionScalarWhereInput | WorkoutSessionScalarWhereInput[]
   }
 
+  export type UserCreateNestedOneWithoutHabitDefinitionsInput = {
+    create?: XOR<UserCreateWithoutHabitDefinitionsInput, UserUncheckedCreateWithoutHabitDefinitionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutHabitDefinitionsInput
+    connect?: UserWhereUniqueInput
+  }
+
   export type HabitCreateNestedManyWithoutDefinitionInput = {
     create?: XOR<HabitCreateWithoutDefinitionInput, HabitUncheckedCreateWithoutDefinitionInput> | HabitCreateWithoutDefinitionInput[] | HabitUncheckedCreateWithoutDefinitionInput[]
     connectOrCreate?: HabitCreateOrConnectWithoutDefinitionInput | HabitCreateOrConnectWithoutDefinitionInput[]
@@ -142650,6 +142832,16 @@ export namespace Prisma {
     connectOrCreate?: HabitCreateOrConnectWithoutDefinitionInput | HabitCreateOrConnectWithoutDefinitionInput[]
     createMany?: HabitCreateManyDefinitionInputEnvelope
     connect?: HabitWhereUniqueInput | HabitWhereUniqueInput[]
+  }
+
+  export type UserUpdateOneWithoutHabitDefinitionsNestedInput = {
+    create?: XOR<UserCreateWithoutHabitDefinitionsInput, UserUncheckedCreateWithoutHabitDefinitionsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutHabitDefinitionsInput
+    upsert?: UserUpsertWithoutHabitDefinitionsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutHabitDefinitionsInput, UserUpdateWithoutHabitDefinitionsInput>, UserUncheckedUpdateWithoutHabitDefinitionsInput>
   }
 
   export type HabitUpdateManyWithoutDefinitionNestedInput = {
@@ -147769,6 +147961,68 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type HabitDefinitionCreateWithoutOwnerInput = {
+    id?: string
+    slug: string
+    name: string
+    description?: string | null
+    category?: string | null
+    tier?: $Enums.HabitTier
+    frequencyType?: $Enums.HabitFrequencyType
+    frequencyValue?: string | null
+    targetValue?: number | null
+    unit?: string | null
+    targetCount?: number | null
+    intervalDays?: number | null
+    trackingType?: $Enums.HabitTrackingType
+    direction?: $Enums.HabitDirection
+    timeOfDay?: $Enums.TimeOfDay | null
+    linkedMetricType?: string | null
+    icon?: string | null
+    color?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    habits?: HabitCreateNestedManyWithoutDefinitionInput
+  }
+
+  export type HabitDefinitionUncheckedCreateWithoutOwnerInput = {
+    id?: string
+    slug: string
+    name: string
+    description?: string | null
+    category?: string | null
+    tier?: $Enums.HabitTier
+    frequencyType?: $Enums.HabitFrequencyType
+    frequencyValue?: string | null
+    targetValue?: number | null
+    unit?: string | null
+    targetCount?: number | null
+    intervalDays?: number | null
+    trackingType?: $Enums.HabitTrackingType
+    direction?: $Enums.HabitDirection
+    timeOfDay?: $Enums.TimeOfDay | null
+    linkedMetricType?: string | null
+    icon?: string | null
+    color?: string | null
+    sortOrder?: number
+    isActive?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    habits?: HabitUncheckedCreateNestedManyWithoutDefinitionInput
+  }
+
+  export type HabitDefinitionCreateOrConnectWithoutOwnerInput = {
+    where: HabitDefinitionWhereUniqueInput
+    create: XOR<HabitDefinitionCreateWithoutOwnerInput, HabitDefinitionUncheckedCreateWithoutOwnerInput>
+  }
+
+  export type HabitDefinitionCreateManyOwnerInputEnvelope = {
+    data: HabitDefinitionCreateManyOwnerInput | HabitDefinitionCreateManyOwnerInput[]
+    skipDuplicates?: boolean
+  }
+
   export type HealthMetricCreateWithoutUserInput = {
     id?: string
     date: string
@@ -150465,6 +150719,51 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"HabitOverride"> | Date | string
   }
 
+  export type HabitDefinitionUpsertWithWhereUniqueWithoutOwnerInput = {
+    where: HabitDefinitionWhereUniqueInput
+    update: XOR<HabitDefinitionUpdateWithoutOwnerInput, HabitDefinitionUncheckedUpdateWithoutOwnerInput>
+    create: XOR<HabitDefinitionCreateWithoutOwnerInput, HabitDefinitionUncheckedCreateWithoutOwnerInput>
+  }
+
+  export type HabitDefinitionUpdateWithWhereUniqueWithoutOwnerInput = {
+    where: HabitDefinitionWhereUniqueInput
+    data: XOR<HabitDefinitionUpdateWithoutOwnerInput, HabitDefinitionUncheckedUpdateWithoutOwnerInput>
+  }
+
+  export type HabitDefinitionUpdateManyWithWhereWithoutOwnerInput = {
+    where: HabitDefinitionScalarWhereInput
+    data: XOR<HabitDefinitionUpdateManyMutationInput, HabitDefinitionUncheckedUpdateManyWithoutOwnerInput>
+  }
+
+  export type HabitDefinitionScalarWhereInput = {
+    AND?: HabitDefinitionScalarWhereInput | HabitDefinitionScalarWhereInput[]
+    OR?: HabitDefinitionScalarWhereInput[]
+    NOT?: HabitDefinitionScalarWhereInput | HabitDefinitionScalarWhereInput[]
+    id?: StringFilter<"HabitDefinition"> | string
+    slug?: StringFilter<"HabitDefinition"> | string
+    name?: StringFilter<"HabitDefinition"> | string
+    description?: StringNullableFilter<"HabitDefinition"> | string | null
+    category?: StringNullableFilter<"HabitDefinition"> | string | null
+    tier?: EnumHabitTierFilter<"HabitDefinition"> | $Enums.HabitTier
+    frequencyType?: EnumHabitFrequencyTypeFilter<"HabitDefinition"> | $Enums.HabitFrequencyType
+    frequencyValue?: StringNullableFilter<"HabitDefinition"> | string | null
+    targetValue?: FloatNullableFilter<"HabitDefinition"> | number | null
+    unit?: StringNullableFilter<"HabitDefinition"> | string | null
+    targetCount?: IntNullableFilter<"HabitDefinition"> | number | null
+    intervalDays?: IntNullableFilter<"HabitDefinition"> | number | null
+    trackingType?: EnumHabitTrackingTypeFilter<"HabitDefinition"> | $Enums.HabitTrackingType
+    direction?: EnumHabitDirectionFilter<"HabitDefinition"> | $Enums.HabitDirection
+    timeOfDay?: EnumTimeOfDayNullableFilter<"HabitDefinition"> | $Enums.TimeOfDay | null
+    linkedMetricType?: StringNullableFilter<"HabitDefinition"> | string | null
+    icon?: StringNullableFilter<"HabitDefinition"> | string | null
+    color?: StringNullableFilter<"HabitDefinition"> | string | null
+    sortOrder?: IntFilter<"HabitDefinition"> | number
+    isActive?: BoolFilter<"HabitDefinition"> | boolean
+    ownerId?: StringNullableFilter<"HabitDefinition"> | string | null
+    createdAt?: DateTimeFilter<"HabitDefinition"> | Date | string
+    updatedAt?: DateTimeFilter<"HabitDefinition"> | Date | string
+  }
+
   export type HealthMetricUpsertWithWhereUniqueWithoutUserInput = {
     where: HealthMetricWhereUniqueInput
     update: XOR<HealthMetricUpdateWithoutUserInput, HealthMetricUncheckedUpdateWithoutUserInput>
@@ -151904,6 +152203,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -151999,6 +152299,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -152110,6 +152411,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -152205,6 +152507,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -152300,6 +152603,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -152395,6 +152699,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -152506,6 +152811,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -152601,6 +152907,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -152696,6 +153003,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -152791,6 +153099,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -152902,6 +153211,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -152997,6 +153307,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -153092,6 +153403,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -153187,6 +153499,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -153298,6 +153611,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -153393,6 +153707,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -153487,6 +153802,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -153582,6 +153898,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -153693,6 +154010,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -153788,6 +154106,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -153883,6 +154202,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -153978,6 +154298,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -154441,6 +154762,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -154536,6 +154858,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -154772,6 +155095,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -154867,6 +155191,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -155073,6 +155398,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -155168,6 +155494,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -156135,6 +156462,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -156230,6 +156558,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -156386,6 +156715,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -156481,6 +156811,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -156705,6 +157036,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -156800,6 +157132,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -156992,6 +157325,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -157087,6 +157421,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -157358,6 +157693,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -157453,6 +157789,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -157718,6 +158055,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -157813,6 +158151,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -158008,6 +158347,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -158103,6 +158443,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -158310,6 +158651,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -158405,6 +158747,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -158549,6 +158892,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -158644,6 +158988,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -158810,6 +159155,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -158905,6 +159251,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -159242,6 +159589,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -159337,6 +159685,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -159404,6 +159753,7 @@ export namespace Prisma {
     isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
+    owner?: UserCreateNestedOneWithoutHabitDefinitionsInput
   }
 
   export type HabitDefinitionUncheckedCreateWithoutHabitsInput = {
@@ -159427,6 +159777,7 @@ export namespace Prisma {
     color?: string | null
     sortOrder?: number
     isActive?: boolean
+    ownerId?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -159913,6 +160264,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -160008,6 +160360,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -160081,6 +160434,7 @@ export namespace Prisma {
     isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    owner?: UserUpdateOneWithoutHabitDefinitionsNestedInput
   }
 
   export type HabitDefinitionUncheckedUpdateWithoutHabitsInput = {
@@ -160104,6 +160458,7 @@ export namespace Prisma {
     color?: NullableStringFieldUpdateOperationsInput | string | null
     sortOrder?: IntFieldUpdateOperationsInput | number
     isActive?: BoolFieldUpdateOperationsInput | boolean
+    ownerId?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -160349,6 +160704,203 @@ export namespace Prisma {
     data: XOR<WorkoutSessionUpdateManyMutationInput, WorkoutSessionUncheckedUpdateManyWithoutHabitInput>
   }
 
+  export type UserCreateWithoutHabitDefinitionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    aiInsights?: AIInsightCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyCreateNestedManyWithoutUserInput
+    achievements?: AchievementCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogCreateNestedManyWithoutUserInput
+    attachments?: AttachmentCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    automationRules?: AutomationRuleCreateNestedManyWithoutUserInput
+    breaks?: BreakCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncCreateNestedManyWithoutUserInput
+    categories?: CategoryCreateNestedManyWithoutUserInput
+    challenges?: ChallengeCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreCreateNestedManyWithoutUserInput
+    dataExports?: DataExportCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogCreateNestedManyWithoutUserInput
+    exercises?: ExerciseCreateNestedManyWithoutUserInput
+    feedback?: FeedbackCreateNestedManyWithoutUserInput
+    focusDayTypeTargets?: FocusDayTypeTargetCreateNestedManyWithoutUserInput
+    focusPresets?: FocusPresetCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionCreateNestedManyWithoutUserInput
+    focusSessionEvents?: FocusSessionEventCreateNestedManyWithoutUserInput
+    focusSettings?: FocusSettingsCreateNestedOneWithoutUserInput
+    goals?: GoalCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
+    habits?: HabitCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
+    integrations?: IntegrationCreateNestedManyWithoutUserInput
+    jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionCreateNestedManyWithoutUserInput
+    locations?: LocationCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternCreateNestedManyWithoutUserInput
+    projects?: ProjectCreateNestedManyWithoutUserInput
+    problemLogs?: ProblemLogCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionCreateNestedManyWithoutUserInput
+    quotes?: QuoteCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionCreateNestedManyWithoutUserInput
+    streak?: StreakCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneCreateNestedManyWithoutUserInput
+    tags?: TagCreateNestedManyWithoutUserInput
+    tasks?: TaskCreateNestedManyWithoutUserInput
+    templates?: TemplateCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryCreateNestedManyWithoutUserInput
+    tomorrowDayTypePlans?: TomorrowDayTypePlanCreateNestedManyWithoutUserInput
+    workoutSessions?: WorkoutSessionCreateNestedManyWithoutUserInput
+    connections?: UserConnectionCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionCreateNestedManyWithoutFollowingInput
+    settings?: UserSettingsCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionCreateNestedOneWithoutUserInput
+    weatherLogs?: WeatherLogCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutHabitDefinitionsInput = {
+    id?: string
+    name?: string | null
+    email: string
+    passwordHash?: string | null
+    role?: $Enums.Role
+    avatarUrl?: string | null
+    bio?: string | null
+    displayName?: string | null
+    timezone?: string
+    preferredLanguage?: string
+    preferences?: string | null
+    socialSettings?: string | null
+    emailVerified?: Date | string | null
+    sessionVersion?: number
+    failedLoginAttempts?: number
+    lockedUntil?: Date | string | null
+    lastLoginAt?: Date | string | null
+    lastActivityAt?: Date | string | null
+    onboardingCompletedAt?: Date | string | null
+    isActive?: boolean
+    isDeleted?: boolean
+    deletedAt?: Date | string | null
+    deleteReason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    aiInsights?: AIInsightUncheckedCreateNestedManyWithoutUserInput
+    apiKeys?: APIKeyUncheckedCreateNestedManyWithoutUserInput
+    achievements?: AchievementUncheckedCreateNestedManyWithoutUserInput
+    activityLogs?: ActivityLogUncheckedCreateNestedManyWithoutUserInput
+    attachments?: AttachmentUncheckedCreateNestedManyWithoutUserInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    automationRules?: AutomationRuleUncheckedCreateNestedManyWithoutUserInput
+    breaks?: BreakUncheckedCreateNestedManyWithoutUserInput
+    calendarSyncs?: CalendarSyncUncheckedCreateNestedManyWithoutUserInput
+    categories?: CategoryUncheckedCreateNestedManyWithoutUserInput
+    challenges?: ChallengeUncheckedCreateNestedManyWithoutCreatorInput
+    challengeParticipations?: ChallengeParticipantUncheckedCreateNestedManyWithoutUserInput
+    dailyReflections?: DailyReflectionUncheckedCreateNestedManyWithoutUserInput
+    dailyScores?: DailyScoreUncheckedCreateNestedManyWithoutUserInput
+    dataExports?: DataExportUncheckedCreateNestedManyWithoutUserInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedCreateNestedManyWithoutUserInput
+    deviceSessions?: DeviceSessionUncheckedCreateNestedManyWithoutUserInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedCreateNestedManyWithoutUserInput
+    energyLogs?: EnergyLogUncheckedCreateNestedManyWithoutUserInput
+    exercises?: ExerciseUncheckedCreateNestedManyWithoutUserInput
+    feedback?: FeedbackUncheckedCreateNestedManyWithoutUserInput
+    focusDayTypeTargets?: FocusDayTypeTargetUncheckedCreateNestedManyWithoutUserInput
+    focusPresets?: FocusPresetUncheckedCreateNestedManyWithoutUserInput
+    focusSessions?: FocusSessionUncheckedCreateNestedManyWithoutUserInput
+    focusSessionEvents?: FocusSessionEventUncheckedCreateNestedManyWithoutUserInput
+    focusSettings?: FocusSettingsUncheckedCreateNestedOneWithoutUserInput
+    goals?: GoalUncheckedCreateNestedManyWithoutUserInput
+    goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
+    habits?: HabitUncheckedCreateNestedManyWithoutUserInput
+    habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
+    habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
+    integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
+    jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
+    journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
+    journalRevisions?: JournalRevisionUncheckedCreateNestedManyWithoutUserInput
+    locations?: LocationUncheckedCreateNestedManyWithoutUserInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedCreateNestedManyWithoutUserInput
+    monthlyResets?: MonthlyResetUncheckedCreateNestedManyWithoutUserInput
+    moodLogs?: MoodLogUncheckedCreateNestedManyWithoutUserInput
+    notificationLogs?: NotificationLogUncheckedCreateNestedManyWithoutUserInput
+    nutritionEntries?: NutritionEntryUncheckedCreateNestedManyWithoutUserInput
+    passwordResetTokens?: PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
+    productivityPatterns?: ProductivityPatternUncheckedCreateNestedManyWithoutUserInput
+    projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
+    problemLogs?: ProblemLogUncheckedCreateNestedManyWithoutUserInput
+    pushSubscriptions?: PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+    quotes?: QuoteUncheckedCreateNestedManyWithoutUserInput
+    routineBlocks?: RoutineBlockUncheckedCreateNestedManyWithoutUserInput
+    routineExceptions?: RoutineExceptionUncheckedCreateNestedManyWithoutUserInput
+    routineLogs?: RoutineLogUncheckedCreateNestedManyWithoutUserInput
+    routineTemplates?: RoutineTemplateUncheckedCreateNestedManyWithoutUserInput
+    sleepLogs?: SleepLogUncheckedCreateNestedManyWithoutUserInput
+    sleepSessions?: SleepSessionUncheckedCreateNestedManyWithoutUserInput
+    streak?: StreakUncheckedCreateNestedOneWithoutUserInput
+    streakMilestones?: StreakMilestoneUncheckedCreateNestedManyWithoutUserInput
+    tags?: TagUncheckedCreateNestedManyWithoutUserInput
+    tasks?: TaskUncheckedCreateNestedManyWithoutUserInput
+    templates?: TemplateUncheckedCreateNestedManyWithoutUserInput
+    timeEntries?: TimeEntryUncheckedCreateNestedManyWithoutUserInput
+    tomorrowDayTypePlans?: TomorrowDayTypePlanUncheckedCreateNestedManyWithoutUserInput
+    workoutSessions?: WorkoutSessionUncheckedCreateNestedManyWithoutUserInput
+    connections?: UserConnectionUncheckedCreateNestedManyWithoutFollowerInput
+    followers?: UserConnectionUncheckedCreateNestedManyWithoutFollowingInput
+    settings?: UserSettingsUncheckedCreateNestedOneWithoutUserInput
+    subscription?: UserSubscriptionUncheckedCreateNestedOneWithoutUserInput
+    weatherLogs?: WeatherLogUncheckedCreateNestedManyWithoutUserInput
+    weeklyReviews?: WeeklyReviewUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutHabitDefinitionsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutHabitDefinitionsInput, UserUncheckedCreateWithoutHabitDefinitionsInput>
+  }
+
   export type HabitCreateWithoutDefinitionInput = {
     id?: string
     name: string
@@ -160455,6 +161007,209 @@ export namespace Prisma {
   export type HabitCreateManyDefinitionInputEnvelope = {
     data: HabitCreateManyDefinitionInput | HabitCreateManyDefinitionInput[]
     skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutHabitDefinitionsInput = {
+    update: XOR<UserUpdateWithoutHabitDefinitionsInput, UserUncheckedUpdateWithoutHabitDefinitionsInput>
+    create: XOR<UserCreateWithoutHabitDefinitionsInput, UserUncheckedCreateWithoutHabitDefinitionsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutHabitDefinitionsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutHabitDefinitionsInput, UserUncheckedUpdateWithoutHabitDefinitionsInput>
+  }
+
+  export type UserUpdateWithoutHabitDefinitionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    aiInsights?: AIInsightUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    automationRules?: AutomationRuleUpdateManyWithoutUserNestedInput
+    breaks?: BreakUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUpdateManyWithoutUserNestedInput
+    categories?: CategoryUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUpdateManyWithoutUserNestedInput
+    exercises?: ExerciseUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUpdateManyWithoutUserNestedInput
+    focusDayTypeTargets?: FocusDayTypeTargetUpdateManyWithoutUserNestedInput
+    focusPresets?: FocusPresetUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUpdateManyWithoutUserNestedInput
+    focusSessionEvents?: FocusSessionEventUpdateManyWithoutUserNestedInput
+    focusSettings?: FocusSettingsUpdateOneWithoutUserNestedInput
+    goals?: GoalUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
+    habits?: HabitUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUpdateManyWithoutUserNestedInput
+    jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUpdateManyWithoutUserNestedInput
+    locations?: LocationUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUpdateManyWithoutUserNestedInput
+    projects?: ProjectUpdateManyWithoutUserNestedInput
+    problemLogs?: ProblemLogUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUpdateManyWithoutUserNestedInput
+    quotes?: QuoteUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUpdateManyWithoutUserNestedInput
+    streak?: StreakUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUpdateManyWithoutUserNestedInput
+    tags?: TagUpdateManyWithoutUserNestedInput
+    tasks?: TaskUpdateManyWithoutUserNestedInput
+    templates?: TemplateUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUpdateManyWithoutUserNestedInput
+    tomorrowDayTypePlans?: TomorrowDayTypePlanUpdateManyWithoutUserNestedInput
+    workoutSessions?: WorkoutSessionUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUpdateManyWithoutFollowingNestedInput
+    settings?: UserSettingsUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUpdateOneWithoutUserNestedInput
+    weatherLogs?: WeatherLogUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutHabitDefinitionsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: StringFieldUpdateOperationsInput | string
+    passwordHash?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumRoleFieldUpdateOperationsInput | $Enums.Role
+    avatarUrl?: NullableStringFieldUpdateOperationsInput | string | null
+    bio?: NullableStringFieldUpdateOperationsInput | string | null
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    timezone?: StringFieldUpdateOperationsInput | string
+    preferredLanguage?: StringFieldUpdateOperationsInput | string
+    preferences?: NullableStringFieldUpdateOperationsInput | string | null
+    socialSettings?: NullableStringFieldUpdateOperationsInput | string | null
+    emailVerified?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionVersion?: IntFieldUpdateOperationsInput | number
+    failedLoginAttempts?: IntFieldUpdateOperationsInput | number
+    lockedUntil?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastLoginAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastActivityAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    onboardingCompletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    isDeleted?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    deleteReason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    aiInsights?: AIInsightUncheckedUpdateManyWithoutUserNestedInput
+    apiKeys?: APIKeyUncheckedUpdateManyWithoutUserNestedInput
+    achievements?: AchievementUncheckedUpdateManyWithoutUserNestedInput
+    activityLogs?: ActivityLogUncheckedUpdateManyWithoutUserNestedInput
+    attachments?: AttachmentUncheckedUpdateManyWithoutUserNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    automationRules?: AutomationRuleUncheckedUpdateManyWithoutUserNestedInput
+    breaks?: BreakUncheckedUpdateManyWithoutUserNestedInput
+    calendarSyncs?: CalendarSyncUncheckedUpdateManyWithoutUserNestedInput
+    categories?: CategoryUncheckedUpdateManyWithoutUserNestedInput
+    challenges?: ChallengeUncheckedUpdateManyWithoutCreatorNestedInput
+    challengeParticipations?: ChallengeParticipantUncheckedUpdateManyWithoutUserNestedInput
+    dailyReflections?: DailyReflectionUncheckedUpdateManyWithoutUserNestedInput
+    dailyScores?: DailyScoreUncheckedUpdateManyWithoutUserNestedInput
+    dataExports?: DataExportUncheckedUpdateManyWithoutUserNestedInput
+    dayTypeDefinitions?: DayTypeDefinitionUncheckedUpdateManyWithoutUserNestedInput
+    deviceSessions?: DeviceSessionUncheckedUpdateManyWithoutUserNestedInput
+    emailVerificationTokens?: EmailVerificationTokenUncheckedUpdateManyWithoutUserNestedInput
+    energyLogs?: EnergyLogUncheckedUpdateManyWithoutUserNestedInput
+    exercises?: ExerciseUncheckedUpdateManyWithoutUserNestedInput
+    feedback?: FeedbackUncheckedUpdateManyWithoutUserNestedInput
+    focusDayTypeTargets?: FocusDayTypeTargetUncheckedUpdateManyWithoutUserNestedInput
+    focusPresets?: FocusPresetUncheckedUpdateManyWithoutUserNestedInput
+    focusSessions?: FocusSessionUncheckedUpdateManyWithoutUserNestedInput
+    focusSessionEvents?: FocusSessionEventUncheckedUpdateManyWithoutUserNestedInput
+    focusSettings?: FocusSettingsUncheckedUpdateOneWithoutUserNestedInput
+    goals?: GoalUncheckedUpdateManyWithoutUserNestedInput
+    goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
+    habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
+    habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
+    habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
+    integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
+    jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
+    journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
+    journalRevisions?: JournalRevisionUncheckedUpdateManyWithoutUserNestedInput
+    locations?: LocationUncheckedUpdateManyWithoutUserNestedInput
+    minimumDayTemplates?: MinimumDayTemplateUncheckedUpdateManyWithoutUserNestedInput
+    monthlyResets?: MonthlyResetUncheckedUpdateManyWithoutUserNestedInput
+    moodLogs?: MoodLogUncheckedUpdateManyWithoutUserNestedInput
+    notificationLogs?: NotificationLogUncheckedUpdateManyWithoutUserNestedInput
+    nutritionEntries?: NutritionEntryUncheckedUpdateManyWithoutUserNestedInput
+    passwordResetTokens?: PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+    productivityPatterns?: ProductivityPatternUncheckedUpdateManyWithoutUserNestedInput
+    projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
+    problemLogs?: ProblemLogUncheckedUpdateManyWithoutUserNestedInput
+    pushSubscriptions?: PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+    quotes?: QuoteUncheckedUpdateManyWithoutUserNestedInput
+    routineBlocks?: RoutineBlockUncheckedUpdateManyWithoutUserNestedInput
+    routineExceptions?: RoutineExceptionUncheckedUpdateManyWithoutUserNestedInput
+    routineLogs?: RoutineLogUncheckedUpdateManyWithoutUserNestedInput
+    routineTemplates?: RoutineTemplateUncheckedUpdateManyWithoutUserNestedInput
+    sleepLogs?: SleepLogUncheckedUpdateManyWithoutUserNestedInput
+    sleepSessions?: SleepSessionUncheckedUpdateManyWithoutUserNestedInput
+    streak?: StreakUncheckedUpdateOneWithoutUserNestedInput
+    streakMilestones?: StreakMilestoneUncheckedUpdateManyWithoutUserNestedInput
+    tags?: TagUncheckedUpdateManyWithoutUserNestedInput
+    tasks?: TaskUncheckedUpdateManyWithoutUserNestedInput
+    templates?: TemplateUncheckedUpdateManyWithoutUserNestedInput
+    timeEntries?: TimeEntryUncheckedUpdateManyWithoutUserNestedInput
+    tomorrowDayTypePlans?: TomorrowDayTypePlanUncheckedUpdateManyWithoutUserNestedInput
+    workoutSessions?: WorkoutSessionUncheckedUpdateManyWithoutUserNestedInput
+    connections?: UserConnectionUncheckedUpdateManyWithoutFollowerNestedInput
+    followers?: UserConnectionUncheckedUpdateManyWithoutFollowingNestedInput
+    settings?: UserSettingsUncheckedUpdateOneWithoutUserNestedInput
+    subscription?: UserSubscriptionUncheckedUpdateOneWithoutUserNestedInput
+    weatherLogs?: WeatherLogUncheckedUpdateManyWithoutUserNestedInput
+    weeklyReviews?: WeeklyReviewUncheckedUpdateManyWithoutUserNestedInput
   }
 
   export type HabitUpsertWithWhereUniqueWithoutDefinitionInput = {
@@ -160632,6 +161387,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
     habits?: HabitCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -160727,6 +161483,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -160947,6 +161704,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -161042,6 +161800,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -161240,6 +161999,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeCreateNestedManyWithoutUserInput
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -161335,6 +162095,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUncheckedCreateNestedManyWithoutUserInput
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -161555,6 +162316,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUpdateManyWithoutUserNestedInput
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -161650,6 +162412,7 @@ export namespace Prisma {
     goalDayTypes?: GoalDayTypeUncheckedUpdateManyWithoutUserNestedInput
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -161746,6 +162509,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -161841,6 +162605,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -161974,6 +162739,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -162069,6 +162835,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -162561,6 +163328,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -162656,6 +163424,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -162932,6 +163701,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -163027,6 +163797,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -163433,6 +164204,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -163528,6 +164300,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -164003,6 +164776,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -164098,6 +164872,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -164921,6 +165696,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -165016,6 +165792,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -165406,6 +166183,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -165501,6 +166279,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -165885,6 +166664,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -165980,6 +166760,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -166091,6 +166872,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -166186,6 +166968,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -166281,6 +167064,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -166376,6 +167160,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -166487,6 +167272,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -166582,6 +167368,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -166677,6 +167464,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -166772,6 +167560,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -166883,6 +167672,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -166978,6 +167768,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -167072,6 +167863,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -167167,6 +167959,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -167278,6 +168071,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -167373,6 +168167,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -167469,6 +168264,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -167564,6 +168360,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -167675,6 +168472,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -167770,6 +168568,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -167865,6 +168664,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
@@ -167960,6 +168760,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
@@ -168071,6 +168872,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
@@ -168166,6 +168968,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
@@ -168260,6 +169063,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -168355,6 +169159,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -168494,6 +169299,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -168589,6 +169395,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -168713,6 +169520,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -168808,6 +169616,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -169086,6 +169895,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -169181,6 +169991,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -169762,6 +170573,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -169857,6 +170669,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -169968,6 +170781,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -170063,6 +170877,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -170158,6 +170973,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
@@ -170253,6 +171069,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
@@ -170364,6 +171181,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
@@ -170459,6 +171277,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
@@ -170554,6 +171373,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -170649,6 +171469,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -170760,6 +171581,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -170855,6 +171677,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -170949,6 +171772,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -171044,6 +171868,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -171155,6 +171980,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -171250,6 +172076,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -171345,6 +172172,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -171440,6 +172268,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -171551,6 +172380,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -171646,6 +172476,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -171742,6 +172573,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -171837,6 +172669,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -171994,6 +172827,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -172089,6 +172923,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -172564,6 +173399,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -172659,6 +173495,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -173163,6 +174000,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -173258,6 +174096,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -173458,6 +174297,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -173553,6 +174393,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -173759,6 +174600,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -173854,6 +174696,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -173949,6 +174792,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -174044,6 +174888,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -174155,6 +175000,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -174250,6 +175096,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -174386,6 +175233,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -174481,6 +175329,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -174639,6 +175488,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -174734,6 +175584,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -174872,6 +175723,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -174967,6 +175819,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -175127,6 +175980,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -175222,6 +176076,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -175406,6 +176261,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -175501,6 +176357,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -175707,6 +176564,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -175802,6 +176660,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -176115,6 +176974,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -176210,6 +177070,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -176556,6 +177417,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -176651,6 +177513,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -176746,6 +177609,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -176841,6 +177705,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -176952,6 +177817,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -177047,6 +177913,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -177142,6 +178009,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -177237,6 +178105,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -177337,6 +178206,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -177432,6 +178302,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -177543,6 +178414,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -177638,6 +178510,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -177744,6 +178617,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -177839,6 +178713,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -177933,6 +178808,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -178028,6 +178904,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -178165,6 +179042,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -178260,6 +179138,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -178404,6 +179283,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -178499,6 +179379,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -178649,6 +179530,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -178744,6 +179626,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -178839,6 +179722,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -178934,6 +179818,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -179045,6 +179930,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -179140,6 +180026,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -179236,6 +180123,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -179331,6 +180219,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -179442,6 +180331,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -179537,6 +180427,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -179631,6 +180522,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -179726,6 +180618,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -179837,6 +180730,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -179932,6 +180826,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -180028,6 +180923,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -180123,6 +181019,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -180234,6 +181131,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -180329,6 +181227,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -180424,6 +181323,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -180519,6 +181419,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -180630,6 +181531,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -180725,6 +181627,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -180819,6 +181722,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -180914,6 +181818,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -181025,6 +181930,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -181120,6 +182026,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -181216,6 +182123,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -181311,6 +182219,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -181422,6 +182331,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -181517,6 +182427,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -181612,6 +182523,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -181707,6 +182619,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -181818,6 +182731,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -181913,6 +182827,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -182007,6 +182922,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -182102,6 +183018,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -182213,6 +183130,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -182308,6 +183226,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -182404,6 +183323,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -182499,6 +183419,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -182610,6 +183531,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -182705,6 +183627,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -182799,6 +183722,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -182894,6 +183818,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -183005,6 +183930,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -183100,6 +184026,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -183196,6 +184123,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -183291,6 +184219,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -183402,6 +184331,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -183497,6 +184427,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -183592,6 +184523,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -183687,6 +184619,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -183798,6 +184731,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -183893,6 +184827,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -183988,6 +184923,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryCreateNestedManyWithoutUserInput
@@ -184083,6 +185019,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
     journalEntries?: JournalEntryUncheckedCreateNestedManyWithoutUserInput
@@ -184194,6 +185131,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUpdateManyWithoutUserNestedInput
@@ -184289,6 +185227,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
     journalEntries?: JournalEntryUncheckedUpdateManyWithoutUserNestedInput
@@ -184383,6 +185322,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -184478,6 +185418,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -184589,6 +185530,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -184684,6 +185626,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -184779,6 +185722,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -184874,6 +185818,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -184985,6 +185930,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -185080,6 +186026,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -185175,6 +186122,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -185270,6 +186218,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -185381,6 +186330,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -185476,6 +186426,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -185571,6 +186522,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -185666,6 +186618,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -185777,6 +186730,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -185872,6 +186826,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -185967,6 +186922,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -186062,6 +187018,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -186173,6 +187130,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -186268,6 +187226,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -186363,6 +187322,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -186458,6 +187418,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -186719,6 +187680,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -186814,6 +187776,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -187403,6 +188366,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -187498,6 +188462,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -187731,6 +188696,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -187826,6 +188792,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -187922,6 +188889,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -188017,6 +188985,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -188128,6 +189097,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -188223,6 +189193,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -188317,6 +189288,7 @@ export namespace Prisma {
     habits?: HabitCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricCreateNestedManyWithoutUserInput
     integrations?: IntegrationCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationCreateNestedManyWithoutUserInput
@@ -188412,6 +189384,7 @@ export namespace Prisma {
     habits?: HabitUncheckedCreateNestedManyWithoutUserInput
     habitLogs?: HabitLogUncheckedCreateNestedManyWithoutUserInput
     habitOverrides?: HabitOverrideUncheckedCreateNestedManyWithoutUserInput
+    habitDefinitions?: HabitDefinitionUncheckedCreateNestedManyWithoutOwnerInput
     healthMetrics?: HealthMetricUncheckedCreateNestedManyWithoutUserInput
     integrations?: IntegrationUncheckedCreateNestedManyWithoutUserInput
     jobApplications?: JobApplicationUncheckedCreateNestedManyWithoutUserInput
@@ -188523,6 +189496,7 @@ export namespace Prisma {
     habits?: HabitUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUpdateManyWithoutUserNestedInput
@@ -188618,6 +189592,7 @@ export namespace Prisma {
     habits?: HabitUncheckedUpdateManyWithoutUserNestedInput
     habitLogs?: HabitLogUncheckedUpdateManyWithoutUserNestedInput
     habitOverrides?: HabitOverrideUncheckedUpdateManyWithoutUserNestedInput
+    habitDefinitions?: HabitDefinitionUncheckedUpdateManyWithoutOwnerNestedInput
     healthMetrics?: HealthMetricUncheckedUpdateManyWithoutUserNestedInput
     integrations?: IntegrationUncheckedUpdateManyWithoutUserNestedInput
     jobApplications?: JobApplicationUncheckedUpdateManyWithoutUserNestedInput
@@ -189121,6 +190096,31 @@ export namespace Prisma {
     startDate: string
     endDate?: string | null
     reason?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type HabitDefinitionCreateManyOwnerInput = {
+    id?: string
+    slug: string
+    name: string
+    description?: string | null
+    category?: string | null
+    tier?: $Enums.HabitTier
+    frequencyType?: $Enums.HabitFrequencyType
+    frequencyValue?: string | null
+    targetValue?: number | null
+    unit?: string | null
+    targetCount?: number | null
+    intervalDays?: number | null
+    trackingType?: $Enums.HabitTrackingType
+    direction?: $Enums.HabitDirection
+    timeOfDay?: $Enums.TimeOfDay | null
+    linkedMetricType?: string | null
+    icon?: string | null
+    color?: string | null
+    sortOrder?: number
+    isActive?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -191080,6 +192080,83 @@ export namespace Prisma {
     startDate?: StringFieldUpdateOperationsInput | string
     endDate?: NullableStringFieldUpdateOperationsInput | string | null
     reason?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type HabitDefinitionUpdateWithoutOwnerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    category?: NullableStringFieldUpdateOperationsInput | string | null
+    tier?: EnumHabitTierFieldUpdateOperationsInput | $Enums.HabitTier
+    frequencyType?: EnumHabitFrequencyTypeFieldUpdateOperationsInput | $Enums.HabitFrequencyType
+    frequencyValue?: NullableStringFieldUpdateOperationsInput | string | null
+    targetValue?: NullableFloatFieldUpdateOperationsInput | number | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    targetCount?: NullableIntFieldUpdateOperationsInput | number | null
+    intervalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    trackingType?: EnumHabitTrackingTypeFieldUpdateOperationsInput | $Enums.HabitTrackingType
+    direction?: EnumHabitDirectionFieldUpdateOperationsInput | $Enums.HabitDirection
+    timeOfDay?: NullableEnumTimeOfDayFieldUpdateOperationsInput | $Enums.TimeOfDay | null
+    linkedMetricType?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    habits?: HabitUpdateManyWithoutDefinitionNestedInput
+  }
+
+  export type HabitDefinitionUncheckedUpdateWithoutOwnerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    category?: NullableStringFieldUpdateOperationsInput | string | null
+    tier?: EnumHabitTierFieldUpdateOperationsInput | $Enums.HabitTier
+    frequencyType?: EnumHabitFrequencyTypeFieldUpdateOperationsInput | $Enums.HabitFrequencyType
+    frequencyValue?: NullableStringFieldUpdateOperationsInput | string | null
+    targetValue?: NullableFloatFieldUpdateOperationsInput | number | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    targetCount?: NullableIntFieldUpdateOperationsInput | number | null
+    intervalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    trackingType?: EnumHabitTrackingTypeFieldUpdateOperationsInput | $Enums.HabitTrackingType
+    direction?: EnumHabitDirectionFieldUpdateOperationsInput | $Enums.HabitDirection
+    timeOfDay?: NullableEnumTimeOfDayFieldUpdateOperationsInput | $Enums.TimeOfDay | null
+    linkedMetricType?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    habits?: HabitUncheckedUpdateManyWithoutDefinitionNestedInput
+  }
+
+  export type HabitDefinitionUncheckedUpdateManyWithoutOwnerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    slug?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    description?: NullableStringFieldUpdateOperationsInput | string | null
+    category?: NullableStringFieldUpdateOperationsInput | string | null
+    tier?: EnumHabitTierFieldUpdateOperationsInput | $Enums.HabitTier
+    frequencyType?: EnumHabitFrequencyTypeFieldUpdateOperationsInput | $Enums.HabitFrequencyType
+    frequencyValue?: NullableStringFieldUpdateOperationsInput | string | null
+    targetValue?: NullableFloatFieldUpdateOperationsInput | number | null
+    unit?: NullableStringFieldUpdateOperationsInput | string | null
+    targetCount?: NullableIntFieldUpdateOperationsInput | number | null
+    intervalDays?: NullableIntFieldUpdateOperationsInput | number | null
+    trackingType?: EnumHabitTrackingTypeFieldUpdateOperationsInput | $Enums.HabitTrackingType
+    direction?: EnumHabitDirectionFieldUpdateOperationsInput | $Enums.HabitDirection
+    timeOfDay?: NullableEnumTimeOfDayFieldUpdateOperationsInput | $Enums.TimeOfDay | null
+    linkedMetricType?: NullableStringFieldUpdateOperationsInput | string | null
+    icon?: NullableStringFieldUpdateOperationsInput | string | null
+    color?: NullableStringFieldUpdateOperationsInput | string | null
+    sortOrder?: IntFieldUpdateOperationsInput | number
+    isActive?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -13,8 +13,10 @@
 import { useEffect, useState } from 'react';
 import type { Tag } from '@/generated/prisma';
 import { Plus, Tags } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import { apiRequest } from '@/lib/api-client';
-import { Button, Card, EmptyState, Input, Spinner } from '@/components/ui';
+import { Button, EmptyState, Input, Spinner } from '@/components/ui';
 import TagBadge from './TagBadge';
 
 export default function TagManager() {
@@ -83,8 +85,8 @@ export default function TagManager() {
     );
   }
 
-  return (
-    <Card className="p-5">
+return (
+    <div className={cn('flex min-h-0 flex-col overflow-hidden', SCROLL_CARD.card, 'p-5')}>
       <div className="mb-4 flex items-center gap-2">
         <Tags className="h-5 w-5 text-blue-600" />
         <h2 className="text-lg font-semibold text-gray-900">Tags</h2>
@@ -129,7 +131,7 @@ export default function TagManager() {
           description="Create your first tag to organize journal entries, habits, and tasks."
         />
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className={cn(SCROLL_CARD.region, 'flex flex-wrap gap-2 pr-1')}>
           {tags.map((tag) => (
             <TagBadge
               key={tag.id}
@@ -143,11 +145,11 @@ export default function TagManager() {
         </div>
       )}
 
-      {deletingId && (
+{deletingId && (
         <p className="mt-3 text-xs text-gray-500" aria-live="polite">
           Deleting tag…
         </p>
       )}
-    </Card>
+    </div>
   );
 }

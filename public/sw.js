@@ -65,20 +65,68 @@ self.addEventListener('activate', (event) => {
 // resolves in insertion order, so the oldest entries are the ones dropped.
 const MAX_CACHE_ENTRIES = 60;
 
+/**
+ * Entries that must never be evicted.
+ *
+ * `cache.keys()` returns entries in **insertion order**, and everything in
+ * `STATIC_ASSETS` is inserted at install time — so they are the oldest keys in
+ * the cache and `trimCache` was deleting them first. Once `/offline` was gone,
+ * the network-failure fallback had nothing to fall back to and every offline
+ * navigation failed.
+ *
+ * Protecting the precache is what makes the offline fallback reachable at all.
+ * Without this, the cache limit is a countdown on offline support rather than a
+ * bound on it.
+ */
+const PROTECTED_PATHS = new Set(STATIC_ASSETS.map((url) => new URL(url, self.location.origin).href));
+
+/**
+ * A cache entry worth evicting, oldest first.
+ *
+ * Protected entries are filtered out *before* the limit is computed, so evicting
+ * them can never happen "if there is room".
+ */
+function isEvictable(request) {
+  return !PROTECTED_PATHS.has(request.url);
+}
+
 async function trimCache(cache) {
   try {
     const keys = await cache.keys();
-    const excess = keys.length - MAX_CACHE_ENTRIES;
+    const evictable = keys.filter(isEvictable);
+    const excess = evictable.length - MAX_CACHE_ENTRIES;
     if (excess <= 0) {
       return;
     }
     for (let i = 0; i < excess; i += 1) {
-      await cache.delete(keys[i]);
+      await cache.delete(evictable[i]);
     }
   } catch (error) {
     // A failed trim must never break the fetch it was racing with.
     console.warn('[sw] cache trim failed:', error);
   }
+}
+
+/**
+ * The last-resort response for a navigation that could not be served.
+ *
+ * `event.respondWith()` requires a `Response`. Returning `undefined` from the
+ * fetch chain — which is what `caches.match(...)` resolves to on a miss — makes
+ * the browser throw `TypeError: Failed to convert value to 'Response'`, and the
+ * navigation fails with an unhandled rejection instead of showing anything.
+ *
+ * Returning a real synthetic Response means the user gets an offline page rather
+ * than a dead tab.
+ */
+function offlineResponse() {
+  return new Response(
+    '<!doctype html><meta charset="utf-8"><title>Offline</title>' +
+      '<body style="font:16px system-ui;padding:2rem">' +
+      '<h1>You are offline</h1>' +
+      '<p>This page could not be loaded and was not previously cached.</p>' +
+      '</body>',
+    { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+  );
 }
 
 // Fetch event - Network first, cache fallback
@@ -110,7 +158,7 @@ self.addEventListener('fetch', (event) => {
   // is a fully-rendered page of stale data (yesterday's habits, an old score)
   // presented as current, with only the offline banner as a cue. Bailing out
   // leaves the navigation to fail honestly instead.
-  if (requestUrl.searchParams.has('_rsc') || requestUrl.searchParams.has('_rsc')) {
+  if (requestUrl.searchParams.has('_rsc') || requestUrl.pathname.startsWith('/api/')) {
     return;
   }
 
@@ -131,11 +179,36 @@ self.addEventListener('fetch', (event) => {
 
         return response;
       })
-      .catch(() => {
-        // Network failed, try cache
-        return caches.match(event.request).then((response) => {
-          return response || caches.match(OFFLINE_URL);
-        });
+      .catch(async () => {
+        /*
+         * Network failed: serve from cache, then the precached offline page,
+         * then a synthetic response.
+         *
+         * Every branch here must resolve to a real `Response`. The previous
+         * version was:
+         *
+         *     return caches.match(event.request).then((r) => r || caches.match(OFFLINE_URL));
+         *
+         * `caches.match(OFFLINE_URL)` is a **Promise**, so when the offline page
+         * was not cached this chain resolved to `undefined`, and
+         * `event.respondWith(undefined)` threw
+         * `TypeError: Failed to convert value to 'Response'` — which is exactly
+         * the console error this replaces.
+         *
+         * It is made explicit here with `await` on each step so the fallback
+         * chain is readable and cannot accidentally short-circuit to undefined.
+         */
+        const cached = await caches.match(event.request);
+        if (cached) {
+          return cached;
+        }
+
+        const offline = await caches.match(OFFLINE_URL);
+        if (offline) {
+          return offline;
+        }
+
+        return offlineResponse();
       })
   );
 });

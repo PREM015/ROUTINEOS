@@ -345,6 +345,9 @@ export async function seedHabitDefinitions(): Promise<{
       if (changed) {
         await prisma.habitDefinition.update({
           where: { slug: seed.slug },
+          // `ownerId` is deliberately absent. A re-seed refreshes content; it
+          // must never hand a private entry back to the world or take a private
+          // one away from its owner. Ownership is a one-time decision.
           data: values,
         });
         updated += 1;
@@ -389,15 +392,27 @@ export async function seedStarterPack(): Promise<string> {
   const content = buildStarterPackContent(bySlug);
   const payload = JSON.stringify(content);
 
+  /*
+   * Match on name + type only, with **no** `isOfficial` filter and no `userId`
+   * condition.
+   *
+   * The pack may be owned by a user rather than the system, and a re-run must
+   * refresh whichever row it finds without ever changing who owns it. An
+   * earlier version matched `isOfficial: true` and would therefore have created
+   * a *second*, system-owned pack beside a personal one — quietly re-exposing a
+   * personal pack to every user on the next seed.
+   */
   const existing = await prisma.template.findFirst({
     where: {
       name: STARTER_PACK.name,
       type: TemplateType.HABIT_SET,
-      isOfficial: true,
     },
   });
 
   if (existing) {
+    // Content and description only. `userId`, `isPublic` and `isOfficial` are
+    // deliberately left alone: ownership is a decision made once, not something
+    // a seed may flip.
     await prisma.template.update({
       where: { id: existing.id },
       data: { content: payload, description: STARTER_PACK.description },

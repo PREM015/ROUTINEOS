@@ -35,6 +35,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { HEALTH_META } from '@/components/dashboard-ui/tokens';
 import { DOMAIN_ACCENT, accentRing } from '@/components/dashboard-ui/accent';
 import { Panel, PanelEmpty } from '@/components/dashboard-ui';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import { cn } from '@/lib/utils';
 
 interface HealthHabit {
@@ -212,6 +213,20 @@ export function HabitHealthWidget() {
       domain="habits"
       action={action}
       minHeightClass="min-h-[15rem]"
+      /*
+        The ceiling that stops this card driving the whole row.
+        
+        A user with 40 active habits produced a 40-row list, which made this
+        card taller than the viewport. Because the dashboard's second row uses
+        the grid's default `items-stretch`, that height was shared with the
+        Achievements rail beside it — so one unbounded list was stretching two
+        cards. The cap is shared with that rail via `SCROLL_CARD`, so the two
+        still line up.
+        
+        `minHeightClass` is left alone: it is the floor that stops a near-empty
+        card collapsing, and a max and a min are not in conflict.
+      */
+      className={SCROLL_CARD.maxH}
       isEmpty={rows.length === 0}
       empty={
         <PanelEmpty
@@ -220,7 +235,12 @@ export function HabitHealthWidget() {
         />
       }
     >
-      <div className="flex flex-1 flex-col gap-3 px-5 pb-5">
+      {/*
+        `min-h-0` on the wrapper is what lets the list shrink: it is a flex child,
+        and a flex child defaults to `min-height: auto`, so without it this
+        column refuses to compress and the card grows instead of scrolling.
+      */}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 px-5 pb-5">
         {/* A failed refetch degrades to a banner; the bars below stay valid. */}
         {error && (
           <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -280,7 +300,17 @@ export function HabitHealthWidget() {
           ))}
         </div>
 
-        <ul className="flex-1 space-y-1.5">
+        {/*
+          The only scrolling region in the card.
+
+          The summary line, the bucket tabs and the header all sit OUTSIDE this
+          element, so they stay put while the rows move — which is the whole point
+          of the card scrolling internally rather than the page.
+
+          `overscroll-contain` keeps the wheel inside this list once it reaches
+          the end, so scrolling here does not read as scrolling the dashboard.
+        */}
+        <ul className={cn(SCROLL_CARD.region, 'space-y-1.5 pr-1')}>
           {visible.map((habit) => {
             const meta = HEALTH_META[habit.health];
             return (

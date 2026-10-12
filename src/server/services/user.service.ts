@@ -408,8 +408,13 @@ export class UserService {
   ) {
     const safeLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
 
+    // Keep the window deterministic across hosts. `setDate` mutated the local
+    // date while `toISOString().slice(0, 10)` read it back as a UTC date, so a
+    // server in a UTC+ timezone counted one fewer day than a UTC- server. UTC
+    // arithmetic makes `windowDays` mean the same everywhere (the leaderboard's
+    // day bucketing is already UTC in the repository).
     const since = new Date();
-    since.setDate(since.getDate() - windowDays);
+    since.setUTCDate(since.getUTCDate() - windowDays);
     const sinceDate = since.toISOString().slice(0, 10);
 
     // Ask for one extra row so the current user can be removed after ranking

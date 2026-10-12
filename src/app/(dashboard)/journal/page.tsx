@@ -24,6 +24,8 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { Tag } from '@/generated/prisma';
+import { cn } from '@/lib/utils';
+import { SCROLL_CARD } from '@/components/dashboard-ui/tokens';
 import {
   ArrowRight,
   BookOpen,
@@ -636,7 +638,7 @@ function JournalWorkspace() {
         )}
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className={cn('flex min-h-0 flex-col rounded-xl border border-border bg-card p-4', showTrash && SCROLL_CARD.card)}>
         <button
           type="button"
           onClick={() => {
@@ -676,7 +678,7 @@ function JournalWorkspace() {
             ) : trash.length === 0 ? (
               <p className="text-sm text-muted-foreground">Trash is empty.</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className={cn('space-y-2', showTrash && cn(SCROLL_CARD.region, 'pr-1'))}>
                 {trash.map((entry) => (
                   <li key={entry.id} className="rounded-lg border border-border bg-muted/40 p-3">
                     <p className="truncate text-sm font-medium text-foreground">

@@ -13,7 +13,7 @@ import { habitAppliesToDayType } from '@/lib/habits/day-type-match';
 import type { DayType } from '@/generated/prisma';
 import type { DayTypeDefinition } from '@/types/routine';
 import { getTodayString } from '@/lib/dates';
-import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, RotateCcw, CheckCircle2, Circle, CircleSlash, CircleMinus, Flame, TrendingUp, Filter, Search, X, Bell, LayoutGrid } from 'lucide-react';
+import { Plus, Archive, Play, Pause, Target, Pencil, Trash2, RotateCcw, CheckCircle2, Circle, CircleSlash, CircleMinus, Flame, TrendingUp, Filter, Repeat, Search, X, Bell, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { Button, EmptyState, Select, Modal } from '@/components/ui';
 import { TagChip, type TagOption } from '@/components/habits/TagPicker';
@@ -62,6 +62,32 @@ const STATUS_MAP: Record<TabType, string[]> = {
   PAUSED: ['PAUSED'],
   ARCHIVED: ['ARCHIVED', 'COMPLETED'],
 };
+
+/**
+ * The cadence buckets offered by the frequency filter.
+ *
+ * Values are the stored `HabitFrequencyType` enums, not display labels, so the
+ * filter compares against `habit.frequencyType` directly and cannot drift from
+ * the value the row renders in `getFrequencyLabel`.
+ */
+const FREQUENCY_FILTERS: Array<{ value: string; label: string }> = [
+  { value: 'DAILY', label: 'Daily' },
+  { value: 'WEEKLY_TARGET', label: 'Weekly' },
+  { value: 'MONTHLY_TARGET', label: 'Monthly' },
+  { value: 'YEARLY_TARGET', label: 'Yearly' },
+  { value: 'EVERY_N_DAYS', label: 'Every N days' },
+  { value: 'SPECIFIC_WEEKDAYS', label: 'Specific days' },
+];
+
+/**
+ * Cadences whose label already prints its own count.
+ *
+ * The row's numeric-target chip would repeat the number the label just showed,
+ * so it is suppressed for exactly these. Anything else may legitimately carry a
+ * `targetValue`/`unit` ("2 glasses", "7 h") that the cadence label says nothing
+ * about.
+ */
+const SHOWS_COUNT = new Set(['WEEKLY_TARGET', 'MONTHLY_TARGET', 'YEARLY_TARGET']);
 
 /**
  * Fallback accent per habit tier, used only when the user never picked a colour.
@@ -158,6 +184,8 @@ export default function HabitsPage() {
   const { timezone } = useUserTimezone();
   const [tab, setTab] = useState<TabType>('ACTIVE');
   const [dayTypeFilter, setDayTypeFilter] = useState<string | null>(null); // null = "All Days"
+  /** Selected `HabitFrequencyType`, or null for "All frequencies". */
+  const [frequencyFilter, setFrequencyFilter] = useState<string | null>(null);
   const [dayTypes, setDayTypes] = useState<DayTypeDefinition[]>([]);
   const [dayTypesLoading, setDayTypesLoading] = useState(true);
   /** Free-text filter over name / description / tag names. */
@@ -376,9 +404,15 @@ export default function HabitsPage() {
         filtered = filtered.filter(h => (h.tags ?? []).some(t => t.tagId === tagFilter));
       }
 
+      // Cadence filter. Compared against the stored enum, so a `DAILY` habit is
+      // "daily" here for the same reason the row label says "Every day".
+      if (frequencyFilter) {
+        filtered = filtered.filter(h => h.frequencyType === frequencyFilter);
+      }
+
       return filtered;
     },
-    [habits, tab, dayTypeFilter, todayDayType.id, searchTerm, tagFilter]
+    [habits, tab, dayTypeFilter, todayDayType.id, searchTerm, tagFilter, frequencyFilter]
   );
 
   /**
@@ -398,6 +432,7 @@ export default function HabitsPage() {
     setSearchTerm('');
     setTagFilter(null);
     setDayTypeFilter(null);
+    setFrequencyFilter(null);
   };
 
   const runAction = async (id: string, fn: () => Promise<unknown>) => {
@@ -649,8 +684,21 @@ export default function HabitsPage() {
           </div>
 
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-            <span className="truncate">{getFrequencyLabel(habit.frequencyType, habit.frequencyValue)}</span>
-            {habit.targetCount ? <span>· target {habit.targetCount}</span> : null}
+            <span className="truncate">
+              {getFrequencyLabel(habit.frequencyType, habit.frequencyValue, {
+                targetCount: habit.targetCount,
+                intervalDays: habit.intervalDays,
+              })}
+            </span>
+            {/*
+              The count the label already carries for a cadence that has one.
+              `frequencyValue` and `targetCount` are both populated for these,
+              so printing the numeric habit target as well would show the same
+              number twice — "4x per week · target 4".
+            */}
+            {habit.targetCount && !SHOWS_COUNT.has(habit.frequencyType) ? (
+              <span>· target {habit.targetCount}</span>
+            ) : null}
             {habit.reminderTime ? (
               <span className="inline-flex items-center gap-1">
                 · <Bell size={11} aria-hidden="true" /> {habit.reminderTime}
@@ -1050,6 +1098,21 @@ export default function HabitsPage() {
               Retry filter
             </button>
           )}
+        </div>
+
+        {/* Frequency Filter — daily / weekly / monthly / yearly cadence. */}
+        <div className="flex items-center gap-2">
+          <Repeat className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <Select
+            value={frequencyFilter || ''}
+            onChange={(e) => setFrequencyFilter(e.target.value || null)}
+            options={[
+              { value: '', label: 'All frequencies' },
+              ...FREQUENCY_FILTERS,
+            ]}
+            className="w-auto min-w-[160px]"
+            aria-label="Filter by frequency"
+          />
         </div>
 
         {/* Status Tabs */}
