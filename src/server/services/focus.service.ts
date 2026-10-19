@@ -14,6 +14,7 @@ import {
   bucketByDay,
   completionRate,
   countedMinutes,
+  dailyProgress,
   streakOfFocusDays,
   type FocusMetricRow,
 } from '@/lib/focus/metrics';
@@ -688,6 +689,11 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
 
     const buckets = bucketByDay({ rows: metricRows, timezone, from: fromDate, to: toDate });
 
+    // The daily goal the user configured (Focus Settings > Goals). `dailyProgress`
+    // owns the zero/absent fallback, so the target and the ring cannot disagree.
+    const settings = await this.settingsRepository.getOrCreate(userId);
+    const todayProgress = dailyProgress(buckets, today, settings.dailyTargetMinutes);
+
     const summarise = (date: string) => {
       const bucket = buckets.get(date);
       return {
@@ -716,6 +722,10 @@ const endedAt = input.completedAt ?? input.abortedAt ?? new Date();
       /** `null` when there is nothing to judge — see `completionRate`. */
       completionRate: completionRate(metricRows),
       averageSessionMinutes: averageSessionMinutes(metricRows),
+      // The "Plan" figures: today's target and today's counted minutes, so the
+      // client does not have to fetch `/api/focus/settings` separately or guess.
+      plannedFocusMinutes: todayProgress.targetMinutes,
+      actualFocusMinutes: todayProgress.minutes,
       range: { from: fromDate, to: toDate, timezone },
     };
   }

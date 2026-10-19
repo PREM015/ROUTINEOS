@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { HelpCircle, History, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowUpRight, HelpCircle, History, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 
 import { TimerDial } from '@/components/focus/TimerDial';
 import { ModeSwitch, MODE_PANEL_ID } from '@/components/focus/ModeSwitch';
@@ -16,11 +16,14 @@ import { ShortcutsDialog } from '@/components/focus/ShortcutsDialog';
 import { useFocusShortcuts } from '@/components/focus/useFocusShortcuts';
 import { DistractionCapture, FocusLockMode } from '@/components/focus/distraction-capture';
 import { FocusTodaySummary } from '@/components/focus/FocusTodaySummary';
+import { FocusWorldClock } from '@/components/focus/FocusWorldClock';
 import { NextActionSuggestion } from '@/components/focus/NextActionSuggestion';
 import { RoutineDriftDisplay } from '@/components/focus/RoutineDriftDisplay';
 
 import { getFocusRuntime, useFocusStore, isLive } from '@/store/focus.store';
 import type { FocusMode } from '@/lib/focus/type-backfill';
+
+import styles from './focus-studio.module.css';
 
 /**
  * The drawer is code-split.
@@ -33,7 +36,7 @@ import type { FocusMode } from '@/lib/focus/type-backfill';
  */
 const SessionsDrawer = dynamic(
   () => import('@/components/focus/SessionsDrawer').then((m) => m.SessionsDrawer),
-  { ssr: false }
+  { ssr: false },
 );
 
 /**
@@ -108,14 +111,8 @@ export default function FocusPage() {
   return (
     <FocusLockMode>
       <div
-        className="relative mx-auto w-full max-w-2xl px-4 py-8 transition-[max-width] duration-300 sm:py-12"
+        className={`${styles.studio} relative mx-auto w-full max-w-7xl px-4 py-7 transition-[max-width] duration-300 sm:px-6 sm:py-10`}
       >
-        <div
-          className="gradient-mesh-animated pointer-events-none absolute inset-0 -z-10 opacity-40"
-          aria-hidden="true"
-        />
-        <div className="noise-overlay pointer-events-none absolute inset-0 -z-10" aria-hidden="true" />
-
         {/*
           Zen mode drops the header and the intent row, leaving the dial and its
           controls. It is a visibility reduction rather than a fullscreen takeover on
@@ -124,21 +121,24 @@ export default function FocusPage() {
           achieves the same thing without a permission prompt or a trap.
         */}
         {!zen && (
-          <header className="mb-6 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-700 ease-out-expo">
-            <h1 className="font-display text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-transparent">
-              Focus
-            </h1>
-            <div className="flex items-center gap-1">
-              <IconAction
-                label="Session history and stats"
-                onClick={() => setDrawerOpen(true)}
-              >
+          <header className="animate-in fade-in slide-in-from-top-4 ease-out-expo mb-8 flex flex-col gap-5 duration-700 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="border-accent-goals/25 bg-accent-goals/10 text-accent-goals mb-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.2em]">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                Your Focus Studio
+              </p>
+              <h1 className="font-display from-accent-focus via-accent-streak to-accent-insights bg-gradient-to-r bg-clip-text text-4xl font-extrabold leading-tight tracking-tight text-transparent sm:text-5xl">
+                Make room for flow.
+              </h1>
+              <p className="text-muted-foreground mt-2 max-w-xl text-sm leading-relaxed sm:text-base">
+                One clear intention. One focused block. Let&apos;s make it count.
+              </p>
+            </div>
+            <div className="border-border/70 bg-card/75 flex items-center gap-2 self-start rounded-2xl border p-1.5 shadow-sm backdrop-blur-xl sm:self-auto">
+              <IconAction label="Session history and stats" onClick={() => setDrawerOpen(true)}>
                 <History className="h-4 w-4" aria-hidden="true" />
               </IconAction>
-              <IconAction
-                label={zen ? 'Exit zen mode' : 'Zen mode'}
-                onClick={() => setZen(true)}
-              >
+              <IconAction label={zen ? 'Exit zen mode' : 'Zen mode'} onClick={() => setZen(true)}>
                 <Maximize2 className="h-4 w-4" aria-hidden="true" />
               </IconAction>
               <IconAction label="Keyboard shortcuts" onClick={() => setShortcutsOpen(true)}>
@@ -165,69 +165,120 @@ export default function FocusPage() {
           </>
         )}
 
-        <div className="flex flex-col items-center gap-6">
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out-expo delay-150 fill-mode-both">
-            <ModeSwitch />
-          </div>
+        <div
+          className={`grid items-start gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.85fr)] xl:gap-8 ${zen ? 'mx-auto max-w-3xl grid-cols-1' : ''}`}
+        >
+          <section className="min-w-0 space-y-5">
+            <div className="animate-in fade-in slide-in-from-bottom-4 ease-out-expo fill-mode-both flex flex-col gap-3 delay-150 duration-700 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-muted-foreground text-[0.68rem] font-bold uppercase tracking-[0.2em]">
+                  Session control
+                </p>
+                <h2 className="text-foreground mt-1 text-lg font-semibold tracking-tight">
+                  Choose your rhythm
+                </h2>
+              </div>
+              <ModeSwitch />
+            </div>
 
-          {/*
-            The panel the tablist points at. `aria-labelledby` names the active tab,
-            so the mode is announced with the region — the pairing `aria-controls`
-            promises and the old markup never provided.
+            {/*
+              The panel the tablist points at. `aria-labelledby` names the active tab,
+              and the persistent runtime/store continue to own all session behavior.
+            */}
+            <div
+              role="tabpanel"
+              id={MODE_PANEL_ID}
+              aria-labelledby={`focus-tab-${mode}`}
+              data-live={status === 'running' ? 'true' : status === 'paused' ? 'paused' : 'idle'}
+              className={`${styles.timerPanel} focus-panel-live animate-in fade-in slide-in-from-bottom-6 ease-out-expo fill-mode-both flex w-full flex-col items-center gap-5 rounded-[2rem] p-5 delay-200 duration-1000 sm:gap-7 sm:p-8`}
+              style={{ ['--glass-hue' as string]: 'var(--accent-focus)' }}
+            >
+              <div className="relative z-10 flex w-full items-center justify-between gap-4">
+                <div>
+                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-[0.18em]">
+                    Your next block
+                  </p>
+                  <p className="text-foreground mt-1 text-sm font-medium">
+                    Give this moment your full attention
+                  </p>
+                </div>
+                {status === 'running' && (
+                  <span className="border-accent-focus/20 bg-accent-focus/10 text-accent-focus inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold">
+                    <span
+                      className="bg-accent-focus h-2 w-2 animate-pulse rounded-full"
+                      aria-hidden="true"
+                    />
+                    {mode === 'focus'
+                      ? 'In flow'
+                      : mode === 'stopwatch'
+                        ? 'Time running'
+                        : 'On a break'}
+                  </span>
+                )}
+              </div>
+              <TimerDial className="relative z-10 w-full" />
+              <div className="relative z-10 w-full">
+                <Transport />
+              </div>
+            </div>
 
-            `--glass-hue` is set to `--accent-focus` (rose) so the glassmorphism
-            material reflects the Focus domain rather than the default primary green.
-            `data-live` drives the `focus-panel-live` breathing animation purely from
-            CSS — no interval, no React re-render per tick.
-          */}
-          <div
-            role="tabpanel"
-            id={MODE_PANEL_ID}
-            aria-labelledby={`focus-tab-${mode}`}
-            data-live={
-              status === 'running' ? 'true' : status === 'paused' ? 'paused' : 'idle'
-            }
-            className="glass-panel glass-panel-lift spotlight-hover focus-panel-live flex w-full flex-col items-center gap-8 rounded-2xl p-6 shadow-soft sm:p-10 animate-in fade-in slide-in-from-bottom-6 duration-1000 ease-out-expo delay-200 fill-mode-both group"
-            style={{ ['--glass-hue' as string]: 'var(--accent-focus)' }}
-          >
-            <TimerDial />
-            <Transport />
-          </div>
+            {!zen && (
+              <div className="border-border/70 bg-card/80 animate-in fade-in slide-in-from-bottom-8 ease-out-expo fill-mode-both rounded-[1.75rem] border p-5 shadow-sm backdrop-blur-xl delay-300 duration-1000 sm:p-6">
+                <div className="mb-4 flex items-start gap-3">
+                  <span className="bg-accent-insights/10 text-accent-insights inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl">
+                    <ArrowUpRight className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div>
+                    <h2 className="text-foreground text-base font-semibold">Set your intention</h2>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      Make the next session yours. No setup required.
+                    </p>
+                  </div>
+                </div>
+                <IntentRow />
+              </div>
+            )}
+
+            {!zen && <ReflectionStrip key={cycles} resetKey={cycles} />}
+          </section>
 
           {!zen && (
-            <div className="flex w-full flex-col items-center gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out-expo delay-300 fill-mode-both">
-              <IntentRow />
-              {/*
-                Routine context: shows what block is active/up next and allows
-                one-click pre-fill. Rendered after IntentRow so it supplements
-                rather than replaces the manual intent input. Hidden during live
-                sessions (RoutineContextCard's own guard).
-              */}
-              <RoutineContextCard />
-              {/* Routine drift display: shows actual vs scheduled timing */}
-              <RoutineDriftDisplay />
-              {/* Above the reflection strip: what you are working on is an input to the
-                  session, so it belongs next to the intent field rather than below the
-                  summary of what happened. */}
-              <ContextRail />
-              {/* Keyed on the cycle count: a new finished block remounts the strip with
-                  an empty rating, rather than resetting it in an effect. */}
-              <ReflectionStrip key={cycles} resetKey={cycles} />
-              {/* Today's Focus Summary with real stats */}
-              <FocusTodaySummary />
-              {/* Next action suggestion after completion */}
-              <NextActionSuggestion />
-            </div>
-          )}
+            <aside className="animate-in fade-in slide-in-from-right-4 ease-out-expo fill-mode-both min-w-0 space-y-5 delay-300 duration-1000">
+              <FocusWorldClock />
 
-          <DistractionCapture />
+              <section
+                aria-labelledby="focus-today-heading"
+                className="border-accent-insights/20 from-accent-insights/10 via-card to-accent-goals/10 relative overflow-hidden rounded-[1.75rem] border bg-gradient-to-br p-5 shadow-sm sm:p-6"
+              >
+                <div
+                  className="bg-accent-insights/10 pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full blur-2xl"
+                  aria-hidden="true"
+                />
+                <div className="relative">
+                  <p className="text-accent-insights text-[0.68rem] font-bold uppercase tracking-[0.2em]">
+                    Today&apos;s momentum
+                  </p>
+                  <h2
+                    id="focus-today-heading"
+                    className="text-foreground mb-4 mt-1 text-lg font-semibold"
+                  >
+                    Your focus, adding up
+                  </h2>
+                  <FocusTodaySummary />
+                </div>
+              </section>
+
+              <RoutineContextCard className="border-border/70 bg-card/80 rounded-[1.75rem] border p-5 shadow-sm backdrop-blur-xl sm:p-6" />
+              <ContextRail className="border-border/70 bg-card/80 rounded-[1.75rem] border p-5 shadow-sm backdrop-blur-xl sm:p-6" />
+              <NextActionSuggestion className="border-accent-goals/20 from-accent-goals/10 via-card to-accent-focus/5 !max-w-none rounded-[1.75rem] border bg-gradient-to-br p-5 shadow-sm sm:p-6" />
+              <RoutineDriftDisplay className="border-border/70 bg-card/80 rounded-[1.75rem] border p-5 shadow-sm backdrop-blur-xl sm:p-6" />
+            </aside>
+          )}
         </div>
 
-        <SessionsDrawer
-          open={drawerOpen}
-          onOpenChange={setDrawerOpen}
-          initialTab={initialTab}
-        />
+        <DistractionCapture />
+
+        <SessionsDrawer open={drawerOpen} onOpenChange={setDrawerOpen} initialTab={initialTab} />
         <ShortcutsDialog
           open={shortcutsOpen}
           onOpenChange={setShortcutsOpen}
@@ -256,7 +307,7 @@ function IconAction({
       title={label}
       // `tap-target` because the 36px visual box is under the 44px minimum; the
       // class expands the hit area without inflating the icon button.
-      className="tap-target inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="tap-target text-muted-foreground hover:bg-accent-focus/10 hover:text-accent-focus focus-visible:ring-accent-focus inline-flex h-11 w-11 items-center justify-center rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2"
     >
       {children}
     </button>

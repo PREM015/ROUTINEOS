@@ -13,14 +13,9 @@
  * `useFocusNow` returns a shared number rather than owning an interval, so the
  * dial costs one subscription and the rest of the page costs none.
  *
- * ## Why the ring is thinner and quieter
- *
- * The previous dial stacked a dashed spinner circle, 60 tick marks, a gradient
- * ring and an SVG `feGaussianBlur` "neon glow" filter. The glow filter is the
- * expensive part: an SVG filter is re-rasterised on every frame the ring moves,
- * which on a 288 px ring at 4 Hz is enough to matter on a low-end laptop, and it
- * made a tool meant to be calm look like a game HUD. What remains is one thin
- * stroke whose `stroke-dashoffset` is the only thing that changes.
+ * The analog face mirrors the local wall clock, while the adjacent digital value
+ * remains authoritative: countdown hands show time remaining, stopwatch hands show
+ * time elapsed. Both are derived from the shared Focus runtime clock.
  */
 
 import { memo } from 'react';
@@ -28,6 +23,8 @@ import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { useFocusNow } from '@/hooks/useFocusNow';
 import { useFocusStore, isLive } from '@/store/focus.store';
+import { AnalogClockFace } from '@/components/focus/AnalogClockFace';
+import { getCountdownHandAngles, getDurationHandAngles } from '@/lib/focus/world-clock';
 import {
   elapsedMs,
   formatClock,
@@ -35,13 +32,6 @@ import {
   progressFraction,
   remainingMs,
 } from '@/lib/focus/timer-machine';
-
-/** Geometry. One ring, sized so it works from 240 px to 360 px via CSS. */
-const VIEWBOX = 280;
-const CENTER = VIEWBOX / 2;
-const TRACK_RADIUS = 118;
-const STROKE = 6;
-const CIRCUMFERENCE = 2 * Math.PI * TRACK_RADIUS;
 
 /**
  * Announced at most once a minute.
@@ -59,13 +49,12 @@ function announceMinute(remaining: number, paused: boolean): string {
 }
 
 /**
- * The text equivalent of the dial's arc.
+ * The text equivalent of timer progress.
  *
- * The arc's sweep is a purely visual encoding - `stroke-dashoffset` carries the
- * progress and nothing else does - so without this a screen-reader user knows how much
+ * Progress is a visual encoding, so without this a screen-reader user knows how much
  * time is left but never how far through the block they are.
  *
- * Spoken as a rounded ten, because that is a stable string while the arc creeps and
+ * Spoken as a rounded ten, because that is a stable string while progress advances and
  * "0.73 of the timebox" is not something anyone says. A stopwatch has no planned
  * length, so the fraction is meaningless there and this returns `null`.
  *
@@ -111,108 +100,79 @@ function TimerDialImpl({ className }: TimerDialProps) {
 
   // Announced only on whole-minute boundaries, so the string changes 25 times in
   // a 25-minute block rather than 1,500 times.
-  const announcement =
-    !live ? 'Timer ready' : status === 'paused' ? announceMinute(remaining, true) : announceMinute(remaining, false);
+  const announcement = !live
+    ? 'Timer ready'
+    : status === 'paused'
+      ? announceMinute(remaining, true)
+      : announceMinute(remaining, false);
 
   const statusWord =
-    status === 'running' ? (isStopwatch ? 'Running' : 'Focusing') : status === 'paused' ? 'Paused' : 'Ready';
+    status === 'running'
+      ? isStopwatch
+        ? 'Running'
+        : 'Focusing'
+      : status === 'paused'
+        ? 'Paused'
+        : 'Ready';
 
-  /*
-   * The arc's sweep is a purely visual encoding: `stroke-dashoffset` carries the
-   * progress and nothing else does. The `aria-label` below names the remaining time,
-   * which a screen reader gets, but "how far through the block am I" was only ever
-   * available to someone looking at the dial. See `describeProgress`.
-   */
   const progressAlt = describeProgress(fraction, isStopwatch);
-
-  /*
-   * Mode identity dot: a small filled circle at the center of the ring whose colour
-   * names the current mode. Rose = Focus (the domain accent), Green = any break,
-   * Neutral = stopwatch or idle.
-   *
-   * Transitions smoothly between modes via `focus-mode-dot` in globals.css.
-   * No interval, no extra render — read from the store, re-rendered only when
-   * the mode changes.
-   */
-  const dotColor =
-    mode === 'focus'
-      ? 'var(--accent-focus)'
-      : mode === 'short-break' || mode === 'long-break'
-        ? 'var(--accent-habits)'
-        : 'var(--muted-foreground)';
-
-  const dotOpacity = status === 'idle' ? 0.35 : status === 'paused' ? 0.5 : 0.85;
+  const handAngles = isStopwatch
+    ? getDurationHandAngles(elapsed)
+    : getCountdownHandAngles(remaining);
+  const dialLabel = `${mode === 'focus' ? 'Focus' : mode.replace('-', ' ')} timer, ${display} ${isStopwatch ? 'elapsed' : 'remaining'}${progressAlt ? `, ${progressAlt}` : ''}`;
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
-      {/* The text equivalent of the arc. Visually hidden, but present for anyone
-          reading the page rather than looking at it. */}
-      {progressAlt && <span className="sr-only">{progressAlt}</span>}
-      <div className="relative">
-        <svg
-          viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
-          className="h-[min(72vw,20rem)] w-[min(72vw,20rem)] -rotate-90 sm:h-80 sm:w-80"
-          role="img"
-          aria-label={`${mode === 'focus' ? 'Focus' : mode.replace('-', ' ')} timer, ${display} ${isStopwatch ? 'elapsed' : 'remaining'}${progressAlt ? `, ${progressAlt}` : ''}`}
-        >
-          {/* Track. `data-focus-dial-track` is what the forced-colors block in
-              `globals.css` targets: in High Contrast Mode both arcs would otherwise
-              resolve to the same system colour and a full arc would look empty. */}
-          <circle
-            cx={CENTER}
-            cy={CENTER}
-            r={TRACK_RADIUS}
-            fill="none"
-            strokeWidth={STROKE}
-            className="stroke-border"
-            data-focus-dial-track=""
-          />
-          {/* Progress. The only thing that changes per tick. */}
-          <circle
-            cx={CENTER}
-            cy={CENTER}
-            r={TRACK_RADIUS}
-            fill="none"
-            strokeWidth={STROKE}
-            strokeLinecap="round"
-            strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={CIRCUMFERENCE * (1 - fraction)}
-            className={cn(
-              'stroke-accent-focus transition-[stroke-dashoffset] duration-200 ease-linear',
-              status === 'paused' && 'opacity-40'
-            )}
-            data-focus-dial-progress=""
-            data-status={status}
-          />
-          {/* Mode identity dot — tiny filled circle at centre.
-              Colour = domain accent for the active mode; opacity dims when idle/paused.
-              `focus-mode-dot` in globals.css gives it a smooth colour transition. */}
-          <circle
-            cx={CENTER}
-            cy={CENTER}
-            r={6}
-            fill={dotColor}
-            opacity={dotOpacity}
-            className="focus-mode-dot"
-          />
-        </svg>
+    <div
+      className={cn(
+        'grid w-full max-w-2xl grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-3 sm:gap-7',
+        className,
+      )}
+    >
+      <AnalogClockFace
+        angles={handAngles}
+        label={dialLabel}
+        gradientId="focus-timer-clock-face"
+        className="min-w-0"
+      />
 
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="sr-only" role="status" aria-live="polite">
-            {announcement}
-          </span>
-          <span
-            className={cn(
-              'font-mono font-light leading-none tracking-tight tabular-nums text-foreground',
-              isStopwatch ? 'text-[1.6rem]' : 'text-[3rem] sm:text-[3.5rem]'
-            )}
-          >
+      <div className="min-w-0 space-y-3 sm:space-y-4">
+        <div>
+          <p className="text-muted-foreground text-[0.68rem] font-bold uppercase tracking-[0.18em]">
+            {isStopwatch ? 'Time elapsed' : 'Time remaining'}
+          </p>
+          <span className="text-foreground mt-1 block whitespace-nowrap font-mono text-[clamp(1.25rem,5.2vw,2.5rem)] font-bold tabular-nums leading-none tracking-tight">
             {display}
           </span>
-          <span className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            {statusWord}
-          </span>
         </div>
+        <span className="border-border/70 bg-card/75 text-muted-foreground inline-flex rounded-full border px-3 py-1.5 text-[0.68rem] font-bold uppercase tracking-[0.16em] shadow-sm backdrop-blur">
+          {statusWord}
+        </span>
+        {!isStopwatch && (
+          <div
+            role="progressbar"
+            aria-label="Focus session progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(fraction * 100)}
+            aria-valuetext={progressAlt ?? undefined}
+            className="bg-background/75 h-2 overflow-hidden rounded-full"
+            data-focus-timer-track=""
+          >
+            <div
+              className={cn(
+                'from-accent-focus via-accent-streak to-accent-insights h-full rounded-full bg-gradient-to-r transition-[width] duration-200 ease-linear motion-reduce:transition-none',
+                status === 'paused' && 'opacity-50',
+              )}
+              style={{ width: `${fraction * 100}%` }}
+              data-focus-timer-progress=""
+              data-status={status}
+            />
+          </div>
+        )}
+        {progressAlt && <span className="sr-only">{progressAlt}</span>}
+        <span className="sr-only" role="status" aria-live="polite">
+          {announcement}
+        </span>
       </div>
     </div>
   );

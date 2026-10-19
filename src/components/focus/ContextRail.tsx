@@ -94,25 +94,19 @@ export function ContextRail({ className }: { className?: string }) {
   }, []);
 
   const taskOptions = useMemo(
-    () => [
-      { value: '', label: 'No task' },
-      ...tasks.map((t) => ({ value: t.id, label: t.title })),
-    ],
-    [tasks]
+    () => [{ value: '', label: 'No task' }, ...tasks.map((t) => ({ value: t.id, label: t.title }))],
+    [tasks],
   );
   const goalOptions = useMemo(
-    () => [
-      { value: '', label: 'No goal' },
-      ...goals.map((g) => ({ value: g.id, label: g.title })),
-    ],
-    [goals]
+    () => [{ value: '', label: 'No goal' }, ...goals.map((g) => ({ value: g.id, label: g.title }))],
+    [goals],
   );
   const habitOptions = useMemo(
     () => [
       { value: '', label: 'No habit' },
       ...habits.map((h) => ({ value: h.id, label: h.name })),
     ],
-    [habits]
+    [habits],
   );
 
   const linked = Boolean(taskId || goalId || habitId);
@@ -131,14 +125,14 @@ export function ContextRail({ className }: { className?: string }) {
     <section className={className} aria-label="What this session is for">
       <div className="mb-2 flex items-center gap-2">
         {linked ? (
-          <Link2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <Link2 className="text-accent-insights h-4 w-4" aria-hidden="true" />
         ) : (
-          <Link2Off className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <Link2Off className="text-accent-goals h-4 w-4" aria-hidden="true" />
         )}
-        <h2 className="text-sm font-semibold text-foreground">Context</h2>
+        <h2 className="text-foreground text-sm font-semibold">Connect this session</h2>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-3">
         <Select
           label="Task"
           options={taskOptions}
@@ -146,7 +140,11 @@ export function ContextRail({ className }: { className?: string }) {
           disabled={locked || tasks.length === 0}
           onChange={(event) => adopt({ taskId: event.target.value || null })}
           helperText={
-            locked ? 'Fixed for the length of this session.' : tasks.length === 0 ? 'No open tasks.' : undefined
+            locked
+              ? 'Fixed for the length of this session.'
+              : tasks.length === 0
+                ? 'No open tasks.'
+                : undefined
           }
         />
         <Select

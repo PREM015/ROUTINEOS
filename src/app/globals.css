@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "@xyflow/react/dist/style.css";
+@import 'tailwindcss';
+@import '@xyflow/react/dist/style.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -109,11 +109,7 @@
    a 6% background tint, so AA is unchanged and the hue is pure atmosphere.
 */
 .goals-pace-card {
-  background: color-mix(
-    in oklab,
-    var(--pace-card-hue) var(--pace-card-tint),
-    var(--card)
-  );
+  background: color-mix(in oklab, var(--pace-card-hue) var(--pace-card-tint), var(--card));
   /* A chromatic border rather than a neutral hairline. Two same-sized cards
      beside each other are separable by edge alone, which is what lets a grid of
      them be scanned for pace without reading a single number. */
@@ -121,11 +117,7 @@
 }
 
 .dark .goals-pace-card {
-  background: color-mix(
-    in oklab,
-    var(--pace-card-hue) var(--pace-card-tint-dark),
-    var(--card)
-  );
+  background: color-mix(in oklab, var(--pace-card-hue) var(--pace-card-tint-dark), var(--card));
   border-color: color-mix(in oklab, var(--pace-card-hue) 22%, var(--border));
   /* In dark mode a drop shadow barely reads, so elevation comes from the rim
      and the tint instead. The tint goes *up*, not down: a wash that lightens
@@ -250,7 +242,7 @@
    to know about it.
 */
 .goals-horizon::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   /* A faint dot grid, masked to fade out downward — a scale reference for the
@@ -314,15 +306,15 @@
     decoration — it appears only where a real conflict or a partial completion is
     being reported.
   */
-  --accent-score: #7c3aed;      /* violet   */
-  --accent-habits: #059669;     /* emerald  */
-  --accent-goals: #d97706;      /* amber    */
-  --accent-sleep: #4f46e5;      /* indigo   */
-  --accent-routine: #0284c7;    /* sky      */
-  --accent-focus: #e11d48;      /* rose     */
-  --accent-streak: #ea580c;     /* orange   */
-  --accent-insights: #0891b2;   /* cyan     */
-  --accent-planning: #6366f1;   /* indigo-500 */
+  --accent-score: #7c3aed; /* violet   */
+  --accent-habits: #059669; /* emerald  */
+  --accent-goals: #d97706; /* amber    */
+  --accent-sleep: #4f46e5; /* indigo   */
+  --accent-routine: #0284c7; /* sky      */
+  --accent-focus: #e11d48; /* rose     */
+  --accent-streak: #ea580c; /* orange   */
+  --accent-insights: #0891b2; /* cyan     */
+  --accent-planning: #6366f1; /* indigo-500 */
 
   /*
     A2 — "Gold is reserved. It only appears at a genuine peak moment (100% day,
@@ -360,16 +352,16 @@
     saturated fill behind body text is the legibility problem this palette
     exists to avoid.
   */
-  --block-hue-1: #0284c7;  /* sky     */
-  --block-hue-2: #7c3aed;  /* violet  */
-  --block-hue-3: #be123c;  /* rose    */
-  --block-hue-4: #b45309;  /* amber   */
-  --block-hue-5: #047857;  /* emerald */
-  --block-hue-6: #a21caf;  /* fuchsia */
-  --block-hue-7: #0f766e;  /* teal    */
-  --block-hue-8: #4338ca;  /* indigo  */
+  --block-hue-1: #0284c7; /* sky     */
+  --block-hue-2: #7c3aed; /* violet  */
+  --block-hue-3: #be123c; /* rose    */
+  --block-hue-4: #b45309; /* amber   */
+  --block-hue-5: #047857; /* emerald */
+  --block-hue-6: #a21caf; /* fuchsia */
+  --block-hue-7: #0f766e; /* teal    */
+  --block-hue-8: #4338ca; /* indigo  */
 
-/*
+  /*
     ── `/goals` pace palette ────────────────────────────────────────────────
     "Trajectory": Goals is the one page whose job is "are you on track to land
     where you meant to", so it is coloured by **pace state** and nothing else.
@@ -402,22 +394,22 @@
     sole carrier of a state — each is always paired with `paceLabel()`, so colour
     is never the only signal.
   */
-  --pace-ahead:        #0e7490;  /* cyan-teal. Ahead is correct, not a party. */
-  --pace-ahead-wash:   #0e74901f;
-  --pace-on:           #4338ca;  /* indigo. Calm, but a colour. */
-  --pace-on-wash:      #4338ca1f;
-  --pace-behind:       #b45309;  /* amber, tapered by severity — never a flat alarm. */
-  --pace-behind-wash:  #b453091f;
-  --pace-overdue:      #be123c;  /* rose. Outline only — a fact, not a scream. */
+  --pace-ahead: #0e7490; /* cyan-teal. Ahead is correct, not a party. */
+  --pace-ahead-wash: #0e74901f;
+  --pace-on: #4338ca; /* indigo. Calm, but a colour. */
+  --pace-on-wash: #4338ca1f;
+  --pace-behind: #b45309; /* amber, tapered by severity — never a flat alarm. */
+  --pace-behind-wash: #b453091f;
+  --pace-overdue: #be123c; /* rose. Outline only — a fact, not a scream. */
   --pace-overdue-wash: #be123c14;
-  --pace-done:         #a16207;  /* muted gold. Settled, never glowing. */
-  --pace-done-wash:    #a1620714;
+  --pace-done: #a16207; /* muted gold. Settled, never glowing. */
+  --pace-done-wash: #a1620714;
   /* Inert, and the only genuinely grey value left. */
-  --pace-idle:         #64748b;
-  --pace-idle-wash:    #64748b14;
+  --pace-idle: #64748b;
+  --pace-idle-wash: #64748b14;
   /* The rail the markers ride on. Reads as a groove, not as data. */
-  --pace-rail:         #e2e8f0;
-  --pace-rail-inset:   #cbd5e1;
+  --pace-rail: #e2e8f0;
+  --pace-rail-inset: #cbd5e1;
 
   /* Consistency heat ramp. The one place a day the user actually worked is
      allowed to glow, so these are tuned as a PAIR per theme rather than shared.
@@ -430,13 +422,13 @@
      a copy of the other; both are picked against their own card colour.
 
      Channels are space-separated so the ramps can do `rgb(var(--heat-green) / a)`. */
-  --heat-green:    5 150 105;   /* emerald-600 — survives a white card */
-  --heat-green-hi: 16 185 129;  /* emerald-500 — the top band only */
-  --heat-glow:      4 120 87;   /* emerald-700 — the halo on white */
+  --heat-green: 5 150 105; /* emerald-600 — survives a white card */
+  --heat-green-hi: 16 185 129; /* emerald-500 — the top band only */
+  --heat-glow: 4 120 87; /* emerald-700 — the halo on white */
 
   /* Deep-horizon backdrop wash. Static and ≤4% — material, not an effect. */
-  --horizon-wash:      #0e74900a;
-  --horizon-edge:      #0e749014;
+  --horizon-wash: #0e74900a;
+  --horizon-edge: #0e749014;
 
   /*
     ── Life Balance radar ─────────────────────────────────────────────────
@@ -449,9 +441,9 @@
     invisible, while the identical value over the near-black dark card is far too
     hot. One token, two theme values, no `dark:` branch in the component.
   */
-  --radar-hue:       #818cf8;
-  --radar-glow:      rgb(129 140 248 / 0.4);
-  --radar-ring:      rgb(255 255 255 / 0.08);
+  --radar-hue: #818cf8;
+  --radar-glow: rgb(129 140 248 / 0.4);
+  --radar-ring: rgb(255 255 255 / 0.08);
   /*
     Deep neutral for the card's own surface, `oklch(17% 0.015 265)` as specified.
     `oklch` is deliberate and not incidental: a perceptual lightness of 17% with a
@@ -459,7 +451,7 @@
     which crushes the glass border into invisibility. Pure black is forbidden here
     for exactly that reason.
   */
-  --radar-surface:   oklch(17% 0.015 265);
+  --radar-surface: oklch(17% 0.015 265);
 }
 
 .dark {
@@ -495,7 +487,7 @@
   --accent-focus: #fb7185;
   --accent-streak: #fb923c;
   --accent-insights: #22d3ee;
-  --accent-planning: #818cf8;   /* indigo-400 */
+  --accent-planning: #818cf8; /* indigo-400 */
   --accent-gold: #fbbf24;
 
   /*
@@ -505,62 +497,62 @@
     meaning — a reader who learns "amber means behind" in one theme still knows it
     in the other.
   */
-  --pace-ahead:        #22d3ee;
-  --pace-ahead-wash:   #22d3ee1f;
-  --pace-on:           #818cf8;
-  --pace-on-wash:      #818cf81f;
-  --pace-behind:       #fbbf24;
-  --pace-behind-wash:  #fbbf241f;
-  --pace-overdue:      #fb7185;
+  --pace-ahead: #22d3ee;
+  --pace-ahead-wash: #22d3ee1f;
+  --pace-on: #818cf8;
+  --pace-on-wash: #818cf81f;
+  --pace-behind: #fbbf24;
+  --pace-behind-wash: #fbbf241f;
+  --pace-overdue: #fb7185;
   --pace-overdue-wash: #fb718518;
-  --pace-done:         #fcd34d;
-  --pace-done-wash:    #fcd34d14;
+  --pace-done: #fcd34d;
+  --pace-done-wash: #fcd34d14;
   /* Lighter than the light-mode value: #64748b sits at ~3.9:1 on `--card`
      here, which is under AA for text. `#94a3b8` clears it comfortably. */
-  --pace-idle:         #94a3b8;
-  --pace-idle-wash:    #94a3b81a;
-  --pace-rail:         #1e293b;
-  --pace-rail-inset:   #334155;
+  --pace-idle: #94a3b8;
+  --pace-idle-wash: #94a3b81a;
+  --pace-rail: #1e293b;
+  --pace-rail-inset: #334155;
 
   /* Consistency heat ramp, dark. The same three roles as light mode, moved up
      the ramp rather than the value: on `--card: #101014` the light-mode
      emerald-600 reads as near-black, so the base climbs to emerald-400 and the
      halo has to be the *brighter* green, because a dark glow on a dark card is
      an absence rather than a light. */
-  --heat-green:    52 211 153;  /* emerald-400 */
+  --heat-green: 52 211 153; /* emerald-400 */
   --heat-green-hi: 110 231 183; /* emerald-300 */
-  --heat-glow:     16 185 129;
+  --heat-glow: 16 185 129;
 
   /* State, dark. Lighter than light mode: a mid-tone amber has no edge on a
      near-black ground, and dark mode is not an inversion. */
   --success: #34d399;
   --warning: #fbbf24;
-  --info:    #38bdf8;
+  --info: #38bdf8;
 
   /*
     Block identity, dark. Each hue moves *lighter* rather than lighter-and-paler,
     because these sit behind text on `--card` (`#101014`) where a light-theme
     mid-tone would fall under 4.5:1.
   */
-  --block-hue-1: #38bdf8;  /* sky     */
-  --block-hue-2: #a78bfa;  /* violet  */
-  --block-hue-3: #fb7185;  /* rose    */
-  --block-hue-4: #fbbf24;  /* amber   */
-  --block-hue-5: #34d399;  /* emerald */
-  --block-hue-6: #e879f9;  /* fuchsia */
-  --block-hue-7: #2dd4bf;  /* teal    */
-  --block-hue-8: #818cf8;  /* indigo  */
+  --block-hue-1: #38bdf8; /* sky     */
+  --block-hue-2: #a78bfa; /* violet  */
+  --block-hue-3: #fb7185; /* rose    */
+  --block-hue-4: #fbbf24; /* amber   */
+  --block-hue-5: #34d399; /* emerald */
+  --block-hue-6: #e879f9; /* fuchsia */
+  --block-hue-7: #2dd4bf; /* teal    */
+  --block-hue-8: #818cf8; /* indigo  */
 
   /* Life Balance radar. The hue is unchanged from light mode — `#818cf8` is
      already a light indigo and sits correctly on a near-black ground. Only the
      glow comes down: a 40% glow that reads as a crisp edge on near-black reads
      as haze on white. `--radar-ring` is the specified 8% white in both themes. */
-  --radar-glow:      rgb(129 140 248 / 0.32);
-  --radar-ring:      rgb(255 255 255 / 0.08);
-  --radar-surface:   oklch(22% 0.016 265);
+  --radar-glow: rgb(129 140 248 / 0.32);
+  --radar-ring: rgb(255 255 255 / 0.08);
+  --radar-surface: oklch(22% 0.016 265);
 
-  --horizon-wash:      #22d3ee0a;
-  --horizon-edge:      #22d3ee1a;
+  --horizon-wash: #22d3ee0a;
+  --horizon-edge: #22d3ee1a;
 }
 
 body {
@@ -635,7 +627,7 @@ html {
 }
 
 .tap-target::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 50%;
   left: 50%;
@@ -843,11 +835,11 @@ html {
   }
 }
 
-  .fade-rise-in {
-    animation: fade-rise 0.6s var(--ease-out-expo);
-  }
+.fade-rise-in {
+  animation: fade-rise 0.6s var(--ease-out-expo);
+}
 
-  /*
+/*
     Dashboard entrance (see `src/components/dashboard-ui/index.tsx`).
 
     CSS rather than a framer-motion wrapper on purpose. `Mount` wraps its child
@@ -860,21 +852,20 @@ html {
     the animation delay, so a panel with `animation-delay: 0.3s` starts hidden
     instead of flashing at full opacity and then jumping.
   */
-  @keyframes dash-enter {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+@keyframes dash-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
-
-  .dash-enter {
-    animation: dash-enter 0.45s var(--ease-out-expo) backwards;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
+}
 
+.dash-enter {
+  animation: dash-enter 0.45s var(--ease-out-expo) backwards;
+}
 
 /* Shimmer sweep overlay for the `shine` Skeleton variant. */
 .animate-shimmer {
@@ -1073,8 +1064,7 @@ html {
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
   backdrop-filter: blur(var(--glass-blur)) saturate(140%);
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-  box-shadow:
-    0 8px 24px -12px rgb(0 0 0 / 0.16);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.16);
   transition:
     transform var(--motion-base, 300ms) var(--ease-out-expo),
     backdrop-filter var(--motion-base, 300ms) var(--ease-out-expo),
@@ -1083,7 +1073,7 @@ html {
     box-shadow var(--motion-base, 300ms) var(--ease-out-expo);
 }
 .glass-panel::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1095,7 +1085,7 @@ html {
   pointer-events: none;
 }
 .glass-panel::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1193,7 +1183,11 @@ html {
      when the block is running, so "now" is legible without a badge. */
   --glass-tint: 13%;
   position: relative;
-  background: color-mix(in oklab, var(--glass-hue) var(--glass-tint), color-mix(in srgb, var(--card) 84%, transparent));
+  background: color-mix(
+    in oklab,
+    var(--glass-hue) var(--glass-tint),
+    color-mix(in srgb, var(--card) 84%, transparent)
+  );
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   /* The border is tinted too, not just the fill. A chromatic edge is what makes
@@ -1226,7 +1220,11 @@ html {
 .dark .glass-capsule {
   --glass-hue: var(--primary);
   --glass-tint: 16%;
-  background: color-mix(in oklab, var(--glass-hue) var(--glass-tint), color-mix(in srgb, var(--card) 76%, transparent));
+  background: color-mix(
+    in oklab,
+    var(--glass-hue) var(--glass-tint),
+    color-mix(in srgb, var(--card) 76%, transparent)
+  );
   /* Dark mode inverts the elevation cue: shadows barely read on a dark surface,
      so a raised capsule becomes a slightly *lighter* one with a light top edge,
      exactly as the colour system specifies. `color-scheme` also lets the browser
@@ -1248,7 +1246,7 @@ html {
    than greying it. Above ~6% it reads as a dirty screen.
 */
 .grain-overlay::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -1312,7 +1310,8 @@ html {
   -ms-overflow-style: none;
 }
 .scrollbar-none::-webkit-scrollbar {
-  width: 0;  height: 0;
+  width: 0;
+  height: 0;
 }
 
 /*
@@ -1357,15 +1356,23 @@ html {
   border: none;
 }
 .glass-border::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--foreground) 22%, transparent), transparent 55%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--foreground) 22%, transparent),
+    transparent 55%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   mask-composite: exclude;
   pointer-events: none;
 }
@@ -1373,9 +1380,21 @@ html {
 /* Soft multi-blob mesh behind hero/section backgrounds. */
 .gradient-mesh-bg {
   background-image:
-    radial-gradient(38% 55% at 18% 12%, color-mix(in srgb, var(--primary) 20%, transparent) 0%, transparent 70%),
-    radial-gradient(42% 55% at 84% 16%, color-mix(in srgb, #0ea5e9 16%, transparent) 0%, transparent 70%),
-    radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 14%, transparent) 0%, transparent 72%);
+    radial-gradient(
+      38% 55% at 18% 12%,
+      color-mix(in srgb, var(--primary) 20%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      42% 55% at 84% 16%,
+      color-mix(in srgb, #0ea5e9 16%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 55% at 66% 88%,
+      color-mix(in srgb, #8b5cf6 14%, transparent) 0%,
+      transparent 72%
+    );
 }
 
 /*
@@ -1393,23 +1412,59 @@ html {
 */
 .gradient-mesh-animated {
   background-image:
-    radial-gradient(38% 55% at 18% 12%, color-mix(in srgb, #10b981 14%, transparent) 0%, transparent 70%),
-    radial-gradient(42% 55% at 84% 16%, color-mix(in srgb, #38bdf8 13%, transparent) 0%, transparent 70%),
-    radial-gradient(40% 55% at 66% 88%, color-mix(in srgb, #8b5cf6 16%, transparent) 0%, transparent 72%),
-    radial-gradient(34% 46% at 34% 74%, color-mix(in srgb, #6366f1 10%, transparent) 0%, transparent 70%);
-  background-size: 180% 180%, 160% 160%, 170% 170%, 150% 150%;
-  background-position: 0% 0%, 100% 0%, 50% 100%, 20% 40%;
+    radial-gradient(
+      38% 55% at 18% 12%,
+      color-mix(in srgb, #10b981 14%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      42% 55% at 84% 16%,
+      color-mix(in srgb, #38bdf8 13%, transparent) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 55% at 66% 88%,
+      color-mix(in srgb, #8b5cf6 16%, transparent) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      34% 46% at 34% 74%,
+      color-mix(in srgb, #6366f1 10%, transparent) 0%,
+      transparent 70%
+    );
+  background-size:
+    180% 180%,
+    160% 160%,
+    170% 170%,
+    150% 150%;
+  background-position:
+    0% 0%,
+    100% 0%,
+    50% 100%,
+    20% 40%;
   animation: mesh-drift 48s ease-in-out infinite alternate;
 }
 @keyframes mesh-drift {
   0% {
-    background-position: 0% 0%, 100% 0%, 50% 100%, 20% 40%;
+    background-position:
+      0% 0%,
+      100% 0%,
+      50% 100%,
+      20% 40%;
   }
   50% {
-    background-position: 42% 60%, 58% 38%, 22% 18%, 72% 78%;
+    background-position:
+      42% 60%,
+      58% 38%,
+      22% 18%,
+      72% 78%;
   }
   100% {
-    background-position: 100% 62%, 0% 100%, 82% 32%, 44% 8%;
+    background-position:
+      100% 62%,
+      0% 100%,
+      82% 32%,
+      44% 8%;
   }
 }
 
@@ -1460,18 +1515,26 @@ html {
 
 /* Soft shadow — large blur, low opacity (default resting surface). */
 .shadow-soft {
-  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.14), 0 4px 12px -6px rgb(0 0 0 / 0.08);
+  box-shadow:
+    0 10px 30px -12px rgb(0 0 0 / 0.14),
+    0 4px 12px -6px rgb(0 0 0 / 0.08);
 }
 .dark .shadow-soft {
-  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6), 0 4px 12px -6px rgb(0 0 0 / 0.3);
+  box-shadow:
+    0 10px 30px -12px rgb(0 0 0 / 0.6),
+    0 4px 12px -6px rgb(0 0 0 / 0.3);
 }
 
 /* Shadow long — offset directional depth for hero/floating elements. */
 .shadow-long {
-  box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.3), 0 10px 24px -12px rgb(0 0 0 / 0.18);
+  box-shadow:
+    0 24px 60px -18px rgb(0 0 0 / 0.3),
+    0 10px 24px -12px rgb(0 0 0 / 0.18);
 }
 .dark .shadow-long {
-  box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.68), 0 10px 24px -12px rgb(0 0 0 / 0.38);
+  box-shadow:
+    0 24px 60px -18px rgb(0 0 0 / 0.68),
+    0 10px 24px -12px rgb(0 0 0 / 0.38);
 }
 
 /* Cursor-tracking spotlight. Set --mouse-x/-y via the useSpotlight hook
@@ -1481,7 +1544,7 @@ html {
   overflow: hidden;
 }
 .spotlight-hover::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1498,7 +1561,7 @@ html {
   opacity: 1;
 }
 .spotlight-hover::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1519,7 +1582,7 @@ html {
   pointer-events: none;
 }
 .cursor-glow::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(
@@ -1640,7 +1703,7 @@ html {
   }
 }
 .shimmer-holographic::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1769,7 +1832,7 @@ html {
   border: none;
 }
 .medallion-metal::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1805,11 +1868,16 @@ html {
   overflow: hidden;
 }
 .shimmer::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   transform: translateX(-110%);
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--foreground) 14%, transparent), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--foreground) 14%, transparent),
+    transparent
+  );
   pointer-events: none;
 }
 .shimmer-active::after {
@@ -1827,7 +1895,7 @@ html {
   overflow: hidden;
 }
 .light-sweep::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1849,7 +1917,7 @@ html {
   overflow: hidden;
 }
 .scanline-overlay::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -1900,7 +1968,7 @@ html {
 
 /* Rotating conic border for featured/highlighted cards. */
 @property --angle {
-  syntax: "<angle>";
+  syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
 }
@@ -1908,7 +1976,7 @@ html {
   position: relative;
 }
 .border-gradient-animated::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -1920,9 +1988,13 @@ html {
     #8b5cf6,
     color-mix(in srgb, var(--primary) 80%, transparent)
   );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
   mask-composite: exclude;
   animation: border-spin 6s linear infinite;
   pointer-events: none;
@@ -1951,19 +2023,25 @@ html {
 .toast-success {
   background: color-mix(in srgb, #059669 92%, var(--card));
   border: 1px solid color-mix(in srgb, #34d399 40%, transparent);
-  box-shadow: 0 0 24px -6px color-mix(in srgb, #10b981 55%, transparent), var(--shadow-modal);
+  box-shadow:
+    0 0 24px -6px color-mix(in srgb, #10b981 55%, transparent),
+    var(--shadow-modal);
   color: #ffffff;
 }
 .toast-error {
   background: color-mix(in srgb, #dc2626 92%, var(--card));
   border: 1px solid color-mix(in srgb, #fca5a5 45%, transparent);
-  box-shadow: 0 0 24px -6px color-mix(in srgb, #ef4444 55%, transparent), var(--shadow-modal);
+  box-shadow:
+    0 0 24px -6px color-mix(in srgb, #ef4444 55%, transparent),
+    var(--shadow-modal);
   color: #ffffff;
 }
 .toast-info {
   background: color-mix(in srgb, #0284c7 92%, var(--card));
   border: 1px solid color-mix(in srgb, #7dd3fc 45%, transparent);
-  box-shadow: 0 0 24px -6px color-mix(in srgb, #0ea5e9 55%, transparent), var(--shadow-modal);
+  box-shadow:
+    0 0 24px -6px color-mix(in srgb, #0ea5e9 55%, transparent),
+    var(--shadow-modal);
   color: #ffffff;
 }
 
@@ -2028,7 +2106,8 @@ html {
 */
 
 @keyframes focus-breathe {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow:
       0 0 0 1px color-mix(in srgb, var(--accent-focus) 14%, transparent),
       0 8px 24px -12px rgb(0 0 0 / 0.16);
@@ -2059,7 +2138,9 @@ html {
 
 /* The mode indicator dot inside the timer dial. */
 .focus-mode-dot {
-  transition: background-color 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+  transition:
+    background-color 0.4s var(--ease-out-expo),
+    transform 0.4s var(--ease-out-expo);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2125,8 +2206,7 @@ html {
 .theme-transition *,
 .theme-transition *::before,
 .theme-transition *::after {
-  transition-property: background-color, border-color, color, fill, stroke,
-    box-shadow, opacity;
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
   transition-duration: 300ms;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -2201,21 +2281,37 @@ html {
     outline-offset: 2px;
   }
 
-  /* 2. The timer dial. Named system colours so the arcs cannot collapse together. */
-  [data-focus-dial-track] {
+  /* 2. Analog clock faces and timer progress remain distinct in high contrast. */
+  [data-focus-clock-face] {
+    forced-color-adjust: none;
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+
+  [data-focus-clock-hand='hour'],
+  [data-focus-clock-hand='minute'] {
     forced-color-adjust: none;
     stroke: CanvasText;
   }
 
-  [data-focus-dial-progress] {
+  [data-focus-clock-hand='second'] {
     forced-color-adjust: none;
     stroke: Highlight;
   }
 
-  /* 3. Paused state. Dasharray reads without colour, so opacity is not load-bearing. */
-  [data-focus-dial-progress][data-status='paused'] {
-    stroke: GrayText;
-    stroke-dasharray: 4 6;
+  [data-focus-timer-track] {
+    forced-color-adjust: none;
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+
+  [data-focus-timer-progress] {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+
+  [data-focus-timer-progress][data-status='paused'] {
+    background: GrayText;
   }
 
   /* The week strip's bars carry a border so an empty day is still a visible slot
@@ -2236,7 +2332,7 @@ html {
   }
 
   /* Selection and accent surfaces that would otherwise flatten together. */
-[data-slot='card'],
+  [data-slot='card'],
   .glass-panel {
     border: 1px solid CanvasText;
   }

@@ -94,27 +94,24 @@ export function ReflectionStrip({ resetKey }: { resetKey: number }) {
   return (
     <section
       aria-labelledby="reflection-strip-heading"
-      className="glass-panel w-full rounded-2xl border border-border p-4 shadow-soft"
+      className="border-accent-focus/20 from-accent-focus/5 via-card to-accent-goals/5 w-full rounded-[1.75rem] border bg-gradient-to-br p-5 shadow-sm sm:p-6"
       style={{ ['--glass-hue' as string]: 'var(--accent-focus)' }}
     >
       {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="reflection-strip-heading" className="text-sm font-semibold text-foreground">
+        <h2 id="reflection-strip-heading" className="text-foreground text-base font-semibold">
           How did that go?
         </h2>
         <div className="flex items-center gap-2">
           {/* A thin 20-second countdown bar so the user knows they have time,
               without a visible timer that would create urgency. */}
-          <div
-            className="h-1 w-16 overflow-hidden rounded-full bg-border"
-            aria-hidden="true"
-          >
-            <div className="toast-progress h-full rounded-full bg-accent-focus/60" />
+          <div className="bg-border h-1 w-16 overflow-hidden rounded-full" aria-hidden="true">
+            <div className="toast-progress bg-accent-focus/60 h-full rounded-full" />
           </div>
           <button
             type="button"
             onClick={() => setDismissed(true)}
-            className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-primary rounded-md px-2 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2"
           >
             Skip
           </button>
@@ -134,11 +131,11 @@ export function ReflectionStrip({ resetKey }: { resetKey: number }) {
               aria-label={`${label} (${value} out of 5)`}
               title={label}
               className={cn(
-                'tap-target flex h-11 w-11 flex-col items-center justify-center rounded-xl border text-lg transition-all duration-200 ease-out-expo',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                'tap-target ease-out-expo flex h-12 w-12 flex-col items-center justify-center rounded-2xl border text-lg transition-all duration-200',
+                'focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
                 rating === value
-                  ? 'border-accent-focus/40 bg-accent-focus/10 shadow-sm scale-110'
-                  : 'border-border bg-background/50 text-muted-foreground hover:border-border/80 hover:bg-muted hover:scale-105'
+                  ? 'border-accent-focus/40 bg-accent-focus/10 scale-110 shadow-md'
+                  : 'border-border/70 bg-card/70 text-muted-foreground hover:border-accent-goals/40 hover:bg-accent-goals/10 hover:scale-105',
               )}
             >
               <span aria-hidden="true">{emoji}</span>
@@ -158,7 +155,7 @@ export function ReflectionStrip({ resetKey }: { resetKey: number }) {
             onKeyDown={(event) => {
               if (event.key === 'Enter') void submit();
             }}
-            className="h-10 w-full rounded-full border border-border bg-background/60 px-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="border-border bg-background/60 focus-visible:ring-primary h-10 w-full rounded-full border px-4 text-sm focus-visible:outline-none focus-visible:ring-2"
           />
         </label>
 
@@ -166,7 +163,7 @@ export function ReflectionStrip({ resetKey }: { resetKey: number }) {
           type="button"
           onClick={() => void submit()}
           disabled={rating === null && note.trim() === ''}
-          className="tap-target h-10 rounded-full bg-accent-focus px-4 text-sm font-medium text-white transition-all duration-200 hover:opacity-90 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-focus focus-visible:ring-offset-2 disabled:opacity-40 disabled:pointer-events-none"
+          className="tap-target bg-accent-focus focus-visible:ring-accent-focus h-10 rounded-full px-4 text-sm font-medium text-white transition-all duration-200 hover:scale-105 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40"
         >
           Save
         </button>
@@ -175,7 +172,7 @@ export function ReflectionStrip({ resetKey }: { resetKey: number }) {
       {/* Selected rating label — shows the word for the chosen emoji so the
           user gets confirmation of what they picked. */}
       {rating !== null && (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="text-muted-foreground mt-2 text-xs">
           {RATINGS.find((r) => r.value === rating)?.label} &mdash; saved with your session.
         </p>
       )}

@@ -87,10 +87,7 @@ export function Transport({ className }: { className?: string }) {
   const live = isLive(status);
   const isStopwatch = mode === 'stopwatch';
 
-  const onClick = useCallback(
-    (action: Action) => () => dispatch(action, router),
-    [router]
-  );
+  const onClick = useCallback((action: Action) => () => dispatch(action, router), [router]);
 
   const buttons: ButtonSpec[] = [
     ...(live
@@ -118,7 +115,7 @@ export function Transport({ className }: { className?: string }) {
 
   return (
     <div className={cn('flex flex-col items-center gap-3', className)}>
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2.5">
         {unique.map(({ key, label, icon: Icon, variant }) => {
           // Reset and Stop share the `stop` action; give them distinct keys so the
           // filter above does not drop the second one.
@@ -132,14 +129,17 @@ export function Transport({ className }: { className?: string }) {
               disabled={disabled}
               aria-label={label}
               className={cn(
-                'inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                'inline-flex min-h-11 items-center gap-2 rounded-2xl px-4 text-sm font-semibold transition-all duration-200',
+                'focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
                 'disabled:pointer-events-none disabled:opacity-40',
-                variant === 'primary' && 'bg-primary text-primary-foreground shadow-[0_4px_20px_rgba(var(--primary),0.3)] hover:shadow-[0_4px_28px_rgba(var(--primary),0.5)] hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 ease-out-expo',
+                variant === 'primary' &&
+                  'bg-primary text-primary-foreground min-h-12 rounded-2xl px-6 shadow-[0_10px_28px_color-mix(in_srgb,var(--accent-focus)_30%,transparent)] ring-1 ring-white/25 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_color-mix(in_srgb,var(--accent-focus)_38%,transparent)]',
                 variant === 'danger' &&
-                  'bg-destructive/10 text-destructive hover:bg-destructive/20',
-                variant === 'ghost' && 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                !variant && 'border border-border text-foreground hover:bg-muted'
+                  'border-destructive/15 bg-destructive/10 text-destructive hover:bg-destructive/20 border',
+                variant === 'ghost' &&
+                  'text-muted-foreground hover:bg-accent-insights/10 hover:text-accent-insights',
+                !variant &&
+                  'border-border/70 bg-card/70 text-foreground hover:border-accent-insights/30 hover:bg-accent-insights/5 border shadow-sm hover:-translate-y-0.5 hover:shadow-md',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden="true" />
@@ -150,7 +150,10 @@ export function Transport({ className }: { className?: string }) {
       </div>
 
       {error && (
-        <p role="alert" className="max-w-sm text-center text-xs text-destructive">
+        <p
+          role="alert"
+          className="border-destructive/20 bg-destructive/5 text-destructive max-w-sm rounded-xl border px-4 py-2 text-center text-xs"
+        >
           {error}
         </p>
       )}

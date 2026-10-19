@@ -63,7 +63,7 @@ export function IntentRow({ className }: { className?: string }) {
       }
       adopt({ plannedMs: next * 60_000 });
     },
-    [live, adopt]
+    [live, adopt],
   );
 
   const onCustom = useCallback(
@@ -76,25 +76,25 @@ export function IntentRow({ className }: { className?: string }) {
       }
       setMinutes(parsed);
     },
-    [setMinutes]
+    [setMinutes],
   );
 
   return (
-    <div className={cn('flex flex-col items-center gap-3', className)}>
-      <label className="w-full max-w-sm">
+    <div className={cn('flex flex-col items-stretch gap-4', className)}>
+      <label className="w-full">
         <span className="sr-only">What are you working on?</span>
         <input
           type="text"
           value={intent}
           maxLength={200}
-          placeholder="What are you working on?"
+          placeholder="What would make this session a win?"
           onChange={(event) => adopt({ intent: event.target.value })}
-          className="w-full rounded-full border border-border/50 bg-background/40 px-5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground shadow-inner backdrop-blur-md transition-all duration-300 ease-out-expo focus-visible:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 hover:bg-background/50 hover:shadow-md"
+          className="border-accent-insights/20 bg-background/70 text-foreground placeholder:text-muted-foreground ease-out-expo hover:border-accent-insights/40 focus-visible:border-accent-insights/50 focus-visible:bg-background/90 focus-visible:ring-accent-insights/40 w-full rounded-2xl border px-4 py-3.5 text-sm shadow-inner backdrop-blur-md transition-all duration-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2"
         />
       </label>
 
       {!isStopwatch && (
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
           {durationPresets(minutes).map((preset) => (
             <button
               key={preset}
@@ -103,11 +103,11 @@ export function IntentRow({ className }: { className?: string }) {
               aria-pressed={minutes === preset}
               aria-label={`Set duration to ${preset} minutes`}
               className={cn(
-                'tap-target min-h-9 rounded-full border px-3.5 text-xs font-medium transition-all duration-300 ease-out-expo',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                'tap-target ease-out-expo min-h-10 rounded-xl border px-3.5 text-xs font-semibold transition-all duration-300',
+                'focus-visible:ring-accent-focus focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
                 minutes === preset
-                  ? 'border-transparent bg-accent-focus text-white shadow-[0_2px_10px_rgba(var(--accent-focus),0.3)] scale-105'
-                  : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-105'
+                  ? 'border-accent-focus/20 bg-accent-focus/10 text-accent-focus shadow-sm'
+                  : 'border-border/70 bg-card/70 text-muted-foreground hover:border-accent-goals/40 hover:bg-accent-goals/10 hover:text-foreground hover:-translate-y-0.5',
               )}
             >
               {preset}m
@@ -126,7 +126,7 @@ export function IntentRow({ className }: { className?: string }) {
             onKeyDown={(event) => {
               if (event.key === 'Enter') onCustom((event.target as HTMLInputElement).value);
             }}
-            className="tap-target h-9 w-20 rounded-full border border-border/50 bg-background/40 px-3 text-xs tabular-nums shadow-inner backdrop-blur-sm transition-all focus-visible:bg-background/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="tap-target border-border/70 bg-card/70 hover:border-accent-insights/40 focus-visible:bg-background/90 focus-visible:ring-accent-insights/40 h-10 w-20 rounded-xl border px-3 text-xs tabular-nums shadow-inner backdrop-blur-sm transition-all focus-visible:outline-none focus-visible:ring-2"
           />
         </div>
       )}

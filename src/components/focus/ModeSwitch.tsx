@@ -48,13 +48,13 @@ export const MODE_PANEL_ID = MODE_META.focus.panelId;
  */
 const MODE_ACTIVE_CLASSES: Record<FocusMode, string> = {
   focus:
-    'bg-accent-focus/10 text-accent-focus ring-1 ring-accent-focus/30 shadow-[0_2px_10px_rgba(var(--accent-focus-rgb,225,29,72),0.12)] scale-105',
+    'bg-gradient-to-br from-accent-focus/15 via-accent-streak/10 to-accent-insights/15 text-accent-focus ring-1 ring-accent-focus/30 shadow-[0_5px_18px_color-mix(in_srgb,var(--accent-focus)_22%,transparent)] scale-[1.03]',
   'short-break':
-    'bg-accent-habits/10 text-accent-habits ring-1 ring-accent-habits/30 shadow-[0_2px_8px_rgba(var(--accent-habits-rgb,5,150,105),0.10)] scale-105',
+    'bg-accent-habits/10 text-accent-habits ring-1 ring-accent-habits/30 shadow-[0_5px_18px_color-mix(in_srgb,var(--accent-habits)_20%,transparent)] scale-[1.03]',
   'long-break':
-    'bg-accent-habits/10 text-accent-habits ring-1 ring-accent-habits/30 shadow-[0_2px_8px_rgba(var(--accent-habits-rgb,5,150,105),0.10)] scale-105',
+    'bg-accent-habits/10 text-accent-habits ring-1 ring-accent-habits/30 shadow-[0_5px_18px_color-mix(in_srgb,var(--accent-habits)_20%,transparent)] scale-[1.03]',
   stopwatch:
-    'bg-background text-foreground shadow-[0_2px_10px_rgba(0,0,0,0.08)] ring-1 ring-border/50 scale-105',
+    'bg-accent-insights/10 text-accent-insights shadow-[0_5px_18px_color-mix(in_srgb,var(--accent-insights)_20%,transparent)] ring-1 ring-accent-insights/30 scale-[1.03]',
 };
 
 export function ModeSwitch({ className }: { className?: string }) {
@@ -77,21 +77,22 @@ export function ModeSwitch({ className }: { className?: string }) {
       if (next === mode) return;
       if (isLive(status)) {
         const proceed = window.confirm(
-          `A ${MODE_META[mode].label.toLowerCase()} session is running. End it and switch to ${MODE_META[next].label.toLowerCase()}?`
+          `A ${MODE_META[mode].label.toLowerCase()} session is running. End it and switch to ${MODE_META[next].label.toLowerCase()}?`,
         );
         if (!proceed) return;
         void getFocusRuntime()?.stop('MODE_SWITCHED');
       }
       setMode({ mode: next, error: null });
     },
-    [mode, status, setMode]
+    [mode, status, setMode],
   );
 
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
       const index = FOCUS_MODES.indexOf(mode);
       let next: number | null = null;
-      if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % FOCUS_MODES.length;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowDown')
+        next = (index + 1) % FOCUS_MODES.length;
       else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp')
         next = (index - 1 + FOCUS_MODES.length) % FOCUS_MODES.length;
       else if (event.key === 'Home') next = 0;
@@ -107,7 +108,7 @@ export function ModeSwitch({ className }: { className?: string }) {
       const buttons = listRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
       buttons?.[next]?.focus();
     },
-    [mode, choose]
+    [mode, choose],
   );
 
   return (
@@ -117,8 +118,8 @@ export function ModeSwitch({ className }: { className?: string }) {
       aria-label="Timer mode"
       onKeyDown={onKeyDown}
       className={cn(
-        'inline-flex flex-wrap items-center justify-center gap-1 rounded-full border border-border bg-muted/40 p-1',
-        className
+        'border-border/70 bg-card/75 inline-flex flex-wrap items-center justify-center gap-1 rounded-2xl border p-1.5 shadow-sm backdrop-blur-xl',
+        className,
       )}
     >
       {FOCUS_MODES.map((item) => {
@@ -138,12 +139,12 @@ export function ModeSwitch({ className }: { className?: string }) {
             disabled={busy}
             onClick={() => choose(item)}
             className={cn(
-              'tap-target inline-flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all duration-300 ease-out-expo',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+              'tap-target ease-out-expo inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3.5 text-xs font-semibold transition-all duration-300',
+              'focus-visible:ring-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
               'disabled:opacity-50',
               selected
                 ? MODE_ACTIVE_CLASSES[item]
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
             )}
           >
             <Icon className="h-3.5 w-3.5" aria-hidden="true" />
