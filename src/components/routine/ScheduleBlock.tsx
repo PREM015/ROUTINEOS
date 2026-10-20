@@ -169,7 +169,7 @@ export function BlockCard({
         'glass-capsule group relative flex h-full min-h-[88px] flex-col overflow-hidden rounded-2xl transition-[box-shadow,border-color] duration-300',
         'focus-within:ring-2 focus-within:ring-ring',
         isCurrent
-          ? 'shadow-floating ring-1 ring-primary/25'
+          ? 'shadow-floating'
           : 'hover:border-foreground/20 hover:shadow-soft',
         isPast && !done && 'opacity-70'
       )}
@@ -301,6 +301,25 @@ export function BlockCard({
       )}
 
       {/*
+        A soft, block-coloured edge on the live block.
+
+        This was `ring-1 ring-primary/25` — a flat green outline on a card whose
+        own hue may be any of eight, so the one block that is "now" wore a colour
+        that belonged to none of them and read as a hard border rather than a
+        lift. Tying it to the block's own `accent` at a low alpha makes it a
+        quiet edge; the halo above carries the "look here".
+      */}
+      {isCurrent && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{
+            boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${accent} 28%, transparent)`,
+          }}
+        />
+      )}
+
+      {/*
         The in-progress breathe.
 
         Keyed on `IN_PROGRESS` — the status the user *set* by pressing Start —
@@ -371,20 +390,22 @@ export function BlockCard({
         top of the title rather than behind it.
 
         The padding tightens on compact cards so the 44px completion target still
-        fits inside a 60px block: `py-1.5` leaves 48px of content height, and
+        fits inside a 60px block: `py-2` leaves 44px of content height, and
         `py-2.5` would leave 40 and clip the button's bottom edge.
 
-At the shipped 96px row, `py-2.5` leaves 76px of content for rows
-         totalling 16 + 4 + 18 + 4 + 14 = 56, so every row fits with 20px spare
-         and nothing is clipped. The compact branch only fires in `'time'` mode,
-         where the engine can still produce a floored short block.
+        At the shipped 96px row, `p-4` leaves 64px of content for rows totalling
+        16 + 4 + 18 + 4 + 14 = 56 (the `gap-1` vertical rhythm), so every row fits
+        with 8px spare and nothing is clipped — and the live block's 12px progress
+        strip still clears it because it rides at `mt-auto`. The compact branch
+        only fires in `'time'` mode, where the engine can still produce a floored
+        short block.
       */}
       <div
         className={cn(
           /*
            * A **row**, not a column. The tick target sits to the left of the text
            * and the action buttons to its right, so the three regions are
-           * side by side. The `gap-2` the brief asked for is the *vertical*
+           * side by side. The `gap-1` the brief asked for is the *vertical*
            * rhythm between the timestamp, title and chip rows, and that lives on
            * the inner text column below — putting it here would space the tick
            * button away from the title instead.
@@ -441,7 +462,7 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
           </button>
         )}
 
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
           {/* Row 1 — timestamp + duration. Exactly two items, never wraps. */}
           <div className="flex shrink-0 items-baseline gap-2 overflow-hidden">
             <span className="shrink-0 font-mono text-xs font-semibold tabular-nums text-foreground">
@@ -491,7 +512,19 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
             than letting it push the card past its own height.
           */}
           {showChips && (
-          <div className="flex min-w-0 shrink-0 items-center gap-1 overflow-hidden">
+          /*
+            A short fade on the trailing edge so a chip that does not fit leaves
+            the row as a dissolve rather than as a half-struck pill — the sharp
+            slice at the container edge was what read as a layout bug. The fade
+            only touches the last 10px, so a row whose chips fit is unaffected.
+          */
+          <div
+            className="flex min-w-0 shrink-0 items-center gap-x-1.5 overflow-hidden"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 10px), transparent)',
+              maskImage: 'linear-gradient(to right, #000 calc(100% - 10px), transparent)',
+            }}
+          >
           {/*
             The description, only where there is room for it.
 
@@ -509,22 +542,23 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
           )}
 
 {isCurrent && (
-              /*
-                Tinted with the block's own hue rather than `bg-primary`.
-
-                The foreground here is `var(--card)` rather than
-                `primary-foreground`: the accent can be any of eight hues,
-                including the light sky and yellow entries in dark mode, and a
-                fixed white-on-light-blue pairing would be the one contrast
-                failure in an otherwise readable chip. Mixing toward the card
-                keeps the text dark on every light hue and light on every dark
-                one.
-              */
               <span
-                className="shrink-0 rounded-full px-1.5 py-px text-[9px] font-bold uppercase tracking-wider"
+                className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
                 style={{
-                  background: `color-mix(in oklab, ${accent} 88%, var(--card))`,
-                  color: 'var(--card)',
+                  /*
+                    Tinted rather than solid.
+
+                    The fill was `accent` at 88% with `var(--card)` text, which
+                    only works when the card is dark: in light mode `--card` is
+                    white, so the chip was white-on-bright for the sky, amber and
+                    yellow hues — the one unreadable label on the card. Mixing
+                    *toward* the card for the background and the hue toward the
+                    foreground for the text keeps it legible on every hue in both
+                    themes, and the ring preserves the "this one is live" weight.
+                  */
+                  background: `color-mix(in oklab, ${accent} 22%, var(--card))`,
+                  color: `color-mix(in oklab, ${accent} 62%, var(--foreground))`,
+                  boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${accent} 45%, transparent)`,
                 }}
               >
                 Now
@@ -548,7 +582,7 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
             )}
             {block.category && (
               <span
-                className="shrink-0 truncate rounded-full px-1.5 py-py-px text-[10px] font-medium"
+                className="shrink-0 truncate rounded-full px-2 py-0.5 text-[10px] font-medium"
                 style={
                   /*
                     The category chip wears `accent`, not `category.color`.
@@ -561,7 +595,7 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
                   */
                   block.category.color || accentSource === 'category'
                     ? blockChipStyle(accent)
-                    : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }
+                    : { backgroundColor: 'var(--muted)', color: 'var(--foreground)' }
                 }
               >
                 {block.category.name}
@@ -582,7 +616,7 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
               </span>
             )}
             {block.energyLevel && ENERGY[block.energyLevel] && item.height >= 120 && (
-              <span className="shrink-0 truncate rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground">
+              <span className="shrink-0 truncate rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                 {ENERGY[block.energyLevel]}
               </span>
             )}
@@ -590,7 +624,7 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
           )}
 
           {isCurrent && showChips && (
-            <div className="mt-auto pt-2">
+            <div className="mt-auto pt-1">
               {/* Track and fill both derive from `accent`, so the one live
                   progress bar on the page is the block's own colour. */}
               <div
@@ -610,17 +644,31 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
         </div>
 
         {!readOnly && (
-          <div className="flex shrink-0 flex-col items-center gap-0.5">
-            <button
-              type="button"
-              onClick={() => (done ? onToggleDone(block) : onStart(block))}
-              disabled={busy}
-              aria-label={done ? `Mark ${block.title} not done` : `Start ${block.title}`}
-              title={done ? 'Mark not done' : 'Start'}
-              className="hidden h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-primary active:scale-90 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex"
-            >
-              {done ? <X size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
-            </button>
+          /*
+            Two ~30px buttons, not two 36px ones.
+
+            The column used to be `h-9` + `h-9` + `gap-0.5` = 74px inside a
+            uniform row whose content box is 64px (96px row − `p-4`), and the
+            article's `overflow-hidden` silently sliced the top of the Start icon
+            and the bottom of the overflow menu. 30 + 30 + 2 = 62px clears the
+            box in stack mode, and the standalone Start is dropped entirely on a
+            compact card (where the content box is ~44px) — its one action is
+            still reachable from the overflow menu, so nothing is lost, only a
+            button that could not be drawn.
+          */
+          <div className="flex shrink-0 flex-col items-center justify-center gap-0.5">
+            {!isCompact && (
+              <button
+                type="button"
+                onClick={() => (done ? onToggleDone(block) : onStart(block))}
+                disabled={busy}
+                aria-label={done ? `Mark ${block.title} not done` : `Start ${block.title}`}
+                title={done ? 'Mark not done' : 'Start'}
+                className="hidden h-[30px] w-[30px] items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-primary active:scale-90 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex"
+              >
+                {done ? <X size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
+              </button>
+            )}
 
             <Dropdown
               align="end"
@@ -628,7 +676,7 @@ At the shipped 96px row, `py-2.5` leaves 76px of content for rows
                 <button
                   type="button"
                   aria-label={`More actions for ${block.title}`}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:scale-90 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="flex h-[30px] w-[30px] items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground active:scale-90 motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <MoreHorizontal size={15} aria-hidden="true" />
                 </button>

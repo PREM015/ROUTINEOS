@@ -45,8 +45,15 @@ export function DateSwitcher() {
   const active = selectedDate || today;
   const isToday = active === today;
 
-  /** The last selectable day is today — the future is not reviewable. */
-  const canGoNext = !isToday;
+  /**
+   * The last selectable day is today — the future is not reviewable.
+   *
+   * Expressed as `active < today`, not `!isToday`: `/routine` lets you plan
+   * ahead and now drives this same store, so `active` can legitimately be a
+   * future date. With `!isToday` the arrow would stay enabled on that date and
+   * keep walking further into the future.
+   */
+  const canGoNext = active < today;
 
   const month = useMemo(() => {
     const d = new Date(`${active}T00:00:00Z`);

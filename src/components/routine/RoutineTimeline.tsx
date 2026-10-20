@@ -111,7 +111,7 @@ const CANVAS_PADDING_PX = 32 + 48;
 
 const SCROLL_AREA =
   'group/timeline scrollbar-slim relative h-full min-h-0 flex-1 overflow-x-hidden ' +
-  'overflow-y-auto overscroll-contain pr-3';
+  'overflow-y-auto pr-3';
 
 /**
  * The width of the hour-label gutter every row starts at.
@@ -177,6 +177,7 @@ export function RoutineTimeline({
   const scale = useTimelineScale(scrollRef);
   const layout = buildGanttLayout(blocks, isToday ? nowMinutes : null, scale);
   const currentRef = useRef<HTMLDivElement>(null);
+  const scrollRaf = useRef<number | null>(null);
   const [jumpVisible, setJumpVisible] = useState(false);
   const reduceMotion = useReducedMotion();
   // Stagger once on mount and once per date change, never on every clock tick:
@@ -210,15 +211,35 @@ export function RoutineTimeline({
   }, []);
 
   const onScroll = useCallback(() => {
-    const container = scrollRef.current;
-    const current = currentRef.current;
-    if (!container || !current) return;
-    const containerBox = container.getBoundingClientRect();
-    const currentBox = current.getBoundingClientRect();
-    setJumpVisible(
-      currentBox.top < containerBox.top || currentBox.bottom > containerBox.bottom
-    );
+    /*
+     * Coalesced to one measurement per frame.
+     *
+     * The handler reads two `getBoundingClientRect()`s, and a fast wheel produces
+     * scroll events well above one per frame. Each un-throttled call forced a
+     * synchronous layout mid-scroll, which is what made a long day's scrolling
+     * feel sticky. A single pending frame means at most one measurement per
+     * painted frame no matter how many events fire.
+     */
+    if (scrollRaf.current !== null) return;
+    scrollRaf.current = window.requestAnimationFrame(() => {
+      scrollRaf.current = null;
+      const container = scrollRef.current;
+      const current = currentRef.current;
+      if (!container || !current) return;
+      const containerBox = container.getBoundingClientRect();
+      const currentBox = current.getBoundingClientRect();
+      setJumpVisible(
+        currentBox.top < containerBox.top || currentBox.bottom > containerBox.bottom
+      );
+    });
   }, []);
+
+  useEffect(
+    () => () => {
+      if (scrollRaf.current !== null) window.cancelAnimationFrame(scrollRaf.current);
+    },
+    []
+  );
 
   const jumpToNow = useCallback(() => {
     currentRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -286,6 +307,24 @@ export function RoutineTimeline({
           className="relative px-1 pt-8 pb-12"
           style={{ height: layout.height + CANVAS_PADDING_PX }}
         >
+          {/*
+            The chart itself, in an in-flow wrapper.
+
+            `pt-8` on the outer box never moved the blocks: absolute children are
+            positioned against the *padding box*, whose top edge is the inner edge
+            of the border, so padding above them does nothing. A day whose first
+            block starts at 00:00 — a Sleep block almost always does — therefore
+            drew it flush against the top of the scroll viewport, jammed under the
+            panel edge with its header half out of view. The `pt-8` only ever
+            added dead height below the last block.
+
+            Making the chart a real in-flow child lets the padding apply: the
+            wrapper is pushed down, and every absolute child (hour grid, rail, now
+            line, gaps, blocks) positions against the wrapper, so the whole chart
+            shifts down together and stays aligned. The wrapper's height is the
+            chart height, so the outer explicit height still closes exactly.
+          */}
+          <div className="relative" style={{ height: layout.height }}>
           {/*
             The time axis exists only in `'time'` mode.
 
@@ -405,6 +444,7 @@ onDelete={onDelete}
                 'radial-gradient(420px circle at var(--spot-x) var(--spot-y), color-mix(in oklab, var(--primary) 9%, transparent), transparent 70%)',
             }}
           />
+          </div>
         </div>
       </div>
 

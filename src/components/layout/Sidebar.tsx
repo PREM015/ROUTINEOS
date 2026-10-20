@@ -59,14 +59,14 @@ export function SidebarContent({
 
       <div className="flex-1 space-y-6">
         <div>
-          <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
             Core
           </p>
           <Navigation items={MAIN_LINKS} ariaLabel="Core" onNavigate={onNavigate} pillLayoutId={pillLayoutId} />
         </div>
 
         <div>
-          <p className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+          <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
             Features & Insights
           </p>
           <Navigation items={FEATURE_LINKS} ariaLabel="Features & Insights" onNavigate={onNavigate} pillLayoutId={pillLayoutId} />
@@ -74,27 +74,30 @@ export function SidebarContent({
       </div>
 
       {/* User profile / footer info */}
-      <div className="pt-4 border-t border-border mt-auto">
-        <div className="flex items-center justify-between px-2 py-1">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">
-              {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-foreground truncate">
-                {session?.user?.name || 'User'}
-              </p>
-              <p className="text-[10px] text-muted-foreground truncate">
-                {session?.user?.email || ''}
-              </p>
-            </div>
+      <div className="mt-auto pt-4">
+        <div className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-card/60 p-2">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
+            {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-semibold text-foreground">
+              {session?.user?.name || 'User'}
+            </p>
+            <p
+              className="truncate text-[11px] text-muted-foreground"
+              title={session?.user?.email ?? undefined}
+            >
+              {session?.user?.email || ''}
+            </p>
           </div>
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: '/login' })}
             title="Sign out"
-            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+            aria-label="Sign out"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition-colors hover:border-destructive/20 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -104,7 +107,15 @@ export function SidebarContent({
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 border-r border-border bg-card/70 backdrop-blur-xl shadow-soft p-4 overflow-y-auto z-40">
+    /*
+      Narrower in the `md` band than at `lg`.
+
+      A flat `w-64` spent 256px of a 768–1024px viewport — a third of the screen
+      — on navigation, which is what crowded the schedule on a small laptop or a
+      browser at 125% zoom. `w-56` returns 32px to the content at that width and
+      widens back to `w-64` once there is room for it.
+    */
+    <aside className="hidden md:flex flex-col w-56 lg:w-64 h-screen sticky top-0 border-r border-border bg-card/70 backdrop-blur-xl shadow-soft p-3 lg:p-4 overflow-y-auto z-40">
       <SidebarContent />
     </aside>
   );

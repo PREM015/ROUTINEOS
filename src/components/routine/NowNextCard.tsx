@@ -88,11 +88,18 @@ loggedBlocks: number;
           ariaLabel={`${completionRate}% of tracked blocks complete`}
         />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {/*
+            The label / value / detail scale is the *same* one `HeroStat` uses
+            (`text-[10px]` uppercase label, `font-mono text-2xl` value,
+            `text-[11px]` detail). The card previously used `text-xs` labels and
+            a non-mono value, so the two stat blocks on the same header row read
+            as two unrelated type systems.
+          */}
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {isToday ? 'Tracked today' : 'Tracked'}
           </p>
           <p className="flex items-baseline gap-2">
-            <span className="text-2xl font-semibold tabular-nums text-foreground">
+            <span className="font-mono text-2xl font-semibold tabular-nums text-foreground">
               {trackedDone}
               <span className="text-base font-normal text-muted-foreground">
                 /{trackedTotal}
@@ -102,7 +109,7 @@ loggedBlocks: number;
               {completionRate}%
             </span>
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
             {trackedTotal === 0
               ? 'Nothing marked as tracked'
               : `${trackedTotal - trackedDone} still open`}
@@ -180,7 +187,7 @@ loggedBlocks: number;
       ) : current ? (
         <div className="mt-3 border-t border-border pt-3">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-xs font-medium uppercase tracking-wider text-primary">Now</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-primary">Now</p>
             <p className="font-mono text-xs tabular-nums text-muted-foreground">
               {formatClockMinutes(current.startMinutes, timeFormat24h)} –{' '}
               {formatClockMinutes(current.endMinutes, timeFormat24h)}
@@ -205,7 +212,7 @@ loggedBlocks: number;
         </div>
       ) : next ? (
         <div className="mt-3 border-t border-border pt-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             {nowNext.current === null && blocks.length > 0 ? 'Up next' : 'Now'}
           </p>
           <p

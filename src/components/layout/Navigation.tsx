@@ -89,7 +89,7 @@ export function Navigation({
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors duration-300 ease-out-expo',
+              'relative flex h-9 items-center gap-2.5 rounded-lg px-3 text-sm transition-colors duration-300 ease-out-expo',
               active
                 ? 'font-medium text-primary'
                 : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -106,7 +106,7 @@ export function Navigation({
                   transition={{ duration: 0.35, ease: EASE }}
                 />
               ))}
-            <Icon className="relative z-10 h-5 w-5 shrink-0" aria-hidden="true" />
+            <Icon className="relative z-10 h-[18px] w-[18px] shrink-0" aria-hidden="true" />
             <span className="relative z-10">{item.label}</span>
           </Link>
         );

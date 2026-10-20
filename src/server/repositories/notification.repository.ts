@@ -142,6 +142,33 @@ export class NotificationRepository extends BaseRepository {
   }
 
   /**
+   * Every notification in a period window, newest first.
+   *
+   * The history feed derives its category/tag facets from the whole window
+   * rather than from the page it renders, so this is deliberately **not**
+   * paginated: the facet counts, the total and the rendered page are all sliced
+   * from one in-memory set and therefore cannot disagree.
+   *
+   * `since` is `null` for the "All" window. `cap` bounds the read so a very old
+   * account cannot pull an unbounded number of rows into one request.
+   */
+  async findHistoryWindow(
+    userId: UserId,
+    since: Date | null,
+    cap: number,
+  ): Promise<NotificationLog[]> {
+    try {
+      return await this.prisma.notificationLog.findMany({
+        where: { userId, ...(since ? { scheduledFor: { gte: since } } : {}) },
+        orderBy: { scheduledFor: 'desc' },
+        take: cap,
+      });
+    } catch (error) {
+      this.handleError(error, 'findHistoryWindow');
+    }
+  }
+
+  /**
    * Find a notification by ID with ownership check
    */
   async findById(userId: UserId, notificationId: string): Promise<NotificationLog | null> {

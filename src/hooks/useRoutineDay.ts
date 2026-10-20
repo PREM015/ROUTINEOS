@@ -34,6 +34,18 @@ import type {
  */
 export type RoutineDaySource = 'NATURAL' | 'EXCEPTION';
 
+/**
+ * How long a single day fetch may hang before it is treated as a failure.
+ *
+ * Without this the hook had no upper bound: `fetch` does not time out on its
+ * own, so a stalled connection — a slow/cold database, a request the platform
+ * never completes — left `isLoading` true forever and the page showed its
+ * skeletons indefinitely, which reads as a broken page rather than a slow one.
+ * Fifteen seconds is well past a normal cold start, and the failure state that
+ * follows has a working retry.
+ */
+const ROUTINE_REQUEST_TIMEOUT_MS = 15_000;
+
 export interface RoutineDayLogInput {
   status?: RoutineLogStatus;
   note?: string | null;
@@ -77,11 +89,27 @@ export function useRoutineDay(date: string): RoutineDay {
   const requestRef = useRef<AbortController | null>(null);
 
 const load = useCallback(async () => {
-    if (!date) return;
+    // A falsy date must still clear the loading flag: the early return used to
+    // leave `isLoading` true, which pinned the page in its skeleton state with
+    // nothing ever arriving to replace it.
+    if (!date) {
+      setIsLoading(false);
+      return;
+    }
 
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
+
+    // Distinguishes a timeout abort from a navigate-away abort. Both reject with
+    // `AbortError`, but only the first should surface an error — the second is a
+    // request the caller deliberately replaced, and painting an error for it
+    // would blank the screen on every date change.
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, ROUTINE_REQUEST_TIMEOUT_MS);
 
     setIsLoading(true);
     setError(null);
@@ -99,6 +127,11 @@ const load = useCallback(async () => {
       setData(resolved ?? null);
       setIsLoading(false);
     } catch (caught) {
+      if (timedOut) {
+        setError('This day is taking too long to load. Check your connection and try again.');
+        setIsLoading(false);
+        return;
+      }
       if (controller.signal.aborted) return;
       if (caught instanceof DOMException && caught.name === 'AbortError') return;
 
@@ -114,6 +147,8 @@ const load = useCallback(async () => {
       // failed refetch turns a transient blip into an empty schedule, and the
       // caller renders `error` instead of the empty state.
       setIsLoading(false);
+    } finally {
+      clearTimeout(timeout);
     }
   }, [date]);
 

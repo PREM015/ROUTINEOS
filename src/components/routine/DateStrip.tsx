@@ -112,8 +112,20 @@ export function DateStrip({
               className={cn(
                 'flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 transition-colors',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                /*
+                  The selected day is a **solid** primary chip with
+                  `--primary-foreground` text, not `bg-primary/10 text-primary`.
+
+                  At 10% the tint was a dark wash under bright green text (light
+                  mode) or the reverse (dark mode), and the label read as the
+                  faintest thing in the row rather than the one that is selected.
+                  A filled chip reverses that: it is the highest-contrast cell in
+                  the strip, and `--primary-foreground` is defined against
+                  `--primary` in both themes (`#ffffff` on `#047857`, `#06281c` on
+                  `#10b981`), so one class is legible either way.
+                */
                 active
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-primary text-primary-foreground shadow-soft'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
@@ -121,8 +133,8 @@ export function DateStrip({
               <span
                 className={cn(
                   'font-mono text-sm tabular-nums',
-                  isCurrentDay && !active && 'font-semibold text-foreground',
-                  isCurrentDay && active && 'font-semibold'
+                  active && 'font-semibold',
+                  isCurrentDay && !active && 'font-semibold text-foreground'
                 )}
               >
                 {dayNumber}
@@ -134,7 +146,7 @@ export function DateStrip({
                   aria-hidden="true"
                   className={cn(
                     'h-1 w-1 rounded-full',
-                    active ? 'bg-primary' : 'bg-muted-foreground'
+                    active ? 'bg-primary-foreground' : 'bg-muted-foreground'
                   )}
                 />
               )}

@@ -43,9 +43,26 @@ interface Response {
   timezone: string;
 }
 
+/**
+ * Every field below is optional on purpose.
+ *
+ * `getHistory` guarantees all of them, but this page must not be able to
+ * white-screen on a payload it did not expect - a missing `counts` used to
+ * throw on the very first render (`counts[c]`) and take the whole route down.
+ * Each one degrades to the empty value rather than to `undefined`.
+ */
+type PartialResponse = Partial<Response>;
+
 const PAGE_SIZE = 25;
 
 const CATEGORIES = new Set<string>(CATEGORY_ORDER);
+
+function zeroCounts(): Record<NotificationCategory, number> {
+  return Object.fromEntries(CATEGORY_ORDER.map((c) => [c, 0])) as Record<
+    NotificationCategory,
+    number
+  >;
+}
 
 /**
  * Full notification history at `/notifications`.
@@ -70,13 +87,7 @@ export function NotificationHistory({
   const router = useRouter();
 
   const [rows, setRows] = useState<Row[]>([]);
-  const [counts, setCounts] = useState<Record<NotificationCategory, number>>(
-    () =>
-      Object.fromEntries(CATEGORY_ORDER.map((c) => [c, 0])) as Record<
-        NotificationCategory,
-        number
-      >
-  );
+  const [counts, setCounts] = useState<Record<NotificationCategory, number>>(zeroCounts);
   const [unread, setUnread] = useState(0);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -125,13 +136,14 @@ export function NotificationHistory({
       if (tag) params.set('tag', tag);
 
       try {
-        const data = await apiRequest<Response>(`/api/notifications?${params}`);
-        setRows((prev) => (append ? [...prev, ...data.notifications] : data.notifications));
-        setCounts(data.counts);
+        const data = await apiRequest<PartialResponse>(`/api/notifications?${params}`);
+        const next = data.notifications ?? [];
+        setRows((prev) => (append ? [...prev, ...next] : next));
+        setCounts((prev) => ({ ...prev, ...(data.counts ?? {}) }));
         setTagCounts(data.tagCounts ?? {});
-        setUnread(data.unreadCount);
-        setTotal(data.total);
-        setHasMore(data.hasMore);
+        setUnread(data.unreadCount ?? 0);
+        setTotal(data.total ?? next.length);
+        setHasMore(data.hasMore ?? false);
         setOffset(nextOffset);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not load notifications');

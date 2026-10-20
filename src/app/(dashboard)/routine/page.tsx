@@ -13,6 +13,7 @@ import { useDayOverrides } from '@/hooks/useDayOverrides';
 import { useUserTimezone } from '@/hooks/useUserTimezone';
 import { useSettings } from '@/hooks/useSettings';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useApp } from '@/context/AppContext';
 
 import { Button, Modal } from '@/components/ui';
 import { DayTypeTabs, buildDayTypeTabs, type DayTypeTab } from '@/components/routine/DayTypeTabs';
@@ -86,6 +87,7 @@ export default function RoutinePage() {
   const { timezone } = useUserTimezone();
   const { settings } = useSettings();
   const online = useOnlineStatus();
+  const { selectedDate, setSelectedDate } = useApp();
 const dayTypes = useDayTypes();
   const now = useNowMinutes(timezone);
   const reduceMotion = useReducedMotion();
@@ -343,9 +345,35 @@ const dayTypes = useDayTypes();
   );
 
   const selectDate = useCallback(
-    (nextDate: string) => writeUrl(nextDate, activeTab ? routineTabKey(activeTab) : null),
-    [writeUrl, activeTab]
+    (nextDate: string) => {
+      // Write the store first so the header's DateSwitcher and this page move
+      // together; the URL then follows via the sync effect below.
+      setSelectedDate(nextDate);
+      writeUrl(nextDate, activeTab ? routineTabKey(activeTab) : null);
+    },
+    [writeUrl, activeTab, setSelectedDate]
   );
+
+  /*
+   * The header's `DateSwitcher` and this page's `?date=` are the same date, not
+   * two. Historically they drifted: the header wrote `AppContext.selectedDate`
+   * while the page read its own query param, so switching the date up top left
+   * the schedule showing yesterday. Two effects keep them identical in both
+   * directions — a deep link adopts the URL into the store, and a header change
+   * is reflected back into the URL (which is what makes the back button work
+   * across dates). They converge after one render, so neither loops.
+   */
+  useEffect(() => {
+    const urlDate = searchParams.get('date');
+    if (urlDate && urlDate !== selectedDate) setSelectedDate(urlDate);
+  }, [searchParams, selectedDate, setSelectedDate]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    if ((searchParams.get('date') ?? '') !== selectedDate) {
+      writeUrl(selectedDate, activeTab ? routineTabKey(activeTab) : null);
+    }
+  }, [selectedDate, searchParams, writeUrl, activeTab]);
 
   const selectTab = useCallback(
     (tab: DayTypeTab) => writeUrl(date, routineTabKey(tab)),
@@ -677,6 +705,29 @@ const dayTypes = useDayTypes();
   );
 
   /*
+   * The definition this **date** resolves to, which is not always the active
+   * tab.
+   *
+   * The hero is the page's statement about the day, so it must name the resolved
+   * day type — the active tab is a *preview* the user is browsing, and it says
+   * so itself in the banner below. Passing `activeTab` here was the bug that
+   * produced the contradiction: the hero declared "College Day" while the banner
+   * directly beneath it said "Previewing College Day · not this date's type".
+   * The hero now keeps describing the date and the banner keeps describing the
+   * preview, so the two never restate each other.
+   *
+   * `dayTypes.active` carries the colour and icon the resolved enum collapses
+   * away, and it is already loaded, so no extra fetch.
+   */
+  const resolvedDayTypeDefinition = useMemo(
+    () =>
+      data?.dayTypeId
+        ? (dayTypes.active.find((definition) => definition.id === data.dayTypeId) ?? null)
+        : null,
+    [data, dayTypes.active]
+  );
+
+  /*
    * A3.1 / A3.2. One week fetch, two derivations, both pure.
    *
    * The anchor is the selected `date`, not "today", so a user parked on a date
@@ -777,18 +828,19 @@ const dayTypes = useDayTypes();
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_18rem]">
           <RoutineHero
             isToday={isToday}
-            dayTypeName={activeTab?.label ?? data?.dayTypeName ?? null}
+            dayTypeName={resolvedDayTypeDefinition?.name ?? data?.dayTypeName ?? activeTab?.label ?? null}
             dayTypeSource={data?.dayTypeSource ?? 'NATURAL'}
-            dayTypeColor={activeTab?.color ?? null}
-            dayTypeIcon={activeTab?.icon ?? null}
+            dayTypeColor={resolvedDayTypeDefinition?.color ?? null}
+            dayTypeIcon={resolvedDayTypeDefinition?.icon ?? null}
             trackedDone={trackedDone}
             trackedTotal={trackedTotal}
             minutesRemainingToday={minutesRemainingToday}
             freeMinutes={summary.freeMinutes}
             score={data?.score ?? null}
             onEditDayType={() => {
-              if (dayTypeDefinition) {
-                setDayTypeEditor(dayTypeDefinition);
+              const target = resolvedDayTypeDefinition ?? dayTypeDefinition;
+              if (target) {
+                setDayTypeEditor(target);
                 setDayTypeEditorOpen(true);
               }
             }}
@@ -815,8 +867,8 @@ const dayTypes = useDayTypes();
           unrelated widgets rather than as one header. Same `rounded-2xl border
           border-border bg-card p-4` as its siblings, same gap-4 between them.
         */}
-        <div className="rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-center gap-2">
+        <div className="rounded-2xl border border-border bg-card px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             {dayTypes.isLoading ? (
               <TabsSkeleton count={Math.max(tabs.length, 4)} />
@@ -890,13 +942,40 @@ const dayTypes = useDayTypes();
         )}
         {allDone && !showRestDay && <DayCompleteBanner />}
         {viewingOtherDayType && (
-          <p
+          /*
+            One compact line, not a sentence plus a restated sentence.
+
+            The previous copy ("Showing X. This date resolves to Y.") named the
+            day type twice and then offered a button that named it a third time —
+            and the resolved type is already the subject of the hero directly
+            above. What remains is the only two things this row needs to say:
+            which type is being previewed, and how to adopt it.
+          */
+          <div
             role="status"
-            className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground"
+            className="flex items-center gap-2 rounded-xl border border-border/60 bg-card/60 px-3 py-2 text-sm"
           >
-            <span>
-              Showing <strong className="text-foreground">{activeTab?.label}</strong>. This
-              date resolves to <strong className="text-foreground">{data?.dayTypeName ?? 'its natural type'}</strong>.
+            {/*
+              One line that truncates rather than wraps. "Previewing <a long
+              custom day-type name> · not this date's type" was wrapping into
+              three ragged lines on a phone and shoving the action button down
+              with it; on one line the button stays put and the overflow is a
+              tooltip away.
+            */}
+            <span
+              className="min-w-0 flex-1 truncate font-medium text-foreground"
+              title={`Previewing ${activeTab?.label ?? ''} — not this date's type`}
+            >
+              <span
+                aria-hidden="true"
+                className="mr-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full align-middle"
+                style={{ backgroundColor: activeTab?.color ?? 'var(--primary)' }}
+              />
+              Previewing {activeTab?.label}
+              <span className="font-normal text-muted-foreground">
+                {' '}
+                · not this date&apos;s type
+              </span>
             </span>
             {!readOnly && activeTab?.dayTypeId && (
               <Button
@@ -905,10 +984,10 @@ const dayTypes = useDayTypes();
                 onClick={() => setConfirmDayType(activeTab)}
                 className="shrink-0"
               >
-                Use {activeTab.label} for this day
+                Use for this day
               </Button>
             )}
-          </p>
+          </div>
         )}
 
         {/* Main grid: timeline + rail */}

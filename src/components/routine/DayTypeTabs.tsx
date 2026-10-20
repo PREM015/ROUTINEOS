@@ -112,28 +112,46 @@ export function DayTypeTabs({
   return (
     <div className="relative">
       {/*
-        Edge fades, on a wrapper with `overflow-x-auto` rather than on the body.
-        Scroll containers are the only place a fade can sit without producing a
-        horizontal page scrollbar at 360px.
+        The strip **wraps**; it does not scroll.
 
-        `.scrollbar-none` hides the *track* only — wheel, touch, keyboard and
-        drag all still scroll, and the fade is what tells you there is more to
-        see. The previous `[scrollbar-width:thin]` was Firefox-only, so Chrome
-        and Safari drew a visible scrollbar straight through the header.
+        A horizontal scroller here was the wrong affordance: the tabs are
+        shortcuts to a handful of presets, and parking two of them off the right
+        edge behind a 16px fade (that the user could not see was a fade) made the
+        last presets look cut off rather than "there is more". Wrapping shows
+        every preset at once and needs no scroll indicator at all. A user with a
+        dozen day types pays a little header height, which is a better trade than
+        hiding types they cannot discover.
       */}
       <div
         ref={listRef}
         role="tablist"
         aria-label="Routine day type"
         aria-busy={isLoading}
-        className="scrollbar-none scroll-fade-x -mx-2 flex gap-2 overflow-x-auto px-2 py-1"
+        className="-mx-2 flex flex-wrap gap-1.5 px-2 py-0.5"
       >
         {tabs.map((tab, index) => {
           const key = routineTabKey(tab);
           const selected = key === selectedKey;
 
+          /*
+            One hue per tab: the user's own day-type colour, falling back to the
+            app primary. Everything highlighted below mixes from this single
+            value, so a tab cannot end up with a colour that disagrees with its
+            own pill.
+          */
+          const accent = tab.color ?? 'var(--primary)';
+
           return (
-            <div key={key} className="flex shrink-0 items-center gap-1">
+            <div key={key} className="group/tab flex shrink-0 items-center gap-0.5">
+              {/*
+                A quiet segmented control rather than a bordered card per tab.
+
+                Fourteen bordered pills each carrying an icon, a label and a
+                count was the visual noise the strip was criticised for. An
+                unselected tab is now bare — no fill, no border — and only the
+                selected one is a filled pill. That leaves exactly one
+                high-contrast object in the row, which is the one that matters.
+              */}
               <button
                 type="button"
                 role="tab"
@@ -145,15 +163,22 @@ export function DayTypeTabs({
                 onClick={() => onSelect(tab)}
                 onKeyDown={(event) => onKeyDown(event, index)}
                 className={cn(
-                  'flex items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-sm transition-colors duration-200',
+                  'flex h-9 items-center gap-2 whitespace-nowrap rounded-full px-3 text-sm transition-colors duration-200',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background',
                   selected
-                    ? 'border-primary/40 bg-primary/10 text-primary shadow-soft'
-                    : 'border-border bg-card text-muted-foreground hover:border-foreground/25 hover:text-foreground'
+                    ? 'font-medium'
+                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                 )}
                 style={
-                  selected && tab.color
-                    ? { borderColor: tab.color, color: tab.color }
+                  selected
+                    ? {
+                        // A soft tint plus a hairline rather than a solid fill:
+                        // the accent stays legible as text on the muted surface
+                        // in both themes without a per-theme branch.
+                        backgroundColor: `color-mix(in oklab, ${accent} 14%, transparent)`,
+                        color: accent,
+                        boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${accent} 32%, transparent)`,
+                      }
                     : undefined
                 }
               >
@@ -164,12 +189,24 @@ export function DayTypeTabs({
                 )}
                 <span className="sr-only">{tab.label}, day type tab</span>
                 <span aria-hidden="true">{tab.label}</span>
+                {/*
+                  The count is shown on the selected tab, or on hover. On every
+                  tab at once it was a column of identical grey badges competing
+                  with the labels; here it is present when it is being read.
+                */}
                 {tab.blockCount !== null && (
                   <span
                     className={cn(
                       'rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums',
-                      selected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
+                      selected
+                        ? 'inline-flex'
+                        : 'hidden bg-muted text-muted-foreground group-hover/tab:inline-flex'
                     )}
+                    style={
+                      selected
+                        ? { backgroundColor: 'color-mix(in oklab, currentColor 15%, transparent)' }
+                        : undefined
+                    }
                   >
                     {tab.blockCount}
                   </span>
@@ -183,8 +220,8 @@ export function DayTypeTabs({
 
               {/*
                 Sibling control, never nested inside the tab button. Visible on
-                focus and on hover; always in the keyboard order so it is not a
-                hover-only feature.
+                the selected tab and on hover/focus; always in the keyboard
+                order so it is not a hover-only feature.
               */}
               {tab.dayTypeId && byId.has(tab.dayTypeId) && (
                 <button
@@ -194,7 +231,10 @@ export function DayTypeTabs({
                     if (definition) onEdit(definition);
                   }}
                   aria-label={`Edit the ${tab.label} day type`}
-                  className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={cn(
+                    'rounded-full p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    selected ? 'opacity-70' : 'opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100'
+                  )}
                 >
                   <Pencil size={12} />
                 </button>

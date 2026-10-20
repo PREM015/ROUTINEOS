@@ -164,7 +164,10 @@ export function blockChipStyle(hue: string): {
   color: string;
 } {
   return {
-    backgroundColor: `color-mix(in oklab, ${hue} 18%, var(--card))`,
-    color: `color-mix(in oklab, ${hue} 78%, var(--foreground))`,
+    backgroundColor: `color-mix(in oklab, ${hue} 20%, var(--card))`,
+    // Weighted toward the foreground rather than the hue (60/40, not 78/22) so
+    // the label clears its tint in both themes: at 78% hue the sky, amber and
+    // yellow categories rendered as low-contrast text on their own pale fill.
+    color: `color-mix(in oklab, ${hue} 60%, var(--foreground))`,
   };
 }

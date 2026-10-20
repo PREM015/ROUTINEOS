@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarClock, Pencil, Repeat2 } from 'lucide-react';
+import { CalendarClock, Check, Clock, Pencil, Repeat2, Sparkles } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui';
 import { formatDuration } from '@/lib/routine/duration';
@@ -116,7 +116,17 @@ export function RoutineHero({
               )}
             </span>
 
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+            {/*
+              A pill, not a bare line of text.
+
+              "Natural weekday" / "Set for this date" is the answer to "why does
+              this day look like this?", and as 12px muted text beside the bold
+              day-type title and the underlined "Change this day's type" link it
+              read as the faintest thing in the row. A tinted pill with the same
+              icon gives it a shape and a legible weight without promoting it
+              above the action it sits next to.
+            */}
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
               {dayTypeSource === 'EXCEPTION' ? (
                 <>
                   <Repeat2 size={11} aria-hidden="true" />
@@ -159,11 +169,13 @@ export function RoutineHero({
             restraint rather than by another widget).
           */}
           <HeroStat
+            icon={<Check size={12} aria-hidden="true" />}
             label="Done"
             value={String(trackedDone)}
             detail={trackedTotal === 0 ? 'nothing tracked' : `of ${trackedTotal} tracked`}
           />
           <HeroStat
+            icon={<Clock size={12} aria-hidden="true" />}
             label={isToday ? 'Left today' : 'Left'}
             value={
               minutesRemainingToday === null ? '—' : formatDuration(minutesRemainingToday)
@@ -171,6 +183,7 @@ export function RoutineHero({
             detail={isToday ? 'tracked time' : 'planning view'}
           />
           <HeroStat
+            icon={<Sparkles size={12} aria-hidden="true" />}
             label="Free"
             value={formatDuration(freeMinutes)}
             detail="unscheduled"
@@ -211,11 +224,18 @@ function HeroStat({
   label,
   value,
   detail,
+  icon,
   numeric,
 }: {
   label: string;
   value: string;
   detail: string;
+  /**
+   * A glyph that names the metric. Three bare number columns divided by rules
+   * read as one undifferentiated block; the icon gives each column a subject at
+   * a glance without adding a heading.
+   */
+  icon?: React.ReactNode;
   /** A bare number to count up to; omitted for `—` and pre-formatted values. */
   numeric?: number;
 }) {
@@ -227,7 +247,8 @@ function HeroStat({
 
   return (
     <div className="min-w-0 px-3 first:pl-0 sm:px-5 sm:first:pl-0">
-      <dt className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+      <dt className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        {icon && <span className="text-muted-foreground/70">{icon}</span>}
         {label}
       </dt>
       <dd className="mt-1 font-mono text-2xl font-semibold leading-none tabular-nums text-foreground sm:text-[28px]">

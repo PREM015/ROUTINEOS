@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { DayTypeRollup } from '@/lib/routine/week-pattern';
 
@@ -53,6 +54,27 @@ export function DayTypePerformance({
   const reduce = useReducedMotion();
 
   if (!isLoading && rollups.length === 0) {
+    /*
+     * A rail card that says only "nothing here yet" is a dead end. The empty
+     * state names the one action that fills it, and respects `bare` so a
+     * collapsed card does not grow a second heading.
+     */
+    const empty = (
+      <>
+        <p className="mt-2 text-xs text-muted-foreground">
+          No tracked blocks in this week yet — a few ticks and this fills in.
+        </p>
+        <Link
+          href="/today"
+          className="mt-1.5 inline-flex text-xs font-medium text-primary hover:underline"
+        >
+          Tick blocks on Today →
+        </Link>
+      </>
+    );
+
+    if (bare) return <>{empty}</>;
+
     return (
       <section
         aria-label="By day type"
@@ -61,9 +83,7 @@ export function DayTypePerformance({
         <h2 className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           By day type
         </h2>
-        <p className="mt-2 text-xs text-muted-foreground">
-          No tracked blocks in this week yet — a few ticks and this fills in.
-        </p>
+        {empty}
       </section>
     );
   }

@@ -20,9 +20,20 @@
  * ## Why the snapshot is cached
  *
  * `getSnapshot` must return a **referentially stable** value for as long as the
- * stored value is unchanged, or React re-renders forever. `localStorage.getItem`
- * returns a fresh string every call, so the raw value is cached per key and only
- * re-read when something signals a change.
+ * stored value is unchanged, or React re-renders forever. Two things break that
+ * if they are left uncached:
+ *
+ *   * `localStorage.getItem` returns a fresh string on every call;
+ *   * `JSON.parse` returns a fresh object on every call.
+ *
+ * So the *parsed* value is cached, not just its serialised form. Caching only
+ * the string and re-parsing on read looks equivalent and is not: React calls
+ * `getSnapshot` twice in a row to check stability, and two `JSON.parse` results
+ * are never `===`.
+ *
+ * The cache is also dropped per key when the `storage` event fires, because
+ * that event is how another tab's write becomes visible - the value it wrote is
+ * not the value this tab has cached.
  *
  * ## Same-tab updates
  *
@@ -40,11 +51,27 @@ import {
   type DevicePrefName,
 } from '@/lib/achievements/device-prefs';
 
-const cache = new Map<string, string | null>();
+interface CachedPreference {
+  /** The serialised form, so a write can be compared with what storage holds. */
+  raw: string | null;
+  /** The parsed form. Cached because `getSnapshot` must not re-parse. */
+  value: unknown;
+}
+
+const cache = new Map<string, CachedPreference>();
 const listeners = new Set<() => void>();
 
 function notify(): void {
   for (const listener of listeners) listener();
+}
+
+/** Read a preference through the cache, seeding it on first access. */
+function cachedPreference<T>(key: string, fallback: T): T {
+  const hit = cache.get(key);
+  if (hit) return hit.value as T;
+  const value = readDeviceValue<T>(key, fallback);
+  cache.set(key, { raw: JSON.stringify(value) ?? null, value });
+  return value;
 }
 
 /**
@@ -60,7 +87,7 @@ export function writeDevicePreference<T>(
   value: T
 ): boolean {
   const key = prefKey(userId, name);
-  cache.set(key, JSON.stringify(value));
+  cache.set(key, { raw: JSON.stringify(value) ?? null, value });
   const persisted = writeDeviceValue(key, value);
   notify();
   return persisted;
@@ -77,30 +104,29 @@ export function useDevicePreference<T>(
     (onChange: () => void) => {
       listeners.add(onChange);
       if (typeof window === 'undefined') return () => listeners.delete(onChange);
-      window.addEventListener('storage', onChange);
+
+      const onStorage = (event: StorageEvent) => {
+        // A cleared storage (or a `storage.clear()`, which reports a null key)
+        // invalidates everything; anything else invalidates just its own key.
+        if (event.key === null) cache.clear();
+        else cache.delete(event.key);
+        onChange();
+      };
+      window.addEventListener('storage', onStorage);
+
       return () => {
         listeners.delete(onChange);
-        window.removeEventListener('storage', onChange);
+        window.removeEventListener('storage', onStorage);
       };
     },
     []
   );
 
   const getSnapshot = useCallback((): T => {
+    // No `userId` yet - the server render and the pre-auth client render both
+    // want the fallback, and it must be referentially stable across the two.
     if (!key) return fallback;
-    const cached = cache.get(key);
-    const raw = cached === undefined ? null : cached;
-    if (cached === undefined) {
-      // First read of this key: seed the cache from storage, or from the fallback
-      // when there is nothing stored, so the next call is referentially stable.
-      cache.set(key, JSON.stringify(readDeviceValue<T>(key, fallback)));
-    }
-    try {
-      return JSON.parse(raw ?? 'null') as T;
-    } catch {
-      return fallback;
-    }
-    // `raw` is captured above purely to keep the cache read and the parse adjacent.
+    return cachedPreference<T>(key, fallback);
   }, [key, fallback]);
 
   const getServerSnapshot = useCallback((): T => fallback, [fallback]);

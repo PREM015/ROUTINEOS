@@ -1,4 +1,5 @@
 import { NotificationType, NotificationStatus, type NotificationLog } from '@/generated/prisma';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
 import {
   NotificationRepository,
@@ -6,6 +7,16 @@ import {
 } from '@/server/repositories/notification.repository';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { ACHIEVEMENTS_PATH, achievementDeepLink } from '@/lib/achievements/links';
+import { DEFAULT_TZ } from '@/lib/dates';
+import {
+  CATEGORY_ORDER,
+  PERIOD_DAYS,
+  categoryFor,
+  normaliseTag,
+  tagsFor,
+  type NotificationCategory,
+  type PeriodFilter,
+} from '@/lib/notifications/categories';
 import { pushService } from '@/server/services/push.service';
 import { toUserIdOptional, toUserId, type UserId  } from '@/types/ids';
 
@@ -126,6 +137,101 @@ function parseActionData(raw: string | null | undefined): {
   };
 }
 
+// ===========================================================================
+// History feed
+// ===========================================================================
+
+/**
+ * How many rows of a period window may be read at once.
+ *
+ * The page is 25 rows and the feed is a personal history, so this is three
+ * orders of magnitude more than the UI can show. It is a backstop rather than a
+ * target: past the cap the view degrades to "the most recent `cap` in this
+ * period" instead of pulling an unbounded result into one request.
+ */
+const HISTORY_WINDOW_CAP = 2_000;
+
+/** One row of the history feed, as the page renders it. */
+export interface HistoryRow {
+  id: string;
+  type: NotificationType;
+  category: NotificationCategory;
+  title: string;
+  body: string | null;
+  actionUrl: string | null;
+  scheduledFor: Date;
+  sentAt: Date | null;
+  readAt: Date | null;
+  status: NotificationStatus;
+  errorMessage: string | null;
+  /** The category tag, the user's own block label, then the entity. */
+  tags: string[];
+  /** The user's own label, so the page can highlight it apart from the rest. */
+  userCategory: string | null;
+}
+
+/** The full payload of `GET /api/notifications`. */
+export interface NotificationHistoryResult {
+  notifications: HistoryRow[];
+  unreadCount: number;
+  total: number;
+  hasMore: boolean;
+  /** Every category in {@link CATEGORY_ORDER}, zeroed, then counted. */
+  counts: Record<NotificationCategory, number>;
+  /** Every tag in the window, lowercased, with counts. */
+  tagCounts: Record<string, number>;
+  timezone: string;
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(Math.max(Math.trunc(value), min), max);
+}
+
+function emptyCounts(): Record<NotificationCategory, number> {
+  const counts = {} as Record<NotificationCategory, number>;
+  for (const category of CATEGORY_ORDER) counts[category] = 0;
+  return counts;
+}
+
+/**
+ * The user's own label for a routine block.
+ *
+ * `RoutineBlock.categoryId -> Category.name` is captured into the notification's
+ * `actionData.category` at schedule time, so this is a JSON read rather than a
+ * join. A row whose column is absent, malformed or not a non-empty string has
+ * no label - it must never throw, because one odd payload would take the whole
+ * history feed down with it.
+ */
+function userCategoryOf(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const value = (parsed as Record<string, unknown>).category;
+    return typeof value === 'string' && value.trim() !== '' ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The first instant of the period window, in the user's timezone, or `null` for
+ * the whole history.
+ *
+ * "Day" is the user's *current* calendar day, not the last 24 hours, and the
+ * longer periods step back whole calendar days from that same midnight. Without
+ * this, someone in Asia/Kolkata asking for "Day" at 03:00 IST would see
+ * yesterday's notifications.
+ */
+function historyWindowStart(period: PeriodFilter, timezone: string): Date | null {
+  if (period === 'all') return null;
+  const today = formatInTimeZone(new Date(), timezone, 'yyyy-MM-dd');
+  const start = fromZonedTime(`${today}T00:00:00`, timezone);
+  start.setUTCDate(start.getUTCDate() - (PERIOD_DAYS[period] - 1));
+  return start;
+}
+
 export class NotificationService {
   private notificationRepository: NotificationRepository;
   private userRepository: UserRepository;
@@ -175,57 +281,129 @@ export class NotificationService {
   }
 
   /**
+   * The timezone the history window is computed in.
+   *
+   * `UserSettings.timezone` is what Settings edits, and `UserService.updateSettings`
+   * mirrors it onto `User.timezone` in the same statement, so either is
+   * authoritative in practice. Both are read here because a missing settings row
+   * must not silently move a user's "Day" window back to UTC.
+   */
+  private async resolveTimezone(userId: UserId): Promise<string> {
+    const [settings, user] = await Promise.all([
+      this.userRepository.getSettings(userId),
+      this.userRepository.findById(userId),
+    ]);
+    return settings?.timezone || user?.timezone || DEFAULT_TZ;
+  }
+
+  /**
    * The notification history feed behind `GET /api/notifications`.
    *
-   * Supports the two filters the data can actually answer - `period`, applied to
-   * `createdAt`, and `limit`/`offset` paging.
+   * The route's contract is a single object: a page of rows **plus** the facet
+   * data the `/notifications` page renders beside them - `counts` per category,
+   * `tagCounts` per tag, `unreadCount`, `total`, `hasMore` and the timezone the
+   * window was computed in. Every one of those is derived from the same window,
+   * so the chips above the list can never claim a count the list does not
+   * honour.
    *
-   * `category` and `tag` are accepted by the route's query schema but are
-   * deliberately not applied here: `NotificationLog` has no `category` column and
-   * no tag relation, and its `type` is a different taxonomy (`ROUTINE_REMINDER`,
-   * `HABIT_REMINDER`, ...) from the route's `category` vocabulary (`routine`,
-   * `habits`, ...). There is no honest mapping, and silently returning unfiltered
-   * rows would render a "Routine" filter over everything. Giving them real
-   * meaning needs a column, which is a schema change rather than a service one.
+   * ## Why this is not one query per filter
+   *
+   * `NotificationLog` has no `category` column and no tag relation; its `type`
+   * is a different taxonomy (`ROUTINE_REMINDER`, `HABIT_REMINDER`, ...) from the
+   * page's vocabulary (`routine`, `habits`, ...). The mapping is not missing
+   * though - `categoryFor` / `tagsFor` in `lib/notifications/categories` are
+   * exhaustive and are the very functions the page uses to render a row. Both
+   * depend on per-row values (`type`, `relatedEntityId`, and the user's own
+   * block label inside the `actionData` JSON), so the window is read once,
+   * enriched in memory, and then filtered, counted and paged.
+   *
+   * That is a fixed three or four queries however many filters are active, and
+   * it is what makes the category chips, the tag chips, the total and the list
+   * agree with each other by construction.
+   *
+   * The period window is applied to `scheduledFor` **in the user's timezone**,
+   * so "Day" means their today rather than UTC's.
    */
   async getHistory(
     userId: UserId,
     query: {
       limit?: number;
       offset?: number;
-      category?: string;
+      /** One of {@link CATEGORY_ORDER}; the route validates it before we see it. */
+      category?: NotificationCategory;
       tag?: string;
-      period?: 'all' | 'day' | 'week' | 'month' | 'year';
+      period?: PeriodFilter;
     } = {},
-  ): Promise<NotificationLog[]> {
-    const limit = query.limit ?? 20;
-    const offset = query.offset ?? 0;
-
+  ): Promise<NotificationHistoryResult> {
+    const limit = clampInt(query.limit ?? 20, 1, 100);
+    const offset = clampInt(query.offset ?? 0, 0, Number.MAX_SAFE_INTEGER);
     const period = query.period ?? 'all';
-    if (period === 'all') {
-      return this.notificationRepository.findAll(userId, { limit, offset });
+    const category = query.category;
+    const tag = query.tag?.trim() || undefined;
+
+    const timezone = await this.resolveTimezone(userId);
+    const window = await this.notificationRepository.findHistoryWindow(
+      userId,
+      historyWindowStart(period, timezone),
+      HISTORY_WINDOW_CAP,
+    );
+
+    // One pass to enrich, one to filter and count. Kept as two loops rather than
+    // one so the facet semantics stay readable: a category chip counts rows the
+    // *tag* filter would leave, and a tag chip counts rows the *category* filter
+    // would leave, which is what makes the two filters composable.
+    const enriched: HistoryRow[] = window.map((row) => {
+      const userCategory = userCategoryOf(row.actionData);
+      return {
+        id: row.id,
+        type: row.type,
+        category: categoryFor(row.type),
+        title: row.title,
+        body: row.body,
+        actionUrl: row.actionUrl,
+        scheduledFor: row.scheduledFor,
+        sentAt: row.sentAt,
+        readAt: row.readAt,
+        status: row.status,
+        errorMessage: row.errorMessage,
+        tags: tagsFor(row.type, row.relatedEntityId, userCategory).all,
+        userCategory,
+      };
+    });
+
+    const counts = emptyCounts();
+    const tagCounts: Record<string, number> = {};
+    const selected: HistoryRow[] = [];
+    const activeTag = tag ? normaliseTag(tag) : null;
+
+    for (const row of enriched) {
+      const matchesCategory = category === undefined || row.category === category;
+      const matchesTag =
+        activeTag === null || row.tags.some((t) => normaliseTag(t) === activeTag);
+
+      if (matchesTag) counts[row.category] = (counts[row.category] ?? 0) + 1;
+      if (matchesCategory) {
+        for (const t of row.tags) {
+          const key = normaliseTag(t);
+          tagCounts[key] = (tagCounts[key] ?? 0) + 1;
+        }
+      }
+      if (matchesCategory && matchesTag) selected.push(row);
     }
 
-    // Anchored on the host clock here because the row filter is a storage concern
-    // (which rows fall in the window), not an attribution rule the user's timezone
-    // would change the meaning of.
-    const since = new Date();
-    switch (period) {
-      case 'day':
-        since.setUTCDate(since.getUTCDate() - 1);
-        break;
-      case 'week':
-        since.setUTCDate(since.getUTCDate() - 7);
-        break;
-      case 'month':
-        since.setUTCMonth(since.getUTCMonth() - 1);
-        break;
-      case 'year':
-        since.setUTCFullYear(since.getUTCFullYear() - 1);
-        break;
-    }
+    const page = selected.slice(offset, offset + limit);
 
-    return this.notificationRepository.findAllSince(userId, since, { limit, offset });
+    return {
+      notifications: page,
+      // Mirrors how the page decides what is unread (`!readAt`), so the badge in
+      // the header can never disagree with the dots in the list below it.
+      unreadCount: selected.reduce((n, row) => (row.readAt ? n : n + 1), 0),
+      total: selected.length,
+      hasMore: offset + limit < selected.length,
+      counts,
+      tagCounts,
+      timezone,
+    };
   }
 
   /**
