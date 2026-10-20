@@ -4,23 +4,16 @@ import { z } from 'zod';
 import { notificationService } from '@/server/services/notification.service';
 import { handleError } from '@/lib/errors/error-handler';
 import { toUserId } from '@/types/ids';
+import { NOTIFICATION_ACTIONS } from '@/lib/notifications/actions';
 
 const bodySchema = z.object({
   notificationId: z.string().min(1),
-  action: z.enum([
-    'DONE', 
-    'SNOOZE', 
-    'SKIP',
-    'STARTED_ON_TIME',
-    'STARTED_LATE',
-    'STARTED_EARLY',
-    'BUSY_WITH_OTHER',
-    'SKIP_BLOCK',
-    'FINISHED_ON_TIME',
-    'FINISHED_LATE',
-    'FINISHED_EARLY',
-    'NOT_COMPLETED'
-  ]),
+  /**
+   * Read from the shared list rather than written out here: the scheduler that
+   * offers these buttons imports the same one, so a button the app can render is
+   * by construction a button this route accepts.
+   */
+  action: z.enum(NOTIFICATION_ACTIONS),
   actualStartTime: z.string().optional(),
   actualEndTime: z.string().optional(),
   replacementActivity: z.string().optional(),

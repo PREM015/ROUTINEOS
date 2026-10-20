@@ -1,9 +1,14 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
-import { apiRequest } from '@/lib/api-client';
+import {
+  getServerUnreadSnapshot,
+  getUnreadSnapshot,
+  refreshUnread,
+  subscribeUnread,
+} from '@/lib/notifications/unread-store';
 
 /**
  * Navbar notification bell.
@@ -18,33 +23,23 @@ import { apiRequest } from '@/lib/api-client';
  * filters a list on every page load. It only reads the unread count, which the
  * history page owns in full.
  *
- * The 60-second poll is kept so a reminder delivered by the scheduler shows a
- * fresh badge without a manual refresh.
+ * The count itself comes from the shared `unread-store`, not local state: the
+ * history page writes to that store when it marks everything read, so the badge
+ * clears the moment the user opens `/notifications` instead of waiting for the
+ * next poll. The 60-second poll is still kept so a reminder delivered by the
+ * scheduler shows a fresh badge without a manual refresh.
  */
 export function NotificationBell() {
-  const [unread, setUnread] = useState(0);
+  const unread = useSyncExternalStore(
+    subscribeUnread,
+    getUnreadSnapshot,
+    getServerUnreadSnapshot
+  );
 
   useEffect(() => {
-    let cancelled = false;
-
-    const read = async () => {
-      try {
-        const data = await apiRequest<{ unreadCount: number }>(
-          '/api/notifications?limit=1'
-        );
-        if (!cancelled) setUnread(data.unreadCount);
-      } catch {
-        // A failed unread count must never break the header, and a stale badge is
-        // far better than an error state here.
-      }
-    };
-
-    void read();
-    const timer = setInterval(() => void read(), 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
+    void refreshUnread();
+    const timer = setInterval(() => void refreshUnread(), 60_000);
+    return () => clearInterval(timer);
   }, []);
 
   return (

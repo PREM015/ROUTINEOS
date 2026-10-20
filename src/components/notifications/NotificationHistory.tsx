@@ -1,9 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Bell, CheckCheck, Loader2, Settings } from 'lucide-react';
+import {
+  Archive,
+  ArrowLeft,
+  ArrowUpRight,
+  Bell,
+  CheckCheck,
+  Loader2,
+  Settings,
+  X,
+} from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import {
   CATEGORY_META,
@@ -13,6 +22,14 @@ import {
   type NotificationCategory,
   type PeriodFilter,
 } from '@/lib/notifications/categories';
+import {
+  bumpUnread,
+  getServerUnreadSnapshot,
+  getUnreadSnapshot,
+  refreshUnread,
+  setUnread as setSharedUnread,
+  subscribeUnread,
+} from '@/lib/notifications/unread-store';
 import { cn } from '@/lib/utils';
 
 interface Row {
@@ -30,6 +47,10 @@ interface Row {
   /** Category tag + the user's own block label (DSA, Personal, …) + entity. */
   tags: string[];
   userCategory: string | null;
+  /** The scheduler's own buttons, so a question can be answered right here. */
+  actions: Array<{ action: string; title: string }>;
+  /** Set once answered; the buttons then stop being offered. */
+  respondedAt: string | null;
 }
 
 interface Response {
@@ -64,6 +85,83 @@ function zeroCounts(): Record<NotificationCategory, number> {
   >;
 }
 
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/**
+ * "4h ago" / "in 2d", falling back to a clock time past a week.
+ *
+ * `18/10/2026, 20:00:00` is the machine's answer to "when", not a reader's -
+ * it forces a date-parse on every row and tells a scanning eye nothing. The
+ * exact timestamp stays on the `title` and in `dateTime`, so it is still
+ * reachable and still copyable.
+ */
+function relativeTime(iso: string): string {
+  const then = new Date(iso);
+  const delta = then.getTime() - Date.now();
+  const past = delta < 0;
+  const abs = Math.abs(delta);
+
+  if (abs < MINUTE) return 'just now';
+  if (abs < HOUR) {
+    const n = Math.round(abs / MINUTE);
+    return past ? `${n}m ago` : `in ${n}m`;
+  }
+  if (abs < DAY) {
+    const n = Math.round(abs / HOUR);
+    return past ? `${n}h ago` : `in ${n}h`;
+  }
+  if (abs < 7 * DAY) {
+    const n = Math.round(abs / DAY);
+    return past ? `${n}d ago` : `in ${n}d`;
+  }
+  return then.toLocaleString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * Heading for the day a notification falls on: "Today", "Yesterday", otherwise
+ * the weekday and date. Everything older already collapsed into the relative
+ * time on the row, so the heading only has to separate the pile it sits in.
+ */
+function dayLabel(date: Date): string {
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(new Date()) - startOf(date)) / DAY);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  return date.toLocaleDateString(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+  });
+}
+
+/**
+ * Contiguous runs of rows sharing a calendar day.
+ *
+ * The rows arrive newest-first and already sorted, so grouping is a linear pass
+ * rather than a sort - and a day heading inside one list is what stops 140 rows
+ * reading as one undifferentiated wall.
+ */
+function groupByDay(rows: Row[]): Array<{ key: string; label: string; rows: Row[] }> {
+  const groups: Array<{ key: string; label: string; rows: Row[] }> = [];
+  for (const row of rows) {
+    const date = new Date(row.scheduledFor);
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.rows.push(row);
+    else groups.push({ key, label: dayLabel(date), rows: [row] });
+  }
+  return groups;
+}
+
 /**
  * Full notification history at `/notifications`.
  *
@@ -78,6 +176,11 @@ function zeroCounts(): Record<NotificationCategory, number> {
  *     own timezone;
  *   * category filters with live counts;
  *   * server-side paging, so the DOM stays bounded regardless of history size.
+ *
+ * It also owns the badge. Opening the page is itself an acknowledgement of
+ * everything in it, so the first load marks the lot read and publishes 0 to the
+ * shared unread store — the bell in the header clears in the same tick rather
+ * than on its next 60-second poll.
  */
 export function NotificationHistory({
   searchParams,
@@ -88,7 +191,12 @@ export function NotificationHistory({
 
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Record<NotificationCategory, number>>(zeroCounts);
-  const [unread, setUnread] = useState(0);
+  /**
+   * Unread count for **this view** — the number that belongs beside the filter
+   * chips the user is looking at. It is separate from the account-wide count on
+   * purpose: filtering to "Sleep" must not shrink the badge to Sleep's share.
+   */
+  const [viewUnread, setViewUnread] = useState(0);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [category, setCategory] = useState<NotificationCategory | undefined>(undefined);
@@ -100,6 +208,12 @@ export function NotificationHistory({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  /** The id of the row whose action button is in flight, for a spinner + disable. */
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  /** "Clear all" is destructive and has no undo, so it takes two clicks. */
+  const [clearArmed, setClearArmed] = useState(false);
+  /** Opening the page clears the badge exactly once per visit. */
+  const autoCleared = useRef(false);
 
   // Read the initial filters from the URL once, so the bell can deep-link into a
   // pre-filtered view.
@@ -121,6 +235,45 @@ export function NotificationHistory({
     };
   }, [searchParams]);
 
+  /**
+   * The account-wide unread count, owned by the shared store.
+   *
+   * Read rather than mirrored: the bell in the layout writes to the same store,
+   * so a reminder delivered while this page is open raises the badge *and* the
+   * line above the list in one render. Two `useState`s could only ever agree by
+   * coincidence.
+   */
+  const unread = useSyncExternalStore(
+    subscribeUnread,
+    getUnreadSnapshot,
+    getServerUnreadSnapshot
+  );
+
+  /**
+   * Mark everything read — locally for instant feedback, on the server for the
+   * next reader, and in the shared store so the bell clears with it.
+   *
+   * Deliberately no `load()` at the end. The list is already correct: every row
+   * just gained a `readAt`, and refetching would only throw away the pages the
+   * user had pulled in with "Load more".
+   */
+  const clearUnread = useCallback(async () => {
+    const now = new Date().toISOString();
+    setRows((prev) => prev.map((r) => (r.readAt ? r : { ...r, readAt: now })));
+    setViewUnread(0);
+    setSharedUnread(0);
+    try {
+      await apiRequest('/api/notifications', {
+        method: 'POST',
+        body: { action: 'markAllRead' },
+      });
+    } catch (err) {
+      // The dots return on the next load, which is the honest outcome: the
+      // server did not agree, so the page should not keep claiming otherwise.
+      setError(err instanceof Error ? err.message : 'Could not mark notifications as read');
+    }
+  }, []);
+
   const load = useCallback(
     async (nextOffset: number, append: boolean) => {
       if (append) setLoadingMore(true);
@@ -135,16 +288,36 @@ export function NotificationHistory({
       if (category) params.set('category', category);
       if (tag) params.set('tag', tag);
 
+      const unfiltered = category === undefined && tag === undefined && period === 'all';
+
       try {
         const data = await apiRequest<PartialResponse>(`/api/notifications?${params}`);
         const next = data.notifications ?? [];
+        const serverUnread = data.unreadCount ?? 0;
         setRows((prev) => (append ? [...prev, ...next] : next));
         setCounts((prev) => ({ ...prev, ...(data.counts ?? {}) }));
         setTagCounts(data.tagCounts ?? {});
-        setUnread(data.unreadCount ?? 0);
         setTotal(data.total ?? next.length);
         setHasMore(data.hasMore ?? false);
         setOffset(nextOffset);
+        setViewUnread(serverUnread);
+        // An unfiltered read already carries the account-wide number, so it can
+        // publish it directly. A filtered one only knows its own slice and must
+        // leave the badge alone rather than shrink it to Sleep's share.
+        if (unfiltered) setSharedUnread(serverUnread);
+
+        // Opening the page *is* an acknowledgement of everything in it, so the
+        // badge is cleared once per visit rather than left for the user to press
+        // a button they should not have to know exists.
+        //
+        // This waits for the first load to settle (hence the placement after the
+        // `await`) and takes the global count, not this view's: arriving on
+        // `?category=sleep` must still clear a badge that says 23.
+        if (!autoCleared.current) {
+          autoCleared.current = true;
+          const globalUnread = unfiltered ? serverUnread : await refreshUnread();
+          if (globalUnread > 0) void clearUnread();
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Could not load notifications');
       } finally {
@@ -152,7 +325,7 @@ export function NotificationHistory({
         setLoadingMore(false);
       }
     },
-    [category, tag, period]
+    [category, tag, period, clearUnread]
   );
 
   useEffect(() => {
@@ -205,18 +378,147 @@ export function NotificationHistory({
     });
   }, [tagCounts]);
 
-  const markAllRead = useCallback(async () => {
-    setUnread(0);
-    setRows((prev) => prev.map((r) => ({ ...r, readAt: r.readAt ?? new Date().toISOString() })));
+  /**
+   * Take a row out of the local view after the server accepted a dismiss.
+   *
+   * `total` and the category chip counts move with it, otherwise the chips keep
+   * claiming a row that is no longer in the list.
+   */
+  const dropRow = useCallback(
+    (id: string, row: Row) => {
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
+      setCounts((prev) => ({
+        ...prev,
+        [row.category]: Math.max(0, (prev[row.category] ?? 0) - 1),
+      }));
+      const wasUnread = !row.readAt;
+      if (wasUnread) {
+        setViewUnread((prev) => Math.max(0, prev - 1));
+        bumpUnread(-1);
+      }
+    },
+    []
+  );
+
+  /** Per-row "take this away". */
+  const dismissRow = useCallback(
+    async (row: Row) => {
+      setPendingId(row.id);
+      setError(null);
+      try {
+        await apiRequest(`/api/notifications/${row.id}`, {
+          method: 'PATCH',
+          body: { action: 'dismiss' },
+        });
+        dropRow(row.id, row);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not dismiss that notification');
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [dropRow]
+  );
+
+  /**
+   * Bulk "take all of it away".
+   *
+   * The list is emptied locally rather than reloaded: `dismissAll` is one
+   * statement server-side, so there is nothing to re-read and nothing to page
+   * through — the view is simply over.
+   */
+  const dismissAllRows = useCallback(async () => {
+    setError(null);
     try {
       await apiRequest('/api/notifications', {
         method: 'POST',
-        body: { action: 'markAllRead' },
+        body: { action: 'dismissAll' },
       });
+      setRows([]);
+      setCounts(zeroCounts());
+      setTagCounts({});
+      setTotal(0);
+      setHasMore(false);
+      setOffset(0);
+      setViewUnread(0);
+      setSharedUnread(0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not clear notifications');
     } finally {
-      void load(offset, false);
+      setClearArmed(false);
     }
-  }, [load, offset]);
+  }, []);
+
+  /**
+   * Answer a button the scheduler attached to a row.
+   *
+   * Three shapes come back, and each one changes the list differently:
+   *   * a snooze (`SNOOZE` / `NOT_YET` / `EXTEND`) moves the row in time, so only
+   *     `scheduledFor` changes and it stays where it is;
+   *   * `SKIP` dismisses it, so it leaves;
+   *   * everything else answers the question, so the row gains a `readAt` and a
+   *     `respondedAt` and stops offering buttons.
+   */
+  const runAction = useCallback(
+    async (row: Row, action: string) => {
+      setPendingId(row.id);
+      setError(null);
+      const now = new Date().toISOString();
+      try {
+        const result = await apiRequest<{
+          snoozed?: boolean;
+          scheduledFor?: string;
+          readAt?: string | null;
+          checkInRespondedAt?: string | null;
+          status?: string;
+        }>('/api/notifications/action', {
+          method: 'POST',
+          body: { notificationId: row.id, action },
+        });
+
+        if (result.snoozed) {
+          // A snooze answers nothing, so the row keeps its unread dot and its
+          // buttons — only when it will next appear changes.
+          const snoozedAt = result.scheduledFor;
+          if (snoozedAt) {
+            setRows((prev) =>
+              prev.map((r) => (r.id === row.id ? { ...r, scheduledFor: snoozedAt } : r))
+            );
+          }
+          return;
+        }
+
+        if (action === 'SKIP') {
+          dropRow(row.id, row);
+          return;
+        }
+
+        const wasUnread = !row.readAt;
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === row.id
+              ? {
+                  ...r,
+                  readAt: r.readAt ?? result.readAt ?? now,
+                  respondedAt: result.checkInRespondedAt ?? now,
+                  status: result.status ?? r.status,
+                }
+              : r
+          )
+        );
+        if (wasUnread) {
+          setViewUnread((prev) => Math.max(0, prev - 1));
+          bumpUnread(-1);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'That action could not be sent');
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [dropRow]
+  );
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 sm:py-8">
@@ -237,7 +539,8 @@ export function NotificationHistory({
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {loading ? 'Loading…' : `${total} in this view`}
-              {unread > 0 ? ` · ${unread} unread` : ''}
+              {/* `viewUnread` = how many of *these* rows are still unanswered. */}
+              {viewUnread > 0 ? ` · ${viewUnread} not yet answered` : ''}
             </p>
           </div>
 
@@ -245,13 +548,48 @@ export function NotificationHistory({
             {unread > 0 && (
               <button
                 type="button"
-                onClick={() => void markAllRead()}
+                onClick={() => void clearUnread()}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 <CheckCheck className="h-4 w-4" aria-hidden="true" />
                 Mark all as read
               </button>
             )}
+
+            {/*
+              Bulk management, in two steps: there is no undo for a dismiss and
+              no endpoint that can reverse one, so the second click is the
+              confirmation rather than a dialog the eye skips over.
+            */}
+            {total > 0 &&
+              (clearArmed ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void dismissAllRows()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-destructive px-3 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:opacity-90"
+                  >
+                    <Archive className="h-4 w-4" aria-hidden="true" />
+                    Confirm clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClearArmed(false)}
+                    className="inline-flex items-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setClearArmed(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  <Archive className="h-4 w-4" aria-hidden="true" />
+                  Clear all
+                </button>
+              ))}
 
             {/*
               The bell now navigates here, so it no longer doubles as the route
@@ -408,86 +746,162 @@ export function NotificationHistory({
           </p>
         </div>
       ) : (
-        <ul className="space-y-2">
-          {rows.map((n) => {
-            const meta = CATEGORY_META[n.category] ?? CATEGORY_META.system;
-            const isUnread = !n.readAt;
-            return (
-              <li key={n.id}>
-                <div
-                  className={cn(
-                    'flex items-start gap-3 rounded-xl border px-4 py-3 transition-colors',
-                    isUnread ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                      isUnread ? 'bg-primary' : 'bg-muted-foreground/30'
-                    )}
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p
-                      className={cn(
-                        'text-sm',
-                        isUnread ? 'font-semibold text-foreground' : 'text-foreground'
-                      )}
-                    >
-                      {n.title}
-                    </p>
-                    {n.body && (
-                      <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>
-                    )}
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {/*
-                        Tags come from the API, not recomputed here, so the user's
-                        own block label (DSA, Personal, …) is shown. It is
-                        highlighted so it is visually distinct from the fixed
-                        category tag.
-                      */}
-                      {n.tags.map((t) => {
-                        const isUserTag = n.userCategory !== null && t === n.userCategory;
-                        return (
-                          <span
-                            key={t}
+        <div className="space-y-6">
+          {groupByDay(rows).map((group) => (
+            <section key={group.key} aria-label={group.label}>
+              <h2 className="sticky top-0 z-10 -mx-1 mb-2 bg-background/90 px-1 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur">
+                {group.label}
+              </h2>
+              <ul className="space-y-2">
+                {group.rows.map((n) => {
+                  const meta = CATEGORY_META[n.category] ?? CATEGORY_META.system;
+                  const isUnread = !n.readAt;
+                  const when = new Date(n.scheduledFor);
+                  return (
+                    <li key={n.id}>
+                      <div
+                        className={cn(
+                          'flex items-start gap-3 rounded-xl border px-4 py-3 transition-colors',
+                          isUnread ? 'border-primary/30 bg-primary/5' : 'border-border bg-card'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'mt-1.5 h-2 w-2 shrink-0 rounded-full',
+                            isUnread ? 'bg-primary' : 'bg-muted-foreground/30'
+                          )}
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p
                             className={cn(
-                              'rounded-full px-2 py-0.5 text-[11px] font-medium',
-                              isUserTag
-                                ? 'bg-primary/15 text-primary'
-                                : meta.chipClass
+                              'text-sm',
+                              isUnread ? 'font-semibold text-foreground' : 'text-foreground'
                             )}
                           >
-                            {t}
-                          </span>
-                        );
-                      })}
-                      {n.status === 'FAILED' && (
-                        <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-medium text-destructive">
-                          Not delivered
-                        </span>
-                      )}
-                      <time
-                        className="text-[11px] text-muted-foreground/80"
-                        dateTime={n.scheduledFor}
-                      >
-                        {new Date(n.scheduledFor).toLocaleString()}
-                      </time>
-                    </div>
-                  </div>
-                  {n.actionUrl && (
-                    <Link
-                      href={n.actionUrl}
-                      className="shrink-0 self-center rounded-lg px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10"
-                    >
-                      Open
-                    </Link>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                            {n.title}
+                          </p>
+                          {n.body && (
+                            <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>
+                          )}
+                          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                            {/*
+                              Tags come from the API, not recomputed here, so the
+                              user's own block label (DSA, Personal, …) is shown. It is
+                              highlighted so it is visually distinct from the fixed
+                              category tag.
+                            */}
+                            {n.tags.map((t) => {
+                              const isUserTag = n.userCategory !== null && t === n.userCategory;
+                              return (
+                                <span
+                                  key={t}
+                                  className={cn(
+                                    'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                                    isUserTag
+                                      ? 'bg-primary/15 text-primary'
+                                      : meta.chipClass
+                                  )}
+                                >
+                                  {t}
+                                </span>
+                              );
+                            })}
+                            {n.status === 'FAILED' && (
+                              <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                                Not delivered
+                              </span>
+                            )}
+                            <time
+                              className="text-[11px] text-muted-foreground/80"
+                              dateTime={n.scheduledFor}
+                              title={when.toLocaleString()}
+                            >
+                              {relativeTime(n.scheduledFor)}
+                              <span className="sr-only"> ({when.toLocaleString()})</span>
+                            </time>
+                          </div>
+
+                          {/*
+                            The question the reminder was asking, answered right
+                            here. These are the scheduler's own buttons — "Yes, at
+                            05:00", "Finished earlier", "Don't want to do it" — the
+                            same ones the push notification carries, which the page
+                            previously threw away: the only way to respond was to
+                            open /today and find the block yourself.
+
+                            Hidden once `respondedAt` is set, so a "Did you start
+                            Nap?" from yesterday cannot be answered twice and write
+                            a second RoutineLog over the first.
+                          */}
+                          {!n.respondedAt && n.actions.length > 0 && (
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                              {n.actions.map((a) => {
+                                const busy = pendingId === n.id;
+                                return (
+                                  <button
+                                    key={a.action}
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => void runAction(n, a.action)}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 disabled:opacity-60"
+                                  >
+                                    {busy && (
+                                      <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                                    )}
+                                    {a.title}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/*
+                          Icon-only rather than a word on every row: with an "Open"
+                          on all 140 cards the affordance carried no information -
+                          it was a column of identical red ink. Hidden entirely when
+                          there is nowhere to go.
+                        */}
+                        {n.actionUrl && (
+                          <Link
+                            href={n.actionUrl}
+                            title="Open"
+                            aria-label={`Open: ${n.title}`}
+                            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                          </Link>
+                        )}
+
+                        {/*
+                          Per-row dismiss, icon-only for the same reason. Before
+                          this the only bulk option was "mark as read", which left
+                          every row on screen and let a 140-row backlog grow
+                          forever.
+                        */}
+                        <button
+                          type="button"
+                          onClick={() => void dismissRow(n)}
+                          disabled={pendingId === n.id}
+                          title="Dismiss"
+                          aria-label={`Dismiss: ${n.title}`}
+                          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+                        >
+                          {pendingId === n.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <X className="h-4 w-4" aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
 
       {hasMore && (

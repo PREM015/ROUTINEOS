@@ -151,6 +151,10 @@ export class NotificationRepository extends BaseRepository {
    *
    * `since` is `null` for the "All" window. `cap` bounds the read so a very old
    * account cannot pull an unbounded number of rows into one request.
+   *
+   * Dismissed rows are excluded. `markDismissed` only flips `status`, so without
+   * this the "Clear all" / per-row dismiss buttons changed a column the feed
+   * never read — the row stayed on screen and the action looked broken.
    */
   async findHistoryWindow(
     userId: UserId,
@@ -159,12 +163,66 @@ export class NotificationRepository extends BaseRepository {
   ): Promise<NotificationLog[]> {
     try {
       return await this.prisma.notificationLog.findMany({
-        where: { userId, ...(since ? { scheduledFor: { gte: since } } : {}) },
+        where: {
+          userId,
+          dismissedAt: null,
+          ...(since ? { scheduledFor: { gte: since } } : {}),
+        },
         orderBy: { scheduledFor: 'desc' },
         take: cap,
       });
     } catch (error) {
       this.handleError(error, 'findHistoryWindow');
+    }
+  }
+
+  /**
+   * Dismiss every row the history feed would still show, in one statement.
+   *
+   * `dismissedAt` is the filter, not `status`: status is also written by
+   * `markAllRead` (READ) and by the dispatcher (SENT/FAILED), so keying on it
+   * would archive rows the user only ever read. Rows already dismissed are
+   * skipped, which makes the call idempotent.
+   */
+  async dismissAll(userId: UserId): Promise<number> {
+    try {
+      const now = new Date();
+      const result = await this.prisma.notificationLog.updateMany({
+        where: { userId, dismissedAt: null },
+        data: {
+          dismissedAt: now,
+          readAt: now,
+          status: NotificationStatus.DISMISSED,
+        },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'dismissAll');
+    }
+  }
+
+  /**
+   * Mark delivered notifications older than `before` as read, in one statement.
+   *
+   * Reminder prompts go stale: "Did you start Nap?" from ten days ago cannot be
+   * answered, and leaving it unread keeps the badge permanently red. Only
+   * *delivered* rows are touched - a row that was never sent has no age the user
+   * could have seen, so sweeping it would hide something they were never shown.
+   */
+  async markStaleRead(userId: UserId, before: Date): Promise<number> {
+    try {
+      const result = await this.prisma.notificationLog.updateMany({
+        where: {
+          userId,
+          readAt: null,
+          dismissedAt: null,
+          sentAt: { not: null, lt: before },
+        },
+        data: { readAt: new Date() },
+      });
+      return result.count;
+    } catch (error) {
+      this.handleError(error, 'markStaleRead');
     }
   }
 
@@ -367,10 +425,24 @@ export class NotificationRepository extends BaseRepository {
         where: {
           id: notificationId,
           userId,
-          status: NotificationStatus.PENDING,
+          /**
+           * `PENDING` **and** `SENT`.
+           *
+           * Restricting this to `PENDING` meant a snooze only worked on a
+           * reminder the dispatcher had not reached yet — which is exactly when
+           * nobody presses it. Any row the user can actually see is `SENT`, so
+           * "Snooze 10m" / "Not yet" / "Extend session" threw "no longer
+           * pending" on every real tap. `FAILED` is still excluded: retrying a
+           * delivery that already failed is the dispatcher's job, not the user's.
+           *
+           * The row is put back to `PENDING` below so the dispatcher picks it up
+           * again at the new time.
+           */
+          status: { in: [NotificationStatus.PENDING, NotificationStatus.SENT] },
         },
         data: {
           scheduledFor,
+          status: NotificationStatus.PENDING,
           retryCount: 0,
           errorMessage: null,
         },

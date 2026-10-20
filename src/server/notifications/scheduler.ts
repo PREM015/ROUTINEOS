@@ -135,12 +135,23 @@ export async function markNotificationFailed(
  * it says: "has this specific occurrence already been queued?". Any status
  * counts, because the row is evidence the user was already notified about this
  * occurrence regardless of whether delivery has since been attempted.
+ *
+ * The check also matches on `title`, not just on the block id. A user can hold
+ * two active templates sharing one `dayType` (say "College Day" and "Placement
+ * Day", both `WORKDAY`) with byte-identical blocks. The resolution above picks
+ * one template per date, but which one `findFirst` returns can differ between
+ * runs and between days — so two different block ids, carrying the same title,
+ * can each queue a row for the *same* instant. Because `relatedEntityId` differs
+ * those rows never saw each other, and the user got "Breakfast block ended"
+ * twice. Title plus window is the content of the event: if that is already
+ * queued, this is the same event arriving by another route.
  */
 async function existsNotificationForOccurrence(
   userId: UserId,
   routineBlockId: string,
   type: NotificationType,
-  occurrence: Date
+  occurrence: Date,
+  title: string
 ): Promise<boolean> {
   // Widen slightly so a row written a few minutes either side of the exact
   // instant still matches its own occurrence.
@@ -152,8 +163,8 @@ async function existsNotificationForOccurrence(
     where: {
       userId,
       type,
-      relatedEntityId: routineBlockId,
       scheduledFor: { gte: from, lte: to },
+      OR: [{ relatedEntityId: routineBlockId }, { title }],
     },
   });
   return existing > 0;
@@ -416,6 +427,16 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
       isRecurring: boolean;
       category: string | null;
       template: { dayType: string; isActive: boolean; name: string } | null;
+      /**
+       * The local calendar date this occurrence belongs to.
+       *
+       * Stored on every routine row so an answer can be filed against the day
+       * the block actually belongs to. Deriving it from `new Date()` at answer
+       * time was what the check-ins used to do, which files tomorrow's block
+       * against today's date the moment the row is scheduled ahead — and leaves
+       * the block reminders with no date at all.
+       */
+      localDate: string;
     }> = [];
 
     const todayLocal = getTodayString(timezone);
@@ -450,7 +471,7 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
 
       if (!templateId) continue;
       const template = await routineRepository.findTemplateWithBlocks(templateId, userId);
-      if (template) await collectBlocks(template as never, localDate, dayOffset);
+      if (template) await collectBlocks(template as never, localDate);
     }
 
     /**
@@ -474,8 +495,7 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           category: string | null;
         }>;
       },
-      localDate: string,
-      dayOffset: number
+      localDate: string
     ): Promise<void> {
       if (!template.isActive) return;
       for (const block of template.blocks ?? []) {
@@ -501,8 +521,6 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           localDate,
         } as never);
       }
-      void localDate;
-      void dayOffset;
     }
 
     const notifications = [];
@@ -548,19 +566,22 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
         userId,
         block.id,
         'ROUTINE_START' as NotificationType,
-        nextOccurrence
+        nextOccurrence,
+        `${block.title} Time`
       );
       const duplicatePreStart = await existsNotificationForOccurrence(
         userId,
         block.id,
         'ROUTINE_PRE_START' as NotificationType,
-        nextOccurrence
+        nextOccurrence,
+        `${block.title} starting soon`
       );
       const duplicateCompletion = await existsNotificationForOccurrence(
         userId,
         block.id,
         'ROUTINE_COMPLETION' as NotificationType,
-        endOccurrence
+        endOccurrence,
+        `${block.title} session ended`
       );
 
       // ================================================================
@@ -580,6 +601,8 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           body: `Your ${block.title} session starts in ${advanceMinutes} minutes. Get ready!`,
           actionUrl: `/today?block=${block.id}`,
           relatedEntityId: block.id,
+          routineBlockId: block.id,
+          blockDate: block.localDate,
           scheduledFor: preStartTime,
           actions: [
             { action: 'STARTED', title: 'Started' },
@@ -613,6 +636,8 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           body: `Your ${block.title} session starts now.`,
           actionUrl: `/today?block=${block.id}`,
           relatedEntityId: block.id,
+          routineBlockId: block.id,
+          blockDate: block.localDate,
           scheduledFor: scheduledStartTime,
           actions: [
             { action: 'STARTED', title: 'Started' },
@@ -643,6 +668,8 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           body: `Your scheduled ${block.title} session has ended. Did you complete it?`,
           actionUrl: `/today?block=${block.id}`,
           relatedEntityId: block.id,
+          routineBlockId: block.id,
+          blockDate: block.localDate,
           scheduledFor: new Date(endOccurrence.getTime()),
           actions: [
             { action: 'COMPLETED', title: 'Completed' },
@@ -671,7 +698,8 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
         userId,
         block.id,
         'ROUTINE_START_CHECKIN' as NotificationType,
-        checkInStartTime
+        checkInStartTime,
+        `Did you start ${block.title}?`
       );
       if (!duplicateStartCheckIn && checkInStartTime > now) {
         notifications.push({
@@ -682,7 +710,7 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           actionUrl: `/today?block=${block.id}`,
           relatedEntityId: block.id,
           routineBlockId: block.id,
-          blockDate: getTodayString(timezone),
+          blockDate: block.localDate,
           scheduledFor: checkInStartTime,
           actions: [
             { action: 'STARTED_ON_TIME', title: `Yes, at ${block.startTime}` },
@@ -712,7 +740,8 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
         userId,
         block.id,
         'ROUTINE_COMPLETION_CHECKIN' as NotificationType,
-        checkInEndTime
+        checkInEndTime,
+        `${block.title} block ended`
       );
       if (!duplicateEndCheckIn && checkInEndTime > now) {
         notifications.push({
@@ -723,7 +752,7 @@ export async function scheduleRoutineBlockNotifications(userId: UserId) {
           actionUrl: `/today?block=${block.id}`,
           relatedEntityId: block.id,
           routineBlockId: block.id,
-          blockDate: getTodayString(timezone),
+          blockDate: block.localDate,
           scheduledFor: checkInEndTime,
           actions: [
             { action: 'FINISHED_ON_TIME', title: `Finished at ${block.endTime}` },

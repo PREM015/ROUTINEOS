@@ -9,6 +9,7 @@ import { UserRepository } from '@/server/repositories/user.repository';
 import { ACHIEVEMENTS_PATH, achievementDeepLink } from '@/lib/achievements/links';
 import { DEFAULT_TZ } from '@/lib/dates';
 import {
+  CATEGORY_META,
   CATEGORY_ORDER,
   PERIOD_DAYS,
   categoryFor,
@@ -18,6 +19,10 @@ import {
   type PeriodFilter,
 } from '@/lib/notifications/categories';
 import { pushService } from '@/server/services/push.service';
+import {
+  ROUTINE_LOG_ACTIONS,
+  type NotificationAction,
+} from '@/lib/notifications/actions';
 import { toUserIdOptional, toUserId, type UserId  } from '@/types/ids';
 
 /**
@@ -151,6 +156,27 @@ function parseActionData(raw: string | null | undefined): {
  */
 const HISTORY_WINDOW_CAP = 2_000;
 
+/**
+ * Delivered notifications older than this stop counting as unread.
+ *
+ * A reminder prompt expires with the moment it describes: "Did you start Nap?"
+ * from a week ago cannot be answered, and left unread it keeps the badge
+ * permanently red - 116 of 139 unread rows in a real account were over a week
+ * old. Sweeping them is not deletion and not a status change to anything the
+ * user can still act on, only a stop-counting-as-new.
+ */
+const STALE_NOTIFICATION_DAYS = 7;
+
+/**
+ * The fixed domain tags `tagsFor` puts on every row ("Routine", "Sleep", …).
+ *
+ * They are excluded from `tagCounts` because they are already the category row,
+ * at the same counts.
+ */
+const FIXED_TAG_KEYS = new Set(
+  CATEGORY_ORDER.map((c) => normaliseTag(CATEGORY_META[c].tag))
+);
+
 /** One row of the history feed, as the page renders it. */
 export interface HistoryRow {
   id: string;
@@ -168,6 +194,21 @@ export interface HistoryRow {
   tags: string[];
   /** The user's own label, so the page can highlight it apart from the rest. */
   userCategory: string | null;
+  /**
+   * The buttons the scheduler attached to this row, so the history page can
+   * offer the same answer the push notification did.
+   *
+   * They live inside the `actionData` JSON (`{ data..., actions: [...] }`),
+   * because `NotificationLog` has no `actions` column. A row with a malformed
+   * payload simply has no buttons rather than failing the whole feed.
+   */
+  actions: Array<{ action: string; title: string }>;
+  /**
+   * Set once a check-in has been answered. The page hides the buttons after
+   * this, so a "Did you start Nap?" from three days ago cannot be answered
+   * twice — which would write a second `RoutineLog` over the first.
+   */
+  respondedAt: Date | null;
 }
 
 /** The full payload of `GET /api/notifications`. */
@@ -212,6 +253,27 @@ function userCategoryOf(raw: string | null): string | null {
     return typeof value === 'string' && value.trim() !== '' ? value : null;
   } catch {
     return null;
+  }
+}
+
+/** Read `actionData.actions`, the push buttons, off a history row. */
+function actionsOf(raw: string | null): Array<{ action: string; title: string }> {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return [];
+    const value = (parsed as Record<string, unknown>).actions;
+    if (!Array.isArray(value)) return [];
+    const out: Array<{ action: string; title: string }> = [];
+    for (const item of value) {
+      if (typeof item !== 'object' || item === null) continue;
+      const { action, title } = item as Record<string, unknown>;
+      if (typeof action !== 'string' || typeof title !== 'string') continue;
+      out.push({ action, title });
+    }
+    return out;
+  } catch {
+    return [];
   }
 }
 
@@ -297,6 +359,19 @@ export class NotificationService {
   }
 
   /**
+   * Stop delivered notifications older than {@link STALE_NOTIFICATION_DAYS}
+   * from counting as unread.
+   *
+   * Deliberately scoped to `sentAt < cutoff`: a row that was never delivered has
+   * no moment the user could have seen, so sweeping it would mark as "read"
+   * something that was never shown.
+   */
+  async sweepStaleNotifications(userId: UserId): Promise<number> {
+    const cutoff = new Date(Date.now() - STALE_NOTIFICATION_DAYS * 24 * 60 * 60 * 1000);
+    return this.notificationRepository.markStaleRead(userId, cutoff);
+  }
+
+  /**
    * The notification history feed behind `GET /api/notifications`.
    *
    * The route's contract is a single object: a page of rows **plus** the facet
@@ -368,6 +443,8 @@ export class NotificationService {
         errorMessage: row.errorMessage,
         tags: tagsFor(row.type, row.relatedEntityId, userCategory).all,
         userCategory,
+        actions: actionsOf(row.actionData),
+        respondedAt: row.checkInRespondedAt,
       };
     });
 
@@ -385,6 +462,10 @@ export class NotificationService {
       if (matchesCategory) {
         for (const t of row.tags) {
           const key = normaliseTag(t);
+          // The fixed domain tags ("Routine", "Sleep", …) are already the
+          // category row above this one, with the same counts. Counting them
+          // here made the Tags row a verbatim copy of the Categories row.
+          if (FIXED_TAG_KEYS.has(key)) continue;
           tagCounts[key] = (tagCounts[key] ?? 0) + 1;
         }
       }
@@ -427,7 +508,7 @@ export class NotificationService {
   async applyAction(
     userId: UserId,
     notificationId: string,
-    action: 'DONE' | 'SNOOZE' | 'SKIP' | 'STARTED_ON_TIME' | 'STARTED_LATE' | 'STARTED_EARLY' | 'BUSY_WITH_OTHER' | 'SKIP_BLOCK' | 'FINISHED_ON_TIME' | 'FINISHED_LATE' | 'FINISHED_EARLY' | 'NOT_COMPLETED',
+    action: NotificationAction,
     options?: { 
       snoozeMinutes?: number; 
       actualStartTime?: string; 
@@ -440,13 +521,11 @@ export class NotificationService {
       throw new Error('Notification not found');
     }
 
-    // Handle routine check-in actions
-    const isStartCheckIn = action.startsWith('STARTED_');
-    const isCompletionCheckIn = action.startsWith('FINISHED_') || action === 'NOT_COMPLETED';
-    const isBusyWithOther = action === 'BUSY_WITH_OTHER';
-    const isSkipBlock = action === 'SKIP_BLOCK';
-
-    if (isStartCheckIn || isCompletionCheckIn || isBusyWithOther || isSkipBlock) {
+    // Anything that answers a question about a routine block writes a
+    // RoutineLog. `ROUTINE_LOG_ACTIONS` covers the 20-minute check-ins *and* the
+    // block reminder's own buttons — the latter are the same answer about the
+    // same block, just asked at a different moment, so they share one path.
+    if (ROUTINE_LOG_ACTIONS.has(action)) {
       return this.handleRoutineCheckIn(userId, existing, action, options);
     }
 
@@ -465,10 +544,12 @@ export class NotificationService {
       });
     }
 
+    // SNOOZE, NOT_YET and EXTEND all mean "ask me again later" and reach here
+    // by elimination.
     const scheduledFor = new Date(Date.now() + (options?.snoozeMinutes ?? 10) * 60 * 1000);
     const snoozed = await this.notificationRepository.snooze(userId, notificationId, scheduledFor);
     if (snoozed === 0) {
-      throw new Error('Notification is no longer pending and cannot be snoozed');
+      throw new Error('Notification can no longer be snoozed');
     }
     return { snoozed: true, scheduledFor };
   }
@@ -480,7 +561,7 @@ export class NotificationService {
   private async handleRoutineCheckIn(
     userId: UserId,
     notification: any,
-    action: string,
+    action: NotificationAction,
     options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string }
   ): Promise<NotificationLog> {
     // Mark notification as read/responded
@@ -493,9 +574,19 @@ export class NotificationService {
       options?.replacementActivity
     );
 
-    // If this is a routine check-in notification, update the RoutineLog
-    if (notification.type === 'ROUTINE_START_CHECKIN' || notification.type === 'ROUTINE_COMPLETION_CHECKIN') {
-      const blockId = notification.routineBlockId;
+    // If this is a routine notification, update the RoutineLog
+    //
+    // `ROUTINE_START` / `ROUTINE_COMPLETION` belong here too: their own buttons
+    // ("Started", "Completed") answer the same question the 20-minute check-in
+    // does, and skipping them left the reminder marked answered while the
+    // block's log stayed untouched.
+    if (
+      notification.type === 'ROUTINE_START' ||
+      notification.type === 'ROUTINE_COMPLETION' ||
+      notification.type === 'ROUTINE_START_CHECKIN' ||
+      notification.type === 'ROUTINE_COMPLETION_CHECKIN'
+    ) {
+      const blockId = notification.routineBlockId ?? notification.relatedEntityId;
       const blockDate = notification.blockDate;
       
       if (blockId && blockDate) {
@@ -513,17 +604,28 @@ export class NotificationService {
     userId: UserId,
     blockId: string,
     blockDate: string,
-    action: string,
+    action: NotificationAction,
     options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string }
   ): Promise<void> {
     const routineRepo = new (await import('@/server/repositories/routine.repository')).RoutineRepository();
     
     const existingLog = await routineRepo.findLog(blockId, toUserId(userId), blockDate);
-    
-    const isStartCheckIn = action.startsWith('STARTED_');
-    const isCompletionCheckIn = action.startsWith('FINISHED_') || action === 'NOT_COMPLETED';
-    const isBusyWithOther = action === 'BUSY_WITH_OTHER';
-    const isSkipBlock = action === 'SKIP_BLOCK';
+
+    // Which half of the block this answer is about. `STARTED` / `COMPLETED` /
+    // `PARTIAL` / `NOT_DONE` are the block reminder's own buttons; the
+    // `STARTED_*` / `FINISHED_*` family are the check-ins. Same block, same log
+    // row — only the moment they were asked differs.
+    const isStartPhase =
+      action === 'STARTED' ||
+      action.startsWith('STARTED_') ||
+      action === 'BUSY_WITH_OTHER' ||
+      action === 'SKIP_BLOCK';
+    const isCompletionPhase =
+      action.startsWith('FINISHED_') ||
+      action === 'NOT_COMPLETED' ||
+      action === 'COMPLETED' ||
+      action === 'PARTIAL' ||
+      action === 'NOT_DONE';
 
     // Determine the status and times from the action
     let status: 'COMPLETED' | 'MISSED' | 'PARTIAL' | 'IN_PROGRESS' = 'IN_PROGRESS';
@@ -532,25 +634,34 @@ export class NotificationService {
     let completionSource: 'USER_CONFIRMED' | 'AUTO_ASSUMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION' | undefined;
     let note: string | null = null;
 
-    if (isStartCheckIn) {
-      if (action === 'STARTED_ON_TIME') {
-        status = 'IN_PROGRESS';
-        actualStartTime = options?.actualStartTime ?? null;
-      } else if (action === 'STARTED_LATE' || action === 'STARTED_EARLY') {
-        status = 'IN_PROGRESS';
-        actualStartTime = options?.actualStartTime ?? null;
-      } else if (isBusyWithOther) {
+    if (isStartPhase) {
+      if (action === 'SKIP_BLOCK') {
+        status = 'MISSED';
+        completionSource = 'USER_CONFIRMED';
+      } else if (action === 'BUSY_WITH_OTHER') {
         status = 'IN_PROGRESS';
         actualStartTime = options?.actualStartTime ?? null;
         note = `Replaced with: ${options?.replacementActivity ?? 'Other activity'}`;
-      } else if (isSkipBlock) {
-        status = 'MISSED';
-        completionSource = 'USER_CONFIRMED';
+      } else {
+        // STARTED, STARTED_ON_TIME, STARTED_LATE, STARTED_EARLY — all "I'm on
+        // it", so they share one branch rather than four identical ones.
+        status = 'IN_PROGRESS';
+        actualStartTime = options?.actualStartTime ?? null;
       }
-    } else if (isCompletionCheckIn) {
-      if (action === 'NOT_COMPLETED') {
+    } else if (isCompletionPhase) {
+      if (action === 'NOT_COMPLETED' || action === 'NOT_DONE') {
         status = 'MISSED';
         completionSource = 'USER_CONFIRMED';
+      } else if (action === 'PARTIAL') {
+        // Was falling into the COMPLETED branch below, so "Partially done"
+        // recorded the block as fully complete.
+        status = 'PARTIAL';
+        actualEndTime = options?.actualEndTime ?? null;
+        if (!existingLog?.actualStartTime) {
+          actualStartTime = options?.actualStartTime ?? null;
+        }
+        completionSource = 'USER_CONFIRMED';
+        note = 'Marked partially done from the reminder';
       } else {
         status = 'COMPLETED';
         actualEndTime = options?.actualEndTime ?? null;
@@ -578,13 +689,17 @@ export class NotificationService {
       }
     }
 
+    // A time the answer did not supply is *omitted*, not written as null:
+    // `upsertLog` passes this object straight to Prisma's `update`, so an explicit
+    // null would erase a start time the user already recorded from /today. Only
+    // the status — and the duration, which is derived — are always rewritten.
     await routineRepo.upsertLog(toUserId(userId), blockId, blockDate, {
       status,
-      actualStartTime,
-      actualEndTime,
+      ...(actualStartTime !== null ? { actualStartTime } : {}),
+      ...(actualEndTime !== null ? { actualEndTime } : {}),
       durationMinutes,
-      note,
-      completionSource,
+      ...(note !== null ? { note } : {}),
+      ...(completionSource !== undefined ? { completionSource } : {}),
     });
   }
 
@@ -627,6 +742,20 @@ export class NotificationService {
       return existing;
     }
     return { ...existing, status: NotificationStatus.DISMISSED };
+  }
+
+  /**
+   * Dismiss every row the history feed would still show, in one statement.
+   *
+   * This is the "Clear all" the history page never had. It is deliberately a
+   * *dismiss* rather than a delete: the rows stay in `NotificationLog` with
+   * `status = DISMISSED`, so nothing is destroyed and the aggregate job that
+   * reads them still sees them — they simply leave the feed, which is what
+   * "clear" means to the person clicking it.
+   */
+  async dismissAll(userId: UserId): Promise<{ success: boolean; count: number }> {
+    const count = await this.notificationRepository.dismissAll(userId);
+    return { success: true, count };
   }
 
   /**

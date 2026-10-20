@@ -92,7 +92,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const sweepPromise = runSweep(toUserId(userId));
     const data = await notificationService.getHistory(toUserId(userId), parsed.data);
+    // The sweep is a single indexed `updateMany`; awaiting it before the read
+    // is what stops the first page load reporting an unread count that its own
+    // sweep is about to invalidate.
+    await sweepPromise;
 
     void runCatchUp(toUserId(userId));
 
@@ -103,17 +108,21 @@ export async function GET(request: NextRequest) {
 }
 
 const markAllSchema = z.object({
-  action: z.literal('markAllRead'),
+  action: z.enum(['markAllRead', 'dismissAll']),
 });
 
 /**
  * POST /api/notifications
- * `markAllRead` in one query.
+ * `markAllRead` in one query, or `dismissAll` in one query.
  *
  * The bell previously implemented "mark all read" by issuing one PATCH per
  * loaded row. With 70 notifications and a 20-row page that marked 20 and left
  * the rest, so the unread badge reappeared on the next poll and the button
  * looked broken. `NotificationService.markAllRead` does it in a single statement.
+ *
+ * `dismissAll` is the bulk counterpart the history page never had: it takes
+ * rows out of the feed entirely rather than marking them seen, which is what a
+ * user clearing a 140-row backlog actually wants.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -128,10 +137,49 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const updated = await notificationService.markAllRead(userIdFromSession(session));
-    return NextResponse.json({ success: true, data: { updated } });
+    const userId = userIdFromSession(session);
+    const data =
+      parsed.data.action === 'markAllRead'
+        ? await notificationService.markAllRead(userId)
+        : await notificationService.dismissAll(userId);
+    return NextResponse.json({ success: true, data });
   } catch (error) {
     return handleError(error);
+  }
+}
+
+/**
+ * Minimum gap between stale-sweep attempts, per user.
+ *
+ * Separate from the catch-up throttle because this one has to run *before* the
+ * history read: a row that is already past `STALE_NOTIFICATION_DAYS` must not be
+ * counted as unread on the very request that would have swept it.
+ */
+const SWEEP_THROTTLE_MS = 5 * 60 * 1000;
+const lastSweep = new Map<string, number>();
+
+/**
+ * Mark the user's stale delivered rows as read, at most once per throttle window.
+ *
+ * Never rejects: a failed sweep leaves the badge a little high, which is far
+ * better than failing the page load that asked for the list.
+ */
+async function runSweep(userId: UserId): Promise<void> {
+  const now = Date.now();
+  const previous = lastSweep.get(userId);
+  if (previous !== undefined && now - previous < SWEEP_THROTTLE_MS) return;
+
+  lastSweep.set(userId, now);
+  if (lastSweep.size > 5_000) {
+    for (const [key, at] of lastSweep) {
+      if (now - at > SWEEP_THROTTLE_MS) lastSweep.delete(key);
+    }
+  }
+
+  try {
+    await notificationService.sweepStaleNotifications(userId);
+  } catch (error) {
+    console.error('[NOTIFY] stale sweep failed:', error);
   }
 }
 
@@ -154,6 +202,8 @@ async function runCatchUp(userId: UserId): Promise<void> {
   }
 
   try {
+    // The stale sweep runs on its own, before the history read (see `runSweep`);
+    // only the dispatch is left here.
     await notificationService.dispatchDueNotifications({ userId });
   } catch (error) {
     console.error('[NOTIFY] catch-up dispatch failed:', error);
