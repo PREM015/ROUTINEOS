@@ -4,6 +4,7 @@ import { toZonedTime } from 'date-fns-tz';
 import { DEFAULT_TZ, todayForUser } from '@/lib/dates';
 import prisma from '@/lib/prisma';
 import { ScoringService } from '@/server/services/scoring.service';
+import { RoutineService } from '@/server/services/routine.service';
 import { streakRecomputeService } from '@/server/services/streak-recompute.service';
 import { toUserId } from '@/types/ids';
 
@@ -44,6 +45,8 @@ export interface ComputeDailyScoresResult {
   streaksRecomputed: number;
   /** Of those, how many actually differed from the stored value. */
   streaksChanged: number;
+  /** Auto-missed routine blocks written by the reconciliation pass. */
+  routineMissed: number;
   errors: Array<{ userId: string; date?: string; message: string }>;
 }
 
@@ -72,6 +75,7 @@ export async function computeDailyScores(
     skipped: 0,
     streaksRecomputed: 0,
     streaksChanged: 0,
+    routineMissed: 0,
     errors: [],
   };
 
@@ -99,11 +103,36 @@ export async function computeDailyScores(
 
     const timezone = user.settings?.timezone ?? DEFAULT_TZ;
     const today = todayForUser(timezone);
+    const uid = toUserId(user.id);
 
     // `today` and everything derived from it is a calendar date, not an instant,
     // so it is shifted with plain calendar arithmetic. Only createdAt below is a
     // real timestamp and needs projecting into the user's zone.
     const yesterday = format(subDays(parseISO(today), 1), 'yyyy-MM-dd');
+
+    /*
+     * Auto-completion backstop. Before scoring, stamp MISSED/AUTO_ASSUMED on any
+     * routine block whose window ended with nothing recorded for yesterday and
+     * today. This is the only trigger that fires while the app is *closed*, so it
+     * is what makes yesterday honest for a user who never opened the app; the
+     * on-read pass in `getRoutineForDate` covers the case where they do.
+     *
+     * Insert-only and idempotent (`insertLogIfAbsent`), so re-running costs
+     * nothing, and it respects the user's `autoCompleteBlocks` preference. Its
+     * failures are non-fatal: a reconciliation problem must not fail scoring.
+     */
+    try {
+      const routine = new RoutineService();
+      const reconciled = await routine.reconcileRange(uid, yesterday, today);
+      result.routineMissed += reconciled.missed;
+    } catch (error) {
+      result.errors.push({
+        userId: user.id,
+        message: `routine reconcile failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      });
+    }
 
     // Never invent history from before the account existed.
     const createdDate = toDateKey(user.createdAt, timezone);

@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
+import { submitOrQueue } from '@/lib/offline/outbox';
 import {
   CATEGORY_META,
   CATEGORY_ORDER,
@@ -466,26 +467,39 @@ export function NotificationHistory({
       setError(null);
       const now = new Date().toISOString();
       try {
-        const result = await apiRequest<{
-          snoozed?: boolean;
-          scheduledFor?: string;
-          readAt?: string | null;
-          checkInRespondedAt?: string | null;
-          status?: string;
-        }>('/api/notifications/action', {
+        /*
+         * Sent through the outbox, not `apiRequest`, so a button pressed on a
+         * flaky connection is queued and replayed instead of showing the user an
+         * error for something that will land later. `answeredAt` is the absolute
+         * instant *now* — the server derives the displayed `HH:mm` from it in the
+         * user's zone, which is what makes a 00:30 press for an evening block
+         * land on the right day.
+         *
+         * The result body is unavailable on this path (the queue owns retries),
+         * so the row is updated optimistically from `now` — which is exactly what
+         * the server would have echoed back.
+         */
+        const { delivered, queued } = await submitOrQueue({
+          url: '/api/notifications/action',
           method: 'POST',
-          body: { notificationId: row.id, action },
+          body: { notificationId: row.id, action, answeredAt: now },
+          label: 'Notification action',
         });
 
-        if (result.snoozed) {
-          // A snooze answers nothing, so the row keeps its unread dot and its
-          // buttons — only when it will next appear changes.
-          const snoozedAt = result.scheduledFor;
-          if (snoozedAt) {
-            setRows((prev) =>
-              prev.map((r) => (r.id === row.id ? { ...r, scheduledFor: snoozedAt } : r))
-            );
-          }
+        if (!delivered && !queued) {
+          // A 4xx is the user's problem to fix, not something to retry.
+          setError('That action could not be sent');
+          return;
+        }
+
+        // A snooze answers nothing, so the row keeps its unread dot and its
+        // buttons — only its next appearance moves. The exact new time is
+        // server-side (10 minutes); reflect it approximately offline.
+        if (action === 'SNOOZE' || action === 'NOT_YET' || action === 'EXTEND') {
+          const snoozedAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+          setRows((prev) =>
+            prev.map((r) => (r.id === row.id ? { ...r, scheduledFor: snoozedAt } : r))
+          );
           return;
         }
 
@@ -500,9 +514,8 @@ export function NotificationHistory({
             r.id === row.id
               ? {
                   ...r,
-                  readAt: r.readAt ?? result.readAt ?? now,
-                  respondedAt: result.checkInRespondedAt ?? now,
-                  status: result.status ?? r.status,
+                  readAt: r.readAt ?? now,
+                  respondedAt: now,
                 }
               : r
           )

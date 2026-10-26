@@ -233,6 +233,7 @@ exports.Prisma.UserSettingsScalarFieldEnum = {
   notificationRetryIntervals: 'notificationRetryIntervals',
   notificationMaxRetries: 'notificationMaxRetries',
   retroactiveEditDays: 'retroactiveEditDays',
+  autoCompleteBlocks: 'autoCompleteBlocks',
   autoArchiveCompletedDays: 'autoArchiveCompletedDays',
   dataRetentionDays: 'dataRetentionDays',
   profilePublic: 'profilePublic',
@@ -383,6 +384,7 @@ exports.Prisma.RoutineLogScalarFieldEnum = {
   energyLevel: 'energyLevel',
   note: 'note',
   completionSource: 'completionSource',
+  answeredAt: 'answeredAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

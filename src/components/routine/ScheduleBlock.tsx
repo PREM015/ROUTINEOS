@@ -100,6 +100,14 @@ export function BlockCard({
 }) {
   const { block, phase, logStatus } = item;
   const done = logStatus === 'COMPLETED';
+  /*
+   * A MISSED row the system inferred, not one the user recorded. It must read
+   * differently from a user's own "Missed": the two are different facts (we
+   * assumed it was not done vs. you said it was not done), and only the user's
+   * own miss should carry the alarm colour. See `auto-completion.ts`.
+   */
+  const isAssumedMiss =
+    logStatus === 'MISSED' && block.log?.completionSource === 'AUTO_ASSUMED';
   const isCurrent = phase === 'CURRENT';
   const isPast = phase === 'PAST' && !done;
   /*
@@ -568,10 +576,15 @@ export function BlockCard({
               <span
                 className={cn(
                   'shrink-0 text-[10px] font-semibold uppercase tracking-wide',
-                  STATUS_COLOR[logStatus]
+                  isAssumedMiss ? 'text-muted-foreground' : STATUS_COLOR[logStatus]
                 )}
+                title={
+                  isAssumedMiss
+                    ? "We assumed this wasn't done because it ended and nothing was recorded. Tap to correct it."
+                    : undefined
+                }
               >
-                {STATUS_TEXT[logStatus]}
+                {isAssumedMiss ? 'Missed (not logged)' : STATUS_TEXT[logStatus]}
               </span>
             )}
             {item.isOvernight && (

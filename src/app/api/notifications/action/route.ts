@@ -17,6 +17,13 @@ const bodySchema = z.object({
   actualStartTime: z.string().optional(),
   actualEndTime: z.string().optional(),
   replacementActivity: z.string().optional(),
+  /**
+   * Absolute instant the user pressed the button, as an ISO-8601 string. The
+   * server derives the displayed `HH:mm` from this in the user's own timezone, so
+   * a press at 00:30 for an evening block lands on the right day and a device in
+   * another zone cannot mislabel it. Optional for backward compatibility.
+   */
+  answeredAt: z.string().datetime().optional(),
 });
 
 /** How long "Snooze" postpones a routine reminder. */
@@ -63,6 +70,7 @@ export async function POST(request: NextRequest) {
         actualStartTime: parsed.data.actualStartTime,
         actualEndTime: parsed.data.actualEndTime,
         replacementActivity: parsed.data.replacementActivity,
+        answeredAt: parsed.data.answeredAt,
       }
     );
 

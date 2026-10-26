@@ -6,6 +6,7 @@ import type {
   DayType,
   RoutineLogStatus,
   Category,
+  CompletionSource,
 } from '@/generated/prisma';
 
 export type {
@@ -16,6 +17,7 @@ export type {
   DayType,
   RoutineLogStatus,
   Category,
+  CompletionSource,
 };
 
 /**
@@ -145,6 +147,13 @@ export interface ResolvedBlockLog {
   productivityRating: number | null;
   energyLevel: number | null;
   note: string | null;
+  /**
+   * Who produced this row: the user (`USER_CONFIRMED` / `MANUAL_EDIT`),
+   * a check-in (`CHECKIN_COMPLETION`), or the reconciliation sweep
+   * (`AUTO_ASSUMED`). Optional because the client's optimistic log is built
+   * before any server write and is always user-originated.
+   */
+  completionSource?: CompletionSource | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

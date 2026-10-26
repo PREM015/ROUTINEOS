@@ -68,6 +68,7 @@ export const updateSettingsSchema = z.object({
   notificationRetryIntervals: z.string().optional(), // JSON array of minutes
   notificationMaxRetries: z.number().int().min(1).max(10).optional(),
   retroactiveEditDays: z.number().int().min(0).max(30).optional(),
+  autoCompleteBlocks: z.boolean().optional(),
   autoArchiveCompletedDays: z.number().int().min(0).max(365).optional(),
   dataRetentionDays: z.number().int().min(30).max(3650).optional(),
   profilePublic: z.boolean().optional(),

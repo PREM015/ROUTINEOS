@@ -8,7 +8,7 @@ RoutineOS ("daily-plan" repo): Next.js 16 (App Router) + React 19 + TypeScript +
 - `FILE.MD` — per-file coding standard: repositories (`src/server/repositories/*.repository.ts`) are the only DB access layer, services (`src/server/services/*.service.ts`) hold all business logic, API routes must be thin and delegate to services. API response format: `{ success: true, data }` / `{ error: string, details? }`. Never trust client-supplied userId; always authenticate and validate with Zod.
 - Gotcha: `.md` files are gitignored (the `.gitignore` `.md` rule), so these docs and this file are not under version control.
 
-## Commands (npm)
+## Commands (npm)  
 - `npm run dev` / `npm run build` / `npm run start`
 - Type check: `npm run type-check` (`tsc --noEmit`). tsconfig is strict with `noUnusedLocals`, `noUnusedParameters`, and `noUncheckedIndexedAccess` — unused vars and unchecked index access will fail.
 - Lint: `npm run lint` / `lint:fix` run `eslint .` with the flat config `eslint.config.mjs` (extends `next/core-web-vitals`, `next/typescript`, `prettier`). It reports **0 errors and ~165 warnings** (all `react-hooks` / `no-console` advisories, pre-existing across the tree). `next build` no longer lints.

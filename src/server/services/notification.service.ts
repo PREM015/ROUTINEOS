@@ -21,6 +21,9 @@ import {
 import { pushService } from '@/server/services/push.service';
 import {
   ROUTINE_LOG_ACTIONS,
+  deriveActualTimes,
+  isStartPhaseAction,
+  isCompletionPhaseAction,
   type NotificationAction,
 } from '@/lib/notifications/actions';
 import { toUserIdOptional, toUserId, type UserId  } from '@/types/ids';
@@ -514,6 +517,8 @@ export class NotificationService {
       actualStartTime?: string; 
       actualEndTime?: string;
       replacementActivity?: string;
+      /** Absolute instant the user pressed the button. Server derives HH:mm from it. */
+      answeredAt?: string;
     }
   ): Promise<NotificationLog | { snoozed: boolean; scheduledFor: Date }> {
     const existing = await this.notificationRepository.findById(userId, notificationId);
@@ -562,7 +567,7 @@ export class NotificationService {
     userId: UserId,
     notification: any,
     action: NotificationAction,
-    options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string }
+    options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string; answeredAt?: string }
   ): Promise<NotificationLog> {
     // Mark notification as read/responded
     const updatedNotification = await this.notificationRepository.markReadWithCheckIn(
@@ -605,27 +610,17 @@ export class NotificationService {
     blockId: string,
     blockDate: string,
     action: NotificationAction,
-    options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string }
+    options?: { actualStartTime?: string; actualEndTime?: string; replacementActivity?: string; answeredAt?: string }
   ): Promise<void> {
     const routineRepo = new (await import('@/server/repositories/routine.repository')).RoutineRepository();
     
     const existingLog = await routineRepo.findLog(blockId, toUserId(userId), blockDate);
 
-    // Which half of the block this answer is about. `STARTED` / `COMPLETED` /
-    // `PARTIAL` / `NOT_DONE` are the block reminder's own buttons; the
-    // `STARTED_*` / `FINISHED_*` family are the check-ins. Same block, same log
-    // row — only the moment they were asked differs.
-    const isStartPhase =
-      action === 'STARTED' ||
-      action.startsWith('STARTED_') ||
-      action === 'BUSY_WITH_OTHER' ||
-      action === 'SKIP_BLOCK';
-    const isCompletionPhase =
-      action.startsWith('FINISHED_') ||
-      action === 'NOT_COMPLETED' ||
-      action === 'COMPLETED' ||
-      action === 'PARTIAL' ||
-      action === 'NOT_DONE';
+    // Which half of the block this answer is about. Shared with the pure
+    // `deriveActualTimes` so the two can never disagree about whether a time
+    // belongs in `actualStartTime` or `actualEndTime`.
+    const isStartPhase = isStartPhaseAction(action);
+    const isCompletionPhase = isCompletionPhaseAction(action);
 
     // Determine the status and times from the action
     let status: 'COMPLETED' | 'MISSED' | 'PARTIAL' | 'IN_PROGRESS' = 'IN_PROGRESS';
@@ -634,19 +629,37 @@ export class NotificationService {
     let completionSource: 'USER_CONFIRMED' | 'AUTO_ASSUMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION' | undefined;
     let note: string | null = null;
 
+    /*
+     * The wall-clock times come from `answeredAt` when the client sent one:
+     * the server renders the absolute instant as `HH:mm` in the user's own
+     * timezone, so a button pressed at 00:30 for an evening block lands on the
+     * right minute on the right day and a device in another zone cannot lie
+     * about it. A client-supplied `HH:mm` (`options.actualStartTime`/`EndTime`)
+     * is only a fallback for a caller that has no `answeredAt`.
+     */
+    const timezone = await this.resolveTimezone(userId);
+    const derived = options?.answeredAt
+      ? deriveActualTimes(
+          action,
+          options.answeredAt,
+          timezone,
+          existingLog?.actualStartTime ?? null,
+        )
+      : null;
+
     if (isStartPhase) {
       if (action === 'SKIP_BLOCK') {
         status = 'MISSED';
         completionSource = 'USER_CONFIRMED';
       } else if (action === 'BUSY_WITH_OTHER') {
         status = 'IN_PROGRESS';
-        actualStartTime = options?.actualStartTime ?? null;
+        actualStartTime = derived?.actualStartTime ?? options?.actualStartTime ?? null;
         note = `Replaced with: ${options?.replacementActivity ?? 'Other activity'}`;
       } else {
         // STARTED, STARTED_ON_TIME, STARTED_LATE, STARTED_EARLY — all "I'm on
         // it", so they share one branch rather than four identical ones.
         status = 'IN_PROGRESS';
-        actualStartTime = options?.actualStartTime ?? null;
+        actualStartTime = derived?.actualStartTime ?? options?.actualStartTime ?? null;
       }
     } else if (isCompletionPhase) {
       if (action === 'NOT_COMPLETED' || action === 'NOT_DONE') {
@@ -656,18 +669,18 @@ export class NotificationService {
         // Was falling into the COMPLETED branch below, so "Partially done"
         // recorded the block as fully complete.
         status = 'PARTIAL';
-        actualEndTime = options?.actualEndTime ?? null;
+        actualEndTime = derived?.actualEndTime ?? options?.actualEndTime ?? null;
         if (!existingLog?.actualStartTime) {
-          actualStartTime = options?.actualStartTime ?? null;
+          actualStartTime = derived?.actualStartTime ?? options?.actualStartTime ?? null;
         }
         completionSource = 'USER_CONFIRMED';
         note = 'Marked partially done from the reminder';
       } else {
         status = 'COMPLETED';
-        actualEndTime = options?.actualEndTime ?? null;
-        // If start wasn't confirmed earlier, use the start from options or scheduled time
+        actualEndTime = derived?.actualEndTime ?? options?.actualEndTime ?? null;
+        // If start wasn't confirmed earlier, use the derived/option start.
         if (!existingLog?.actualStartTime) {
-          actualStartTime = options?.actualStartTime ?? null;
+          actualStartTime = derived?.actualStartTime ?? options?.actualStartTime ?? null;
         }
         completionSource = 'USER_CONFIRMED';
       }
@@ -693,6 +706,11 @@ export class NotificationService {
     // `upsertLog` passes this object straight to Prisma's `update`, so an explicit
     // null would erase a start time the user already recorded from /today. Only
     // the status — and the duration, which is derived — are always rewritten.
+    //
+    // `answeredAt` is the full-precision instant the press happened; it is the
+    // audit trail behind the lossy `HH:mm` above. Recorded whenever the client
+    // sent one, so "answered at 06:12:47" survives even though the log only
+    // displays 06:12.
     await routineRepo.upsertLog(toUserId(userId), blockId, blockDate, {
       status,
       ...(actualStartTime !== null ? { actualStartTime } : {}),
@@ -700,6 +718,7 @@ export class NotificationService {
       durationMinutes,
       ...(note !== null ? { note } : {}),
       ...(completionSource !== undefined ? { completionSource } : {}),
+      ...(derived ? { answeredAt: derived.answeredAt } : {}),
     });
   }
 

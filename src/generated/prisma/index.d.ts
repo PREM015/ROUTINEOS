@@ -16129,6 +16129,7 @@ export namespace Prisma {
     notificationRetryIntervals: string | null
     notificationMaxRetries: number | null
     retroactiveEditDays: number | null
+    autoCompleteBlocks: boolean | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
     profilePublic: boolean | null
@@ -16195,6 +16196,7 @@ export namespace Prisma {
     notificationRetryIntervals: string | null
     notificationMaxRetries: number | null
     retroactiveEditDays: number | null
+    autoCompleteBlocks: boolean | null
     autoArchiveCompletedDays: number | null
     dataRetentionDays: number | null
     profilePublic: boolean | null
@@ -16261,6 +16263,7 @@ export namespace Prisma {
     notificationRetryIntervals: number
     notificationMaxRetries: number
     retroactiveEditDays: number
+    autoCompleteBlocks: number
     autoArchiveCompletedDays: number
     dataRetentionDays: number
     profilePublic: number
@@ -16359,6 +16362,7 @@ export namespace Prisma {
     notificationRetryIntervals?: true
     notificationMaxRetries?: true
     retroactiveEditDays?: true
+    autoCompleteBlocks?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
     profilePublic?: true
@@ -16425,6 +16429,7 @@ export namespace Prisma {
     notificationRetryIntervals?: true
     notificationMaxRetries?: true
     retroactiveEditDays?: true
+    autoCompleteBlocks?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
     profilePublic?: true
@@ -16491,6 +16496,7 @@ export namespace Prisma {
     notificationRetryIntervals?: true
     notificationMaxRetries?: true
     retroactiveEditDays?: true
+    autoCompleteBlocks?: true
     autoArchiveCompletedDays?: true
     dataRetentionDays?: true
     profilePublic?: true
@@ -16644,6 +16650,7 @@ export namespace Prisma {
     notificationRetryIntervals: string | null
     notificationMaxRetries: number
     retroactiveEditDays: number
+    autoCompleteBlocks: boolean
     autoArchiveCompletedDays: number
     dataRetentionDays: number
     profilePublic: boolean
@@ -16729,6 +16736,7 @@ export namespace Prisma {
     notificationRetryIntervals?: boolean
     notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
     profilePublic?: boolean
@@ -16796,6 +16804,7 @@ export namespace Prisma {
     notificationRetryIntervals?: boolean
     notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
     profilePublic?: boolean
@@ -16863,6 +16872,7 @@ export namespace Prisma {
     notificationRetryIntervals?: boolean
     notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
     profilePublic?: boolean
@@ -16930,6 +16940,7 @@ export namespace Prisma {
     notificationRetryIntervals?: boolean
     notificationMaxRetries?: boolean
     retroactiveEditDays?: boolean
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: boolean
     dataRetentionDays?: boolean
     profilePublic?: boolean
@@ -16940,7 +16951,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "sleepPreWarningEnabled" | "sleepPreWarningTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "wakeConfirmationEnabled" | "wakeConfirmationTime" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "routineStartNotifications" | "upcomingRoutineNotifications" | "sleepReminderNotifications" | "sleepPreWarningNotifications" | "wakeConfirmationNotifications" | "habitReminderNotifications" | "goalReminderNotifications" | "advanceNotificationMinutes" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "notificationRetryEnabled" | "notificationRetryIntervals" | "notificationMaxRetries" | "retroactiveEditDays" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
+  export type UserSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "timezone" | "language" | "dateFormat" | "timeFormat" | "weekStartsOn" | "theme" | "customThemeColors" | "soundEnabled" | "animationsEnabled" | "compactMode" | "defaultView" | "showCompletedTasks" | "targetBedtime" | "targetWakeTime" | "minSleepDuration" | "sleepReminder" | "sleepReminderTime" | "sleepPreWarningEnabled" | "sleepPreWarningTime" | "autoStartSleepAfterMinutes" | "sleepAutoStartEnabled" | "sleepAutoStartAfterMinutes" | "wakeConfirmationEnabled" | "wakeConfirmationTime" | "weightNonNeg" | "weightGrowth" | "weightBonus" | "notificationsEnabled" | "emailNotifications" | "pushNotifications" | "smsNotifications" | "quietHoursStart" | "quietHoursEnd" | "routineStartNotifications" | "upcomingRoutineNotifications" | "sleepReminderNotifications" | "sleepPreWarningNotifications" | "wakeConfirmationNotifications" | "habitReminderNotifications" | "goalReminderNotifications" | "advanceNotificationMinutes" | "dailyReminder" | "dailyReminderTime" | "habitReminders" | "goalReminders" | "weeklyReviewReminder" | "monthlyResetReminder" | "focusReminders" | "breakReminders" | "notificationRetryEnabled" | "notificationRetryIntervals" | "notificationMaxRetries" | "retroactiveEditDays" | "autoCompleteBlocks" | "autoArchiveCompletedDays" | "dataRetentionDays" | "profilePublic" | "shareStats" | "aiInsightsEnabled" | "experimentalFeatures" | "createdAt" | "updatedAt", ExtArgs["result"]["userSettings"]>
   export type UserSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
@@ -17012,6 +17023,10 @@ export namespace Prisma {
       notificationRetryIntervals: string | null
       notificationMaxRetries: number
       retroactiveEditDays: number
+      /**
+       * Auto-mark routine blocks that ended with nothing recorded as MISSED (AUTO_ASSUMED)
+       */
+      autoCompleteBlocks: boolean
       autoArchiveCompletedDays: number
       dataRetentionDays: number
       profilePublic: boolean
@@ -17499,6 +17514,7 @@ export namespace Prisma {
     readonly notificationRetryIntervals: FieldRef<"UserSettings", 'String'>
     readonly notificationMaxRetries: FieldRef<"UserSettings", 'Int'>
     readonly retroactiveEditDays: FieldRef<"UserSettings", 'Int'>
+    readonly autoCompleteBlocks: FieldRef<"UserSettings", 'Boolean'>
     readonly autoArchiveCompletedDays: FieldRef<"UserSettings", 'Int'>
     readonly dataRetentionDays: FieldRef<"UserSettings", 'Int'>
     readonly profilePublic: FieldRef<"UserSettings", 'Boolean'>
@@ -31742,6 +31758,7 @@ export namespace Prisma {
     energyLevel: number | null
     note: string | null
     completionSource: $Enums.CompletionSource | null
+    answeredAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -31760,6 +31777,7 @@ export namespace Prisma {
     energyLevel: number | null
     note: string | null
     completionSource: $Enums.CompletionSource | null
+    answeredAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -31778,6 +31796,7 @@ export namespace Prisma {
     energyLevel: number
     note: number
     completionSource: number
+    answeredAt: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -31812,6 +31831,7 @@ export namespace Prisma {
     energyLevel?: true
     note?: true
     completionSource?: true
+    answeredAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -31830,6 +31850,7 @@ export namespace Prisma {
     energyLevel?: true
     note?: true
     completionSource?: true
+    answeredAt?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -31848,6 +31869,7 @@ export namespace Prisma {
     energyLevel?: true
     note?: true
     completionSource?: true
+    answeredAt?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -31953,6 +31975,7 @@ export namespace Prisma {
     energyLevel: number | null
     note: string | null
     completionSource: $Enums.CompletionSource | null
+    answeredAt: Date | null
     createdAt: Date
     updatedAt: Date
     _count: RoutineLogCountAggregateOutputType | null
@@ -31990,6 +32013,7 @@ export namespace Prisma {
     energyLevel?: boolean
     note?: boolean
     completionSource?: boolean
+    answeredAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
@@ -32010,6 +32034,7 @@ export namespace Prisma {
     energyLevel?: boolean
     note?: boolean
     completionSource?: boolean
+    answeredAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
@@ -32030,6 +32055,7 @@ export namespace Prisma {
     energyLevel?: boolean
     note?: boolean
     completionSource?: boolean
+    answeredAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
@@ -32050,11 +32076,12 @@ export namespace Prisma {
     energyLevel?: boolean
     note?: boolean
     completionSource?: boolean
+    answeredAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type RoutineLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "routineBlockId" | "userId" | "date" | "status" | "actualStartTime" | "actualEndTime" | "durationMinutes" | "focusRating" | "productivityRating" | "energyLevel" | "note" | "completionSource" | "createdAt" | "updatedAt", ExtArgs["result"]["routineLog"]>
+  export type RoutineLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "routineBlockId" | "userId" | "date" | "status" | "actualStartTime" | "actualEndTime" | "durationMinutes" | "focusRating" | "productivityRating" | "energyLevel" | "note" | "completionSource" | "answeredAt" | "createdAt" | "updatedAt", ExtArgs["result"]["routineLog"]>
   export type RoutineLogInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     routineBlock?: boolean | RoutineBlockDefaultArgs<ExtArgs>
     user?: boolean | UserDefaultArgs<ExtArgs>
@@ -32091,6 +32118,12 @@ export namespace Prisma {
        * How the completion was recorded
        */
       completionSource: $Enums.CompletionSource | null
+      /**
+       * Exact instant the answer was recorded (full precision), in UTC.
+       * `actualStartTime`/`actualEndTime` stay wall-clock `HH:mm` for display;
+       * this preserves sub-minute precision and cross-midnight ordering.
+       */
+      answeredAt: Date | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["routineLog"]>
@@ -32531,6 +32564,7 @@ export namespace Prisma {
     readonly energyLevel: FieldRef<"RoutineLog", 'Int'>
     readonly note: FieldRef<"RoutineLog", 'String'>
     readonly completionSource: FieldRef<"RoutineLog", 'CompletionSource'>
+    readonly answeredAt: FieldRef<"RoutineLog", 'DateTime'>
     readonly createdAt: FieldRef<"RoutineLog", 'DateTime'>
     readonly updatedAt: FieldRef<"RoutineLog", 'DateTime'>
   }
@@ -111931,6 +111965,7 @@ export namespace Prisma {
     notificationRetryIntervals: 'notificationRetryIntervals',
     notificationMaxRetries: 'notificationMaxRetries',
     retroactiveEditDays: 'retroactiveEditDays',
+    autoCompleteBlocks: 'autoCompleteBlocks',
     autoArchiveCompletedDays: 'autoArchiveCompletedDays',
     dataRetentionDays: 'dataRetentionDays',
     profilePublic: 'profilePublic',
@@ -112120,6 +112155,7 @@ export namespace Prisma {
     energyLevel: 'energyLevel',
     note: 'note',
     completionSource: 'completionSource',
+    answeredAt: 'answeredAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -114655,6 +114691,7 @@ export namespace Prisma {
     notificationRetryIntervals?: StringNullableFilter<"UserSettings"> | string | null
     notificationMaxRetries?: IntFilter<"UserSettings"> | number
     retroactiveEditDays?: IntFilter<"UserSettings"> | number
+    autoCompleteBlocks?: BoolFilter<"UserSettings"> | boolean
     autoArchiveCompletedDays?: IntFilter<"UserSettings"> | number
     dataRetentionDays?: IntFilter<"UserSettings"> | number
     profilePublic?: BoolFilter<"UserSettings"> | boolean
@@ -114722,6 +114759,7 @@ export namespace Prisma {
     notificationRetryIntervals?: SortOrderInput | SortOrder
     notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
+    autoCompleteBlocks?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
     profilePublic?: SortOrder
@@ -114792,6 +114830,7 @@ export namespace Prisma {
     notificationRetryIntervals?: StringNullableFilter<"UserSettings"> | string | null
     notificationMaxRetries?: IntFilter<"UserSettings"> | number
     retroactiveEditDays?: IntFilter<"UserSettings"> | number
+    autoCompleteBlocks?: BoolFilter<"UserSettings"> | boolean
     autoArchiveCompletedDays?: IntFilter<"UserSettings"> | number
     dataRetentionDays?: IntFilter<"UserSettings"> | number
     profilePublic?: BoolFilter<"UserSettings"> | boolean
@@ -114859,6 +114898,7 @@ export namespace Prisma {
     notificationRetryIntervals?: SortOrderInput | SortOrder
     notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
+    autoCompleteBlocks?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
     profilePublic?: SortOrder
@@ -114933,6 +114973,7 @@ export namespace Prisma {
     notificationRetryIntervals?: StringNullableWithAggregatesFilter<"UserSettings"> | string | null
     notificationMaxRetries?: IntWithAggregatesFilter<"UserSettings"> | number
     retroactiveEditDays?: IntWithAggregatesFilter<"UserSettings"> | number
+    autoCompleteBlocks?: BoolWithAggregatesFilter<"UserSettings"> | boolean
     autoArchiveCompletedDays?: IntWithAggregatesFilter<"UserSettings"> | number
     dataRetentionDays?: IntWithAggregatesFilter<"UserSettings"> | number
     profilePublic?: BoolWithAggregatesFilter<"UserSettings"> | boolean
@@ -115852,6 +115893,7 @@ export namespace Prisma {
     energyLevel?: IntNullableFilter<"RoutineLog"> | number | null
     note?: StringNullableFilter<"RoutineLog"> | string | null
     completionSource?: EnumCompletionSourceNullableFilter<"RoutineLog"> | $Enums.CompletionSource | null
+    answeredAt?: DateTimeNullableFilter<"RoutineLog"> | Date | string | null
     createdAt?: DateTimeFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineLog"> | Date | string
     routineBlock?: XOR<RoutineBlockScalarRelationFilter, RoutineBlockWhereInput>
@@ -115872,6 +115914,7 @@ export namespace Prisma {
     energyLevel?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
     completionSource?: SortOrderInput | SortOrder
+    answeredAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     routineBlock?: RoutineBlockOrderByWithRelationInput
@@ -115896,6 +115939,7 @@ export namespace Prisma {
     energyLevel?: IntNullableFilter<"RoutineLog"> | number | null
     note?: StringNullableFilter<"RoutineLog"> | string | null
     completionSource?: EnumCompletionSourceNullableFilter<"RoutineLog"> | $Enums.CompletionSource | null
+    answeredAt?: DateTimeNullableFilter<"RoutineLog"> | Date | string | null
     createdAt?: DateTimeFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineLog"> | Date | string
     routineBlock?: XOR<RoutineBlockScalarRelationFilter, RoutineBlockWhereInput>
@@ -115916,6 +115960,7 @@ export namespace Prisma {
     energyLevel?: SortOrderInput | SortOrder
     note?: SortOrderInput | SortOrder
     completionSource?: SortOrderInput | SortOrder
+    answeredAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: RoutineLogCountOrderByAggregateInput
@@ -115942,6 +115987,7 @@ export namespace Prisma {
     energyLevel?: IntNullableWithAggregatesFilter<"RoutineLog"> | number | null
     note?: StringNullableWithAggregatesFilter<"RoutineLog"> | string | null
     completionSource?: EnumCompletionSourceNullableWithAggregatesFilter<"RoutineLog"> | $Enums.CompletionSource | null
+    answeredAt?: DateTimeNullableWithAggregatesFilter<"RoutineLog"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"RoutineLog"> | Date | string
   }
@@ -123119,6 +123165,7 @@ export namespace Prisma {
     notificationRetryIntervals?: string | null
     notificationMaxRetries?: number
     retroactiveEditDays?: number
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
     profilePublic?: boolean
@@ -123186,6 +123233,7 @@ export namespace Prisma {
     notificationRetryIntervals?: string | null
     notificationMaxRetries?: number
     retroactiveEditDays?: number
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
     profilePublic?: boolean
@@ -123251,6 +123299,7 @@ export namespace Prisma {
     notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
     notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
+    autoCompleteBlocks?: BoolFieldUpdateOperationsInput | boolean
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
     profilePublic?: BoolFieldUpdateOperationsInput | boolean
@@ -123318,6 +123367,7 @@ export namespace Prisma {
     notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
     notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
+    autoCompleteBlocks?: BoolFieldUpdateOperationsInput | boolean
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
     profilePublic?: BoolFieldUpdateOperationsInput | boolean
@@ -123384,6 +123434,7 @@ export namespace Prisma {
     notificationRetryIntervals?: string | null
     notificationMaxRetries?: number
     retroactiveEditDays?: number
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
     profilePublic?: boolean
@@ -123449,6 +123500,7 @@ export namespace Prisma {
     notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
     notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
+    autoCompleteBlocks?: BoolFieldUpdateOperationsInput | boolean
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
     profilePublic?: BoolFieldUpdateOperationsInput | boolean
@@ -123515,6 +123567,7 @@ export namespace Prisma {
     notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
     notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
+    autoCompleteBlocks?: BoolFieldUpdateOperationsInput | boolean
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
     profilePublic?: BoolFieldUpdateOperationsInput | boolean
@@ -124449,6 +124502,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     routineBlock: RoutineBlockCreateNestedOneWithoutLogsInput
@@ -124469,6 +124523,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -124485,6 +124540,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     routineBlock?: RoutineBlockUpdateOneRequiredWithoutLogsNestedInput
@@ -124505,6 +124561,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -124523,6 +124580,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -124539,6 +124597,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -124557,6 +124616,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -132976,6 +133036,7 @@ export namespace Prisma {
     notificationRetryIntervals?: SortOrder
     notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
+    autoCompleteBlocks?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
     profilePublic?: SortOrder
@@ -133057,6 +133118,7 @@ export namespace Prisma {
     notificationRetryIntervals?: SortOrder
     notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
+    autoCompleteBlocks?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
     profilePublic?: SortOrder
@@ -133123,6 +133185,7 @@ export namespace Prisma {
     notificationRetryIntervals?: SortOrder
     notificationMaxRetries?: SortOrder
     retroactiveEditDays?: SortOrder
+    autoCompleteBlocks?: SortOrder
     autoArchiveCompletedDays?: SortOrder
     dataRetentionDays?: SortOrder
     profilePublic?: SortOrder
@@ -133768,6 +133831,7 @@ export namespace Prisma {
     energyLevel?: SortOrder
     note?: SortOrder
     completionSource?: SortOrder
+    answeredAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -133793,6 +133857,7 @@ export namespace Prisma {
     energyLevel?: SortOrder
     note?: SortOrder
     completionSource?: SortOrder
+    answeredAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -133811,6 +133876,7 @@ export namespace Prisma {
     energyLevel?: SortOrder
     note?: SortOrder
     completionSource?: SortOrder
+    answeredAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -148809,6 +148875,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     routineBlock: RoutineBlockCreateNestedOneWithoutLogsInput
@@ -148827,6 +148894,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -149405,6 +149473,7 @@ export namespace Prisma {
     notificationRetryIntervals?: string | null
     notificationMaxRetries?: number
     retroactiveEditDays?: number
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
     profilePublic?: boolean
@@ -149470,6 +149539,7 @@ export namespace Prisma {
     notificationRetryIntervals?: string | null
     notificationMaxRetries?: number
     retroactiveEditDays?: number
+    autoCompleteBlocks?: boolean
     autoArchiveCompletedDays?: number
     dataRetentionDays?: number
     profilePublic?: boolean
@@ -151461,6 +151531,7 @@ export namespace Prisma {
     energyLevel?: IntNullableFilter<"RoutineLog"> | number | null
     note?: StringNullableFilter<"RoutineLog"> | string | null
     completionSource?: EnumCompletionSourceNullableFilter<"RoutineLog"> | $Enums.CompletionSource | null
+    answeredAt?: DateTimeNullableFilter<"RoutineLog"> | Date | string | null
     createdAt?: DateTimeFilter<"RoutineLog"> | Date | string
     updatedAt?: DateTimeFilter<"RoutineLog"> | Date | string
   }
@@ -151966,6 +152037,7 @@ export namespace Prisma {
     notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
     notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
+    autoCompleteBlocks?: BoolFieldUpdateOperationsInput | boolean
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
     profilePublic?: BoolFieldUpdateOperationsInput | boolean
@@ -152031,6 +152103,7 @@ export namespace Prisma {
     notificationRetryIntervals?: NullableStringFieldUpdateOperationsInput | string | null
     notificationMaxRetries?: IntFieldUpdateOperationsInput | number
     retroactiveEditDays?: IntFieldUpdateOperationsInput | number
+    autoCompleteBlocks?: BoolFieldUpdateOperationsInput | boolean
     autoArchiveCompletedDays?: IntFieldUpdateOperationsInput | number
     dataRetentionDays?: IntFieldUpdateOperationsInput | number
     profilePublic?: BoolFieldUpdateOperationsInput | boolean
@@ -157845,6 +157918,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
     user: UserCreateNestedOneWithoutRoutineLogsInput
@@ -157863,6 +157937,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -190422,6 +190497,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -193041,6 +193117,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     routineBlock?: RoutineBlockUpdateOneRequiredWithoutLogsNestedInput
@@ -193059,6 +193136,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -193076,6 +193154,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -194515,6 +194594,7 @@ export namespace Prisma {
     energyLevel?: number | null
     note?: string | null
     completionSource?: $Enums.CompletionSource | null
+    answeredAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -194655,6 +194735,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     user?: UserUpdateOneRequiredWithoutRoutineLogsNestedInput
@@ -194673,6 +194754,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -194690,6 +194772,7 @@ export namespace Prisma {
     energyLevel?: NullableIntFieldUpdateOperationsInput | number | null
     note?: NullableStringFieldUpdateOperationsInput | string | null
     completionSource?: NullableEnumCompletionSourceFieldUpdateOperationsInput | $Enums.CompletionSource | null
+    answeredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

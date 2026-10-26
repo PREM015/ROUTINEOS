@@ -635,6 +635,7 @@ async upsertExceptions(
       productivityRating?: number | null;
       energyLevel?: number | null;
       completionSource?: 'USER_CONFIRMED' | 'AUTO_ASSUMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION';
+      answeredAt?: Date | null;
     }
   ): Promise<RoutineLog> {
     try {
@@ -645,6 +646,46 @@ async upsertExceptions(
       });
     } catch (error) {
       this.handleError(error, 'upsertLog');
+    }
+  }
+
+  /**
+   * Create a `RoutineLog` **only if no row exists** for `(user, block, date)`.
+   *
+   * ## Why this is not `upsertLog`
+   *
+   * `upsertLog` overwrites. That is correct for a user answering a block — their
+   * latest answer wins. It is **wrong** for auto-reconciliation, whose entire
+   * safety property is that a machine guess may never clobber a human answer. If
+   * reconciliation ran through `upsertLog`, a block the user had marked
+   * `COMPLETED` would be silently rewritten to `MISSED` the moment the sweep ran,
+   * and a lost completion is worse than no auto-miss at all.
+   *
+   * `createMany({ skipDuplicates: true })` is the atomic form of "insert if
+   * absent": it relies on the `userId_routineBlockId_date` unique index and the
+   * database's own conflict handling, so two concurrent sweeps cannot both
+   * insert and cannot interleave a check-then-write race.
+   *
+   * @returns `true` when a row was inserted, `false` when one already existed.
+   */
+  async insertLogIfAbsent(
+    userId: UserId,
+    routineBlockId: string,
+    date: string,
+    data: {
+      status: RoutineLogStatus;
+      completionSource?: 'AUTO_ASSUMED';
+      answeredAt?: Date | null;
+    }
+  ): Promise<boolean> {
+    try {
+      const result = await this.prisma.routineLog.createMany({
+        data: [{ userId, routineBlockId, date, ...data }],
+        skipDuplicates: true,
+      });
+      return result.count > 0;
+    } catch (error) {
+      this.handleError(error, 'insertLogIfAbsent');
     }
   }
 

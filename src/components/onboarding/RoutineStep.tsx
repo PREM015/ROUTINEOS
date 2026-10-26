@@ -34,6 +34,14 @@ export function RoutineStep({
         <p className="mt-2 text-muted-foreground">You can always customize this later.</p>
       </div>
 
+      <p className="mx-auto max-w-2xl text-center text-sm text-muted-foreground">
+        A block that ends with nothing recorded is marked{' '}
+        <span className="font-medium text-foreground">Missed (not logged)</span>, not
+        deleted — so a day you did not open the app never looks the same as a day you
+        skipped everything. Tap any block to correct it, whenever you like. You can turn
+        this off in Settings → Scoring.
+      </p>
+
       <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-2">
         {ONBOARDING_ROUTINE_TEMPLATES.map((template) => {
           const active = selectedId === template.id;

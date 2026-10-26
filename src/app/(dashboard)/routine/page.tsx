@@ -19,6 +19,7 @@ import { Button, Modal } from '@/components/ui';
 import { DayTypeTabs, buildDayTypeTabs, type DayTypeTab } from '@/components/routine/DayTypeTabs';
 import { DateStrip } from '@/components/routine/DateStrip';
 import { RoutineHero } from '@/components/routine/RoutineHero';
+import { AutoCompletionNotice } from '@/components/routine/AutoCompletionNotice';
 import { RoutineTimeline } from '@/components/routine/RoutineTimeline';
 import { NowNextCard } from '@/components/routine/NowNextCard';
 import { DayShapeBar } from '@/components/routine/DayShapeBar';
@@ -825,6 +826,7 @@ const dayTypes = useDayTypes();
       */}
       <div className="relative mx-auto flex min-h-[calc(100dvh-3.5rem)] w-full max-w-[1500px] flex-col px-4 py-6 sm:px-6 sm:py-8 2xl:max-w-[1760px]">
       <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <AutoCompletionNotice />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_18rem]">
           <RoutineHero
             isToday={isToday}

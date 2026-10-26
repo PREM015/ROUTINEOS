@@ -204,6 +204,8 @@ model UserSettings {
   notificationRetryIntervals    String?
   notificationMaxRetries        Int      @default(3)
   retroactiveEditDays           Int      @default(3)
+  /// Auto-mark routine blocks that ended with nothing recorded as MISSED (AUTO_ASSUMED)
+  autoCompleteBlocks            Boolean  @default(true)
   autoArchiveCompletedDays      Int      @default(90)
   dataRetentionDays             Int      @default(365)
   profilePublic                 Boolean  @default(false)
@@ -434,6 +436,10 @@ model RoutineLog {
   note               String?
   /// How the completion was recorded
   completionSource   CompletionSource?
+  /// Exact instant the answer was recorded (full precision), in UTC.
+  /// `actualStartTime`/`actualEndTime` stay wall-clock `HH:mm` for display;
+  /// this preserves sub-minute precision and cross-midnight ordering.
+  answeredAt         DateTime?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   routineBlock       RoutineBlock      @relation(fields: [routineBlockId], references: [id], onDelete: Cascade)

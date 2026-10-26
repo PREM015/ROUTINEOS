@@ -34,6 +34,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSettings } from '@/hooks/useSettings';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Switch } from '@/components/ui/Switch';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 type WeightKey = 'weightNonNeg' | 'weightGrowth' | 'weightBonus';
@@ -254,6 +255,32 @@ export default function ScoringSettingsPage() {
               </p>
             </div>
           )}
+        </div>
+      </Card>
+
+      {/*
+        Automatic completion.
+
+        Reconciliation marks a block that ended with nothing recorded as
+        MISSED/AUTO_ASSUMED, so the day stops looking identical whether the user
+        did nothing or simply never opened the app. Those assumed misses are
+        excluded from the routine completion rate (see `scoring.service.ts`) and
+        shown in the UI as "Missed (not logged)", so the toggle changes how much
+        of the day is *recorded*, not how it is scored. It writes straight
+        through `useSettings().save`, the single source of truth for this row.
+      */}
+      <Card className="mt-6">
+        <div className="border-b border-border px-6 py-4">
+          <h2 className="text-lg font-bold">Automatic completion</h2>
+        </div>
+        <div className="p-6">
+          <Switch
+            checked={settings?.autoCompleteBlocks ?? true}
+            onChange={(checked) => void save({ autoCompleteBlocks: checked })}
+            label="Mark blocks that ended with nothing recorded"
+            description="A block whose time has passed and has no record is marked “Missed (not logged)”. Tap it any time to correct it. These assumed misses never lower your routine score."
+            disabled={saving || loading || !settings}
+          />
         </div>
       </Card>
     </main>

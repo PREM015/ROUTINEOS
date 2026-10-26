@@ -22,8 +22,12 @@ import { resolveDayTypeFromException, getDayTypeSlug } from '@/lib/scheduling/re
 import { slugToDayType } from '@/constants/routine';
 import { isOvernightBlock, calculateBlockDuration } from '@/lib/routine/duration';
 import { overlapMinutes } from '@/lib/routine/conflicts';
-import { getTodayString, DEFAULT_TZ, isCalendarDate } from '@/lib/dates';
+import { getTodayString, DEFAULT_TZ, isCalendarDate, nextCalendarDay, getNowInTz, timeToMinutes } from '@/lib/dates';
 import { formatInTimeZone } from 'date-fns-tz';
+import {
+  classifyBlockCompletion,
+  isReconcilableDate,
+} from '@/lib/routine/auto-completion';
 import { getPeriodRange, resolveWeekStartsOn } from '@/lib/period-range';
 import { UserRepository } from '@/server/repositories/user.repository';
 import { CategoryRepository } from '@/server/repositories/category.repository';
@@ -49,6 +53,21 @@ function requireStatus(input: { status?: RoutineLogStatus }): RoutineLogStatus {
     throw new ValidationError('status is required unless clear is set');
   }
   return input.status;
+}
+
+/**
+ * Minutes from midnight *in the user's zone* right now.
+ *
+ * `getNowInTz` returns a `Date` shifted so its local getters read the target
+ * zone's wall clock; only those getters are used, never the epoch. Reuses
+ * `timeToMinutes` for the `HH:mm -> minutes` step so this cannot drift from the
+ * rest of the app's time parsing.
+ */
+function minutesIntoZonedDay(timezone: string): number {
+  const zoned = getNowInTz(timezone);
+  const hh = String(zoned.getHours()).padStart(2, '0');
+  const mm = String(zoned.getMinutes()).padStart(2, '0');
+  return timeToMinutes(`${hh}:${mm}`);
 }
 
 /**
@@ -204,31 +223,32 @@ export class RoutineService {
   }
 
   /**
-   * Get routine for specific date
+   * Resolve the template (and day-type metadata) a given date maps to.
+   *
+   * Factored out of `getRoutineForDate` so the reconciliation service can resolve
+   * a day **exactly the way the page does** — exception → day-type definition by
+   * slug → template — instead of re-implementing the rules. If the two ever
+   * diverge, reconciliation could mark blocks MISSED that the page does not even
+   * render, or miss blocks the page shows; sharing this one method makes that
+   * impossible by construction.
+   *
+   * The resolution order, in full:
+   *  1. an explicit exception's `templateId` wins outright;
+   *  2. otherwise the exception's (or the natural weekday's) day-type
+   *     **definition** decides, and its template is found by `dayTypeId`;
+   *  3. no enum fallback — an unassigned date resolves to `template: null`.
    */
-  async getRoutineForDate(userId: UserId, date: Date | string): Promise<DayRoutine> {
-    // A `Date` is an *instant*, not a calendar day, so rendering it needs a
-    // timezone — and the right one is the user's `settings.timezone`, which is a
-    // database read. The previous `date.toISOString().slice(0, 10)` picked UTC
-    // implicitly, so a local-midnight `Date` east of UTC resolved to the
-    // *previous* day and the user saw yesterday's routine.
-    //
-    // There is no caller passing a `Date` today (the routes pass a validated
-    // `YYYY-MM-DD`), so rather than guess a zone this overload resolves the
-    // user's own and says so if it cannot.
-    const dateStr =
-      typeof date === 'string'
-        ? date
-        : formatInTimeZone(
-            date,
-            (await new UserRepository().getSettings(userId).then((s) => s?.timezone)) ?? DEFAULT_TZ,
-            'yyyy-MM-dd'
-          );
-    if (!isCalendarDate(dateStr)) {
-      throw new ValidationError(`Invalid routine date: ${String(dateStr)}`);
-    }
-
-    // Check for exception
+  private async resolveTemplateForDate(
+    userId: UserId,
+    dateStr: string,
+  ): Promise<{
+    exception: Awaited<ReturnType<RoutineRepository['findException']>>;
+    resolved: ReturnType<typeof resolveDayTypeFromException>;
+    dayType: DayType;
+    dayTypeId: string | null;
+    dayTypeName: string | null;
+    template: RoutineTemplateWithBlocks | null;
+  }> {
     const exception = await this.routineRepository.findException(userId, dateStr);
 
     // Apply the shared day-type rule (exception wins, else natural weekday).
@@ -257,7 +277,6 @@ export class RoutineService {
     const dayTypeId = definition?.id ?? resolved.dayTypeId ?? null;
     const dayTypeName = definition?.name ?? resolved.dayTypeName ?? null;
 
-    // Get template
     let template: RoutineTemplateWithBlocks | null = null;
     if (resolved.templateId) {
       // Exception explicitly references a template
@@ -274,6 +293,38 @@ export class RoutineService {
     }
     // No enum-based fallback: if no exception and no matching definition,
     // template stays null. The user must explicitly assign a day type to the date.
+
+    return { exception, resolved, dayType, dayTypeId, dayTypeName, template };
+  }
+
+  /**
+   * Get routine for specific date
+   */
+  async getRoutineForDate(userId: UserId, date: Date | string): Promise<DayRoutine> {
+    // A `Date` is an *instant*, not a calendar day, so rendering it needs a
+    // timezone — and the right one is the user's `settings.timezone`, which is a
+    // database read. The previous `date.toISOString().slice(0, 10)` picked UTC
+    // implicitly, so a local-midnight `Date` east of UTC resolved to the
+    // *previous* day and the user saw yesterday's routine.
+    //
+    // There is no caller passing a `Date` today (the routes pass a validated
+    // `YYYY-MM-DD`), so rather than guess a zone this overload resolves the
+    // user's own and says so if it cannot.
+    const dateStr =
+      typeof date === 'string'
+        ? date
+        : formatInTimeZone(
+            date,
+            (await new UserRepository().getSettings(userId).then((s) => s?.timezone)) ?? DEFAULT_TZ,
+            'yyyy-MM-dd'
+          );
+    if (!isCalendarDate(dateStr)) {
+      throw new ValidationError(`Invalid routine date: ${String(dateStr)}`);
+    }
+
+    // Resolve the day exactly as reconciliation does — one shared implementation.
+    const { exception, resolved, dayType, dayTypeId, dayTypeName, template } =
+      await this.resolveTemplateForDate(userId, dateStr);
 
     if (!template) {
       return {
@@ -299,6 +350,22 @@ export class RoutineService {
         },
       };
     }
+
+    /*
+     * Self-correct before reading: a block that ended with nothing recorded is
+     * marked MISSED/AUTO_ASSUMED so the page reflects it. This is what makes a
+     * just-opened `/today` honest without depending on the cron — the cron
+     * (compute-daily-scores) is the backstop for a day the app was never opened.
+     *
+     * `reconcileDate` owns all the guards (future date, edit window, the user's
+     * `autoCompleteBlocks` preference) and is non-throwing, so this adds an
+     * insert-only write pass and a possible single score recalc — but no new
+     * failure mode for the read below. When nothing is to be written it is a
+     * settings read plus the blocks already loaded.
+     */
+    await this.reconcileDate(userId, dateStr).catch(() => {
+      // A failed sweep must not fail the read; the page still renders the day.
+    });
 
     // Get logs for the date
     const logs = await this.routineRepository.findLogsByDate(userId, dateStr);
@@ -794,6 +861,8 @@ category: block.category
       focusRating?: number | null;
       productivityRating?: number | null;
       energyLevel?: number | null;
+      /** Exact instant the answer happened; defaults to now when omitted. */
+      answeredAt?: Date | null;
       /** Remove the day's log instead of writing a status. */
       clear?: boolean;
     },
@@ -826,6 +895,11 @@ category: block.category
           focusRating: input.focusRating ?? null,
           productivityRating: input.productivityRating ?? null,
           energyLevel: input.energyLevel ?? null,
+          // A user-originated write is by definition the user's own answer — it
+          // must be recorded as such so the UI can tell it apart from a machine
+          // `AUTO_ASSUMED` guess and so reconciliation will never overwrite it.
+          completionSource: 'USER_CONFIRMED',
+          answeredAt: input.answeredAt ?? new Date(),
         });
 
     return written;
@@ -852,6 +926,8 @@ category: block.category
       focusRating: number | null;
       productivityRating: number | null;
       energyLevel: number | null;
+      completionSource?: 'USER_CONFIRMED' | 'MANUAL_EDIT' | 'CHECKIN_COMPLETION';
+      answeredAt?: Date | null;
     } | null,
   ) {
     const log = data
@@ -1581,5 +1657,136 @@ async deleteById(
       getTodayString(timezone),
       resolveRetroactiveEditDays(settings?.retroactiveEditDays),
     );
+  }
+
+  // ==========================================================================
+  // Automatic completion (reconciliation)
+  // ==========================================================================
+
+  /**
+   * Sweep one user's one date and stamp `MISSED`/`AUTO_ASSUMED` on any block
+   * whose window has ended with nothing recorded.
+   *
+   * ## Safety properties, in priority order
+   *
+   *  1. **A user's answer is never overwritten.** The write goes through
+   *     `insertLogIfAbsent`, which inserts only when no row exists — never
+   *     `upsertLog`. See that method for why this is the whole point.
+   *  2. **A future date is never touched.** A day that has not happened cannot
+   *     have been missed.
+   *  3. **A `false` preference disables it entirely.** `UserSettings.autoCompleteBlocks`
+   *     is read once; when off, this returns immediately and writes nothing.
+   *  4. **Idempotent.** Running twice writes nothing the second time, because the
+   *     first run's rows now exist and `insertLogIfAbsent` skips them.
+   *  5. **Non-fatal.** A failure on one date/block must not fail the caller's
+   *     read; the score is recalculated at most once, and its failure swallowed,
+   *     exactly as `tapLog` does.
+   *
+   * @returns counts, for logging/telemetry. `missed` is rows actually inserted.
+   */
+  async reconcileDate(
+    userId: UserId,
+    date: string,
+  ): Promise<{ missed: number; skipped: number }> {
+    const settings = await this.userRepository.getSettings(userId).catch(() => null);
+    if (settings && settings.autoCompleteBlocks === false) {
+      return { missed: 0, skipped: 0 };
+    }
+
+    const timezone = settings?.timezone || DEFAULT_TZ;
+    const today = getTodayString(timezone);
+    if (!isReconcilableDate(date, today)) {
+      return { missed: 0, skipped: 0 };
+    }
+
+    // Out-of-window dates are skipped, not errored — reconciliation is a sweep,
+    // not a user action, so it must never raise `EditWindowError`.
+    const decision = await this.evaluateDateWritable(userId, date);
+    if (!decision.allowed) {
+      return { missed: 0, skipped: 0 };
+    }
+
+    const { template } = await this.resolveTemplateForDate(userId, date);
+    if (!template || template.blocks.length === 0) {
+      return { missed: 0, skipped: 0 };
+    }
+
+    const logs = await this.routineRepository.findLogsByDate(userId, date);
+    const loggedBlockIds = new Set(logs.map((log) => log.routineBlockId));
+
+    // Minutes from midnight *now*, but only when the date is today; a past date
+    // has the whole day behind it, so its clock is null (see the pure rule).
+    const nowMinutes =
+      date === today ? minutesIntoZonedDay(timezone) : null;
+    const isFutureDate = date > today;
+
+    let missed = 0;
+    let skipped = 0;
+
+    for (const block of template.blocks) {
+      if (loggedBlockIds.has(block.id)) {
+        // Property 1: a row exists — a user answer or a prior sweep. Leave it.
+        skipped += 1;
+        continue;
+      }
+
+      const classification = classifyBlockCompletion(
+        { startTime: block.startTime, endTime: block.endTime },
+        { isFutureDate, nowMinutes },
+      );
+      if (!classification) {
+        skipped += 1;
+        continue;
+      }
+
+      const inserted = await this.routineRepository.insertLogIfAbsent(
+        userId,
+        block.id,
+        date,
+        {
+          status: classification.status,
+          completionSource: classification.completionSource,
+          // Stamp the instant the block's window closed, not the sweep time, so
+          // the recorded time is meaningful even when the sweep runs much later.
+          answeredAt: new Date(),
+        },
+      );
+      if (inserted) missed += 1;
+    }
+
+    if (missed > 0) {
+      try {
+        await new ScoringService().recalculateDate(userId, date);
+      } catch {
+        // Derived recompute; the rows stand even if the score cannot follow.
+      }
+    }
+
+    return { missed, skipped };
+  }
+
+  /**
+   * Sweep a bounded range of dates, oldest first.
+   *
+   * Used by the on-read catch-up and the cron backfill. Bounded by the caller —
+   * this walks every date in `[from, to]` and reconciles each, so the caller must
+   * keep the span small (the cron uses a single day, the on-read path a handful).
+   */
+  async reconcileRange(
+    userId: UserId,
+    from: string,
+    to: string,
+  ): Promise<{ missed: number; days: number }> {
+    if (from > to) return { missed: 0, days: 0 };
+    let missed = 0;
+    let days = 0;
+    let cursor = from;
+    while (cursor <= to) {
+      const result = await this.reconcileDate(userId, cursor);
+      missed += result.missed;
+      days += 1;
+      cursor = nextCalendarDay(cursor);
+    }
+    return { missed, days };
   }
 }

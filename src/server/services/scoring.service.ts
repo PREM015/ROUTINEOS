@@ -289,7 +289,23 @@ export class ScoringService {
     const completedCount = logs.filter(
       (l) => l.status === 'COMPLETED' && applicableIds.has(l.habitId)
     ).length;
-    const routineCompletedCount = routineLogs.filter((l) => l.status === 'COMPLETED').length;
+    /*
+     * Auto-assumed misses are excluded from the routine rate entirely — both
+     * numerator and denominator.
+     *
+     * Reconciliation writes MISSED/AUTO_ASSUMED rows for blocks that ended with
+     * nothing recorded. Counting those would make every historical score *drop*
+     * the moment the sweep first ran over an old date, so a user's past scores
+     * would change under them for days they did not touch. More fundamentally,
+     * "never opened the app" and "decided not to do it" are different facts, and
+     * a machine's guess about the former should not be scored as the latter. Real
+     * misses the user records still count; only the system's inference is left
+     * out. The rows remain visible in the UI, labelled as assumed.
+     */
+    const scoredRoutineLogs = routineLogs.filter(
+      (l) => l.completionSource !== 'AUTO_ASSUMED'
+    );
+    const routineCompletedCount = scoredRoutineLogs.filter((l) => l.status === 'COMPLETED').length;
 
     const breakdown: ScoreBreakdown = {
       core: {
@@ -333,7 +349,9 @@ export class ScoringService {
       habitCompletionRate:
         scoredHabits.length > 0 ? Math.round((completedCount / scoredHabits.length) * 100) : 0,
       routineCompletionRate:
-        routineLogs.length > 0 ? Math.round((routineCompletedCount / routineLogs.length) * 100) : 0,
+        scoredRoutineLogs.length > 0
+          ? Math.round((routineCompletedCount / scoredRoutineLogs.length) * 100)
+          : 0,
       sleepScore,
       calculationData: JSON.stringify({
         timestamp: new Date().toISOString(),
